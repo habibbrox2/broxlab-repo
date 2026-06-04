@@ -53,13 +53,13 @@
  </h5>
  </div>
  <div class="p-4">
- <ul class="list-group list-group-flush">
+ <ul class="flex flex-col divide-y divide-slate-100">
  {% for spec in specifications %}
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>{{ spec.spec_key }}:</strong> {{ spec.spec_value }}
  </li>
  {% else %}
- <li class="list-group-item text-slate-500 text-center">No specifications available.</li>
+ <li class="flex items-center justify-center px-4 py-3 text-slate-500">No specifications available.</li>
  {% endfor %}
  </ul>
  </div>

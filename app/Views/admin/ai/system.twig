@@ -940,48 +940,48 @@
  </div>
  <div class="p-4">
  {% if default_provider %}
- <ul class="list-group list-group-flush snapshot-list">
- <li class="list-group-item">
+ <ul class="flex flex-col divide-y divide-slate-100 snapshot-list">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Frontend AI</span>
- <span class="block small text-slate-500">Assistant routing</span>
+ <span class="block text-xs text-slate-500">Assistant routing</span>
  </span>
  <span class="snapshot-value">
  {% if settings.frontend_provider == 'openrouter' %}OpenRouter{% elseif settings.frontend_provider == 'fireworks' %}Fireworks AI{% else %}{{ settings.frontend_provider|default('OpenRouter')|upper }}{% endif %}
  </span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Backend AI</span>
- <span class="block small text-slate-500">AutoContent routing</span>
+ <span class="block text-xs text-slate-500">AutoContent routing</span>
  </span>
  <span class="snapshot-value">{{ settings.backend_provider|default(default_provider.provider_name)|upper }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Frontend model</span>
- <span class="block small text-slate-500">Assistant default</span>
+ <span class="block text-xs text-slate-500">Assistant default</span>
  </span>
  <span class="snapshot-value">{{ settings.frontend_model|default(settings.default_model|default('meta-llama/llama-3-8b-instruct:free')) }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Backend model</span>
- <span class="block small text-slate-500">AutoContent default</span>
+ <span class="block text-xs text-slate-500">AutoContent default</span>
  </span>
  <span class="snapshot-value">{{ settings.backend_model|default(settings.default_model|default('meta-llama/llama-3-8b-instruct:free')) }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Max tokens</span>
- <span class="block small text-slate-500">Response cap</span>
+ <span class="block text-xs text-slate-500">Response cap</span>
  </span>
  <span class="snapshot-value">{{ settings.max_tokens|default(4000) }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-start justify-between gap-4 px-4 py-3">
  <span>
  <span class="snapshot-label">Temperature</span>
- <span class="block small text-slate-500">Creativity setting</span>
+ <span class="block text-xs text-slate-500">Creativity setting</span>
  </span>
  <span class="snapshot-value">{{ settings.temperature|default(0.7) }}</span>
  </li>
@@ -1021,9 +1021,9 @@
  <h2 class="h6 mb-0">Status overview</h2>
  </div>
  <div class="p-4 p-0">
- <ul class="list-group list-group-flush">
+ <ul class="flex flex-col divide-y divide-slate-100">
  {% for provider in providers %}
- <li class="list-group-item flex justify-between items-center">
+ <li class="flex items-center justify-between px-4 py-3">
  <div class="flex items-center gap-2">
  <i class="lucide lucide-{{ provider.is_active ? 'check-circle text-emerald-600' : 'circle text-slate-600' }}"></i>
  <span>{{ provider.display_name }}</span>
