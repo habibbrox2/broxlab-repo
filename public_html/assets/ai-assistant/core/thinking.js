@@ -1,23 +1,35 @@
 /**
  * BroxLab AI Assistant - Thinking Indicator Module
  * Manages the modern thinking animation and step updates.
+ *
+ * v2.1.0 - XSS fix: use textContent instead of innerHTML for user-provided strings
  */
 const DEFAULT_STEPS = [
-  { id: 'understanding', label: 'Understanding request', },
-  { id: 'planning', label: 'Planning response', },
-  { id: 'tools', label: 'Calling tools...', },
-  { id: 'generating', label: 'Generating final answer', },
+  { id: 'understanding', label: 'Understanding request' },
+  { id: 'planning', label: 'Planning response' },
+  { id: 'tools', label: 'Calling tools...' },
+  { id: 'generating', label: 'Generating final answer' },
 ];
 
 function createNoopIndicator() {
   return {
-    show: () => { },
-    hide: () => { },
-    setStatus: () => { },
-    setStep: () => { },
-    setToolLabel: () => { },
-    setCustomSteps: () => { },
+    show: () => {},
+    hide: () => {},
+    setStatus: () => {},
+    setStep: () => {},
+    setToolLabel: () => {},
+    setCustomSteps: () => {},
+    updateFromEvent: () => {},
   };
+}
+
+/**
+ * Safely escape text for use in HTML via textContent
+ * @param {string} text
+ * @returns {string}
+ */
+function safeText(text) {
+  return String(text || '');
 }
 
 export function createThinkingIndicator(root, options = {}) {
@@ -27,33 +39,56 @@ export function createThinkingIndicator(root, options = {}) {
   root.setAttribute('aria-live', 'polite');
   root.setAttribute('aria-busy', 'true');
 
-  root.innerHTML = `
-    <div class="ai-avatar">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring delay"></div>
-      <div class="core"></div>
-    </div>
-    <div class="thinking-panel">
-      <div class="thinking-header">
-        <span class="ai-name">${options.aiName || 'Brox AI'}</span>
-        <span class="thinking-status">${options.initialStatus || 'Thinking...'}</span>
-      </div>
-      <div class="tool-steps"></div>
-      <div class="thinking-bars">
-        <span></span><span></span><span></span><span></span>
-      </div>
-    </div>
-  `;
+  // Build DOM safely using createElement instead of innerHTML for dynamic content
+  root.innerHTML = '';
 
-  const statusEl = root.querySelector('.thinking-status');
-  const stepsEl = root.querySelector('.tool-steps');
+  const panel = document.createElement('div');
+  panel.className = 'thinking-panel';
+
+  const header = document.createElement('div');
+  header.className = 'thinking-header';
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'ai-name';
+  nameEl.textContent = options.aiName || 'Brox AI';
+
+  const statusEl = document.createElement('span');
+  statusEl.className = 'thinking-status';
+  statusEl.textContent = options.initialStatus || 'Thinking...';
+
+  header.appendChild(nameEl);
+  header.appendChild(statusEl);
+  panel.appendChild(header);
+
+  const stepsEl = document.createElement('div');
+  stepsEl.className = 'tool-steps';
+  panel.appendChild(stepsEl);
+
+  const barsEl = document.createElement('div');
+  barsEl.className = 'thinking-bars';
+  for (let i = 0; i < 4; i++) {
+    barsEl.appendChild(document.createElement('span'));
+  }
+  panel.appendChild(barsEl);
+
+  root.appendChild(panel);
+
   const stepEls = [];
   const stepList = Array.isArray(options.steps) && options.steps.length > 0 ? options.steps : DEFAULT_STEPS;
 
   stepList.forEach((step) => {
     const stepEl = document.createElement('div');
     stepEl.className = 'tool-step';
-    stepEl.innerHTML = `<span class="dot"></span><span class="step-label">${step.label}</span>`;
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+
+    const label = document.createElement('span');
+    label.className = 'step-label';
+    label.textContent = safeText(step.label);
+
+    stepEl.appendChild(dot);
+    stepEl.appendChild(label);
     stepsEl.appendChild(stepEl);
     stepEls.push(stepEl);
   });
@@ -66,13 +101,13 @@ export function createThinkingIndicator(root, options = {}) {
   }
 
   function setStatus(text) {
-    if (statusEl) statusEl.textContent = text || '';
+    if (statusEl) statusEl.textContent = safeText(text);
     return indicator;
   }
 
   function setToolLabel(label) {
     if (statusEl && label) {
-      statusEl.textContent = label;
+      statusEl.textContent = safeText(label);
     }
     return indicator;
   }
@@ -83,7 +118,16 @@ export function createThinkingIndicator(root, options = {}) {
     steps.forEach((step) => {
       const stepEl = document.createElement('div');
       stepEl.className = 'tool-step';
-      stepEl.innerHTML = `<span class="dot"></span><span class="step-label">${step.label}</span>`;
+
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+
+      const label = document.createElement('span');
+      label.className = 'step-label';
+      label.textContent = safeText(step.label);
+
+      stepEl.appendChild(dot);
+      stepEl.appendChild(label);
       stepsEl.appendChild(stepEl);
       stepEls.push(stepEl);
     });
@@ -118,11 +162,13 @@ export function createThinkingIndicator(root, options = {}) {
 
   function show() {
     root.classList.remove('brox-ai-hidden');
+    root.setAttribute('aria-busy', 'true');
     return indicator;
   }
 
   function hide() {
     root.classList.add('brox-ai-hidden');
+    root.removeAttribute('aria-busy');
     return indicator;
   }
 

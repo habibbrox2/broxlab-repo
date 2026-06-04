@@ -27,7 +27,8 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | **Frontend Sources** | `public_html/assets/{js,css}/` | **Never edit `dist/`** (auto-generated) |
 | **RTE Editor** | `public_html/rtceditor/` | Rich Text Editor — source files + esbuild bundle |
 | **AI/Prompts** | `system/prompts/` | AI model configs and prompt templates |
-| **Agent Skills** | `.ai/*.skill.md` | Workflow and task-specific skills for AI agents |
+| **Agent Skills** | `.ai/*.skill.md`, `.kilo/skills/**/SKILL.md` | Workflow and task-specific skills for AI agents |
+| **Kilo Agent** | `.kilo/agent/code.md`, `.kilo/kilo.json` | Local coding-agent instructions and runtime config |
 
 ---
 

@@ -347,7 +347,7 @@ if (form) {
       if (el.querySelector('.btn-calc-copy')) return;
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'btn btn-outline-secondary btn-calc-copy mt-2';
+      btn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors btn-calc-copy mt-2';
       btn.innerHTML = '<i class="bi icon-clipboard"></i> Copy';
       btn.addEventListener('click', () => {
         const text = el.textContent.trim();

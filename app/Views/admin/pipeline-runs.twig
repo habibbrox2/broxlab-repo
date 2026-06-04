@@ -466,17 +466,23 @@ document.addEventListener("DOMContentLoaded", function() {
  
  function showAlert(message, type) {
  const alertDiv = document.createElement("div");
- alertDiv.className = `alert alert-${type} fade show position-fixed`;
- alertDiv.style.cssText ="top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+ const typeClasses = {
+  success: "bg-emerald-50 border border-emerald-200 text-emerald-800",
+  danger: "bg-red-50 border border-red-200 text-red-800"
+ };
+ alertDiv.className = `${typeClasses[type] || typeClasses.success} brox-alert-enter fixed top-5 right-5 z-[9999] min-w-[300px] rounded-xl p-4 shadow-lg flex items-center justify-between gap-3`;
+ alertDiv.setAttribute("role", "alert");
  alertDiv.innerHTML = `
- ${message}
- <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-brox-dismiss="alert"></button>
+  <span>${message}</span>
+  <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition opacity-70 hover:opacity-100" data-brox-dismiss="alert">
+   <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+  </button>
  `;
  document.body.appendChild(alertDiv);
  setTimeout(() => {
- if (alertDiv.parentNode) {
- alertDiv.remove();
- }
+  if (alertDiv.parentNode) {
+   alertDiv.remove();
+  }
  }, 5000);
  }
 });

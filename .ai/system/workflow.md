@@ -33,6 +33,7 @@ OUTPUT — clean, minimal, correct
 | UI, CSS, HTML, layout    | frontend-agent  |
 | deploy, server, CI/CD    | devops-agent    |
 | review, audit, test      | reviewer-agent  |
+| full-stack, BroxLab, end-to-end | broxlab-coding-agent |
 | complex / multi-system   | core-agent      |
 
 ---
@@ -47,6 +48,12 @@ Task: "Add user registration with email verification"
 4. devops-agent   → Configure mail env variables
 5. reviewer-agent → Security + validation audit
 6. core-agent     → Final integration check
+
+Task: "Implement a BroxLab feature or bug fix end to end"
+
+1. broxlab-coding-agent → Read docs, inspect code, implement the change
+2. broxlab-coding-agent → Validate backend, frontend, and build impact
+3. reviewer-agent      → Final quality pass when the task is non-trivial
 
 ---
 

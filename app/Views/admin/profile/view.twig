@@ -46,26 +46,26 @@
  <h5 class=" mb-3">
  <i class="lucide lucide-user-check mr-2 text-indigo-600"></i>Basic Information
  </h5>
- <ul class="list-group list-group-flush">
- <li class="list-group-item">
+ <ul class="flex flex-col divide-y divide-slate-100">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Username:</strong> {{ user.username }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Email:</strong> {{ user.email }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Gender:</strong> {{ user.gender|default("N/A") }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Date of Birth:</strong> {{ user.dob ? user.dob|date("d M, Y") : 'N/A' }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Phone:</strong> {{ user.phone|default("N/A") }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Alternate Phone:</strong> {{ user.alternate_phone|default("N/A") }}
  </li>
  </ul>
@@ -79,29 +79,29 @@
  <h5 class=" mb-3">
  <i class="lucide lucide-map-pin mr-2 text-emerald-600"></i>Address & Status
  </h5>
- <ul class="list-group list-group-flush">
- <li class="list-group-item">
+ <ul class="flex flex-col divide-y divide-slate-100">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Address:</strong> {{ user.address }}, {{ user.city }}, {{ user.state }}, {{ user.country }} - {{ user.zipcode }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Role:</strong> <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600">{{ primary_role|replace({"_":""}) |title }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Status:</strong> <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-{{ user.status == 'active' ? 'success' : 'secondary' }}">{{ user.status|capitalize }}</span>
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Email Verified:</strong> {{ user.email_verified ? 'Yes' : 'No' }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Phone Verified:</strong> {{ user.phone_verified ? 'Yes' : 'No' }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Last Login:</strong> {{ user.last_login|default("Never") }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Login IP:</strong> {{ user.login_ip|default("N/A") }}
  </li>
- <li class="list-group-item">
+ <li class="flex items-center justify-between px-4 py-3">
  <strong>Device:</strong> {{ user.login_device|default("N/A") }}
  </li>
  </ul>
@@ -116,14 +116,14 @@
  <i class="lucide lucide-user-check mr-2 text-indigo-600"></i>Roles
  </h5>
  {% if role_names|length > 0 %}
- <ul class="list-group list-group-flush">
+ <ul class="flex flex-col divide-y divide-slate-100">
  {% for role_name in role_names %}
- <li class="list-group-item">{{ role_name|replace({"_":""}) |title }}</li>
+ <li class="flex items-center justify-between px-4 py-3">{{ role_name|replace({"_":""}) |title }}</li>
  {% endfor %}
  </ul>
  {% elseif user.role %}
- <ul class="list-group list-group-flush">
- <li class="list-group-item">{{ user.role|replace({"_":""}) |title }}</li>
+ <ul class="flex flex-col divide-y divide-slate-100">
+ <li class="flex items-center justify-between px-4 py-3">{{ user.role|replace({"_":""}) |title }}</li>
  </ul>
  {% else %}
  <p class="text-slate-500">No roles assigned</p>

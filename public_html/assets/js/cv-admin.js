@@ -76,7 +76,7 @@ const wireSelectionCount = function () {
     if (event.target && event.target.classList.contains('item-checkbox')) {
       updateCount();
     }
-    if (event.target && event.target.id === 'select-all-checkbox') {
+    if (event.target && event.target.matches('[data-select-all-checkbox], #select-all-checkbox')) {
       updateCount();
     }
   });
@@ -184,7 +184,7 @@ const wireToggleButtons = function () {
           if (data.success) {
             // Update button text and class
             const isActive = data.status === 'active';
-            button.className = `modern-btn btn-sm ${ isActive ? 'btn-danger' : 'btn-success'}`;
+            button.className = `modern-btn btn-sm ${ isActive ? 'bg-red-600 text-white hover:bg-red-700 transition-colors' : 'bg-green-600 text-white hover:bg-green-700 transition-colors'}`;
             button.innerHTML = `<i class="bi ${ isActive ? 'icon-pause' : 'icon-play' } mr-1"></i> ${
               isActive ? 'Disable' : 'Enable'}`;
 

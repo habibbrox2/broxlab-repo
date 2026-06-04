@@ -226,7 +226,7 @@ function updateSecurityAlertsDOM(alerts) {
                     <br/>
                     ${alert.message || 'Security event detected'}
                     <small class="d-block mt-2 text-muted">${alert.timestamp || new Date().toLocaleString()}</small>
-                    <button type="button" class="btn-close" data-brox-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
   });
@@ -267,8 +267,8 @@ function updateLoginAuditDOM(logs) {
   let html = '';
   logs.forEach(log => {
     const status = log.success ?
-      '<span class="badge bg-success">Success</span>' :
-      '<span class="badge bg-danger">Failed</span>';
+      '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Success</span>' :
+      '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
 
     html += `
                 <tr>
@@ -316,8 +316,8 @@ function updateOAuthAuditDOM(logs) {
   let html = '';
   logs.forEach(log => {
     const status = log.status === 'success' ?
-      '<span class="badge bg-success">Success</span>' :
-      '<span class="badge bg-danger">Failed</span>';
+      '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Success</span>' :
+      '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
 
     html += `
                 <tr>

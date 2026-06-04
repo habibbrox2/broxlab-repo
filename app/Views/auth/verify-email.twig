@@ -37,7 +37,7 @@
  <div class="mb-4">
  <label for="verification_token" class="block text-sm font-medium mb-1.5">Verification Token</label>
  <input type="text"
- class="form-input text-center"
+ class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-center"
  id="verification_token"
  name="verification_token"
  value="{{ token }}"
@@ -51,11 +51,11 @@
  Check your email inbox and spam folder for the verification token.
  {% endif %}
  </div>
- <div class="hidden text-xs text-red-500 mt-1 invalid-feedback">Please enter a valid verification token.</div>
+ <div class="hidden text-xs text-red-500 mt-1">Please enter a valid verification token.</div>
  </div>
  <!-- Submit Button -->
  <button type="submit"
- class="btn-primary w-full"
+ class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30"
  id="submitBtn">
  <span id="btnText">Verify Email</span>
  <span id="spinner"
@@ -71,7 +71,7 @@
  <form method="POST" action="/resend-verification-email" id="resendForm">
  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
  <input type="hidden" name="email" value="{{ email }}">
- <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-primary text-indigo-600 font-medium hover:bg-indigo-600/5 transition-colors">
+ <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-indigo-600 text-indigo-600 font-medium hover:bg-indigo-600/5 transition-colors">
  <i class="lucide lucide-rotate-cw mr-2"></i>Resend Verification Token
  </button>
  </form>
@@ -90,8 +90,8 @@
  </div>
  </div>
  <div class="auth-shell-notes">
- <div class="p-4 rounded-lg bg-emerald-600-light text-emerald-600-dark border border-success auth-shell-note" role="alert">
- <h6 class="alert-heading text-sm font-semibold mb-2">
+ <div class="p-4 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 auth-shell-note" role="alert">
+ <h6 class="text-sm font-semibold mb-2">
  <i class="lucide lucide-zap mr-2"></i>Next Step
  </h6>
  <p class="mb-0 text-sm">
@@ -100,10 +100,10 @@
  </div>
  
  <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 auth-shell-note" role="alert">
- <h6 class="alert-heading text-sm font-semibold mb-2">
+ <h6 class="text-sm font-semibold mb-2">
  <i class="lucide lucide-help-circle mr-2"></i>Why verify your email?
  </h6>
- <ul class="mb-0 ps-3 text-sm">
+ <ul class="mb-0 pl-3 text-sm">
  <li>Ensures we have your correct email address</li>
  <li>Helps secure your account</li>
  <li>Allows us to send important notifications</li>

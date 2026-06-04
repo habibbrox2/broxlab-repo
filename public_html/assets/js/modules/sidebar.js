@@ -48,6 +48,9 @@ export function initSidebar() {
     sidebar.classList.add('show');
     overlay.classList.add('show');
     document.body.classList.add('admin-sidebar-open');
+    sidebarToggles.forEach((toggle) => {
+      toggle.setAttribute('aria-expanded', 'true');
+    });
   };
 
   const closeSidebar = () => {
@@ -55,6 +58,9 @@ export function initSidebar() {
     sidebar.classList.remove('show');
     overlay.classList.remove('show');
     document.body.classList.remove('admin-sidebar-open');
+    sidebarToggles.forEach((toggle) => {
+      toggle.setAttribute('aria-expanded', 'false');
+    });
   };
 
   const toggleSidebar = () => {
@@ -189,7 +195,9 @@ export function initSidebar() {
   });
 
   // ========== MENU LINKS (MOBILE) ==========
-  sidebar.querySelectorAll('a.list-group-item:not([data-brox-toggle])').forEach((link) => {
+  sidebar.querySelectorAll(
+    'a.admin-sidebar-link[href]:not([data-sidebar-toggle="submenu"]), a.admin-sidebar-sublink[href]'
+  ).forEach((link) => {
     link.addEventListener('click', () => {
       if (isMobile()) closeSidebar();
     });
@@ -319,29 +327,48 @@ export function initSidebar() {
   // ========== SUBMENU PERSISTENCE ==========
   try {
     const STORAGE_KEY = 'admin.sidebar.openSubmenus';
-    const collapses = Array.from(sidebar.querySelectorAll('.collapse[id]'));
-    const openSet = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+    const submenus = Array.from(sidebar.querySelectorAll('.admin-sidebar-submenu[id]'));
+    const openIds = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
-    openSet.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el && typeof window.broxUI !== 'undefined') {
-        try {
-          window.broxUI.Collapse.getOrCreateInstance(el, { toggle: false, }).show();
-        } catch {
-          // ignore
-        }
+    const setSubmenuState = (submenu, open) => {
+      if (!submenu) return;
+      submenu.classList.toggle('is-open', open);
+      const trigger = sidebar.querySelector(
+        `[data-sidebar-toggle="submenu"][data-sidebar-target="#${CSS.escape(submenu.id)}"]`
+      );
+      if (trigger) {
+        trigger.classList.toggle('active', open);
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       }
-    });
+    };
 
-    collapses.forEach((collapse) => {
-      collapse.addEventListener('brox:show', () => {
-        openSet.add(collapse.id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
+    if (Array.isArray(openIds)) {
+      openIds.slice(0, 1).forEach((id) => {
+        const submenu = document.getElementById(id);
+        setSubmenuState(submenu, true);
       });
+    }
 
-      collapse.addEventListener('brox:hide', () => {
-        openSet.delete(collapse.id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
+    sidebar.querySelectorAll('[data-sidebar-toggle="submenu"]').forEach((trigger) => {
+      trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const targetSelector = trigger.getAttribute('data-sidebar-target') || trigger.getAttribute('href');
+        const submenu = targetSelector ? sidebar.querySelector(targetSelector) : null;
+        if (!submenu) return;
+
+        const willOpen = !submenu.classList.contains('is-open');
+        submenus.forEach((item) => {
+          if (item !== submenu) setSubmenuState(item, false);
+        });
+        setSubmenuState(submenu, willOpen);
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(willOpen ? [submenu.id,] : []));
+        } catch (e) {
+          // Silent fail
+        }
       });
     });
   } catch (e) {

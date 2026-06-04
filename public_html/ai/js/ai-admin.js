@@ -2271,8 +2271,15 @@ if (!window.BroxAdminInstance) {
           : this.nodes.historySidebar.classList.contains('brox-ai-collapsed');
       if (willOpen) {
         this.nodes.historySidebar.classList.remove('brox-ai-collapsed');
+        this.nodes.historySidebar.classList.remove('hidden');
+        this.nodes.historySidebar.setAttribute('aria-hidden', 'false');
       } else {
         this.nodes.historySidebar.classList.add('brox-ai-collapsed');
+        this.nodes.historySidebar.classList.add('hidden');
+        this.nodes.historySidebar.setAttribute('aria-hidden', 'true');
+      }
+      if (this.nodes.historyToggle) {
+        this.nodes.historyToggle.setAttribute('aria-expanded', String(willOpen));
       }
     }
 
@@ -3696,7 +3703,7 @@ if (!window.BroxAdminInstance) {
       const title = document.createElement('span');
       title.textContent = data.title || 'Data Artifact';
       const badge = document.createElement('span');
-      badge.className = 'badge bg-primary';
+      badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800';
       badge.textContent = data.type || 'Table';
       hdr.appendChild(title);
       hdr.appendChild(badge);
@@ -5513,7 +5520,7 @@ if (!window.BroxAdminInstance) {
     };
 
     // Ensure the admin FAB exists in the DOM. Some pages may not include the
-    // `partials/ai-assistant/admin.twig` (or it may be conditionally omitted),
+    // `partials/ai-assistant/assistant.twig` (or it may be conditionally omitted),
     // so create a lightweight fallback button so the admin interface can be
     // opened regardless.
     if (!document.getElementById('adminAiBtn')) {

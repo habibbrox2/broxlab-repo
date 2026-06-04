@@ -246,7 +246,7 @@ export function initRbacUserRoles(options = {}) {
           const safeId = toSafeId(`role_${rawId}`) || `role_${rawId}`;
           return `
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="${escapeHtml(rawId)}" id="${escapeHtml(safeId)}">
+                            <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" value="${escapeHtml(rawId)}" id="${escapeHtml(safeId)}">
                             <label class="form-check-label" for="${escapeHtml(safeId)}">
                                 ${escapeHtml(role?.name || 'Unnamed role')}
                                 <small class="text-muted d-block">${escapeHtml(role?.description || '')}</small>

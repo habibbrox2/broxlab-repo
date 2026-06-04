@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BroxBhai AI Admin Copilot - JavaScript Module
  * Premium 2026 Redesign with enhanced features
  */
@@ -10,6 +10,7 @@ import {
 } from '../../core/render.js';
 import { createThinkingIndicator } from '../../core/thinking.js';
 import { getModelCache, initializeModelCache } from '../../core/cache.js';
+import { formatCharCount, setToggleState } from './ux.js';
 
 // UI Element References with safe fallbacks
 const UI = {
@@ -20,11 +21,23 @@ const UI = {
   messages: document.getElementById('adminAiBody'),
   input: document.getElementById('adminAiInput'),
   sendBtn: document.getElementById('adminAiSend'),
-  loading: document.getElementById('adminAiTypingIndicator'),
+  loading: document.getElementById('adminAiThinkingIndicator'),
   thinkingIndicator: document.getElementById('adminAiThinkingIndicator'),
   history: document.getElementById('adminAiHistory'),
-  historyEmpty: document.querySelector('.brox-ai-history-empty'),
+  historyEmpty: document.querySelector('#adminAiShell .brox-ai-history-empty'),
   title: document.getElementById('adminAiTitle'),
+  statusText: document.getElementById('adminAiStatusText'),
+  charCount: document.getElementById('adminAiCharCount'),
+  historyToggle: document.getElementById('adminAiHistoryToggle'),
+  sidebarToggle: document.getElementById('adminAiSidebarToggle'),
+  minimizeBtn: document.getElementById('adminAiMinimize'),
+  closeBtn: document.getElementById('adminAiClose'),
+  attachBtn: document.getElementById('adminAiAttach'),
+  micBtn: document.getElementById('adminAiMic'),
+  clearBtn: document.getElementById('adminAiClear'),
+  collectDataBtn: document.getElementById('adminAiCollectData'),
+  autoFillBtn: document.getElementById('adminAiAutoFill'),
+  quickSummarizeBtn: document.getElementById('adminAiQuickSummarize'),
 
   // Settings panel elements
   provider: document.getElementById('adminAiProvider'),
@@ -77,17 +90,17 @@ let currentLang = 'en';
 // Multilingual strings
 const I18N = {
   bn: {
-    assistant_title: 'ব্রক্স এডমিন সহকারী',
-    typing_text: 'টাইপ করছে...',
-    chat_input_placeholder: 'আপনার বার্তা লিখুন...',
-    thinking_understanding: 'অনুরোধ বুঝছে...',
-    thinking_planning: 'উত্তর পরিকল্পনা করছে...',
-    thinking_generating: 'চূড়ান্ত উত্তর তৈরি করছে...',
-    no_history: 'কোন চ্যাট ইতিহাস নেই',
-    new_chat: 'নতুন চ্যাট',
-    clear_history_confirm: 'ইতিহাস সাফ করতে নিশ্চিত?',
-    settings_saved: 'সেটিংস সংরক্ষিত হয়েছে',
-    error_loading_models: 'মডেল লোড করতে ত্রুটি',
+    assistant_title: 'à¦¬à§à¦°à¦•à§à¦¸ à¦à¦¡à¦®à¦¿à¦¨ à¦¸à¦¹à¦•à¦¾à¦°à§€',
+    typing_text: 'à¦Ÿà¦¾à¦‡à¦ª à¦•à¦°à¦›à§‡...',
+    chat_input_placeholder: 'à¦†à¦ªà¦¨à¦¾à¦° à¦¬à¦¾à¦°à§à¦¤à¦¾ à¦²à¦¿à¦–à§à¦¨...',
+    thinking_understanding: 'à¦…à¦¨à§à¦°à§‹à¦§ à¦¬à§à¦à¦›à§‡...',
+    thinking_planning: 'à¦‰à¦¤à§à¦¤à¦° à¦ªà¦°à¦¿à¦•à¦²à§à¦ªà¦¨à¦¾ à¦•à¦°à¦›à§‡...',
+    thinking_generating: 'à¦šà§‚à¦¡à¦¼à¦¾à¦¨à§à¦¤ à¦‰à¦¤à§à¦¤à¦° à¦¤à§ˆà¦°à¦¿ à¦•à¦°à¦›à§‡...',
+    no_history: 'à¦•à§‹à¦¨ à¦šà§à¦¯à¦¾à¦Ÿ à¦‡à¦¤à¦¿à¦¹à¦¾à¦¸ à¦¨à§‡à¦‡',
+    new_chat: 'à¦¨à¦¤à§à¦¨ à¦šà§à¦¯à¦¾à¦Ÿ',
+    clear_history_confirm: 'à¦‡à¦¤à¦¿à¦¹à¦¾à¦¸ à¦¸à¦¾à¦« à¦•à¦°à¦¤à§‡ à¦¨à¦¿à¦¶à§à¦šà¦¿à¦¤?',
+    settings_saved: 'à¦¸à§‡à¦Ÿà¦¿à¦‚à¦¸ à¦¸à¦‚à¦°à¦•à§à¦·à¦¿à¦¤ à¦¹à¦¯à¦¼à§‡à¦›à§‡',
+    error_loading_models: 'à¦®à¦¡à§‡à¦² à¦²à§‹à¦¡ à¦•à¦°à¦¤à§‡ à¦¤à§à¦°à§à¦Ÿà¦¿',
   },
   en: {
     assistant_title: 'Brox Admin Assistant',
@@ -122,6 +135,8 @@ async function init() {
   await loadModels();
   updateSelectedProviderModel();
   applyTheme();
+  syncToggleStates();
+  updateCharCount();
 
   // Initialize model cache
   initializeModelCache(['openrouter',], {
@@ -205,11 +220,58 @@ function t(key) {
  * Apply theme based on preference
  */
 function applyTheme() {
-  if (adminPrefs.darkMode && UI.shell) {
-    UI.shell.classList.add('brox-ai-dark-mode');
-  } else if (UI.shell) {
-    UI.shell.classList.remove('brox-ai-dark-mode');
+  if (!UI.shell) return;
+
+  UI.shell.classList.toggle('brox-ai-dark-mode', Boolean(adminPrefs.darkMode));
+  UI.shell.classList.toggle('brox-ai-light-mode', !adminPrefs.darkMode);
+  document.documentElement?.setAttribute('data-ai-theme', adminPrefs.darkMode ? 'dark' : 'light');
+}
+
+function updateCharCount() {
+  if (!UI.charCount || !UI.input) return;
+  UI.charCount.textContent = formatCharCount(UI.input.value.length);
+}
+
+function toggleHistoryPanel(forceOpen) {
+  if (!UI.sidebar) return false;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : UI.sidebar.classList.contains('brox-ai-collapsed');
+  UI.sidebar.classList.toggle('brox-ai-collapsed', !shouldOpen);
+  UI.sidebar.classList.toggle('brox-ai-expanded', shouldOpen);
+  UI.sidebar.classList.toggle('hidden', !shouldOpen);
+  return shouldOpen;
+}
+
+function minimizeAssistant() {
+  if (!UI.shell) return;
+  UI.shell.classList.toggle('brox-ai-minimized');
+  const minimized = UI.shell.classList.contains('brox-ai-minimized');
+  UI.statusText && (UI.statusText.textContent = minimized ? 'Minimized' : 'Ready');
+  return minimized;
+}
+
+function closeAssistant() {
+  if (!UI.shell) return;
+  UI.shell.classList.add('brox-ai-hidden');
+  const fab = document.getElementById('adminAiBtn');
+  fab?.setAttribute('aria-expanded', 'false');
+}
+
+function applyQuickPrompt(prompt) {
+  if (!UI.input) return;
+  UI.input.value = prompt;
+  UI.input.focus();
+  updateCharCount();
+}
+
+function openAttachmentPicker() {
+  UI.fileInput?.click();
+}
+
+function noteFeatureUnavailable(featureName) {
+  if (UI.statusText) {
+    UI.statusText.textContent = `${featureName} will be available soon`;
   }
+  window.showAlert?.(`${featureName} is ready for future expansion.`, 'Assistant', 'info');
 }
 
 /**
@@ -226,6 +288,14 @@ function applyLanguage() {
   if (darkModeLabel) {
     darkModeLabel.textContent = 'Dark Mode';
   }
+}
+
+function syncToggleStates() {
+  setToggleState(UI.darkModeToggle, Boolean(adminPrefs.darkMode));
+  setToggleState(UI.webPluginToggle, Boolean(adminPrefs.webPlugin));
+  setToggleState(UI.pdfPluginToggle, Boolean(adminPrefs.pdfPlugin));
+  setToggleState(UI.autoSaveToggle, Boolean(adminPrefs.autoSave));
+  setToggleState(UI.responseHealingToggle, Boolean(adminPrefs.responseHealing));
 }
 
 function updateSelectedProviderModel() {
@@ -578,7 +648,7 @@ async function enhanceCurrentPrompt() {
   } finally {
     if (button) {
       button.disabled = false;
-      button.innerHTML = button.dataset.originalHtml || '<i class="bi icon-sparkles"></i> Enhance Prompt';
+      button.innerHTML = button.dataset.originalHtml || '<i class="lucide lucide-sparkles"></i> Enhance Prompt';
     }
   }
 }
@@ -857,6 +927,7 @@ function bindEvents() {
   // Send message on button click
   UI.sendBtn?.addEventListener('click', handleUserMessage);
   UI.enhanceBtn?.addEventListener('click', enhanceCurrentPrompt);
+  UI.input?.addEventListener('input', updateCharCount);
 
   // Send message on Enter key
   UI.input?.addEventListener('keypress', (e) => {
@@ -866,13 +937,24 @@ function bindEvents() {
     }
   });
 
-  // Sidebar close button
+  // Sidebar history toggles
+  UI.historyToggle?.addEventListener('click', () => toggleHistoryPanel());
+  UI.sidebarToggle?.addEventListener('click', () => toggleHistoryPanel());
+
   UI.sidebarClose?.addEventListener('click', () => {
-    if (UI.sidebar) {
-      UI.sidebar.classList.add('brox-ai-collapsed');
-      UI.sidebar.classList.remove('brox-ai-expanded');
-    }
+    toggleHistoryPanel(false);
   });
+
+  UI.minimizeBtn?.addEventListener('click', () => {
+    minimizeAssistant();
+  });
+
+  UI.closeBtn?.addEventListener('click', () => {
+    closeAssistant();
+  });
+
+  UI.attachBtn?.addEventListener('click', openAttachmentPicker);
+  UI.micBtn?.addEventListener('click', () => noteFeatureUnavailable('Voice input'));
 
   // Provider change
   UI.provider?.addEventListener('change', async () => {
@@ -901,17 +983,29 @@ function bindEvents() {
 
   // Clear history button
   UI.clearHistoryBtn?.addEventListener('click', clearHistory);
+  UI.clearBtn?.addEventListener('click', () => {
+    if (UI.input) UI.input.value = '';
+    updateCharCount();
+    if (UI.statusText) UI.statusText.textContent = 'Conversation cleared';
+  });
+
+  // Quick action buttons
+  UI.collectDataBtn?.addEventListener('click', () => applyQuickPrompt('Collect the latest workspace context and summarize it in 5 bullet points.'));
+  UI.autoFillBtn?.addEventListener('click', () => applyQuickPrompt('Draft a concise response and fill the missing details from the current context.'));
+  UI.quickSummarizeBtn?.addEventListener('click', () => applyQuickPrompt('Summarize the current chat and highlight the top next steps.'));
 
   // Auto-save toggle
   UI.autoSaveToggle?.addEventListener('click', () => {
     adminPrefs.autoSave = !adminPrefs.autoSave;
     savePreferences();
+    setToggleState(UI.autoSaveToggle, adminPrefs.autoSave);
   });
 
   // Web plugin settings
   UI.webPluginToggle?.addEventListener('click', () => {
     adminPrefs.webPlugin = !adminPrefs.webPlugin;
     savePreferences();
+    setToggleState(UI.webPluginToggle, adminPrefs.webPlugin);
   });
 
   UI.webMaxResults?.addEventListener('change', () => {
@@ -923,12 +1017,14 @@ function bindEvents() {
   UI.responseHealingToggle?.addEventListener('click', () => {
     adminPrefs.responseHealing = !adminPrefs.responseHealing;
     savePreferences();
+    setToggleState(UI.responseHealingToggle, adminPrefs.responseHealing);
   });
 
   // PDF plugin settings
   UI.pdfPluginToggle?.addEventListener('click', () => {
     adminPrefs.pdfPlugin = !adminPrefs.pdfPlugin;
     savePreferences();
+    setToggleState(UI.pdfPluginToggle, adminPrefs.pdfPlugin);
   });
 
   UI.pdfEngine?.addEventListener('change', () => {
@@ -960,6 +1056,7 @@ function bindEvents() {
   });
 
   // Update UI from preferences on load
+  syncToggleStates();
   if (UI.provider) UI.provider.value = adminPrefs.provider;
   if (UI.model) UI.model.value = adminPrefs.model;
   if (UI.webMaxResults) UI.webMaxResults.value = adminPrefs.webMaxResults;

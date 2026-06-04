@@ -69,7 +69,7 @@ export function initMobileFormShared(options = {}) {
                 <input list="spec_keys" name="specifications[key][]" class="form-control spec-input" placeholder="Select or type key" value="${escapeHtml(key)}">
             </div>
             <div class="col-md-6">
-                <input type="text" name="specifications[value][]" class="form-control" placeholder="Value" value="${escapeHtml(value)}">
+                <input type="text" name="specifications[value][]" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Value" value="${escapeHtml(value)}">
             </div>
             <div class="col-md-1">
                 <button type="button" class="modern-btn modern-btn-danger btn-sm remove-spec" title="Remove"><i class="bi icon-x"></i></button>
@@ -202,8 +202,8 @@ export function initMobileFormShared(options = {}) {
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
     button.innerHTML = '<i class="bi icon-rotate-ccw"></i>';
-    button.classList.remove('btn-danger');
-    button.classList.add('btn-outline-secondary');
+    button.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
+    button.classList.add('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
     button.title = 'Undo delete';
     button.onclick = function () {
       window.undoImageDeletion(imageId);
@@ -225,8 +225,8 @@ export function initMobileFormShared(options = {}) {
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
     button.innerHTML = '<i class="bi icon-x"></i>';
-    button.classList.remove('btn-outline-secondary');
-    button.classList.add('btn-danger');
+    button.classList.remove('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
+    button.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
     button.title = 'Remove';
     button.onclick = function () {
       window.markImageForDeletion(imageId);

@@ -1,0 +1,577 @@
+{# Shared AI Assistant - one shell, context-aware rendering #}
+{% set assistant_role = assistant_variant|default('public')|lower %}
+{% set is_admin_assistant = assistant_role == 'admin' %}
+{% set assistant_root_id = is_admin_assistant ? 'adminAiShell' : 'publicAssistantChat' %}
+{% set assistant_btn_id = is_admin_assistant ? 'adminAiBtn' : 'publicAssistantBtn' %}
+{% set assistant_title_id = is_admin_assistant ? 'adminAiTitle' : 'publicAssistantTitle' %}
+{% set assistant_root_label = is_admin_assistant ? 'Brox Admin Assistant' : 'Brox Assistant' %}
+{% set assistant_prompt_placeholder = is_admin_assistant ? 'Type your message...' : 'Message Brox Assistant...' %}
+{% set assistant_shell_width = is_admin_assistant
+  ? 'w-[min(100vw-1rem,72rem)]'
+  : 'w-[min(100vw-1rem,42rem)]' %}
+
+<div id="{{ is_admin_assistant ? 'adminAiWrapper' : 'publicAssistantWrapper' }}"
+     class="brox-ai-assistant pointer-events-none fixed inset-0 z-[9999] flex items-end justify-end p-2 sm:p-3 lg:p-4"
+     data-ai-role="{{ assistant_role }}"
+     dir="ltr">
+
+ <button
+  id="{{ assistant_btn_id }}"
+  class="brox-ai-trigger-fab pointer-events-auto group fixed bottom-4 right-4 z-[2147483000] inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.35rem] border border-white/15 bg-slate-950/95 text-white shadow-[0_24px_60px_rgba(2,6,23,0.35)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_30px_80px_rgba(14,165,233,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/80 sm:bottom-5 sm:right-5"
+  title="{{ is_admin_assistant ? 'Open Admin Copilot' : 'Chat with Assistant' }}"
+  aria-label="{{ is_admin_assistant ? 'Open Admin Copilot' : 'Open Chat' }}"
+  aria-controls="{{ assistant_root_id }}"
+  aria-expanded="false"
+  type="button">
+  <span class="brox-ai-fab-icon-open flex items-center justify-center">
+   <i class="lucide {{ is_admin_assistant ? 'lucide-badge-sparkles' : 'lucide-message-square-more' }} text-[1.35rem]"></i>
+  </span>
+  <span class="brox-ai-fab-icon-close hidden items-center justify-center">
+   <i class="lucide lucide-x text-[1.35rem]"></i>
+  </span>
+  <span class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 opacity-90"></span>
+ </button>
+
+ <div
+  id="{{ assistant_root_id }}"
+  class="brox-ai-copilot-sidebar brox-ai-hidden pointer-events-auto relative {{ assistant_shell_width }} max-h-[calc(88dvh-1rem)] overflow-hidden rounded-[1.75rem] border border-white/12 bg-slate-950/95 text-slate-100 shadow-[0_35px_100px_rgba(2,6,23,0.45)] backdrop-blur-2xl sm:h-[min(84dvh,52rem)]"
+  role="dialog"
+  aria-labelledby="{{ assistant_title_id }}"
+  aria-modal="true"
+  aria-label="{{ assistant_root_label }}">
+
+  <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.14),transparent_30%)]"></div>
+
+  {% if is_admin_assistant %}
+  <div class="relative flex h-[min(84dvh,52rem)] min-h-0 flex-col">
+   <aside id="adminAiSidebar" class="brox-ai-sidebar brox-ai-collapsed hidden min-h-0 flex-col border-b border-white/10 bg-slate-950/90">
+    <div class="border-b border-white/10 px-4 py-4">
+     <div class="brox-ai-sidebar-summary rounded-[1.35rem] border border-white/10 bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Admin assistant</p>
+      <div class="mt-2 flex items-start justify-between gap-3">
+       <div class="min-w-0">
+        <p class="text-sm font-semibold text-white">Unified workspace</p>
+        <p class="mt-1 text-xs leading-5 text-slate-400">Keep history, prompt tools, and settings within reach while the conversation stays primary.</p>
+       </div>
+       <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+        <i class="lucide lucide-badge-sparkles text-[1rem]"></i>
+       </span>
+      </div>
+     </div>
+    </div>
+
+    <div class="flex items-center justify-between border-b border-white/10 px-4 py-4">
+     <div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">History</p>
+      <p class="text-sm font-semibold text-white">Recent conversations</p>
+     </div>
+     <button id="adminAiSidebarClose" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" aria-label="Close sidebar" type="button">
+      <i class="lucide lucide-panel-left-close text-sm"></i>
+     </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-2 pb-4">
+     <div id="adminAiHistory" class="brox-ai-history-list"></div>
+     <div class="brox-ai-history-empty flex flex-col items-center justify-center px-4 py-10 text-center text-slate-400">
+      <i class="lucide lucide-inbox text-3xl text-slate-500"></i>
+      <p class="mt-3 text-sm font-medium text-slate-300">No history yet</p>
+      <p class="mt-1 text-xs leading-5 text-slate-500">Your recent conversations will appear here for quick reopening.</p>
+     </div>
+    </div>
+
+    <div class="border-t border-white/10 px-4 py-4">
+     <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Quick actions</p>
+     <div id="adminAiSidebarQuickActions" class="mt-3 grid gap-2 sm:grid-cols-2">
+      <button id="adminAiCollectData" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+       <i class="lucide lucide-clipboard"></i> Collect
+      </button>
+      <button id="adminAiAutoFill" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+       <i class="lucide lucide-wand-sparkles"></i> Autofill
+      </button>
+      <button id="adminAiEnhancePrompt" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+       <i class="lucide lucide-sparkles"></i> Enhance
+      </button>
+      <button id="adminAiQuickSummarize" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+       <i class="lucide lucide-text"></i> Summarize
+      </button>
+     </div>
+    </div>
+
+    <div class="border-t border-white/10 px-4 py-4">
+     <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Preferences</p>
+     <div class="mt-3 grid gap-3">
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Provider</span>
+       <select id="adminAiProvider" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20"></select>
+      </label>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Model</span>
+       <select id="adminAiModel" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20"></select>
+      </label>
+      <button id="adminAiRefreshModels" type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+       <i class="lucide lucide-rotate-cw"></i> Refresh models
+      </button>
+      <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <div>
+        <p class="text-sm font-medium text-white">Dark mode</p>
+        <p class="text-xs text-slate-400">Use the darker assistant surface</p>
+       </div>
+       <button id="adminAiDarkModeToggle" class="inline-flex h-8 w-14 items-center rounded-full border border-white/10 bg-slate-800 p-1 transition" type="button" aria-pressed="false">
+        <span class="h-6 w-6 rounded-full bg-cyan-400 transition"></span>
+       </button>
+      </div>
+      <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <div>
+        <p class="text-sm font-medium text-white">Web tools</p>
+        <p class="text-xs text-slate-400">Search and browse helpers</p>
+       </div>
+       <button id="adminAiWebPluginToggle" class="inline-flex h-8 w-14 items-center rounded-full border border-white/10 bg-slate-800 p-1 transition" type="button" aria-pressed="false">
+        <span class="h-6 w-6 rounded-full bg-cyan-400 transition"></span>
+       </button>
+      </div>
+      <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <div>
+        <p class="text-sm font-medium text-white">PDF tools</p>
+        <p class="text-xs text-slate-400">Parse uploaded documents</p>
+       </div>
+       <button id="adminAiPdfPluginToggle" class="inline-flex h-8 w-14 items-center rounded-full border border-white/10 bg-slate-800 p-1 transition" type="button" aria-pressed="false">
+        <span class="h-6 w-6 rounded-full bg-cyan-400 transition"></span>
+       </button>
+      </div>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Web max results</span>
+       <select id="adminAiWebMaxResults" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+        <option value="1">1 result</option>
+        <option value="3" selected>3 results</option>
+        <option value="5">5 results</option>
+        <option value="8">8 results</option>
+      </select>
+      </label>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">PDF engine</span>
+       <select id="adminAiPdfEngine" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+        <option value="pdf-text">pdf-text</option>
+        <option value="ocr">ocr</option>
+       </select>
+      </label>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Reasoning effort</span>
+       <select id="adminAiReasoningEffort" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+       <option value="high">High</option>
+       </select>
+      </label>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Response format</span>
+       <select id="adminAiResponseFormat" class="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20">
+        <option value="text" selected>Text</option>
+        <option value="json">JSON</option>
+       </select>
+      </label>
+      <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <div>
+        <p class="text-sm font-medium text-white">Auto-save</p>
+        <p class="text-xs text-slate-400">Keep chat and prefs persisted</p>
+       </div>
+       <button id="adminAiAutoSaveToggle" class="inline-flex h-8 w-14 items-center rounded-full border border-white/10 bg-slate-800 p-1 transition" type="button" aria-pressed="false">
+        <span class="h-6 w-6 rounded-full bg-cyan-400 transition"></span>
+       </button>
+      </div>
+      <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
+       <div>
+        <p class="text-sm font-medium text-white">Response healing</p>
+        <p class="text-xs text-slate-400">Auto-fix incomplete replies</p>
+       </div>
+       <button id="adminAiResponseHealingToggle" class="inline-flex h-8 w-14 items-center rounded-full border border-white/10 bg-slate-800 p-1 transition" type="button" aria-pressed="false">
+        <span class="h-6 w-6 rounded-full bg-cyan-400 transition"></span>
+       </button>
+      </div>
+      <label class="space-y-1">
+       <span class="block text-xs font-medium text-slate-400">Advanced request JSON</span>
+       <textarea id="adminAiAdvancedOptionsJson" rows="4" class="brox-ai-setting-json w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" placeholder='{"temperature":0.7,"stream":true}'></textarea>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+       <button id="adminAiClear" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+        <i class="lucide lucide-eraser"></i> Clear
+       </button>
+       <button id="adminAiClearHistory" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">
+        <i class="lucide lucide-trash-2"></i> History
+       </button>
+      </div>
+     </div>
+    </div>
+   </aside>
+
+   <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/88 px-3 py-3 backdrop-blur-2xl sm:px-4">
+     <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="adminAiContextBadge" class="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
+         <i class="lucide lucide-sparkles text-[0.9rem]"></i>
+         Admin Copilot
+        </span>
+        <span id="adminAiContextModule" class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-medium text-slate-300">Unified workspace</span>
+       </div>
+       <h3 id="adminAiTitle" class="mt-1.5 flex items-center gap-2 text-[1.05rem] font-semibold tracking-tight text-white">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+         <i class="lucide lucide-badge-sparkles text-[1rem]"></i>
+        </span>
+        Brox Admin Assistant
+       </h3>
+       <p class="mt-1 max-w-2xl text-[13px] leading-5 text-slate-400">Generate replies, summarize context, and analyze messages without leaving the admin workspace.</p>
+      </div>
+
+      <div class="flex shrink-0 items-start gap-2.5">
+       <button id="adminAiHistoryToggle" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Toggle history" aria-label="Toggle history" type="button">
+        <i class="lucide lucide-panel-left text-[0.95rem]"></i>
+       </button>
+       <div class="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
+        <button id="adminAiLangBn" class="rounded-xl px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10" title="Bangla" aria-label="Switch to Bengali" type="button">BN</button>
+        <button id="adminAiLangEn" class="rounded-xl bg-white/10 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-white transition" title="English" aria-label="Switch to English" type="button">EN</button>
+       </div>
+       <button id="adminAiMinimize" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Minimize" aria-label="Minimize" type="button">
+        <i class="lucide lucide-minus text-[1rem]"></i>
+       </button>
+       <button id="adminAiClose" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-rose-500/15 hover:text-rose-100" title="Close" aria-label="Close" type="button">
+        <i class="lucide lucide-x text-[1rem]"></i>
+       </button>
+      </div>
+     </div>
+    </header>
+
+    <div class="flex min-h-0 flex-1 flex-col">
+      <div class="flex min-h-0 flex-col">
+      <div class="border-b border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="adminAiCurrentModel" class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-medium text-slate-200">Loading models...</span>
+        <span id="adminAiStatusText" class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-100">Ready</span>
+        <span id="adminAiModelStatusIndicator" class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+        <span id="adminAiSaveIndicator" class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-medium text-slate-300">Saved</span>
+      </div>
+
+      <div id="adminAiWelcome" class="flex-1 overflow-y-auto px-3 py-3 sm:px-4">
+       <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <div class="flex items-start gap-3">
+         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br from-cyan-300 via-sky-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+          <i class="lucide lucide-rocket text-[1rem]"></i>
+         </div>
+         <div class="min-w-0">
+          <div class="mb-1.5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
+           <i class="lucide lucide-sparkles text-[0.85rem]"></i>
+           Unified workspace
+          </div>
+          <h4 class="text-[1.05rem] font-bold text-white">Ask, summarize, or draft without leaving the chat</h4>
+          <p class="mt-1 text-[13px] leading-5 text-slate-300">The workspace is arranged so the chat, tools, and state are easy to scan at a glance.</p>
+          <ul class="brox-ai-feature-list mt-3 grid gap-2 text-[13px] text-slate-300 sm:grid-cols-3">
+           <li class="brox-ai-feature-item rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">Clear hierarchy</li>
+           <li class="brox-ai-feature-item rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">Fewer competing pills</li>
+           <li class="brox-ai-feature-item rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">Faster prompt starts</li>
+          </ul>
+         </div>
+        </div>
+       </div>
+
+       <div class="mt-4 rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Suggested prompts</p>
+        <div class="flex gap-2 overflow-x-auto pb-1">
+        <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-prompt="Summarize the current context.">Summarize</button>
+        <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-prompt="Draft a concise reply.">Draft reply</button>
+        <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" data-prompt="Analyze the latest user message.">Analyze message</button>
+        </div>
+       </div>
+      </div>
+
+      <div id="adminAiBody" class="brox-ai-scrollbar flex-1 overflow-y-auto px-3 py-3 sm:px-4" role="log" aria-live="polite" aria-label="Chat messages"></div>
+
+      <div id="adminAiThinkingIndicator" class="brox-ai-hidden border-t border-white/10 bg-slate-950/90 px-3 py-3 sm:px-4"></div>
+      <div id="adminAiSuggestionPanel" class="brox-ai-hidden absolute inset-x-4 bottom-[6.5rem] z-20 rounded-[1.35rem] border border-white/10 bg-slate-950/98 shadow-[0_20px_50px_rgba(2,6,23,0.28)] backdrop-blur-xl" role="listbox">
+       <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Suggestions</span>
+        <button id="adminAiSuggestionClose" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close suggestions" type="button">
+         <i class="lucide lucide-x text-sm"></i>
+        </button>
+       </div>
+       <ul id="adminAiSuggestionList" class="max-h-72 overflow-y-auto p-2"></ul>
+      </div>
+
+      <div id="adminAiAttachmentPreview" class="brox-ai-hidden border-t border-white/10 bg-slate-950/90 px-3 py-3 sm:px-4">
+       <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+         <i class="lucide lucide-paperclip"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+         <div class="flex flex-wrap items-center gap-2 text-sm text-slate-100">
+          <div id="adminAiAttachmentThumb" class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5"></div>
+          <span id="adminAiFileName" class="font-medium">file.pdf</span>
+          <span id="adminAiFileSize" class="text-xs text-slate-400">0 KB</span>
+         </div>
+         <div id="adminAiAttachmentProgress" class="brox-ai-hidden mt-2 h-1.5 rounded-full bg-white/10">
+          <span id="adminAiAttachmentProgressBar" class="block h-full rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500"></span>
+         </div>
+        </div>
+        <button id="adminAiRemoveAttachment" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-rose-500/15 hover:text-rose-100" aria-label="Remove attachment" type="button">
+         <i class="lucide lucide-x text-sm"></i>
+        </button>
+       </div>
+      </div>
+
+      <div id="adminAiFooter" class="sticky bottom-0 z-20 border-t border-white/10 bg-slate-950/95 px-3 py-3 backdrop-blur-xl sm:px-4">
+       <input id="adminAiFileInput" type="file" class="hidden" accept="image/*,.pdf,.txt,.doc,.docx" />
+       <div class="brox-ai-input-wrapper flex items-end gap-2 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <button id="adminAiAttach" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Attach file" aria-label="Attach file" type="button">
+         <i class="lucide lucide-paperclip text-[1rem]"></i>
+        </button>
+        <button id="adminAiMic" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Voice input" aria-label="Voice input" type="button">
+         <i class="lucide lucide-mic text-[1rem]"></i>
+        </button>
+        <div class="relative flex-1">
+         <textarea id="adminAiInput" rows="1" class="brox-ai-textarea w-full max-h-32 resize-none rounded-[1rem] border border-white/10 bg-slate-900/80 px-3 py-3 text-[0.95rem] leading-6 text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" placeholder="{{ assistant_prompt_placeholder }}" aria-label="Message input"></textarea>
+        </div>
+        <button id="adminAiSend" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 transition hover:brightness-110" title="Send message" aria-label="Send" type="button">
+         <i class="lucide lucide-send text-[1rem]"></i>
+        </button>
+       </div>
+       <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-400" aria-label="Quick shortcuts">
+        <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1"><span class="text-slate-500">Hint</span> Enter to send</span>
+        <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Shift + Enter for line break</span>
+        <span id="adminAiCharCount" class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1">0 chars</span>
+       </div>
+      </div>
+     </div>
+
+     <div id="adminAiHistoryTogglePane" class="border-t border-white/10 bg-white/[0.02] px-4 py-3 lg:hidden">
+      <button id="adminAiSidebarToggle" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" type="button">
+       <i class="lucide lucide-panel-left"></i> Open history drawer
+      </button>
+     </div>
+    </div>
+   </section>
+  </div>
+  {% else %}
+  <div class="relative flex h-[min(84dvh,52rem)] min-h-0 flex-col overflow-hidden sm:rounded-[1.75rem]">
+   <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/88 px-4 py-4 backdrop-blur-2xl sm:px-5">
+    <div class="flex items-start justify-between gap-3">
+     <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+       <span class="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+        <i class="lucide lucide-sparkles text-[0.9rem]"></i>
+        Assistant
+       </span>
+       <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">Bilingual</span>
+      </div>
+      <h3 id="{{ assistant_title_id }}" class="mt-2 flex items-center gap-2 text-[1.05rem] font-semibold tracking-tight text-white">
+       <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+        <i class="lucide lucide-bot text-[1.05rem]"></i>
+       </span>
+       Brox Assistant
+      </h3>
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+       <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-medium text-emerald-200">
+        <span id="publicAssistantStatusIndicator" class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"></span>
+        <span id="publicAssistantStatusText">Online</span>
+       </span>
+      </div>
+     </div>
+
+     <div class="flex shrink-0 items-start gap-2">
+      <div class="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
+       <button id="publicAssistantLangBn" class="rounded-xl px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10" title="Bangla" aria-label="Switch to Bengali" type="button">BN</button>
+       <button id="publicAssistantLangEn" class="rounded-xl bg-white/10 px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-white transition" title="English" aria-label="Switch to English" type="button">EN</button>
+      </div>
+      <button id="publicAssistantModelToggle" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Toggle Model Selector" aria-label="Toggle model selector" type="button">
+       <i class="lucide lucide-chevron-down text-[1rem]"></i>
+      </button>
+      <button id="closePublicAssistant" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-rose-500/15 hover:text-rose-100" title="Close Assistant" aria-label="Close assistant" type="button">
+       <i class="lucide lucide-x text-[1rem]"></i>
+      </button>
+     </div>
+    </div>
+   </header>
+
+   <div id="publicAssistantModelBar" class="brox-ai-model-bar brox-ai-collapsed border-b border-white/10 bg-white/[0.03] px-4 py-4 sm:px-5">
+    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+     <label class="space-y-1.5">
+      <span id="publicAssistantModelLabel" class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Select model</span>
+      <select id="publicAssistantProvider" class="brox-ai-model-select w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" aria-label="Select AI provider"></select>
+     </label>
+     <label class="space-y-1.5">
+      <span class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Model</span>
+      <select id="publicAssistantModel" class="brox-ai-model-select w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" aria-label="Select AI model">
+       <option value="claude-3-haiku">Claude 3 Haiku</option>
+      </select>
+     </label>
+    </div>
+   </div>
+
+   <div id="publicAssistantAgenticStatus" class="brox-ai-status-bar brox-ai-hidden border-b border-cyan-400/15 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100 sm:px-5">
+    <span class="brox-ai-status-indicator brox-ai-thinking"></span>
+    <span class="ai-status-detail">Thinking...</span>
+   </div>
+
+   <div id="publicAssistantPreChat" class="brox-ai-body brox-ai-prechat flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+    <div class="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+     <div class="flex items-start gap-3">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] bg-gradient-to-br from-cyan-300 via-sky-400 to-indigo-500 text-slate-950 shadow-lg shadow-cyan-500/25">
+       <i class="lucide lucide-rocket text-[1.1rem]"></i>
+      </div>
+      <div class="min-w-0">
+       <div class="mb-1.5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+        <i class="lucide lucide-sparkles text-[0.85rem]"></i>
+        Welcome aboard
+       </div>
+       <h4 class="text-lg font-bold text-white">How can I help today?</h4>
+       <p class="mt-1 text-sm leading-6 text-slate-300">Quick answers, lightweight onboarding, and bilingual support in one focused space.</p>
+      </div>
+     </div>
+
+     <div class="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">What is available?</button>
+      <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">Need support help?</button>
+      <button type="button" class="brox-ai-action-chip shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">Summarize this page</button>
+     </div>
+    </div>
+   </div>
+
+   <div id="publicAssistantMessages" class="brox-ai-body brox-ai-scrollbar flex-1 overflow-y-auto px-4 py-4 sm:px-5" role="log" aria-live="polite" aria-label="Chat messages">
+    {# Messages injected here by assistant.js #}
+   </div>
+
+   <div id="publicAssistantThinkingIndicator" class="brox-ai-hidden border-t border-white/10 bg-slate-950/90 px-4 py-4 sm:px-5"></div>
+
+   <div id="publicAssistantLoading" class="hidden border-t border-white/10 bg-slate-950/90 px-4 py-3 text-xs font-medium text-cyan-100 sm:px-5">
+    <div class="flex items-center gap-2">
+     <span class="inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-cyan-400"></span>
+     Loading assistant resources...
+    </div>
+   </div>
+
+   <div id="publicAssistantSuggestionPanel" class="brox-ai-suggestion-panel brox-ai-hidden absolute inset-x-4 bottom-[6.5rem] z-20 rounded-[1.35rem] border border-white/10 bg-slate-950/98 shadow-[0_20px_50px_rgba(2,6,23,0.28)] backdrop-blur-xl" role="listbox">
+    <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+     <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Suggestions</span>
+     <button class="brox-ai-suggestion-close inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white" aria-label="Close suggestions" type="button">
+      <i class="lucide lucide-x text-sm"></i>
+     </button>
+    </div>
+    <ul class="brox-ai-suggestion-list max-h-72 overflow-y-auto p-2" id="publicAssistantSuggestions"></ul>
+   </div>
+
+   <div id="publicAssistantAttachmentPreview" class="brox-ai-attachment-preview brox-ai-hidden border-t border-white/10 bg-slate-950/90 px-4 py-3 sm:px-5">
+    <div class="flex items-start gap-3">
+     <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+      <i class="lucide lucide-paperclip"></i>
+     </div>
+     <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-center gap-2 text-sm text-slate-100">
+       <div class="brox-ai-attachment-thumb flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5" id="publicAssistantAttachmentThumb"></div>
+       <span class="brox-ai-attachment-name font-medium" id="publicAssistantFileName">file.pdf</span>
+       <span class="brox-ai-attachment-size text-xs text-slate-400" id="publicAssistantFileSize">0 KB</span>
+      </div>
+      <div class="brox-ai-attachment-progress brox-ai-hidden mt-2 h-1.5 rounded-full bg-white/10" id="publicAssistantAttachmentProgress">
+       <span class="brox-ai-attachment-progress-bar block h-full rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500" id="publicAssistantAttachmentProgressBar"></span>
+      </div>
+     </div>
+     <button class="brox-ai-attachment-remove inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-rose-500/15 hover:text-rose-100" id="publicAssistantRemoveAttachment" aria-label="Remove attachment" type="button">
+      <i class="lucide lucide-x text-sm"></i>
+     </button>
+    </div>
+   </div>
+
+   <div id="publicAssistantQuickActions" class="brox-ai-quick-actions flex gap-2 overflow-x-auto border-t border-white/10 bg-white/[0.03] px-4 py-3 sm:px-5" aria-label="Quick actions">
+    <button type="button" class="brox-ai-action-chip inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="publicAssistantCollectData" title="Collect visible form fields">
+     <i class="lucide lucide-clipboard"></i> Collect
+    </button>
+    <button type="button" class="brox-ai-action-chip inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="publicAssistantAutoFill" title="Auto-fill form (uses URL in input if present)">
+     <i class="lucide lucide-wand-sparkles"></i> Autofill
+    </button>
+    <button type="button" class="brox-ai-action-chip inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white" id="publicAssistantQuickSummarize" title="Summarize current page">
+     <i class="lucide lucide-text"></i> Summarize
+    </button>
+   </div>
+
+   <div id="publicAssistantFooter" class="sticky bottom-0 z-20 border-t border-white/10 bg-slate-950/95 px-4 py-3 backdrop-blur-xl sm:px-5">
+    <div class="brox-ai-input-wrapper flex items-end gap-1.5 rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+     <button id="publicAssistantAttach" class="brox-ai-action-btn inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" title="Attach file" aria-label="Attach file" type="button">
+      <i class="lucide lucide-paperclip text-[1rem]"></i>
+     </button>
+     <div class="relative flex-1">
+      <textarea id="publicAssistantInput" rows="1" class="brox-ai-textarea w-full max-h-36 resize-none rounded-[1rem] border border-white/10 bg-slate-900/80 px-3 py-2.5 text-[0.95rem] leading-6 text-slate-100 placeholder:text-slate-400 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20" placeholder="{{ assistant_prompt_placeholder }}" aria-label="Message input"></textarea>
+     </div>
+     <button id="sendToPublicAssistant" class="brox-ai-send-btn inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-500 text-slate-950 transition hover:brightness-110" title="Send message" aria-label="Send" type="button">
+      <i class="lucide lucide-send text-[1rem]"></i>
+     </button>
+    </div>
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-300" aria-label="Quick shortcuts">
+     <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1" title="Press Enter to send">⌨ Enter send</span>
+     <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1" title="Press Shift + Enter for a new line">↵ Shift + Enter</span>
+     <span class="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 sm:inline-flex" title="Type / to open commands">/ Commands</span>
+    </div>
+   </div>
+
+   <div id="publicAssistantSidebar" class="brox-ai-sidebar brox-ai-collapsed hidden border-t border-white/10 bg-slate-900/80 lg:absolute lg:inset-y-0 lg:end-0 lg:w-[19rem] lg:border-t-0 lg:border-l">
+    <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+     <div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Memory</p>
+      <p class="text-sm font-semibold text-white">Chat history</p>
+     </div>
+     <button id="toggleAiSidebar" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 hover:text-white" aria-label="Toggle history" type="button">
+      <i class="lucide lucide-chevron-left text-sm"></i>
+     </button>
+    </div>
+    <div class="flex items-center justify-between px-4 py-3">
+     <span class="text-xs uppercase tracking-[0.18em] text-slate-400">Recent chats</span>
+    </div>
+    <div id="publicAssistantHistory" class="brox-ai-history-list max-h-[calc(78vh-8.5rem)] overflow-y-auto px-2 pb-4"></div>
+    <div class="brox-ai-history-empty flex flex-col items-center justify-center px-4 py-10 text-center text-slate-400">
+     <i class="lucide lucide-inbox text-3xl text-slate-500"></i>
+     <p class="mt-3 text-sm font-medium text-slate-300">No history yet</p>
+     <p class="mt-1 text-xs leading-5 text-slate-500">Your recent conversations will appear here for quick reopening.</p>
+    </div>
+   </div>
+
+   <div id="publicAssistantGdpr" class="brox-ai-grok-modal brox-ai-hidden absolute inset-0 z-30 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+    <div class="brox-ai-grok-modal-content w-full max-w-md rounded-[1.75rem] border border-white/10 bg-slate-950/95 p-5 shadow-[0_30px_80px_rgba(2,6,23,0.45)]">
+     <div class="flex items-center gap-3">
+      <div class="brox-ai-grok-modal-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+       </svg>
+      </div>
+      <div>
+       <h3 class="text-lg font-bold text-white">Privacy Notice</h3>
+       <p class="text-sm text-slate-400">We collect your information to provide better assistance.</p>
+      </div>
+     </div>
+     <p id="gdprTextBn" class="mt-4 text-sm leading-6 text-slate-300">আমরা আপনার তথ্য সংগ্রহ করি যাতে আপনাকে আরও ভালভাবে সহায়তা করতে পারি।</p>
+     <p id="gdprTextEn" class="hidden mt-4 text-sm leading-6 text-slate-300">We collect your information to provide better assistance.</p>
+     <div class="brox-ai-grok-consent-options mt-4 grid gap-3 sm:grid-cols-2">
+      <label class="brox-ai-grok-checkbox flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200">
+       <input type="checkbox" id="gdprConsentData" checked class="h-4 w-4 rounded border-slate-500 bg-transparent text-cyan-400 focus:ring-cyan-400/20">
+       <span>Data Collection</span>
+      </label>
+      <label class="brox-ai-grok-checkbox flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200">
+       <input type="checkbox" id="gdprConsentAnalytics" class="h-4 w-4 rounded border-slate-500 bg-transparent text-cyan-400 focus:ring-cyan-400/20">
+       <span>Analytics</span>
+      </label>
+     </div>
+     <div class="brox-ai-grok-modal-actions mt-5 flex gap-3">
+      <button class="brox-ai-secondary-btn inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10" id="gdprDecline" type="button">Later</button>
+      <button class="brox-ai-primary-btn inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-indigo-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110" id="gdprAccept" type="button">Accept</button>
+     </div>
+    </div>
+   </div>
+  </div>
+  {% endif %}
+ </div>
+</div>
+
+{% if is_admin_assistant %}
+<script src="https://js.puter.com/v2/"></script>
+<script type="module" src="{{ asset('/ai/dist/ai-admin.js') }}"></script>
+{% else %}
+<script src="https://js.puter.com/v2/"></script>
+<script type="module" src="{{ asset('/assets/ai-assistant/core/cache.js') }}"></script>
+{% if rte_debug is defined and rte_debug %}<script type="module" src="{{ asset('/assets/ai-assistant/core/cache-debug.js') }}"></script>{% endif %}
+<script type="module" src="{{ asset('/ai/dist/assistant.js') }}"></script>
+{% endif %}

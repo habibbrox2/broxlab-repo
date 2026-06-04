@@ -151,7 +151,7 @@
  style="width:44px;height:44px;font-size:1.2rem"><i class="bi {{ calc_icon|default('icon-calculator') }}"></i></div>
  <div>
  <h4 class="mb-0 font-bold text-slate-900">{{ calc_label|default('Calculator') }}</h4>
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600-subtle text-indigo-600 text-capitalize">{{ calc_category|default('') }}</span>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600/10 text-indigo-600 capitalize">{{ calc_category|default('') }}</span>
  </div>
  </div>
  </div>
@@ -267,7 +267,7 @@
  </div>
  {% endfor %}
 
- <div class="p-3 text-right border-top bg-slate-100">
+ <div class="p-3 text-right border-t border-slate-200 bg-slate-100">
  <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 calc-submit-inline-flex" id="calc-submit-btn">
  <span id="calc-submit-label">
  <i class="lucide lucide-calculator mr-1"></i>{{ current_lang == 'bn' ? 'à¦—à¦£à¦¨à¦¾ à¦•à¦°à§à¦¨' : 'Calculate' }}

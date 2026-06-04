@@ -126,7 +126,7 @@
  <p class="mb-1">
  <strong>Submitted</strong>
  </p>
- <small class="text-slate-500">{{ application.created_at|date("M d, Y H:i") }}</small>
+ <small class="text-xs text-slate-500">{{ application.created_at|date("M d, Y H:i") }}</small>
  </div>
  </div>
  {% if application.status == 'pending' %}
@@ -138,7 +138,7 @@
  <p class="mb-1">
  <strong>Pending Review</strong>
  </p>
- <small class="text-slate-500">Waiting for admin review...</small>
+ <small class="text-xs text-slate-500">Waiting for admin review...</small>
  </div>
  </div>
  {% elseif application.status == 'processing' %}
@@ -150,7 +150,7 @@
  <p class="mb-1">
  <strong>Under Processing</strong>
  </p>
- <small class="text-slate-500">Your application is being reviewed...</small>
+ <small class="text-xs text-slate-500">Your application is being reviewed...</small>
  </div>
  </div>
  {% elseif application.status == 'approved' %}
@@ -163,7 +163,7 @@
  <strong>Approved</strong>
  {% if approver %}by {{ approver.username }}{% endif %}
  </p>
- <small class="text-slate-500">{{ application.approved_at|date("M d, Y H:i") }}</small>
+ <small class="text-xs text-slate-500">{{ application.approved_at|date("M d, Y H:i") }}</small>
  </div>
  </div>
  {% elseif application.status == 'rejected' %}
@@ -175,7 +175,7 @@
  <p class="mb-1">
  <strong>Rejected</strong>
  </p>
- <small class="text-slate-500">{{ application.updated_at|date("M d, Y H:i") }}</small>
+ <small class="text-xs text-slate-500">{{ application.updated_at|date("M d, Y H:i") }}</small>
  {% if application.rejection_reason %}
  <p class="mt-2 mb-0">
  <strong class="text-red-600">Reason:</strong> {{ application.rejection_reason }}
@@ -203,7 +203,7 @@
  {% if field_label == '' %}
  {% set field_label = normalized_field == '_documents' ? 'Documents' : (field|replace({'_': ' ', '-': ' '})|title) %}
  {% endif %}
- <label class="small text-slate-500 text-uppercase font-semibold block mb-2">{{ field_label }}</label>
+ <label class="text-xs text-slate-500 uppercase font-semibold block mb-2">{{ field_label }}</label>
  {% if value is iterable %}
  {% if normalized_field == '_documents' %}
  {% if value|length > 0 %}
@@ -232,7 +232,7 @@
  <p class="mb-0 text-slate-900">N/A</p>
  {% endif %}
  {% else %}
- <pre class="bg-slate-100 rounded-xl p-2 small mb-0 pre-wrap-break">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+ <pre class="rounded-xl bg-slate-100 p-2 text-xs mb-0 pre-wrap-break">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
  {% endif %}
  {% else %}
  <p class="mb-0 text-slate-900 word-break-word">
@@ -263,59 +263,59 @@
  <h5 class=" font-bold mb-0">
  <i class="lucide lucide-credit-card text-indigo-600"></i> Payment
  </h5>
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-{{ payment_status_class }} px-3 py-2 text-capitalize">{{ payment_data.status|default('Submitted') }}</span>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-{{ payment_status_class }} px-3 py-2 capitalize">{{ payment_data.status|default('Submitted') }}</span>
  </div>
 
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Mode</small>
- <p class="mb-0 font-semibold text-capitalize">{{ payment_data.mode|default('manual') }}</p>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Mode</small>
+ <p class="mb-0 font-semibold capitalize">{{ payment_data.mode|default('manual') }}</p>
  </div>
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Method / Gateway</small>
- <p class="mb-0 font-semibold text-capitalize">{{ payment_data.method|default(payment_data.gateway|default('N/A')) }}</p>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Method / Gateway</small>
+ <p class="mb-0 font-semibold capitalize">{{ payment_data.method|default(payment_data.gateway|default('N/A')) }}</p>
  </div>
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Sender Number</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Sender Number</small>
  <p class="mb-0 font-semibold">{{ payment_data.sender_number|default('N/A') }}</p>
  </div>
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Payer Name</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Payer Name</small>
  <p class="mb-0 font-semibold">{{ payment_data.payer_name|default('N/A') }}</p>
  </div>
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Transaction ID</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Transaction ID</small>
  <p class="mb-0 font-semibold">{{ payment_data.transaction_id|default('N/A') }}</p>
  </div>
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Amount</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Amount</small>
  <p class="mb-0 font-semibold">
  {{ payment_data.currency|default('BDT') }} {{ payment_data.amount|default(0)|number_format(2, '.', ',') }}
  </p>
  </div>
  {% if payment_data.receiver_account|default('') %}
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Receiver Account</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Receiver Account</small>
  <p class="mb-0 font-semibold">{{ payment_data.receiver_account }}</p>
  </div>
  {% endif %}
  {% if payment_data.submitted_at|default('') %}
  <div class="md:col-span-6">
- <small class="text-slate-500 text-uppercase font-semibold">Submitted At</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Submitted At</small>
  <p class="mb-0 font-semibold">{{ payment_data.submitted_at|date('M d, Y H:i') }}</p>
  </div>
  {% endif %}
  {% if payment_data.instruction_message|default('') %}
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Instruction</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Instruction</small>
  <p class="mb-0">{{ payment_data.instruction_message }}</p>
  </div>
  {% endif %}
  </div>
 
  <details class="mt-4">
- <summary class="small font-semibold text-indigo-600 cursor-pointer">View Raw Payment JSON</summary>
- <pre class="bg-slate-100 rounded-xl p-3 small mt-2 mb-0">{{ payment_data|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+ <summary class="text-xs font-semibold text-indigo-600 cursor-pointer">View Raw Payment JSON</summary>
+ <pre class="rounded-xl bg-slate-100 p-3 text-xs mt-2 mb-0">{{ payment_data|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
  </details>
  </div>
  </div>
@@ -341,8 +341,8 @@
  <i class="lucide lucide-clock-history text-indigo-600"></i> Audit Log
  </h5>
  <div class="overflow-x-auto">
- <table class="table align-middle mb-0">
- <thead class="table-light">
+ <table class="w-full border-collapse text-sm text-slate-600">
+ <thead class="bg-slate-100 text-slate-700">
  <tr>
  <th class="ps-0">
  <i class="lucide lucide-calendar"></i> Date
@@ -369,7 +369,7 @@
  <small>{{ log.username ?? 'System' }}</small>
  </td>
  <td class="text-right pe-0">
- <small class="text-slate-500">{{ log.details }}</small>
+ <small class="text-xs text-slate-500">{{ log.details }}</small>
  </td>
  </tr>
  {% endfor %}
@@ -390,32 +390,32 @@
  </h5>
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Application ID</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Application ID</small>
  <p class="mb-0 font-semibold">{{ application.id }}</p>
  </div>
  </div>
  <hr>
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Service</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Service</small>
  <p class="mb-0">{{ application.service_name }}</p>
  </div>
  </div>
  <hr>
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Submitted Date</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Submitted Date</small>
  <p class="mb-0">{{ application.created_at|date("M d, Y") }}</p>
- <small class="text-slate-500">{{ application.created_at|date("H:i") }}</small>
+ <small class="text-xs text-slate-500">{{ application.created_at|date("H:i") }}</small>
  </div>
  </div>
  <hr>
  {% if application.approved_at %}
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Approved Date</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Approved Date</small>
  <p class="mb-0">{{ application.approved_at|date("M d, Y") }}</p>
- <small class="text-slate-500">{{ application.approved_at|date("H:i") }}</small>
+ <small class="text-xs text-slate-500">{{ application.approved_at|date("H:i") }}</small>
  </div>
  </div>
  <hr>
@@ -423,7 +423,7 @@
  {% if application.status == 'approved' and not application.service_activated %}
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Activation Status</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Activation Status</small>
  <p class="mb-0">
  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500">Pending Activation</span>
  </p>
@@ -432,7 +432,7 @@
  {% elseif application.service_activated %}
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="col-span-12">
- <small class="text-slate-500 text-uppercase font-semibold">Activated</small>
+ <small class="text-xs text-slate-500 uppercase font-semibold">Activated</small>
  <p class="mb-0">{{ application.activated_at|date("M d, Y") }}</p>
  </div>
  </div>
@@ -507,19 +507,21 @@
  tabindex="-1"
  aria-labelledby="docPreviewModalLabel"
  aria-hidden="true">
- <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
- <div class="modal-content border-0 shadow-md">
- <div class="modal-header">
- <h5 class="modal-title" id="docPreviewModalLabel">Document Preview</h5>
+ <div class="relative mx-auto my-2 flex max-w-6xl items-center min-h-[calc(100vh-1rem)]">
+ <div class="relative flex w-full flex-col rounded-xl border-0 bg-white shadow-lg outline-none">
+ <div class="flex items-center justify-between rounded-t-xl border-b border-slate-200 px-5 py-4">
+ <h5 class="text-lg font-bold text-slate-800" id="docPreviewModalLabel">Document Preview</h5>
  <button type="button"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition"
+ class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
  data-brox-dismiss="modal"
- aria-label="Close"></button>
+ aria-label="Close">
+ <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+ </button>
  </div>
- <div class="modal-body p-2 md:p-3" id="docPreviewBody">
+ <div class="relative flex-1 p-2 md:p-3" id="docPreviewBody">
  <div class="text-slate-500 small">Loading preview...</div>
  </div>
- <div class="modal-footer">
+ <div class="flex items-center justify-end gap-2 rounded-b-xl border-t border-slate-200 bg-slate-50 px-5 py-4">
  <a href="#"
  target="_blank"
  rel="noopener noreferrer"
@@ -630,7 +632,7 @@
  bodyEl.innerHTML = `
  <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 mb-0">
  <div class="font-semibold mb-1">Preview is not available for this file type.</div>
- <div class="small text-slate-500">Use"Open in New Tab" to view or download this document.</div>
+ <div class="text-xs text-slate-500">Use"Open in New Tab" to view or download this document.</div>
  </div>
  `;
  }

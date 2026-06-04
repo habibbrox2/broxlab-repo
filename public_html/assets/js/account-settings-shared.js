@@ -67,7 +67,7 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
   alertDiv.innerHTML = `
         <i class="icon-${normalizedType === 'success' ? 'check-circle-fill' : normalizedType === 'danger' ? 'exclamation-circle-fill' : 'info-circle-fill'} mr-2"></i>
         ${escapeHtml(safeMessage)}
-        <button type="button" class="btn-close" data-brox-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert" aria-label="Close"></button>
     `;
   container.appendChild(alertDiv);
   setTimeout(() => {
@@ -252,8 +252,8 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
                     </div>
                 </div>
                 <div class="btn-group" role="group">
-                    ${isPrimary ? '' : `<button type="button" class="btn btn-sm btn-outline-secondary js-oauth-set-primary" data-provider="${escapeHtml(provider)}">Set Primary</button>`}
-                    <button type="button" class="btn btn-sm btn-outline-danger js-oauth-unlink" data-provider="${escapeHtml(provider)}">Unlink</button>
+                    ${isPrimary ? '' : `<button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-secondary js-oauth-set-primary" data-provider="${escapeHtml(provider)}">Set Primary</button>`}
+                    <button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-danger js-oauth-unlink" data-provider="${escapeHtml(provider)}">Unlink</button>
                 </div>
             </div>
         `;

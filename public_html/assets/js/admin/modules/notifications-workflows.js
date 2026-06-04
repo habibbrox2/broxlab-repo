@@ -651,7 +651,7 @@ export async function initNotificationsSend() {
                                             Device
                                         </div>
                                         <div class="flex-grow-1 text-end">
-                                            <small class="badge bg-light text-dark">${deviceInfo}</small>
+                                            <small class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-700">${deviceInfo}</small>
                                         </div>
                                     </div>
                                     <div class="recipient-info-item">
@@ -778,14 +778,14 @@ export async function initNotificationsScheduled() {
 
   function getStatusBadge(status) {
     const badges = {
-      scheduled: '<span class="badge bg-info">Scheduled</span>',
-      sending: '<span class="badge bg-warning">Sending</span>',
-      sent: '<span class="badge bg-success">Sent</span>',
-      failed: '<span class="badge bg-danger">Failed</span>',
-      cancelled: '<span class="badge bg-secondary">Cancelled</span>',
-      draft: '<span class="badge bg-secondary">Draft</span>',
+      scheduled: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">Scheduled</span>',
+      sending: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Sending</span>',
+      sent: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Sent</span>',
+      failed: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>',
+      cancelled: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Cancelled</span>',
+      draft: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Draft</span>',
     };
-    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+    return badges[status] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Unknown</span>';
   }
 
   async function loadScheduledNotifications(status = 'scheduled') {
@@ -949,23 +949,23 @@ export function initNotificationsDeviceSync() {
 
   function getActionBadge(action) {
     const badges = {
-      read: '<span class="badge bg-success"><i class="bi icon-check-circle mr-1"></i>Read</span>',
-      dismissed: '<span class="badge bg-warning"><i class="bi icon-x-circle mr-1"></i>Dismissed</span>',
-      deleted: '<span class="badge bg-danger"><i class="bi icon-trash-2 mr-1"></i>Deleted</span>',
-      sync: '<span class="badge bg-info"><i class="bi icon-repeat mr-1"></i>Sync</span>',
+      read: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="bi icon-check-circle mr-1"></i>Read</span>',
+      dismissed: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="bi icon-x-circle mr-1"></i>Dismissed</span>',
+      deleted: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="bi icon-trash-2 mr-1"></i>Deleted</span>',
+      sync: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800"><i class="bi icon-repeat mr-1"></i>Sync</span>',
     };
-    return badges[action] || `<span class="badge bg-secondary">${escapeHtml(action || 'unknown')}</span>`;
+    return badges[action] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${escapeHtml(action || 'unknown')}</span>`;
   }
 
   function getSyncStatusBadge(log) {
     const status = String(log?.status || '').toLowerCase();
     if (status === 'sent' || status === 'success' || status === 'synced' || log?.synced_at) {
-      return '<span class="badge bg-success">Synced</span>';
+      return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Synced</span>';
     }
     if (status === 'failed' || status === 'error') {
-      return '<span class="badge bg-danger">Failed</span>';
+      return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
     }
-    return '<span class="badge bg-warning">Pending</span>';
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>';
   }
 
   async function parseJsonResponse(response) {
@@ -1034,13 +1034,13 @@ export function initNotificationsDeviceSync() {
                             ${escapeHtml(deviceName)}
                         </td>
                         <td><code>${escapeHtml(shortId(deviceId))}</code></td>
-                        <td><span class="badge bg-light text-dark">${escapeHtml(platform)}</span></td>
+                        <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-700">${escapeHtml(platform)}</span></td>
                         <td><small class="text-muted">${escapeHtml(lastSeen)}</small></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="syncDevice('${escapeHtml(deviceId)}')">
+                            <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" onclick="syncDevice('${escapeHtml(deviceId)}')">
                                 <i class="bi icon-repeat"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="removeDevice('${escapeHtml(deviceId)}')">
+                            <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-600 text-red-600 hover:bg-red-50 transition-colors" onclick="removeDevice('${escapeHtml(deviceId)}')">
                                 <i class="bi icon-trash-2"></i>
                             </button>
                         </td>
@@ -1255,9 +1255,9 @@ export async function initNotificationsOfflineHandler() {
                             <td><code>${notif.id.substring(0, 8)}...</code></td>
                             <td>${escapeHtml(notif.title)}</td>
                             <td><small>${savedTime}</small></td>
-                            <td><span class="badge bg-info">Buffered</span></td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">Buffered</span></td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" data-action="remove-buffer" data-notification-id="${notif.id}">
+                                <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-600 text-red-600 hover:bg-red-50 transition-colors" data-action="remove-buffer" data-notification-id="${notif.id}">
                                     <i class="bi icon-trash-2"></i>
                                 </button>
                             </td>
@@ -1298,8 +1298,8 @@ export async function initNotificationsOfflineHandler() {
         filtered.forEach(retry => {
           const nextRetry = new Date(retry.nextRetryTime).toLocaleString('bn-BD');
           const statusBadge = retry.status === 'pending'
-            ? '<span class="badge bg-warning">Pending</span>'
-            : '<span class="badge bg-danger">Failed</span>';
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
           const html = `
                         <tr>
                             <td><code>${retry.id.substring(0, 8)}...</code></td>
@@ -1308,7 +1308,7 @@ export async function initNotificationsOfflineHandler() {
                             <td><small>${nextRetry}</small></td>
                             <td>${statusBadge}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" data-action="force-retry" data-retry-id="${retry.id}">
+                                <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="force-retry" data-retry-id="${retry.id}">
                                     <i class="bi icon-repeat"></i>
                                 </button>
                             </td>
@@ -1420,8 +1420,8 @@ export async function initNotificationsOfflineHandler() {
         filtered.forEach(h => {
           const time = new Date(h.timestamp).toLocaleString('bn-BD');
           const statusBadge = h.status === 'success'
-            ? '<span class="badge bg-success">Success</span>'
-            : '<span class="badge bg-danger">Failed</span>';
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Success</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
           const html = `
                         <tr>
                             <td><small>${time}</small></td>

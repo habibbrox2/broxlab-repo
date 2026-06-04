@@ -149,26 +149,26 @@ function escapeHtml(s) {
 }
 
 function getCategoryBadge(category) {
-  if (!category) return '<span class="badge bg-light text-dark">-</span>';
+  if (!category) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-700">-</span>';
   const badges = {
-    general: '<span class="badge bg-primary">General</span>',
+    general: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">General</span>',
     admin: '<span class="badge bg-purple" style="background-color: #6f42c1 !important;">Admin</span>',
-    api: '<span class="badge bg-info">API</span>',
-    features: '<span class="badge bg-success">Features</span>',
-    security: '<span class="badge bg-danger">Security</span>',
+    api: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">API</span>',
+    features: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Features</span>',
+    security: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Security</span>',
     deployment: '<span class="badge bg-warning text-dark">Deployment</span>',
     content: '<span class="badge bg-dark">Content</span>',
     notification: '<span class="badge bg-pink" style="background-color: #e83e8c !important;">Notification</span>',
   };
-  return badges[category] || `<span class="badge bg-secondary">${escapeHtml(category)}</span>`;
+  return badges[category] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${escapeHtml(category)}</span>`;
 }
 
 function getSourceBadge(type) {
   const badges = {
-    text: '<span class="badge bg-primary"><i class="lucide lucide-file-text"></i> Text</span>',
-    pdf: '<span class="badge bg-danger"><i class="lucide lucide-file-text"></i> PDF</span>',
-    url: '<span class="badge bg-success"><i class="lucide lucide-link"></i> URL</span>',
-    document: '<span class="badge bg-secondary"><i class="lucide lucide-file"></i> Document</span>',
+    text: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"><i class="lucide lucide-file-text"></i> Text</span>',
+    pdf: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="lucide lucide-file-text"></i> PDF</span>',
+    url: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="lucide lucide-link"></i> URL</span>',
+    document: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"><i class="lucide lucide-file"></i> Document</span>',
   };
   return badges[type] || badges.text;
 }
@@ -248,7 +248,7 @@ class KnowledgeBaseManager {
     el.innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show" role="alert">
         ${msg}
-        <button type="button" class="btn-close" data-brox-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert" aria-label="Close"></button>
       </div>
     `;
     setTimeout(() => {
@@ -323,19 +323,19 @@ class KnowledgeBaseManager {
         </td>
         <td>${getCategoryBadge(item.category)}</td>
         <td>${getSourceBadge(item.source_type)}</td>
-        <td><span class="badge bg-info">${item.priority || 0}</span></td>
+        <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${item.priority || 0}</span></td>
         <td>${item.is_active
-          ? '<span class="badge bg-success">Active</span>'
-          : '<span class="badge bg-secondary">Inactive</span>'
+          ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>'
+          : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Inactive</span>'
         }</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary mr-1" data-action="edit" data-id="${item.id}" title="Edit">
+          <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors mr-1" data-action="edit" data-id="${item.id}" title="Edit">
             <i class="lucide lucide-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-${item.is_active ? 'warning' : 'success'} mr-1" data-action="toggle" data-id="${item.id}" title="${item.is_active ? 'Deactivate' : 'Activate'}">
+          <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-${item.is_active ? 'warning' : 'success'} mr-1" data-action="toggle" data-id="${item.id}" title="${item.is_active ? 'Deactivate' : 'Activate'}">
             <i class="lucide lucide-${item.is_active ? 'eye-off' : 'eye'}"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${item.id}" title="Delete">
+          <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-600 text-red-600 hover:bg-red-50 transition-colors" data-action="delete" data-id="${item.id}" title="Delete">
             <i class="lucide lucide-trash-2"></i>
           </button>
         </td>
@@ -369,7 +369,7 @@ class KnowledgeBaseManager {
       <div class="text-center py-5 text-muted">
         <i class="lucide lucide-book fs-1"></i>
         <p class="mt-2">No knowledge slices found.</p>
-        <button class="btn btn-primary btn-sm" id="btnAddFirst">
+        <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors" id="btnAddFirst">
           <i class="lucide lucide-plus"></i> Add Your First Slice
         </button>
       </div>

@@ -169,7 +169,7 @@ export const ForegroundNotifications = {
       <div class="toast-header bg-primary text-white border-0">
         <img src="${this._escapeHtml(icon)}" alt="icon" class="rounded mr-2" style="width: 20px; height: 20px; object-fit: cover;">
         <strong class="me-auto">${this._escapeHtml(title)}</strong>
-        <button type="button" class="btn-close btn-close-white" data-brox-dismiss="toast" aria-label="Close"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors" data-brox-dismiss="toast" aria-label="Close"></button>
       </div>
       <div class="toast-body">
         ${this._escapeHtml(body)}

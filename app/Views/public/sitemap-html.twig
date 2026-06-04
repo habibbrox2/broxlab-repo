@@ -88,9 +88,9 @@
 
  <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 mt-4 lg:mt-5 p-4">
  <h2 class="h5 font-bold mb-3"><i class="lucide lucide-newspaper mr-2"></i>Pages</h2>
- <div class="list-group list-group-flush">
+ <div class="flex flex-col">
  {% for content in contents %}
- <a href="/posts/{{ content.id }}/{{ (content.slug|default(content.url|default(content.id)))|url_encode }}" class="list-group-item list-group-item-action border-0 py-2">
+ <a href="/posts/{{ content.id }}/{{ (content.slug|default(content.url|default(content.id)))|url_encode }}" class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900">
  <div class="flex justify-between items-start">
  <div>
  <h3 class="h6 mb-1">{{ content.title }}</h3>

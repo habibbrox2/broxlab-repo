@@ -65,7 +65,7 @@ BroxLab এখন দুটো AI assistant system একসাথে চাল�
 ```
 app/Views/layout.twig
 │
-└─► app/Views/partials/ai-assistant/script.twig
+└─► app/Views/partials/ai-assistant/assistant.twig
     │
     ├─ Puter.js CDN (external)
     │

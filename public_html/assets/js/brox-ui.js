@@ -58,7 +58,7 @@ Alert.dismiss = function (el) { Alert.getOrCreateInstance(el).close(); };
 function Collapse(el, cfg) {
   Base.call(this, el, 'Collapse');
   cfg = cfg || {};
-  this._toggleOnInit = cfg.toggle !== undefined ? Boolean(cfg.toggle) : true;
+  this._toggleOnInit = cfg.toggle !== undefined ? Boolean(cfg.toggle) : false;
   this._parent = cfg.parent || el.getAttribute('data-brox-parent') || null;
   this._shown = el.classList.contains('show');
   this._syncTriggers();
@@ -396,7 +396,7 @@ const broxUI = {
 };
 window.broxUI = broxUI;
 
-// Data API — handles both data-brox-* (native) and data-bs-* (backward compat)
+// Data API — Tailwind + vanilla JS only
 const dismissTypes = {
   alert: function (el) { const p = el.closest('.alert'); if (p) Alert.dismiss(p); },
   modal: function (el) { const p = el.closest('.modal'); if (p) Modal.getOrCreateInstance(p).hide(); },
@@ -408,18 +408,18 @@ document.addEventListener('click', (e) => {
   const t = e.target instanceof Element ? e.target : null;
   if (!t) return;
 
-  // ── data-brox-dismiss / data-bs-dismiss ──
-  const dismiss = t.closest('[data-brox-dismiss],[data-bs-dismiss]');
+  // ── data-brox-dismiss ──
+  const dismiss = t.closest('[data-brox-dismiss]');
   if (dismiss) {
-    const kind = dismiss.getAttribute('data-brox-dismiss') || dismiss.getAttribute('data-bs-dismiss');
+    const kind = dismiss.getAttribute('data-brox-dismiss');
     if (kind && dismissTypes[kind]) { dismissTypes[kind](dismiss); e.preventDefault(); return; }
   }
 
-  // ── data-brox-toggle / data-bs-toggle ──
-  const toggle = t.closest('[data-brox-toggle],[data-bs-toggle]');
+  // ── data-brox-toggle ──
+  const toggle = t.closest('[data-brox-toggle]');
   if (toggle) {
-    const kind = toggle.getAttribute('data-brox-toggle') || toggle.getAttribute('data-bs-toggle');
-    const targetAttr = toggle.hasAttribute('data-brox-target') ? 'data-brox-target' : 'data-bs-target';
+    const kind = toggle.getAttribute('data-brox-toggle');
+    const targetAttr = toggle.hasAttribute('data-brox-target') ? 'data-brox-target' : null;
     if (kind === 'dropdown') { Dropdown.getOrCreateInstance(toggle).toggle(); e.preventDefault(); return; }
     if (kind === 'tab' || kind === 'pill') { Tab.getOrCreateInstance(toggle).show(); e.preventDefault(); return; }
     if (kind === 'collapse') {
@@ -439,16 +439,16 @@ document.addEventListener('click', (e) => {
     }
   }
 
-  // ── data-brox-slide-to / data-bs-slide-to / data-bs-slide ──
-  const carouselBtn = t.closest('[data-brox-slide-to],[data-bs-slide-to],[data-brox-slide],[data-bs-slide]');
+  // ── data-brox-slide-to / data-brox-slide ──
+  const carouselBtn = t.closest('[data-brox-slide-to],[data-brox-slide]');
   if (carouselBtn) {
-    const el = targetFrom(carouselBtn, carouselBtn.hasAttribute('data-brox-target') ? 'data-brox-target' : 'data-bs-target') || carouselBtn.closest('.carousel');
+    const el = targetFrom(carouselBtn, carouselBtn.hasAttribute('data-brox-target') ? 'data-brox-target' : null) || carouselBtn.closest('.carousel');
     if (!el) return;
     const ins = Carousel.getOrCreateInstance(el);
-    if (carouselBtn.hasAttribute('data-brox-slide-to') || carouselBtn.hasAttribute('data-bs-slide-to')) {
-      ins.to(carouselBtn.getAttribute('data-brox-slide-to') || carouselBtn.getAttribute('data-bs-slide-to'));
+    if (carouselBtn.hasAttribute('data-brox-slide-to')) {
+      ins.to(carouselBtn.getAttribute('data-brox-slide-to'));
     } else {
-      const slideDir = carouselBtn.getAttribute('data-brox-slide') || carouselBtn.getAttribute('data-bs-slide') || '';
+      const slideDir = carouselBtn.getAttribute('data-brox-slide') || '';
       if (slideDir === 'prev') { ins.prev(); } else { ins.next(); }
     }
     e.preventDefault();

@@ -5,9 +5,12 @@
 
  {# Flash Messages #}
  {% if flash is defined and flash %}
- <div class="alert alert-{{ flash.type }} fade show" role="alert">
- {{ flash.message }}
- <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-brox-dismiss="alert"></button>
+ {% set flash_styles = {'success':'bg-emerald-50 border-emerald-200 text-emerald-800','danger':'bg-red-50 border-red-200 text-red-800','warning':'bg-amber-50 border-amber-200 text-amber-800','info':'bg-sky-50 border-sky-200 text-sky-800'} %}
+ <div class="{{ flash_styles[flash.type]|default('bg-sky-50 border-sky-200 text-sky-800') }} rounded-xl border p-4 flex items-center justify-between gap-3 shadow-sm" role="alert">
+  <span>{{ flash.message }}</span>
+  <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition opacity-70 hover:opacity-100 shrink-0" data-brox-dismiss="alert" aria-label="Close">
+   <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+  </button>
  </div>
  {% endif %}
 
@@ -26,11 +29,11 @@
  <table class="table items-center mb-0">
  <thead>
  <tr>
- <th class="text-uppercase text-slate-600 text-xxs font-weight-bolder">Label</th>
- <th class="text-uppercase text-slate-600 text-xxs font-weight-bolder">Match</th>
- <th class="text-uppercase text-slate-600 text-xxs font-weight-bolder">Action</th>
- <th class="text-uppercase text-slate-600 text-xxs font-weight-bolder">Status</th>
- <th class="text-uppercase text-slate-600 text-xxs font-weight-bolder">Actions</th>
+ <th class="uppercase text-slate-600 text-[0.65rem] font-bold tracking-wider">Label</th>
+ <th class="uppercase text-slate-600 text-[0.65rem] font-bold tracking-wider">Match</th>
+ <th class="uppercase text-slate-600 text-[0.65rem] font-bold tracking-wider">Action</th>
+ <th class="uppercase text-slate-600 text-[0.65rem] font-bold tracking-wider">Status</th>
+ <th class="uppercase text-slate-600 text-[0.65rem] font-bold tracking-wider">Actions</th>
  </tr>
  </thead>
  <tbody>
@@ -41,7 +44,7 @@
  {% else %}
  {% for route in routes %}
  <tr>
- <td><span class="text-sm font-weight-bold">{{ route.label }}</span></td>
+ <td><span class="text-sm font-bold">{{ route.label }}</span></td>
  <td>
  <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600">{{ route.match_type }}</span>
  {% if route.match_value %}<small class="text-slate-500 ml-1">{{ route.match_value }}</small>{% endif %}
@@ -80,14 +83,14 @@
 </div>
 
 {# Add/Edit Route Modal #}
-<div class="modal fade" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel" aria-hidden="true">
+<div class="modal" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel" aria-hidden="true">
  <div class="modal-dialog">
  <div class="modal-content">
  <form action="/admin/sim-routing/save" method="POST">
  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
  <input type="hidden" name="id" id="route_id" value="0">
  <div class="modal-header">
- <h5 class="modal-title" id="routeModalLabel">SIM Routing Rule</h5>
+ <h5 class="text-lg font-semibold text-slate-900" id="routeModalLabel">SIM Routing Rule</h5>
  <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-brox-dismiss="modal"></button>
  </div>
  <div class="modal-body">

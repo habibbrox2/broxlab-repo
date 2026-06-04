@@ -21,28 +21,28 @@
 
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mb-4">
  <div class="col-span-12">
- <label class="form-label font-semibold small text-uppercase text-slate-500">Articles Push URL</label>
+ <label class="form-label font-semibold text-xs uppercase text-slate-500">Articles Push URL</label>
  <div class="input-group">
  <input id="publicPushArticlesUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_articles_url }}" readonly>
  <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushArticlesUrl" type="button">Copy</button>
  </div>
  </div>
  <div class="col-span-12">
- <label class="form-label font-semibold small text-uppercase text-slate-500">Mobiles Push URL</label>
+ <label class="form-label font-semibold text-xs uppercase text-slate-500">Mobiles Push URL</label>
  <div class="input-group">
  <input id="publicPushMobilesUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_mobiles_url }}" readonly>
  <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushMobilesUrl" type="button">Copy</button>
  </div>
  </div>
  <div class="col-span-12">
- <label class="form-label font-semibold small text-uppercase text-slate-500">Combined/Batch Push URL</label>
+ <label class="form-label font-semibold text-xs uppercase text-slate-500">Combined/Batch Push URL</label>
  <div class="input-group">
  <input id="publicPushLegacyUrl" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ push_legacy_url }}" readonly>
  <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 copy-target" data-target="publicPushLegacyUrl" type="button">Copy</button>
  </div>
  </div>
  <div class="col-span-12">
- <label class="form-label font-semibold small text-uppercase text-slate-500">Push Headers (JSON)</label>
+ <label class="form-label font-semibold text-xs uppercase text-slate-500">Push Headers (JSON)</label>
  <textarea id="publicPushHeadersJson" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" rows="3" readonly>{{ push_headers_json }}</textarea>
  </div>
  </div>
@@ -53,7 +53,7 @@
  -H"Authorization: Bearer YOUR_TOKEN" \
  -d '{"articles":[{"title":"Sample"}],"source":"scraper"}'</code></pre>
 
- <p id="copyStatus" class="small text-slate-500 mb-0"></p>
+ <p id="copyStatus" class="text-xs text-slate-500 mb-0"></p>
  </div>
  </div>
  </div>

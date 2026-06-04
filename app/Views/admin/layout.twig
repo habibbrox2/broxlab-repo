@@ -51,6 +51,7 @@
  <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}">
  <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
  <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
+ <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/assistant-ui.css') }}">
 
  {# Third-party styles #}
  <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
@@ -61,7 +62,7 @@
  <div class="admin-shell min-h-screen">
   <header class="admin-topbar sticky top-0 z-40">
    <div class="admin-topbar-inner container-admin">
-    <button class="sidebar-toggle admin-icon-button lg:hidden" type="button" aria-label="Open navigation">
+    <button class="sidebar-toggle admin-icon-button lg:hidden" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="adminSidebar">
      <i class="lucide lucide-menu"></i>
     </button>
 
@@ -172,30 +173,23 @@
       <ul class="dropdown-menu admin-dropdown-menu admin-status-menu" aria-labelledby="serverStatusIndicator">
        <li class="px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Server Status</li>
        <li>
-        <div data-service="database" class="admin-status-row">
+        <div data-service="database" class="server-status-item admin-status-row">
          <i class="lucide lucide-database"></i>
          <span>Database</span>
          <span class="status-badge" data-status="checking">Checking</span>
         </div>
        </li>
        <li>
-        <div data-service="cache" class="admin-status-row">
+        <div data-service="cache" class="server-status-item admin-status-row">
          <i class="lucide lucide-hard-drive"></i>
          <span>Cache</span>
          <span class="status-badge" data-status="checking">Checking</span>
         </div>
        </li>
        <li>
-        <div data-service="api" class="admin-status-row">
+        <div data-service="api" class="server-status-item admin-status-row">
          <i class="lucide lucide-settings"></i>
          <span>API</span>
-         <span class="status-badge" data-status="checking">Checking</span>
-        </div>
-       </li>
-       <li>
-        <div data-service="nodejs" class="admin-status-row">
-         <i class="lucide lucide-code"></i>
-         <span>Node.js</span>
          <span class="status-badge" data-status="checking">Checking</span>
         </div>
        </li>
@@ -334,10 +328,11 @@
        {% endfor %}
 
        <a
-        class="group list-group-item list-group-item-action admin-sidebar-link {{ is_child_active ? 'active' : '' }}"
-        data-brox-toggle="collapse"
+        class="admin-sidebar-link group {{ is_child_active ? 'active' : '' }}"
         href="#{{ prefix }}-submenu-{{ item.key }}"
         role="button"
+        data-sidebar-toggle="submenu"
+        data-sidebar-target="#{{ prefix }}-submenu-{{ item.key }}"
         aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
         aria-controls="{{ prefix }}-submenu-{{ item.key }}"
         title="{{ item.name }}">
@@ -345,12 +340,12 @@
         <span>{{ item.name }}</span>
         <i class="lucide lucide-chevron-down ml-auto text-[0.8rem]"></i>
        </a>
-       <div class="collapse {{ is_child_active ? 'show' : '' }}" id="{{ prefix }}-submenu-{{ item.key }}">
-        <div class="admin-sidebar-submenu">
+       <div class="admin-sidebar-submenu mt-1 {{ is_child_active ? 'is-open' : '' }}" id="{{ prefix }}-submenu-{{ item.key }}">
+        <div class="flex flex-col gap-1 border-l border-slate-200 py-1 pl-3">
          {% for child in item.children %}
           <a
            href="{{ child.url }}"
-           class="list-group-item list-group-item-action admin-sidebar-sublink {{ current_page == child.key ? 'active' : '' }}"
+           class="admin-sidebar-sublink {{ current_page == child.key ? 'active' : '' }}"
            aria-current="{{ current_page == child.key ? 'page' : 'false' }}"
            title="{{ child.name }}">
            <span>{{ child.name }}</span>
@@ -361,7 +356,7 @@
       {% else %}
        <a
         href="{{ item.url }}"
-        class="group list-group-item list-group-item-action admin-sidebar-link {{ current_page == item.key ? 'active' : '' }}"
+        class="group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 {{ current_page == item.key ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white' : '' }}"
         aria-current="{{ current_page == item.key ? 'page' : 'false' }}"
         title="{{ item.name }}">
         <span class="admin-sidebar-link-icon"><i class="lucide {{ item.icon }}"></i></span>
@@ -374,7 +369,7 @@
 
    {% import _self as menus %}
 
-   <aside class="sidebar admin-sidebar" aria-label="Primary navigation">
+   <aside class="sidebar admin-sidebar" id="adminSidebar" aria-label="Primary navigation">
     <div class="admin-sidebar-header">
      <div>
       <p class="admin-sidebar-kicker">Navigation</p>
@@ -458,7 +453,7 @@
  if (!table || !(table instanceof HTMLElement)) return null;
 
  const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
- const existingSelectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+ const existingSelectAll = table.querySelector('thead [data-select-all-checkbox], thead #select-all-checkbox');
 
  if (existingSelectAll || hasRowCheckbox) {
  return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
@@ -474,7 +469,7 @@
  const th = document.createElement('th');
  th.style.width = '40px';
  th.className = 'text-center';
- th.innerHTML = '<input type="checkbox" id="select-all-checkbox" class="w-4 h-4 border border-slate-300 rounded bg-white checked:bg-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer table-select-checkbox">';
+ th.innerHTML = '<input type="checkbox" data-select-all-checkbox="true" class="w-4 h-4 border border-slate-300 rounded bg-white checked:bg-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer table-select-checkbox">';
  theadRow.insertBefore(th, theadRow.firstChild);
 
  table.querySelectorAll('tbody tr').forEach(function (tr) {
@@ -483,7 +478,12 @@
  return;
  }
 
- let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-grid grid-cols-1 gap-4 md:grid-cols-12-id') || '').trim();
+ let rowId = (
+  tr.getAttribute('data-id')
+  || tr.getAttribute('data-row-id')
+  || tr.getAttribute('data-item-id')
+  || ''
+ ).trim();
  if (!rowId) {
  const firstCell = tr.querySelector('td');
  const txt = firstCell ? (firstCell.textContent || '').trim() : '';
@@ -494,18 +494,18 @@
  const td = document.createElement('td');
  td.className = 'text-center';
  if (rowId) {
- td.innerHTML = '<input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '"') + '">';
+ td.innerHTML = '<input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 table-select-checkbox item-checkbox" value="' + rowId.replace(/"/g, '&quot;') + '">';
  } else {
  td.innerHTML = '<input type="checkbox" class="w-4 h-4 border border-slate-300 rounded bg-white opacity-50 cursor-not-allowed table-select-checkbox item-checkbox" disabled>';
  }
  tr.insertBefore(td, tr.firstChild);
  });
 
- return th.querySelector('input#select-all-checkbox');
+ return th.querySelector('[data-select-all-checkbox], #select-all-checkbox');
  };
 
  const wireTableSelection = function (table) {
- const selectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+ const selectAll = table.querySelector('thead [data-select-all-checkbox].table-select-checkbox, thead #select-all-checkbox.table-select-checkbox');
  const items = Array.from(table.querySelectorAll('tbody input[type="checkbox"].item-checkbox'));
  if (!selectAll || items.length === 0) return;
 
@@ -548,8 +548,6 @@
 
  {# Admin Assistant UI #}
  {% set assistant_variant = 'admin' %}
- {% include 'partials/ai-assistant/admin.twig' %}
- {% include 'partials/ai-assistant/script.twig' %}
- {% include 'partials/ai-assistant/admin-button.twig' %}
+{% include 'partials/ai-assistant/assistant.twig' %}
 </body>
 </html>

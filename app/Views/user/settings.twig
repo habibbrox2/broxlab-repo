@@ -1,6 +1,48 @@
 ﻿{% extends"layout.twig" %}
 {% block title %}{{ 'My Settings'|trans }} | {{ 'Account Management'|trans }}{% endblock %}
 {% block content %}
+<style>
+/* ── Offcanvas support for broxUI (non-Bootstrap) ── */
+.offcanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1055;
+  width: 400px;
+  max-width: calc(100vw - 3rem);
+  height: 100%;
+  background: #fff;
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s ease;
+  visibility: hidden;
+  outline: 0;
+}
+.offcanvas.show {
+  transform: translateX(0);
+  visibility: visible;
+}
+.offcanvas-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1050;
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.2s ease;
+}
+.offcanvas-backdrop.fade { opacity: 0; }
+.offcanvas-backdrop.fade.show { opacity: 1; }
+
+/* ── Tab-pane support for broxUI (non-Bootstrap) ── */
+.tab-pane:not(.active) { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Dark mode overrides ── */
+[data-theme="dark"] .offcanvas {
+  background: rgb(var(--surface));
+}
+[data-theme="dark"] .offcanvas-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+</style>
  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-5 mb-5">
  <!-- Page Header -->
  <div class="mb-4 settings-page-header">
@@ -16,57 +58,62 @@
  data-brox-target="#settingsSidebar"
  aria-controls="#settingsSidebar">
  <i class="lucide lucide-menu"></i> {{ 'Menu'|trans }}
- </button>
- <div class="offcanvas offcanvas-start"
- tabindex="-1"
- id="settingsSidebar"
- aria-labelledby="settingsSidebarLabel">
- <div class="offcanvas-header">
- <h5 id="settingsSidebarLabel">{{ 'Settings'|trans }}</h5>
- <button type="button"
- class="w-8 h-8 flex items-center justify-center border-0 bg-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-all duration-150 cursor-pointer"
- data-brox-dismiss="offcanvas"
- aria-label="{{ 'Close'|trans }}"></button>
+ </button> <div class="offcanvas left-0 top-0 z-[1055] flex h-full w-[400px] max-w-[calc(100vw-3rem)] flex-col bg-white shadow-2xl dark:bg-slate-800"
+     tabindex="-1"
+     id="settingsSidebar"
+     aria-labelledby="settingsSidebarLabel">
+ <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+  <h5 id="settingsSidebarLabel" class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ 'Settings'|trans }}</h5>
+  <button type="button"
+    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+    data-brox-dismiss="offcanvas"
+    aria-label="{{ 'Close'|trans }}">
+    <i class="lucide lucide-x" style="width:1.125em;height:1.125em;"></i>
+  </button>
  </div>
- <div class="offcanvas-body p-0">
- <div class="divide-y divide-neutral-100">
- <a href="#password-security"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-indigo-600 font-medium"
- data-brox-toggle="tab">
- <i class="lucide lucide-lock mr-2 text-red-600"></i> Password & Security
- </a>
- <a href="#oauth-accounts"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-neutral-700"
- data-brox-toggle="tab">
- <i class="lucide lucide-link-2 mr-2 text-sky-600"></i> Linked Accounts
- </a>
- <a href="#notifications-prefs"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-neutral-700"
- data-brox-toggle="tab">
- <i class="lucide lucide-bell mr-2 text-amber-600"></i> Notifications
- </a>
- <a href="#device-management"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-neutral-700"
- data-brox-toggle="tab">
- <i class="lucide lucide-smartphone mr-2 text-indigo-600"></i> Devices
- </a>
- <a href="#privacy"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-neutral-700"
- data-brox-toggle="tab">
- <i class="lucide lucide-shield mr-2 text-emerald-600"></i> Privacy & Data
- </a>
+ <div class="flex-1 overflow-y-auto p-0">
+  <div class="divide-y divide-slate-100 dark:divide-slate-700/50" role="tablist">
+   <a href="#password-security"
+     class="flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-indigo-600 transition-colors hover:bg-slate-50 dark:text-indigo-400 dark:hover:bg-slate-800"
+     data-brox-toggle="tab"
+     aria-selected="true">
+    <i class="lucide lucide-lock text-red-500" style="width:1.125em;height:1.125em;"></i> Password & Security
+   </a>
+   <a href="#oauth-accounts"
+     class="flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+     data-brox-toggle="tab"
+     aria-selected="false">
+    <i class="lucide lucide-link-2 text-sky-500" style="width:1.125em;height:1.125em;"></i> Linked Accounts
+   </a>
+   <a href="#notifications-prefs"
+     class="flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+     data-brox-toggle="tab"
+     aria-selected="false">
+    <i class="lucide lucide-bell text-amber-500" style="width:1.125em;height:1.125em;"></i> Notifications
+   </a>
+   <a href="#device-management"
+     class="flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+     data-brox-toggle="tab"
+     aria-selected="false">
+    <i class="lucide lucide-smartphone text-indigo-500" style="width:1.125em;height:1.125em;"></i> Devices
+   </a>
+   <a href="#privacy"
+     class="flex items-center gap-3 px-5 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+     data-brox-toggle="tab"
+     aria-selected="false">
+    <i class="lucide lucide-shield text-emerald-500" style="width:1.125em;height:1.125em;"></i> Privacy & Data
+   </a>
+  </div>
  </div>
- </div>
- </div>
+</div>
  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
  <!-- Sidebar Navigation -->
  <div class="lg:col-span-3 mb-4 hidden lg:block">
  <div class="bg-white rounded-xl shadow-sm">
- <div class="p-0">
- <div class="divide-y divide-neutral-100">
- <a href="#password-security"
- class="block px-4 py-3 hover:bg-neutral-50 transition-colors text-indigo-600 font-medium"
- data-brox-toggle="tab">
+ <div class="p-0">  <div class="divide-y divide-neutral-100 dark:divide-slate-700/50" role="tablist">
+   <a href="#password-security"
+     class="block px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-slate-800 transition-colors text-indigo-600 font-medium"
+     data-brox-toggle="tab">
  <i class="lucide lucide-lock mr-2 text-red-600"></i> {{ 'Password & Security'|trans }}
  </a>
  <a href="#oauth-accounts"
@@ -114,12 +161,11 @@
  </div>
  </div>
  </div>
- <!-- Account Information Tab -->
- <div class="tab-content">
- <!-- Password & Security Tab -->
- <div class=""
- id="password-security"
- role="tabpanel">
+ <!-- Account Information Tab --><!-- ── Tab Panels ── -->
+<!-- Password & Security Tab -->
+<div class="tab-pane {{ current_tab|default('password-security') == 'password-security' ? 'active' : '' }}"
+     id="password-security"
+     role="tabpanel">
  <div class="bg-white rounded-xl shadow-sm mb-4">
  <div class="px-5 py-4 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
  <h5 class="mb-0">
@@ -192,7 +238,7 @@
  </div>
  <!-- Active Sessions -->
  <h6 class="mb-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Active Sessions</h6>
- <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 small">
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-sm">
  <i class="lucide lucide-info mr-2"></i>
  You are currently logged in from this browser.
  </div>
@@ -202,8 +248,8 @@
  </div>
  </div>
  </div>
- <!-- Firebase Auth Linked Accounts Tab -->
- <div class="tab-pane hidden" id="oauth-accounts" role="tabpanel">
+<!-- Firebase Auth Linked Accounts Tab -->
+<div class="tab-pane" id="oauth-accounts" role="tabpanel">
  <div class="bg-white rounded-xl shadow-sm mb-4">
  <div class="px-5 py-4 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
  <h5 class="mb-0">
@@ -245,14 +291,14 @@
  </div>
  </div>
  <!-- Link New Email Section -->
- <div class="mt-4 pt-3 border-top">
+ <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
  <h6 class="mb-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider font-bold">
  <i class="lucide lucide-plus-circle mr-2"></i>Link New Email
  </h6>
  <p class="text-sm text-neutral-500 mb-3">
  Add additional email addresses to your account for enhanced security and account recovery options.
  </p>
- <form id="link-email-form" class="needs-validation">
+ <form id="link-email-form" class="needs-validation" novalidate>
  <div class="flex items-center mb-3">
  <input type="email"
  class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all bg-white"
@@ -264,19 +310,19 @@
  <i class="lucide lucide-link-2 mr-1"></i> Link Email
  </button>
  </div>
- <div id="link-email-message" class="alert hidden" role="alert"></div>
+ <div id="link-email-message" class="hidden" role="alert"></div>
  </form>
  </div>
  <!-- Email Security Info -->
- <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 small mt-4 mb-0">
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-sm mt-4 mb-0">
  <i class="lucide lucide-shield mr-2"></i>
  <strong>Security:</strong> Only you can link or unlink email addresses. We'll send a verification link to confirm the email.
  </div>
  </div>
  </div>
  </div>
- <!-- Notifications Preferences Tab -->
- <div class="tab-pane hidden" id="notifications-prefs" role="tabpanel">
+<!-- Notifications Preferences Tab -->
+<div class="tab-pane" id="notifications-prefs" role="tabpanel">
  <!-- Notification Channels Card -->
  <div class="bg-white rounded-xl shadow-sm mb-4">
  <div class="px-5 py-4 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
@@ -359,7 +405,7 @@
  </div>
  <div class="p-5">
  <div class="notification-categories-list">
- <div class="mb-3 pb-3 border-bottom">
+ <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
  <div class="flex items-center gap-3">
  <input class="w-10 h-6 rounded-full border-2 border-neutral-300 bg-white checked:bg-indigo-600 checked:border-primary appearance-none cursor-pointer transition-colors shrink-0 notification-category"
  type="checkbox"
@@ -372,7 +418,7 @@
  </label>
  </div>
  </div>
- <div class="mb-3 pb-3 border-bottom">
+ <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
  <div class="flex items-center gap-3">
  <input class="w-10 h-6 rounded-full border-2 border-neutral-300 bg-white checked:bg-indigo-600 checked:border-primary appearance-none cursor-pointer transition-colors shrink-0 notification-category"
  type="checkbox"
@@ -385,7 +431,7 @@
  </label>
  </div>
  </div>
- <div class="mb-3 pb-3 border-bottom">
+ <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
  <div class="flex items-center gap-3">
  <input class="w-10 h-6 rounded-full border-2 border-neutral-300 bg-white checked:bg-indigo-600 checked:border-primary appearance-none cursor-pointer transition-colors shrink-0 notification-category"
  type="checkbox"
@@ -397,7 +443,7 @@
  </label>
  </div>
  </div>
- <div class="mb-3 pb-3 border-bottom">
+ <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
  <div class="flex items-center gap-3">
  <input class="w-10 h-6 rounded-full border-2 border-neutral-300 bg-white checked:bg-indigo-600 checked:border-primary appearance-none cursor-pointer transition-colors shrink-0 notification-category"
  type="checkbox"
@@ -409,10 +455,9 @@
  <small class="block text-neutral-500">Important system notifications and updates</small>
  </label>
  </div>
- </div>
- <div class="mb-3">
+ </div><div class="mb-3">
  <div class="flex items-center gap-3">
- <input class="w-10 h-6 rounded-full border-2 border-neutral-300 bg-white checked:bg-indigo-600 checked:border-primary appearance-none cursor-pointer transition-colors shrink-0 notification-category"
+  <input class="w-10 h-6 rounded-full border-2 border-slate-300 bg-white checked:bg-indigo-600 checked:border-indigo-600 appearance-none cursor-pointer transition-colors shrink-0 notification-category"
  type="checkbox"
  id="cat-activity"
  checked
@@ -549,8 +594,8 @@
  </button>
  </div>
  </div>
- <!-- Device Management Tab -->
- <div class="tab-pane hidden" id="device-management" role="tabpanel">
+<!-- Device Management Tab -->
+<div class="tab-pane" id="device-management" role="tabpanel">
  <div class="bg-white rounded-xl shadow-sm mb-4">
  <div class="px-5 py-4 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
  <h5 class="mb-0">
@@ -581,7 +626,7 @@
  </div>
  </div>
  <!-- Bulk Actions -->
- <div class="mt-4 pt-3 border-top" id="devices-bulk-actions">
+ <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700" id="devices-bulk-actions">
  <h6 class="mb-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Bulk Actions</h6>
  <button class="inline-flex items-center px-3 py-1.5 rounded-lg text-red-600 text-sm font-medium hover:bg-red-50 transition-colors" id="revoke-all-btn">
  <i class="lucide lucide-x-circle mr-1"></i> Revoke All Devices
@@ -611,7 +656,7 @@
  </label>
  </div>
  </div>
- <hr class="my-3">
+ <hr class="my-3 border-slate-200 dark:border-slate-700">
  <h6 class="mb-3 text-neutral-500">Rename This Device</h6>
  <div class="flex items-center mb-3">
  <input type="text"
@@ -640,8 +685,8 @@
  </div>
  </div>
  </div>
- <!-- Privacy & Data Tab -->
- <div class="tab-pane hidden" id="privacy" role="tabpanel">
+<!-- Privacy & Data Tab -->
+<div class="tab-pane" id="privacy" role="tabpanel">
  <div class="bg-white rounded-xl shadow-sm mb-4">
  <div class="px-5 py-4 bg-neutral-50 border-b border-neutral-200 rounded-t-xl">
  <h5 class="mb-0">
@@ -674,7 +719,7 @@
  </div>
  </a>
  </div>
- <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 mt-4">
+ <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-sm mt-4 mb-0">
  <i class="lucide lucide-alert-triangle mr-2"></i>
  <strong>Warning:</strong> Deleting your account is permanent and cannot be undone.
  </div>
@@ -966,11 +1011,10 @@ function loadUserDevices() {
  })
  .catch(err => {
  console.error('Error loading devices:', err);
- container.innerHTML = `
- <div class="p-4 rounded-lg bg-red-600-light text-red-600-dark border border-danger">
+ container.innerHTML = `<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
  <i class="lucide lucide-alert-circle mr-2"></i>
  Failed to load devices. Please try again later.
- </div>
+</div>
  `;
  });
 }

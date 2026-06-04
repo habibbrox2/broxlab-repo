@@ -536,7 +536,7 @@ export function showForegroundNotification(payload) {
       <div class="toast-header bg-primary text-white border-0">
         <img src="${icon}" alt="icon" class="rounded mr-2" style="width: 24px; height: 24px;">
         <strong class="me-auto">${title}</strong>
-        <button type="button" class="btn-close btn-close-white" data-brox-dismiss="toast"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors" data-brox-dismiss="toast"></button>
       </div>
       <div class="toast-body">
         ${body}

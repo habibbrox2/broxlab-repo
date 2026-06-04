@@ -35,7 +35,6 @@ export default [
         ...globals.browser,
         ...globals.node,
         // Project-specific globals (non-standard browser globals)
-        bootstrap: 'readonly',
         Swal: 'readonly',
         Chart: 'readonly',
         broxI18n: 'readonly',

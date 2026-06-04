@@ -1561,16 +1561,18 @@
 
 <!-- Enhanced Modals -->
 <div id="itemModal" class="modal fade" tabindex="-1">
- <div class="modal-dialog modal-lg">
- <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
- <div class="modal-header" style="background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); color: white; border: none; border-radius: 16px 16px 0 0;">
- <h5 class="modal-title" id="itemModalTitle">
+ <div class="relative mx-auto my-2 w-full max-w-3xl">
+ <div class="relative flex w-full flex-col rounded-2xl border-0 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)] outline-none" style="border-radius: 16px;">
+ <div class="flex items-center justify-between rounded-t-[16px] border-0 px-5 py-4" style="background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); color: white;">
+ <h5 class="text-lg font-bold text-white" id="itemModalTitle">
  <i class="lucide lucide-pencil mr-2"></i>
  Edit Item
  </h5>
- <button type="button" class="modal-close-btn" data-brox-dismiss="modal"></button>
+ <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/20 hover:text-white" data-brox-dismiss="modal">
+ <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+ </button>
  </div>
- <div class="modal-body p-4">
+ <div class="p-4">
  <form id="itemForm">
  <input type="hidden" id="itemId" name="itemId">
  <input type="hidden" id="sectionType" name="sectionType">
@@ -1579,7 +1581,7 @@
  </div>
  </form>
  </div>
- <div class="modal-footer" style="border: none; padding: 1rem 2rem;">
+ <div class="flex items-center justify-end gap-2 rounded-b-[16px] border-0 px-5 py-4" style="border: none; padding: 1rem 2rem;">
  <button type="button" class="editor-btn-cancel" data-brox-dismiss="modal">
  <i class="lucide lucide-x-circle mr-1"></i>
  Cancel

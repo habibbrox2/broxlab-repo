@@ -211,12 +211,12 @@ function renderArticle(article) {
 
   publishBtn.innerHTML = '<i class="bi icon-globe mr-1"></i> Publish Now';
   publishBtn.disabled = false;
-  publishBtn.className = 'btn btn-success';
+  publishBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors';
   saveDraftBtn.innerHTML = '<i class="bi icon-save mr-1"></i> Save as Draft';
   saveDraftBtn.disabled = false;
-  saveDraftBtn.className = 'btn btn-outline-primary';
+  saveDraftBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg border border-indigo-600 text-indigo-600 text-sm font-medium hover:bg-indigo-50 transition-colors';
   editBtn.style.display = 'none';
-  editBtn.className = 'btn btn-outline-secondary';
+  editBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors';
   editBtn.innerHTML = '<i class="bi icon-external-link mr-1"></i> Continue in Editor';
   delete editBtn.dataset.postId;
   delete editBtn.dataset.slug;
@@ -238,12 +238,12 @@ function resetInterface() {
   statusEl.className = 'status-message';
   publishBtn.innerHTML = '<i class="bi icon-globe mr-1"></i> Publish Now';
   publishBtn.disabled = false;
-  publishBtn.className = 'btn btn-success';
+  publishBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors';
   saveDraftBtn.innerHTML = '<i class="bi icon-save mr-1"></i> Save as Draft';
   saveDraftBtn.disabled = false;
-  saveDraftBtn.className = 'btn btn-outline-primary';
+  saveDraftBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg border border-indigo-600 text-indigo-600 text-sm font-medium hover:bg-indigo-50 transition-colors';
   editBtn.style.display = 'none';
-  editBtn.className = 'btn btn-outline-secondary';
+  editBtn.className = 'inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors';
   editBtn.innerHTML = '<i class="bi icon-external-link mr-1"></i> Continue in Editor';
 }
 

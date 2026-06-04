@@ -1,5 +1,23 @@
 ﻿{% extends 'layout.twig' %}
 {% block title %}à¦†à¦®à¦¾à¦° à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨{% endblock %}
+{% block extra_styles %}
+<style>
+/* ── Dark mode overrides for JS-generated notification content ── */
+[data-theme="dark"] #permissionStatus .bg-green-50 { background: rgba(22, 163, 74, 0.15) !important; border-color: rgba(22, 163, 74, 0.3) !important; }
+[data-theme="dark"] #permissionStatus .text-green-800 { color: #86efac !important; }
+[data-theme="dark"] #permissionStatus .border-green-200 { border-color: rgba(22, 163, 74, 0.3) !important; }
+[data-theme="dark"] #permissionStatus .bg-amber-50 { background: rgba(217, 119, 6, 0.15) !important; border-color: rgba(217, 119, 6, 0.3) !important; }
+[data-theme="dark"] #permissionStatus .text-amber-800 { color: #fcd34d !important; }
+[data-theme="dark"] #permissionStatus .border-amber-200 { border-color: rgba(217, 119, 6, 0.3) !important; }
+[data-theme="dark"] #permissionStatus .bg-neutral-100 { background: rgba(51, 65, 85, 0.6) !important; border-color: rgba(51, 65, 85, 0.8) !important; }
+[data-theme="dark"] #permissionStatus .text-neutral-700 { color: rgb(203 213 225) !important; }
+[data-theme="dark"] #permissionStatus .border-neutral-200 { border-color: rgba(51, 65, 85, 0.8) !important; }
+[data-theme="dark"] #permissionStatus .text-neutral-500 { color: rgb(148 163 184) !important; }
+[data-theme="dark"] #topicsContainer label { color: rgb(203 213 225) !important; }
+[data-theme="dark"] #topicsContainer .text-neutral-500 { color: rgb(148 163 184) !important; }
+[data-theme="dark"] #topicsContainer input[type="checkbox"] { border-color: rgb(71 85 105) !important; }
+</style>
+{% endblock %}
 {% block content %}
  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
  <div class="mb-4">
@@ -9,10 +27,10 @@
  <h2 class="mb-1 h2-accent">
  <i class="lucide lucide-bell mr-2"></i>à¦†à¦®à¦¾à¦° à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨
  </h2>
- <small class="text-neutral-500">à¦†à¦ªà¦¨à¦¾à¦° à¦¸à¦•à¦² à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦à¦–à¦¾à¦¨à§‡ à¦ªà¦¾à¦¬à§‡à¦¨</small>
+ <small class="text-neutral-500 dark:text-slate-400">à¦†à¦ªà¦¨à¦¾à¦° à¦¸à¦•à¦² à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦à¦–à¦¾à¦¨à§‡ à¦ªà¦¾à¦¬à§‡à¦¨</small>
  </div>
  {% if unread_count > 0 %}
- <button class="inline-flex items-center px-4 py-2 rounded-lg text-indigo-600 text-sm font-medium hover:bg-indigo-600/10 transition-colors" onclick="markAllAsRead()">
+ <button class="inline-flex items-center px-4 py-2 rounded-lg text-indigo-600 text-sm font-medium hover:bg-indigo-600/10 transition-colors dark:text-indigo-400 dark:hover:bg-indigo-500/15" onclick="markAllAsRead()">
  <i class="lucide lucide-check mr-2"></i>à¦¸à¦¬ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨
  </button>
  {% endif %}
@@ -21,7 +39,7 @@
  </div>
  <!-- Unread Count Badge -->
  {% if unread_count > 0 %}
- <div class="p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 mb-4 flex items-center" role="alert">
+ <div class="p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 mb-4 flex items-center dark:bg-blue-900/25 dark:text-blue-300 dark:border-blue-800/60" role="alert">
  <i class="lucide lucide-info mr-2"></i>
  <span>à¦†à¦ªà¦¨à¦¾à¦° <strong>{{ unread_count }} à¦Ÿà¦¿ à¦…à¦ªà¦¡à¦¼à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</strong> à¦†à¦›à§‡</span>
  </div>
@@ -31,31 +49,29 @@
  <div class="lg:col-span-2">
  {% if notifications|length > 0 %}
  {% for notif in notifications %}
- <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3 notification-rounded-xl border-slate-200 {% if notif.is_read == 0 %}border-l-4 border-l-primary{% endif %}"
- data-notification-id="{{ notif.id }}"
- style="{% if notif.is_read == 0 %}background-color: #f0f7ff;
- {% endif %}">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3 notification-rounded-xl border-slate-200 {% if notif.is_read == 0 %}border-l-4 border-l-primary bg-blue-50{% endif %} dark:bg-slate-800 dark:border-slate-700 dark:shadow-slate-900/20{% if notif.is_read == 0 %} dark:bg-blue-900/15{% endif %}"
+ data-notification-id="{{ notif.id }}">
  <div class="p-4">
  <div class="flex justify-between items-start">
  <div class="flex-1">
  <div class="flex items-center gap-2 mb-2">
  <h5 class="mb-0">{{ notif.title }}</h5>
  {% if notif.is_read == 0 %}
- <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-600 text-white">
+ <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-700">
  <i class="lucide lucide-circle mr-1"></i>à¦¨à¦¤à§à¦¨
  </span>
  {% endif %}
- <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-200 text-neutral-700 capitalize">{{ notif.type }}</span>
+ <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-200 text-neutral-700 capitalize dark:bg-slate-700 dark:text-slate-300">{{ notif.type }}</span>
  </div>
- <p class="mb-3 text-slate-900">{{ notif.message }}</p>
+ <p class="mb-3 text-slate-900 dark:text-slate-300">{{ notif.message }}</p>
  <div class="flex gap-2 mt-3">
  {% if notif.action_url %}
- <a href="{{ notif.action_url }}" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-600/90 transition-colors">
+ <a href="{{ notif.action_url }}" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-600/90 transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600">
  <i class="lucide lucide-arrow-right mr-1"></i>à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤ à¦¦à§‡à¦–à§à¦¨
  </a>
  {% endif %}
  {% if notif.is_read == 0 %}
- <button class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors"
+ <button class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
  onclick="markAsRead({{ notif.id }})">
  <i class="lucide lucide-check mr-1"></i>à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨
  </button>
@@ -63,10 +79,10 @@
  </div>
  </div>
  <div class="text-right ml-3">
- <small class="text-neutral-500 block">
+ <small class="text-neutral-500 dark:text-slate-500 block">
  <i class="lucide lucide-calendar mr-1"></i>{{ notif.created_at|date("d M Y") }}
  </small>
- <small class="text-neutral-500 block mt-1">
+ <small class="text-neutral-500 dark:text-slate-500 block mt-1">
  <i class="lucide lucide-clock mr-1"></i>{{ notif.created_at|date("H:i") }}
  </small>
  </div>
@@ -81,14 +97,14 @@
  <ul class="flex items-center justify-center gap-1 list-none p-0">
  {% if current_page > 1 %}
  <li class="inline-flex">
- <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline"
+ <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
  href="?page=1"
  aria-label="à¦ªà§à¦°à¦¥à¦® à¦ªà§ƒà¦·à§à¦ à¦¾">
  <i class="lucide lucide-chevrons-left"></i>
  </a>
  </li>
  <li class="inline-flex">
- <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline"
+ <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
  href="?page={{ current_page - 1 }}"
  aria-label="à¦ªà§‚à¦°à§à¦¬à¦¬à¦°à§à¦¤à§€">
  <i class="lucide lucide-chevron-left"></i>
@@ -99,29 +115,29 @@
  {% set end_page = min(total_pages, current_page + 2) %}
  {% if start_page > 1 %}
  <li class="inline-flex opacity-50">
- <span class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline">...</span>
+ <span class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700">...</span>
  </li>
  {% endif %}
  {% for page in range(start_page, end_page + 1) %}
  <li class="inline-flex {% if page == current_page %}active{% endif %}">
- <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline" href="?page={{ page }}">{{ page }}</a>
+ <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" href="?page={{ page }}">{{ page }}</a>
  </li>
  {% endfor %}
  {% if end_page < total_pages %}
  <li class="inline-flex opacity-50">
- <span class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline">...</span>
+ <span class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700">...</span>
  </li>
  {% endif %}
  {% if current_page < total_pages %}
  <li class="inline-flex">
- <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline"
+ <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
  href="?page={{ current_page + 1 }}"
  aria-label="à¦ªà¦°à¦¬à¦°à§à¦¤à§€">
  <i class="lucide lucide-chevron-right"></i>
  </a>
  </li>
  <li class="inline-flex">
- <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline"
+ <a class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 text-neutral-700 hover:bg-neutral-100 transition-colors no-underline dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
  href="?page={{ total_pages }}"
  aria-label="à¦¶à§‡à¦· à¦ªà§ƒà¦·à§à¦ à¦¾">
  <i class="lucide lucide-chevrons-right"></i>
@@ -130,16 +146,16 @@
  {% endif %}
  </ul>
  </nav>
- <div class="text-center text-neutral-500 text-sm">
+ <div class="text-center text-neutral-500 dark:text-slate-400 text-sm">
  à¦ªà§ƒà¦·à§à¦ à¦¾ {{ current_page }} à¦à¦° {{ total_pages }} (à¦ªà§à¦°à¦¤à¦¿ à¦ªà§ƒà¦·à§à¦ à¦¾à¦¯à¦¼ 20 à¦Ÿà¦¿)
  </div>
  {% endif %}
  {% else %}
- <div class="bg-white rounded-xl shadow-sm border border-slate-200 text-center py-5">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 text-center py-5 dark:bg-slate-800 dark:border-slate-700">
  <div class="p-4">
- <i class="lucide lucide-inbox text-5xl text-neutral-400 mb-3 block mx-auto"></i>
- <h5 class="text-neutral-500">à¦•à§‹à¦¨à§‹ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¨à§‡à¦‡</h5>
- <p class="text-neutral-500 mb-0">
+ <i class="lucide lucide-inbox text-5xl text-neutral-400 dark:text-slate-600 mb-3 block mx-auto"></i>
+ <h5 class="text-neutral-500 dark:text-slate-300">à¦•à§‹à¦¨à§‹ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¨à§‡à¦‡</h5>
+ <p class="text-neutral-500 dark:text-slate-400 mb-0">
  à¦†à¦ªà¦¨à¦¾à¦° à¦•à§‹à¦¨à§‹ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¨à§‡à¦‡à¥¤ à¦¨à¦¤à§à¦¨ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡à¦° à¦œà¦¨à§à¦¯ à¦…à¦ªà§‡à¦•à§à¦·à¦¾ à¦•à¦°à§à¦¨à¥¤
  </p>
  </div>
@@ -149,42 +165,42 @@
  <!-- Sidebar -->
  <div>
  <!-- Permission Status Card -->
- <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3" id="permissionCard">
- <div class="px-4 py-3 border-b border-slate-100 bg-amber-50">
- <h6 class="mb-0 font-semibold text-sm">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3 dark:bg-slate-800 dark:border-slate-700" id="permissionCard">
+ <div class="px-4 py-3 border-b border-slate-100 bg-amber-50 dark:border-slate-700 dark:bg-amber-900/25">
+ <h6 class="mb-0 font-semibold text-sm dark:text-amber-200">
  <i class="lucide lucide-shield-check mr-2"></i>à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨
  </h6>
  </div>
  <div class="p-4 text-sm" id="permissionStatus">
  <div class="text-center">
- <div class="inline-spinner inline-spinner-sm text-amber-600 mb-2"
+ <div class="inline-spinner inline-spinner-sm text-amber-600 mb-2 dark:text-amber-400"
  role="status">
  <span class="sr-only">à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</span>
  </div>
- <p class="text-neutral-500 mb-0">à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦šà§‡à¦• à¦•à¦°à¦¾ à¦¹à¦šà§à¦›à§‡...</p>
+ <p class="text-neutral-500 mb-0 dark:text-slate-400">à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦šà§‡à¦• à¦•à¦°à¦¾ à¦¹à¦šà§à¦›à§‡...</p>
  </div>
  </div>
  </div>
  <!-- Topics Preferences Card -->
- <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3">
- <div class="px-4 py-3 border-b border-slate-100 bg-sky-50">
- <h6 class="mb-0 font-semibold text-sm">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3 dark:bg-slate-800 dark:border-slate-700">
+ <div class="px-4 py-3 border-b border-slate-100 bg-sky-50 dark:border-slate-700 dark:bg-sky-900/25">
+ <h6 class="mb-0 font-semibold text-sm dark:text-sky-200">
  <i class="lucide lucide-tag mr-2"></i>à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦›à¦¨à§à¦¦
  </h6>
  </div>
  <div class="p-4 text-sm" id="topicsContainer">
  <div class="text-center">
- <div class="inline-spinner inline-spinner-sm text-sky-600 mb-2" role="status">
+ <div class="inline-spinner inline-spinner-sm text-sky-600 mb-2 dark:text-sky-400" role="status">
  <span class="sr-only">à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</span>
  </div>
- <p class="text-neutral-500 mb-0">à¦¬à¦¿à¦·à¦¯à¦¼ à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</p>
+ <p class="text-neutral-500 mb-0 dark:text-slate-400">à¦¬à¦¿à¦·à¦¯à¦¼ à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</p>
  </div>
  </div>
  </div>
  <!-- Notification Statistics -->
- <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3">
- <div class="px-4 py-3 border-b border-slate-100 bg-blue-50">
- <h6 class="mb-0 font-semibold text-sm">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-3 dark:bg-slate-800 dark:border-slate-700">
+ <div class="px-4 py-3 border-b border-slate-100 bg-blue-50 dark:border-slate-700 dark:bg-blue-900/25">
+ <h6 class="mb-0 font-semibold text-sm dark:text-blue-200">
  <i class="lucide lucide-bar-chart-3 mr-2"></i>à¦ªà¦°à¦¿à¦¸à¦‚à¦–à§à¦¯à¦¾à¦¨
  </h6>
  </div>
@@ -192,48 +208,48 @@
  <div class="grid grid-cols-2 text-center">
  <div>
  <div class="text-2xl font-bold text-indigo-600 mb-0">{{ unread_count }}</div>
- <small class="text-neutral-500">à¦…à¦ªà¦¡à¦¼à¦¾</small>
+ <small class="text-neutral-500 dark:text-slate-400">à¦…à¦ªà¦¡à¦¼à¦¾</small>
  </div>
  <div>
  <div class="text-2xl font-bold text-green-600 mb-0">{{ notifications|length }}</div>
- <small class="text-neutral-500">à¦à¦‡ à¦ªà§ƒà¦·à§à¦ à¦¾à¦¯à¦¼</small>
+ <small class="text-neutral-500 dark:text-slate-400">à¦à¦‡ à¦ªà§ƒà¦·à§à¦ à¦¾à¦¯à¦¼</small>
  </div>
  </div>
  </div>
  </div>
  <!-- Help Section -->
- <div class="bg-white rounded-xl shadow-sm border border-slate-200">
- <div class="px-4 py-3 border-b border-slate-100 bg-neutral-100">
- <h6 class="mb-0 font-semibold text-sm">
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 dark:bg-slate-800 dark:border-slate-700">
+ <div class="px-4 py-3 border-b border-slate-100 bg-neutral-100 dark:border-slate-700 dark:bg-slate-700/50">
+ <h6 class="mb-0 font-semibold text-sm dark:text-slate-200">
  <i class="lucide lucide-help-circle mr-2"></i>à¦¸à¦¾à¦¹à¦¾à¦¯à§à¦¯
  </h6>
  </div>
  <div class="p-4 text-sm">
  <p class="mb-2">
- <strong>à¦¨à§€à¦² à¦¡à¦¾à¦¨à¦¦à¦¿à¦• à¦¸à§€à¦®à¦¾à¦¨à¦¾:</strong>
+ <strong class="dark:text-slate-200">à¦¨à§€à¦² à¦¡à¦¾à¦¨à¦¦à¦¿à¦• à¦¸à§€à¦®à¦¾à¦¨à¦¾:</strong>
  <br>
- <span class="text-neutral-500">à¦¨à¦¤à§à¦¨ à¦…à¦ªà¦¡à¦¼à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
+ <span class="text-neutral-500 dark:text-slate-400">à¦¨à¦¤à§à¦¨ à¦…à¦ªà¦¡à¦¼à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
  </p>
- <hr class="my-2">
+ <hr class="my-2 dark:border-slate-700">
  <p class="mb-2">
- <strong>à¦¨à¦¤à§à¦¨ à¦¬à§à¦¯à¦¾à¦œ:</strong>
+ <strong class="dark:text-slate-200">à¦¨à¦¤à§à¦¨ à¦¬à§à¦¯à¦¾à¦œ:</strong>
  <br>
- <span class="text-neutral-500">à¦à¦–à¦¨à¦‡ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿ à¦à¦®à¦¨ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
+ <span class="text-neutral-500 dark:text-slate-400">à¦à¦–à¦¨à¦‡ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿ à¦à¦®à¦¨ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
  </p>
- <hr class="my-2">
+ <hr class="my-2 dark:border-slate-700">
  <p class="mb-0">
- <strong>à¦Ÿà¦¾à¦‡à¦ª à¦¬à§à¦¯à¦¾à¦œ:</strong>
+ <strong class="dark:text-slate-200">à¦Ÿà¦¾à¦‡à¦ª à¦¬à§à¦¯à¦¾à¦œ:</strong>
  <br>
- <span class="text-neutral-500">à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡à¦° à¦§à¦°à¦£ à¦¦à§‡à¦–à¦¾à¦¯à¦¼</span>
+ <span class="text-neutral-500 dark:text-slate-400">à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡à¦° à¦§à¦°à¦£ à¦¦à§‡à¦–à¦¾à¦¯à¦¼</span>
  </p>
  </div>
  </div>
  <!-- Tips -->
- <div class="p-4 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 mt-3">
- <h6 class="mb-2">
+ <div class="p-4 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 mt-3 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+ <h6 class="mb-2 dark:text-slate-200">
  <i class="lucide lucide-lightbulb mr-2"></i>à¦Ÿà¦¿à¦ªà¦¸
  </h6>
- <ul class="small mb-0">
+ <ul class="small mb-0 dark:text-slate-400">
  <li>à¦¸à¦¬ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨</li>
  <li>à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦›à¦¨à§à¦¦ à¦…à¦¨à§à¦¯à¦¾à¦¯à¦¼à§€ à¦«à¦¿à¦²à§à¦Ÿà¦¾à¦° à¦•à¦°à§à¦¨</li>
  <li>à¦ªà§à¦°à¦¤à¦¿à¦Ÿà¦¿ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡ à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤ à¦¬à§‹à¦¤à¦¾à¦® à¦†à¦›à§‡</li>

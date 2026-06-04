@@ -81,7 +81,7 @@
  {% if variables|length > 0 %}
  <div class="list-group list-group-sm">
  {% for var, val in variables %}
- <div class="list-group-item flex justify-between items-center">
+ <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
  <code>{{'{{'}}{{ var }}{{'}}'}}</code>
  <small class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600">Dynamic</small>
  </div>

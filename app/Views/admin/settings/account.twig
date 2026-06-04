@@ -21,30 +21,30 @@
  Settings Menu
  </h6>
  </div>
- <div class="list-group list-group-flush ">
+ <div class="flex flex-col">
  <a href="/admin/profile"
- class="list-group-item list-group-item-action ">
- <i class="lucide lucide-user-circle mr-2 text-indigo-600"></i>
+ class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+ <i class="lucide lucide-user-circle text-indigo-600"></i>
  <span>Profile</span>
- <i class="lucide lucide-chevron-right ms-auto text-slate-500"></i>
+ <i class="lucide lucide-chevron-right ml-auto text-slate-400"></i>
  </a>
  <a href="/admin/account-settings"
- class="list-group-item list-group-item-action  active">
- <i class="lucide lucide-lock mr-2 text-indigo-600"></i>
- <span class="font-bold">Account Security</span>
+ class="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+ <i class="lucide lucide-lock text-indigo-600"></i>
+ <span>Account Security</span>
  </a>
  <a href="/admin/security/2fa"
- class="list-group-item list-group-item-action ">
- <i class="lucide lucide-shield-check mr-2 text-indigo-600"></i>
+ class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+ <i class="lucide lucide-shield-check text-indigo-600"></i>
  <span>Two-Factor Auth</span>
- <i class="lucide lucide-chevron-right ms-auto text-slate-500"></i>
+ <i class="lucide lucide-chevron-right ml-auto text-slate-400"></i>
  </a>
  {% if auth_user.is_super_admin %}
  <a href="/admin/app-settings"
- class="list-group-item list-group-item-action ">
- <i class="lucide lucide-sliders mr-2 text-indigo-600"></i>
+ class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+ <i class="lucide lucide-sliders text-indigo-600"></i>
  <span>App Settings</span>
- <i class="lucide lucide-chevron-right ms-auto text-slate-500"></i>
+ <i class="lucide lucide-chevron-right ml-auto text-slate-400"></i>
  </a>
  {% endif %}
  </div>

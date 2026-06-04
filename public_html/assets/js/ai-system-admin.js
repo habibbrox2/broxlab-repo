@@ -14,6 +14,31 @@ let savedFrontendModel = '';
 let savedBackendModel = '';
 let defaultModelSetting = '';
 
+function showModal(modalEl) {
+  if (!modalEl) return;
+  if (window.broxUI?.Modal) {
+    window.broxUI.Modal.getOrCreateInstance(modalEl).show();
+    return;
+  }
+
+  modalEl.classList.add('show');
+  modalEl.style.display = 'block';
+  modalEl.setAttribute('aria-hidden', 'false');
+}
+
+function hideModal(modalEl) {
+  if (!modalEl) return;
+  if (window.broxUI?.Modal) {
+    const instance = window.broxUI.Modal.getInstance(modalEl);
+    if (instance) instance.hide();
+    return;
+  }
+
+  modalEl.classList.remove('show');
+  modalEl.style.display = 'none';
+  modalEl.setAttribute('aria-hidden', 'true');
+}
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initAISystem();
@@ -304,13 +329,13 @@ function initEventListeners() {
           input.value = input.dataset.apiKeyValue;
         }
         input.type = 'text';
-        this.querySelector('i').classList.remove('bi-eye');
-        this.querySelector('i').classList.add('bi-eye-slash');
+        this.querySelector('i').classList.remove('lucide-eye');
+        this.querySelector('i').classList.add('lucide-eye-off');
       } else {
         // Hide again
         input.type = 'password';
-        this.querySelector('i').classList.remove('bi-eye-slash');
-        this.querySelector('i').classList.add('bi-eye');
+        this.querySelector('i').classList.remove('lucide-eye-off');
+        this.querySelector('i').classList.add('lucide-eye');
       }
     });
   });
@@ -482,13 +507,13 @@ function setRefreshState(buttonEl, selectEl, isLoading) {
       buttonEl.dataset.originalHtml = buttonEl.innerHTML;
     }
     buttonEl.disabled = true;
-    buttonEl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Refreshing...';
+    buttonEl.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Refreshing...';
   } else {
     buttonEl.disabled = false;
     if (buttonEl.dataset.originalHtml) {
       buttonEl.innerHTML = buttonEl.dataset.originalHtml;
     } else {
-      buttonEl.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+      buttonEl.innerHTML = '<i class="lucide lucide-refresh-cw mr-1"></i>Refresh';
     }
   }
 }
@@ -797,16 +822,9 @@ function testConnection(id) {
     };
   }
 
-  resultDiv.innerHTML = '<div class="alert alert-info">Select a model and click "Run Test"</div>';
+  resultDiv.innerHTML = '<div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">Select a model and click "Run Test"</div>';
 
-  // Show modal using Bootstrap
-  if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-  } else {
-    modalEl.classList.add('show');
-    modalEl.style.display = 'block';
-  }
+  showModal(modalEl);
 }
 
 // Run test connection
@@ -838,8 +856,8 @@ async function runTestConnection() {
 
   const originalBtnHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
-  resultDiv.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2">Sending test request...</p></div>';
+  btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Testing...';
+  resultDiv.innerHTML = '<div class="flex flex-col items-center gap-2 py-3 text-slate-600"><div class="inline-spinner text-primary" role="status"></div><p class="mt-2">Sending test request...</p></div>';
 
   try {
     const csrfTokenValue = csrfToken ? csrfToken.value : '';
@@ -1067,7 +1085,7 @@ function refreshDefaultProviderRows(defaultProviderId) {
     if (!defaultCell || !rowId) return;
 
     if (String(rowId) === String(defaultProviderId)) {
-      defaultCell.innerHTML = '<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>Default</span>';
+      defaultCell.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary inline-flex items-center gap-1"><i class="lucide lucide-check-circle"></i>Default</span>';
     } else {
       const disabledAttr = isActive ? '' : 'disabled';
       defaultCell.innerHTML = `<button class="btn btn-outline-primary btn-sm set-default-btn" data-provider-id="${rowId}" ${disabledAttr}>Set as Default</button>`;
@@ -1315,13 +1333,7 @@ function openProviderEdit(id) {
   if (modelsInput) modelsInput.value = JSON.stringify(provider.supported_models || {}, null, 2);
   if (errorEl) errorEl.classList.add('d-none');
 
-  if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-  } else {
-    modalEl.classList.add('show');
-    modalEl.style.display = 'block';
-  }
+  showModal(modalEl);
 }
 
 // Save provider config
@@ -1365,7 +1377,7 @@ async function saveProviderConfig() {
 
   const saveProviderBtn = document.getElementById('saveProviderConfig');
   saveProviderBtn.disabled = true;
-  saveProviderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+  saveProviderBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Saving...';
 
   try {
     const res = await fetch('/admin/ai-system/update-provider', {
@@ -1409,13 +1421,7 @@ async function saveProviderConfig() {
 
     // Hide modal
     const modalEl = document.getElementById('editProviderModal');
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modalInst = bootstrap.Modal.getInstance(modalEl);
-      if (modalInst) modalInst.hide();
-    } else {
-      modalEl.classList.remove('show');
-      modalEl.style.display = 'none';
-    }
+    hideModal(modalEl);
   } catch (e) {
     if (errorEl) {
       errorEl.textContent = e.message;
@@ -1423,7 +1429,7 @@ async function saveProviderConfig() {
     }
   } finally {
     saveProviderBtn.disabled = false;
-    saveProviderBtn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
+    saveProviderBtn.innerHTML = '<i class="lucide lucide-save mr-1"></i>Save Changes';
   }
 }
 

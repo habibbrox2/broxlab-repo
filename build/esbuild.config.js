@@ -20,7 +20,7 @@ const ENTRY_POINTS = {
   'app-config': join(ROOT_DIR, 'public_html', 'assets', 'js', 'app-config.js'),
   'sweetalert2-handler': join(ROOT_DIR, 'public_html', 'assets', 'js', 'sweetalert2-handler.js'),
   'theme-manager': join(ROOT_DIR, 'public_html', 'assets', 'js', 'theme-manager.js'),
-  datepicker: join(ROOT_DIR, 'public_html', 'assets', 'js', 'datepicker.js'),
+  datepicker: join(ROOT_DIR, 'public_html', 'assets', 'datepicker', 'datepicker.js'),
   activity: join(ROOT_DIR, 'public_html', 'assets', 'js', 'activity.js'),
   'auth/login': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'login.js'),
   'auth/register': join(ROOT_DIR, 'public_html', 'assets', 'js', 'auth', 'register.js'),
@@ -28,12 +28,9 @@ const ENTRY_POINTS = {
   'brox-ui': join(ROOT_DIR, 'public_html', 'assets', 'js', 'brox-ui.js'),
 
   // Standalone feature scripts (converted from IIFE to ES modules)
-  'medex-scraper': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-scraper.js'),
-  'medex-autocollect': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-autocollect.js'),
   'medex-details-page': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-details-page.js'),
   'medex-route-fetch': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-route-fetch.js'),
   'medex-brand-page': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-brand-page.js'),
-  'medex-collector-ui': join(ROOT_DIR, 'public_html', 'assets', 'js', 'medex-collector-ui.js'),
   'ramadan-2026': join(ROOT_DIR, 'public_html', 'assets', 'js', 'ramadan-2026.js'),
   calculator: join(ROOT_DIR, 'public_html', 'assets', 'js', 'calculator.js'),
   'bangla-converter': join(ROOT_DIR, 'public_html', 'assets', 'js', 'bangla-converter.js'),

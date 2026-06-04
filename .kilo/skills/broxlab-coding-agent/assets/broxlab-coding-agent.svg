@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="BroxLab Coding Agent">
+  <defs>
+    <linearGradient id="bg" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="28" y1="28" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00FF88"/>
+      <stop offset="1" stop-color="#00c2ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="104" height="104" rx="24" fill="url(#bg)" stroke="url(#accent)" stroke-width="4"/>
+  <path d="M40 42h20c10 0 18 8 18 18s-8 18-18 18H40V42zm18 10h-8v16h8c4 0 8-3 8-8s-4-8-8-8zm-18 34h36v10H40z" fill="#e5f7ff"/>
+  <path d="M76 40l18 24-18 24" fill="none" stroke="#00FF88" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="90" cy="88" r="6" fill="#00c2ff"/>
+</svg>

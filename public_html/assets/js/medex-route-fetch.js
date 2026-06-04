@@ -610,11 +610,11 @@ function medexTogglePageLang(lang) {
     const btnLang = btn.getAttribute('data-lang-btn');
     btn.classList.toggle('active', btnLang === lang);
     if (btnLang === lang) {
-      btn.classList.remove('btn-outline-secondary', 'btn-outline-primary');
-      btn.classList.add('btn-primary');
+      btn.classList.remove('border-slate-300', 'text-slate-600', 'hover:bg-slate-50', 'border-indigo-600', 'text-indigo-600', 'hover:bg-indigo-50');
+      btn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
     } else {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-outline-secondary');
+      btn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
+      btn.classList.add('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
     }
   });
 
@@ -645,11 +645,11 @@ function medexSyncLangUI(lang) {
     const btnLang = btn.getAttribute('data-lang-btn');
     btn.classList.toggle('active', btnLang === lang);
     if (btnLang === lang) {
-      btn.classList.remove('btn-outline-secondary', 'btn-outline-primary');
-      btn.classList.add('btn-primary');
+      btn.classList.remove('border-slate-300', 'text-slate-600', 'hover:bg-slate-50', 'border-indigo-600', 'text-indigo-600', 'hover:bg-indigo-50');
+      btn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
     } else {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-outline-secondary');
+      btn.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
+      btn.classList.add('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
     }
   });
 }

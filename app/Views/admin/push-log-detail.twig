@@ -245,22 +245,21 @@
  <span class="bg-slate-100 text-slate-900 border">{{ items|length }} record(s)</span>
  </div>
 
- {% if items|length > 0 %}
- <div class="accordion" id="pushLogItemsAccordion">
- {% for item in items %}
- {% set itemType = (item.contentType|default(item.content_type|default(item.sourceType|default(item.type|default(''))))|lower) %}
- {% set hasMobileFields = item.brand is defined or item.model is defined or item.price is defined or item.keySpecs is defined or item.key_specs is defined %}
- {% set isMobileItem = isMobileBatch or itemType == 'mobile' or itemType == 'mobiles' or hasMobileFields %}
- {% set imageUrl = item.imageUrl|default(item.image_url|default(item.image|default(null))) %}
- {% set imagePath = item.imagePath|default(item.image_path|default(null)) %}
- {% set tags = item.tags is iterable ? item.tags : [] %}
- {% set keySpecs = item.keySpecs|default(item.key_specs|default({})) %}
- {% set specs = item.specs|default({}) %}
- {% set collapseId = 'pushLogItemCollapse-' ~ log.id ~ '-' ~ loop.index %}
- {% set headingId = 'pushLogItemHeading-' ~ log.id ~ '-' ~ loop.index %}
- <div class="accordion-item border rounded-xl overflow-hidden mb-3">
- <h2 class="accordion-header" id="{{ headingId }}">
- <button class="accordion-button collapsed py-3" type="button" data-brox-toggle="collapse" data-brox-target="#{{ collapseId }}" aria-expanded="false" aria-controls="{{ collapseId }}">
+ {% if items|length > 0 %} <div class="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white" id="pushLogItemsAccordion">
+{% for item in items %}
+{% set itemType = (item.contentType|default(item.content_type|default(item.sourceType|default(item.type|default(''))))|lower) %}
+{% set hasMobileFields = item.brand is defined or item.model is defined or item.price is defined or item.keySpecs is defined or item.key_specs is defined %}
+{% set isMobileItem = isMobileBatch or itemType == 'mobile' or itemType == 'mobiles' or hasMobileFields %}
+{% set imageUrl = item.imageUrl|default(item.image_url|default(item.image|default(null))) %}
+{% set imagePath = item.imagePath|default(item.image_path|default(null)) %}
+{% set tags = item.tags is iterable ? item.tags : [] %}
+{% set keySpecs = item.keySpecs|default(item.key_specs|default({})) %}
+{% set specs = item.specs|default({}) %}
+{% set collapseId = 'pushLogItemCollapse-' ~ log.id ~ '-' ~ loop.index %}
+{% set headingId = 'pushLogItemHeading-' ~ log.id ~ '-' ~ loop.index %}
+ <div>
+ <h2 id="{{ headingId }}">
+ <button class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#{{ collapseId }}" aria-expanded="false" aria-controls="{{ collapseId }}">
  <div class="flex flex-column flex-md-grid grid-cols-1 gap-4 md:grid-cols-12 justify-between align-items-md-center gap-2 w-full pe-2">
  <div>
  <div class="flex flex-wrap gap-2 items-center mb-1">
@@ -294,8 +293,7 @@
  </div>
  </button>
  </h2>
- <div id="{{ collapseId }}" class="accordion-collapse collapse" aria-labelledby="{{ headingId }}" data-brox-parent="#pushLogItemsAccordion">
- <div class="accordion-body">
+ <div id="{{ collapseId }}" class="collapse px-4 pb-3" aria-labelledby="{{ headingId }}" data-brox-parent="#pushLogItemsAccordion">
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
  <div class="lg:col-span-4">
  <div class="field h-full">

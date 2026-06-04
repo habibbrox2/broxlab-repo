@@ -627,7 +627,7 @@ async function applyResponseConfig(message, rawText, opts = {}) {
     : parseResponseConfig(rawText || '');
   if (!config) return rawText;
 
-  const body = message.querySelector('.message-content');
+  const body = message.querySelector('.brox-ai-message-content, .message-content');
   if (!body) return rawText;
 
   const finalText = content || rawText;
@@ -655,8 +655,8 @@ function updateLangButtons() {
   const setState = (btn, active) => {
     if (!btn) return;
     btn.classList.toggle('active', active);
-    btn.classList.toggle('btn-light', active);
-    btn.classList.toggle('btn-outline-light', !active);
+    btn.classList.toggle('bg-white text-slate-700 border border-slate-300 hover:bg-slate-50', active);
+    btn.classList.toggle('bg-transparent text-slate-400 border border-slate-200 hover:bg-slate-100', !active);
   };
   setState(UI.langBnBtn, currentLang === 'bn');
   setState(UI.langEnBtn, currentLang === 'en');
@@ -693,7 +693,7 @@ function renderWelcome() {
 }
 
 function renderHistory() {
-  UI.messages?.querySelectorAll('.message').forEach((n) => n.remove());
+  UI.messages?.querySelectorAll('.brox-ai-message, .message').forEach((n) => n.remove());
   if (!chatHistory.length) {
     renderWelcome();
     return;
@@ -732,6 +732,9 @@ function saveUserInfo() {
 }
 
 function setPreChatStep(step) {
+  if (UI.preChat) {
+    UI.preChat.dataset.prechatStep = step;
+  }
   ['step-name', 'step-contact', 'step-topic',].forEach((name) => {
     const node = UI.preChat?.querySelector(`.${name}`);
     if (!node) return;
@@ -791,7 +794,7 @@ function initQuickAction() {
   strip.className = 'assistant-action-strip';
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn btn-light assistant-action-btn';
+  btn.className = 'btn bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 assistant-action-btn';
   btn.id = 'publicAssistantNewChat';
   btn.title = t('new_chat_title');
   btn.textContent = '↺';
@@ -815,16 +818,20 @@ function bindEvents() {
     renderHistory();
   });
   UI.btn?.addEventListener('click', () => {
-    const opening = UI.window?.classList.contains('d-none');
-    UI.window?.classList.toggle('hidden');
-    UI.window?.classList.toggle('d-none');
-    if (opening) {
-      userInfo?.name ? clearPreChat() : showPreChat();
+    const isHidden = UI.window?.classList.contains('brox-ai-hidden') ?? true;
+    UI.window?.classList.toggle('brox-ai-hidden', !isHidden);
+    UI.window?.classList.remove('hidden', 'd-none');
+
+    if (!isHidden) {
+      UI.window?.classList.add('brox-ai-hidden');
+      return;
     }
+
+    userInfo?.name ? clearPreChat() : showPreChat();
   });
   UI.closeBtn?.addEventListener('click', () => {
-    UI.window?.classList.add('hidden');
-    UI.window?.classList.add('d-none');
+    UI.window?.classList.add('brox-ai-hidden');
+    UI.window?.classList.remove('hidden', 'd-none');
   });
   UI.sendBtn?.addEventListener('click', handleUserMessage);
   UI.input?.addEventListener('keypress', (e) => {

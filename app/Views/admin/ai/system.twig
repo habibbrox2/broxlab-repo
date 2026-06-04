@@ -341,16 +341,6 @@
  padding: 0.82rem 1rem;
 }
 
-.accordion-button:not(.collapsed) {
- background: linear-gradient(135deg, #f8f9fa 0%, #eef3ff 100%);
- color: #0d6efd;
-}
-
-.accordion-button:focus {
- box-shadow: none;
- border-color: rgba(13, 110, 253, 0.25);
-}
-
 .ai-status-note {
  color: #6c757d;
 }
@@ -607,7 +597,7 @@
  </div>
  <div class="p-4">
  <div class="overflow-x-auto">
- <table class="table table-hover align-middle ai-system-table" id="providersTable">
+ <table class="w-full text-left text-sm [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-slate-600 [&_td]:px-4 [&_td]:py-3 [&_td]:border-t [&_td]:border-slate-100 hover:[&_tr]:bg-slate-50 ai-system-table" id="providersTable">
  <thead class="bg-slate-50">
  <tr>
  <th>Provider</th>
@@ -1052,18 +1042,18 @@
  <div class="section-eyebrow">Help</div>
  <h2 class="h6 mb-0">Guides and references</h2>
  </div>
- <div class="p-4">
- <div class="accordion" id="helpAccordion">
- <div class="accordion-item border-0">
- <h2 class="accordion-header">
- <button class="accordion-button collapsed py-2" type="button" data-brox-toggle="collapse" data-brox-target="#help1">
+ <div class="p-4">   <div class="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white" id="helpAccordion">
+ <div>
+ <h2>
+ <button class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#help1">
  How do I get an API key?
+ <i class="lucide lucide-chevron-down text-slate-400 transition-transform duration-200 [.collapsed_&]:-rotate-90"></i>
  </button>
  </h2>
- <div id="help1" class="accordion-collapse collapse" data-brox-parent="#helpAccordion">
- <div class="accordion-body small text-slate-500 p-3">
+ <div id="help1" class="collapse px-4 pb-3" data-brox-parent="#helpAccordion">
+ <div class="text-xs text-slate-500 leading-relaxed">
  <p>Visit the provider's website to sign up and get an API key:</p>
- <ul class="mb-0">
+ <ul class="mb-0 list-disc pl-5">
  <li><a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">OpenRouter</a></li>
  <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI</a></li>
  <li><a href="https://console.anthropic.com/" target="_blank" rel="noreferrer">Anthropic</a></li>
@@ -1073,42 +1063,45 @@
  </div>
  </div>
  </div>
- <div class="accordion-item border-0">
- <h2 class="accordion-header">
- <button class="accordion-button collapsed py-2" type="button" data-brox-toggle="collapse" data-brox-target="#helpOllama">
+ <div>
+ <h2>
+ <button class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#helpOllama">
  Ollama Cloud Quick Start
+ <i class="lucide lucide-chevron-down text-slate-400 transition-transform duration-200 [.collapsed_&]:-rotate-90"></i>
  </button>
  </h2>
- <div id="helpOllama" class="accordion-collapse collapse" data-brox-parent="#helpAccordion">
- <div class="accordion-body small text-slate-500 p-3">
+ <div id="helpOllama" class="collapse px-4 pb-3" data-brox-parent="#helpAccordion">
+ <div class="text-xs text-slate-500 leading-relaxed">
  <p class="mb-2">Ollama Cloud provides API access to various models. Get your API key from <a href="https://ollama.com" target="_blank" rel="noreferrer">ollama.com</a> and use the cloud endpoint:</p>
- <pre class="mb-0"><code>curl -X POST https://ollama.com/api/chat/completions \
+ <pre class="mb-0 rounded-lg bg-slate-900 p-3 text-xs text-green-400"><code>curl -X POST https://ollama.com/api/chat/completions \
  -H"Content-Type: application/json" \
  -H"Authorization: Bearer YOUR_API_KEY" \
  -d '{"model":"llama2","messages":[{"role":"user","content":"Hello"}]}'</code></pre>
  </div>
  </div>
  </div>
- <div class="accordion-item border-0">
- <h2 class="accordion-header">
- <button class="accordion-button collapsed py-2" type="button" data-brox-toggle="collapse" data-brox-target="#help2">
+ <div>
+ <h2>
+ <button class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#help2">
  What is Temperature?
+ <i class="lucide lucide-chevron-down text-slate-400 transition-transform duration-200 [.collapsed_&]:-rotate-90"></i>
  </button>
  </h2>
- <div id="help2" class="accordion-collapse collapse" data-brox-parent="#helpAccordion">
- <div class="accordion-body small text-slate-500 p-3">
+ <div id="help2" class="collapse px-4 pb-3" data-brox-parent="#helpAccordion">
+ <div class="text-xs text-slate-500 leading-relaxed">
  Temperature controls randomness. Lower values (0-0.3) produce more focused, deterministic responses. Higher values (0.7-1.0) produce more creative but less predictable outputs.
  </div>
  </div>
  </div>
- <div class="accordion-item border-0">
- <h2 class="accordion-header">
- <button class="accordion-button collapsed py-2" type="button" data-brox-toggle="collapse" data-brox-target="#help3">
+ <div>
+ <h2>
+ <button class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50" type="button" data-brox-toggle="collapse" data-brox-target="#help3">
  API Keys Storage
+ <i class="lucide lucide-chevron-down text-slate-400 transition-transform duration-200 [.collapsed_&]:-rotate-90"></i>
  </button>
  </h2>
- <div id="help3" class="accordion-collapse collapse" data-brox-parent="#helpAccordion">
- <div class="accordion-body small text-slate-500 p-3">
+ <div id="help3" class="collapse px-4 pb-3" data-brox-parent="#helpAccordion">
+ <div class="text-xs text-slate-500 leading-relaxed">
  API keys are stored in the database and should be configured via the form above.
  </div>
  </div>

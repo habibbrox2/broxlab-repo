@@ -39,7 +39,7 @@ export class AccountConflictHandler {
                             <h5 class="modal-title" id="accountConflictTitle">
                                 <i class="bi icon-alert-triangle text-warning"></i> Account Already Exists
                             </h5>
-                            <button type="button" class="btn-close" data-brox-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p class="text-muted mb-3">
@@ -54,10 +54,10 @@ export class AccountConflictHandler {
                             </p>
                         </div>
                         <div class="modal-footer border-top-0 gap-2">
-                            <button type="button" class="btn btn-secondary" data-brox-dismiss="modal">
+                            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-300 transition-colors" data-brox-dismiss="modal">
                                 <i class="bi icon-x"></i> Cancel
                             </button>
-                            <button type="button" class="btn btn-primary" id="signInWithExistingBtn">
+                            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" id="signInWithExistingBtn">
                                 <i class="bi icon-log-in"></i> Sign in with ${this.getProviderName(existingProvider)}
                             </button>
                         </div>

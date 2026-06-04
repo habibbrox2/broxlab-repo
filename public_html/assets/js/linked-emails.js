@@ -87,14 +87,14 @@ export function initLinkedEmails(options = {}) {
       const isVerified = emailData.verified !== false;
 
       html += `
-                <div class="card border-0 shadow-sm mb-3">
+                <div class="rounded-xl border-0 shadow-sm mb-3 bg-white">
                     <div class="card-body d-flex align-items-center justify-content-between">
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="bi icon-mail text-primary"></i>
                                 <strong>${escapeHtml(email)}</strong>
-                                ${isPrimary ? '<span class="badge bg-success"><i class="bi icon-star mr-1"></i>Primary</span>' : ''}
-                                ${!isVerified ? '<span class="badge bg-warning"><i class="bi icon-clock mr-1"></i>Pending</span>' : ''}
+                                ${isPrimary ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="bi icon-star mr-1"></i>Primary</span>' : ''}
+                                ${!isVerified ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="bi icon-clock mr-1"></i>Pending</span>' : ''}
                             </div>
                             <small class="text-muted">${isVerified ? 'Verified' : 'Verification pending'}</small>
                         </div>

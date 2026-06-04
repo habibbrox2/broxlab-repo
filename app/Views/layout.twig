@@ -127,6 +127,8 @@
   {% set assets_version = app_settings.asset_version is defined and app_settings.asset_version ? app_settings.asset_version : ('b' ~ 'now'|date('U')) %}
   {# App styles (Tailwind single source of truth) — critical for first paint #}
   <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-public.css') }}?v={{ assets_version }}">
+  <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}?v={{ assets_version }}"></noscript>
     {# Fallback: if compiled dist is missing/empty during development, load source Tailwind input so components have styles #}
     <link rel="stylesheet" href="{{ asset('/assets/css/tailwind-input.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="{{ asset('/assets/css/tailwind-input.css') }}?v={{ assets_version }}"></noscript>
@@ -142,6 +144,8 @@
  {# AI Assistant styles - only needed when assistant is active #}
  <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
  <noscript><link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}?v={{ assets_version }}"></noscript>
+ <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/assistant-ui.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+ <noscript><link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/assistant-ui.css') }}?v={{ assets_version }}"></noscript>
 
  <link rel="stylesheet" href="{{ asset('/ai/css/ai-style.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
  <noscript><link rel="stylesheet" href="{{ asset('/ai/css/ai-style.css') }}?v={{ assets_version }}"></noscript>  {# ===== GOOGLE FONTS (Optimized: preconnect + preload + swap to avoid FOIT) ===== #}
@@ -864,16 +868,8 @@
  ) %}
  {% set show_public_assistant = is_guest_user or is_regular_user %}
 
- {% if show_public_assistant %}
  {% set assistant_variant = 'public' %}
-{% include 'partials/ai-assistant/public.twig' %}
-{% include 'partials/ai-assistant/script.twig' %}
- {% elseif is_admin_user %}
- {% set assistant_variant = 'admin' %}
-{% include 'partials/ai-assistant/admin.twig' %}
-{% include 'partials/ai-assistant/script.twig' %}
-{% include 'partials/ai-assistant/admin-button.twig' %}
- {% endif %}
+{% include 'partials/ai-assistant/assistant.twig' %}
 
 <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}" defer></script>
 <script type="module" src="{{ asset('/assets/js/dist/lucide-svg.js') }}" defer></script>
@@ -882,7 +878,6 @@
 
 </body>
 </html>
-
 
 
 

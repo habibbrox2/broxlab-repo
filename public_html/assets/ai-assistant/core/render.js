@@ -1,7 +1,107 @@
 /**
  * BroxLab AI Assistant - Core Render Module
  * Provides message rendering utilities for the chat interface
+ *
+ * v2.1.0 - Security hardening, Lucide icon migration, deduplicated markdown
  */
+
+/**
+ * Escape HTML special characters
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
+ */
+export function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+/**
+ * Sanitize HTML to prevent XSS attacks
+ * Handles script tags, event handlers, javascript: URIs, data: URIs, and more
+ * @param {string} html - HTML to sanitize
+ * @returns {string} Sanitized HTML
+ */
+export function sanitizeHtml(html) {
+  if (!html) return '';
+
+  let sanitized = String(html);
+
+  // Remove script tags (including content)
+  sanitized = sanitized.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+
+  // Remove event handler attributes (on*)
+  sanitized = sanitized.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+  // Remove javascript:, vbscript:, and data: URIs in href/src/action attributes
+  sanitized = sanitized.replace(/((?:href|src|action|formaction|dynsrc|lowsrc)\s*=\s*)(?:"javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]+)/gi, '$1""');
+  sanitized = sanitized.replace(/((?:href|src|action|formaction|dynsrc|lowsrc)\s*=\s*)(?:"vbscript:[^"]*"|'vbscript:[^']*'|vbscript:[^\s>]+)/gi, '$1""');
+  sanitized = sanitized.replace(/((?:href|src|action|formaction|dynsrc|lowsrc)\s*=\s*)(?:"data:[^"]*"|'data:[^']*'|data:[^\s>]+)/gi, '$1""');
+
+  // Remove embed/iframe dangerous elements entirely
+  sanitized = sanitized.replace(/<(iframe|object|embed|applet)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
+  sanitized = sanitized.replace(/<(iframe|object|embed|applet)\b[^>]*\/?>/gi, '');
+
+  return sanitized;
+}
+
+/**
+ * Parse markdown-like text into HTML
+ * Deduplicated single function for all markdown rendering
+ * @param {string} text - Raw text with markdown
+ * @returns {string} HTML string
+ */
+export function parseMarkdown(text) {
+  if (!text) return '';
+
+  let html = escapeHtml(text);
+
+  // Code blocks (```lang\ncode```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const langAttr = lang ? ` data-lang="${escapeHtml(lang)}"` : '';
+    const langLabel = lang ? `<span class="brox-ai-code-lang">${escapeHtml(lang)}</span>` : '';
+    return `<div class="brox-ai-code-block-wrap"><div class="brox-ai-code-header">${langLabel}<button class="brox-ai-copy-code-btn" title="Copy code" aria-label="Copy code"><i class="lucide lucide-copy text-sm"></i></button></div><pre class="brox-ai-code-block"${langAttr}><code>${code.trim()}</code></pre></div>`;
+  });
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="brox-ai-inline-code">$1</code>');
+
+  // Bold (**text**)
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic (*text*)
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Strikethrough (~~text~~)
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+  // Links [text](url) - only http(s) URLs allowed
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Unordered lists (lines starting with - or *, allows leading whitespace)
+  html = html.replace(/^\s*[-*]\s+(.+)$/gm, 'ULITEM$1');
+  html = html.replace(/((?:ULITEM.*\n?)+)/g, (match) => {
+    const items = match.replace(/ULITEM/g, '').trim();
+    return '<ul>' + items.split('\n').map(l => '<li>' + l.trim() + '</li>').join('') + '</ul>';
+  });
+
+  // Ordered lists (lines starting with 1. 2. etc, allows leading whitespace)
+  html = html.replace(/^\s*\d+\.\s+(.+)$/gm, 'OLITEM$1');
+  html = html.replace(/((?:OLITEM.*\n?)+)/g, (match) => {
+    const items = match.replace(/OLITEM/g, '').trim();
+    return '<ol>' + items.split('\n').map(l => '<li>' + l.trim() + '</li>').join('') + '</ol>';
+  });
+
+  // Blockquotes
+  html = html.replace(/^&gt;\s?(.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  // Clean up consecutive <br> tags
+  html = html.replace(/(<br>){3,}/g, '<br><br>');
+
+  return html;
+}
 
 /**
  * Append a message to the chat container
@@ -15,58 +115,27 @@ export function appendMessage(container, role, text, options = {}) {
   if (!container) return null;
 
   const msgEl = document.createElement('div');
-  msgEl.className = `brox-ai-message brox-ai-message-${role}`;
+  msgEl.className = `brox-ai-message brox-ai-${role}`;
   msgEl.setAttribute('role', 'article');
 
-  // Add timestamp if provided
-  if (options.ts) {
-    msgEl.dataset.timestamp = options.ts;
-  }
+  if (options.ts) msgEl.dataset.timestamp = options.ts;
+  if (options.responseMs) msgEl.dataset.responseMs = options.responseMs;
 
-  // Add response time if provided
-  if (options.responseMs) {
-    msgEl.dataset.responseMs = options.responseMs;
-  }
-
-  // Avatar
+  // Avatar using Lucide icons (not Bootstrap)
   const avatarEl = document.createElement('div');
   avatarEl.className = 'brox-ai-message-avatar';
-  if (role === 'user') {
-    avatarEl.innerHTML = '<i class="bi icon-user-circle"></i>';
-  } else {
-    avatarEl.innerHTML = '<i class="bi icon-sparkles"></i>';
-  }
+  avatarEl.innerHTML = role === 'user'
+    ? '<i class="lucide lucide-user" style="width:1rem;height:1rem;"></i>'
+    : '<i class="lucide lucide-sparkles" style="width:1rem;height:1rem;"></i>';
   msgEl.appendChild(avatarEl);
 
   // Message content
   const contentEl = document.createElement('div');
   contentEl.className = 'brox-ai-message-content';
 
-  // Parse and render content
   const textEl = document.createElement('div');
   textEl.className = 'brox-ai-message-text';
-
-  // Simple markdown-like parsing
-  let renderedText = sanitizeHtml(text);
-
-  // Handle code blocks
-  renderedText = renderedText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre class="brox-ai-code-block"><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`;
-  });
-
-  // Handle inline code
-  renderedText = renderedText.replace(/`([^`]+)`/g, '<code class="brox-ai-inline-code">$1</code>');
-
-  // Handle bold
-  renderedText = renderedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-  // Handle italic
-  renderedText = renderedText.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-  // Handle line breaks
-  renderedText = renderedText.replace(/\n/g, '<br>');
-
-  textEl.innerHTML = renderedText;
+  textEl.innerHTML = parseMarkdown(text);
   contentEl.appendChild(textEl);
 
   // Add metadata if available
@@ -74,20 +143,20 @@ export function appendMessage(container, role, text, options = {}) {
     const metaEl = document.createElement('div');
     metaEl.className = 'brox-ai-message-meta';
     const date = new Date(options.ts);
-    const timeStr = date.toLocaleTimeString();
-    metaEl.textContent = timeStr;
-
+    let metaText = date.toLocaleTimeString();
     if (options.responseMs && role === 'assistant') {
-      metaEl.textContent += ` (${options.responseMs}ms)`;
+      metaText += ` \u00B7 ${options.responseMs}ms`;
     }
+    metaEl.textContent = metaText;
     contentEl.appendChild(metaEl);
   }
 
   msgEl.appendChild(contentEl);
   container.appendChild(msgEl);
-
-  // Scroll to bottom
   container.scrollTop = container.scrollHeight;
+
+  // Bind copy-code buttons
+  bindCopyCodeButtons(msgEl);
 
   return msgEl;
 }
@@ -103,64 +172,40 @@ export async function appendAssistant(container, text, options = {}) {
   if (!container) return null;
 
   const msgEl = document.createElement('div');
-  msgEl.className = 'brox-ai-message brox-ai-message-assistant';
+  msgEl.className = 'brox-ai-message brox-ai-assistant';
   msgEl.setAttribute('role', 'article');
 
-  // Avatar
+  // Avatar using Lucide icons
   const avatarEl = document.createElement('div');
   avatarEl.className = 'brox-ai-message-avatar';
-  avatarEl.innerHTML = '<i class="bi icon-sparkles"></i>';
+  avatarEl.innerHTML = '<i class="lucide lucide-sparkles" style="width:1rem;height:1rem;"></i>';
   msgEl.appendChild(avatarEl);
 
-  // Message content
   const contentEl = document.createElement('div');
   contentEl.className = 'brox-ai-message-content';
-
   const textEl = document.createElement('div');
   textEl.className = 'brox-ai-message-text';
 
   if (options.animate) {
-    // Type out the message
     container.appendChild(msgEl);
     contentEl.appendChild(textEl);
     msgEl.appendChild(contentEl);
-
     await typeMessage(textEl, text, options);
   } else {
-    // Render immediately
-    let renderedText = sanitizeHtml(text);
-
-    // Handle code blocks
-    renderedText = renderedText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-      return `<pre class="brox-ai-code-block"><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`;
-    });
-
-    // Handle inline code
-    renderedText = renderedText.replace(/`([^`]+)`/g, '<code class="brox-ai-inline-code">$1</code>');
-
-    // Handle bold
-    renderedText = renderedText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Handle italic
-    renderedText = renderedText.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Handle line breaks
-    renderedText = renderedText.replace(/\n/g, '<br>');
-
-    textEl.innerHTML = renderedText;
+    textEl.innerHTML = parseMarkdown(text);
     contentEl.appendChild(textEl);
     msgEl.appendChild(contentEl);
     container.appendChild(msgEl);
   }
 
-  // Scroll to bottom
   container.scrollTop = container.scrollHeight;
+  bindCopyCodeButtons(msgEl);
 
   return msgEl;
 }
 
 /**
- * Type out a message character by character
+ * Type out a message character by character with progressive markdown rendering
  * @param {HTMLElement} element - The element to type into
  * @param {string} text - The text to type
  * @param {Object} options - Typing options
@@ -168,78 +213,72 @@ export async function appendAssistant(container, text, options = {}) {
  */
 export function typeMessage(element, text, options = {}) {
   return new Promise(resolve => {
-    const speed = options.speed || 10; // milliseconds per character
+    const speed = options.speed || 12;
+    const PARSE_INTERVAL = 4; // Re-parse markdown every N chars to avoid O(n²) jank
     let index = 0;
-    let isCodeBlock = false;
-    let currentLine = '';
+    let lastParsedIndex = 0;
+    let cachedHtml = '';
 
     const type = () => {
       if (index < text.length) {
-        const char = text[index];
-        currentLine += char;
+        index++;
 
-        // Check for code block markers
-        if (text.substring(index, index + 3) === '```') {
-          isCodeBlock = !isCodeBlock;
+        // Re-run full markdown parse only every PARSE_INTERVAL chars
+        if (index - lastParsedIndex >= PARSE_INTERVAL || index >= text.length) {
+          cachedHtml = parseMarkdown(text.substring(0, index));
+          element.innerHTML = cachedHtml;
+          lastParsedIndex = index;
         }
-
-        // Render progressively with basic formatting
-        let displayText = currentLine;
-
-        // Handle code blocks
-        displayText = displayText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-          return `<pre class="brox-ai-code-block"><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`;
-        });
-
-        // Handle inline code
-        displayText = displayText.replace(/`([^`]+)`/g, '<code class="brox-ai-inline-code">$1</code>');
-
-        // Handle bold
-        displayText = displayText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-        // Handle italic
-        displayText = displayText.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-        // Handle line breaks
-        displayText = displayText.replace(/\n/g, '<br>');
-
-        element.innerHTML = displayText;
+        // Between parses, keep last cached HTML (no flicker)
 
         // Scroll parent into view
-        if (element.closest('.brox-ai-body')) {
-          const body = element.closest('.brox-ai-body');
-          body.scrollTop = body.scrollHeight;
-        }
+        const body = element.closest('.brox-ai-body');
+        if (body) body.scrollTop = body.scrollHeight;
 
-        index++;
-        setTimeout(type, isCodeBlock ? speed * 0.5 : speed);
+        // Vary speed for code blocks
+        const inCode = (text.substring(0, index).match(/```/g) || []).length % 2 === 1;
+        setTimeout(type, inCode ? speed * 0.3 : speed);
       } else {
         // Final render with complete formatting
-        let finalText = currentLine;
-
-        // Handle code blocks
-        finalText = finalText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-          return `<pre class="brox-ai-code-block"><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`;
-        });
-
-        // Handle inline code
-        finalText = finalText.replace(/`([^`]+)`/g, '<code class="brox-ai-inline-code">$1</code>');
-
-        // Handle bold
-        finalText = finalText.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-        // Handle italic
-        finalText = finalText.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-        // Handle line breaks
-        finalText = finalText.replace(/\n/g, '<br>');
-
-        element.innerHTML = finalText;
+        element.innerHTML = parseMarkdown(text);
         resolve();
       }
     };
 
     type();
+  });
+}
+
+/**
+ * Bind copy-code buttons within a message element
+ * @param {HTMLElement} msgEl - The message element
+ */
+export function bindCopyCodeButtons(msgEl) {
+  if (!msgEl) return;
+  msgEl.querySelectorAll('.brox-ai-copy-code-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const codeBlock = btn.closest('.brox-ai-code-block-wrap')?.querySelector('code');
+      if (!codeBlock) return;
+
+      const text = codeBlock.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="lucide lucide-check text-sm" style="color: var(--brox-ai-success, #2dd4bf);"></i>';
+        setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
+      }).catch(() => {
+        // Fallback copy method
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (_) { /* noop */ }
+        document.body.removeChild(ta);
+      });
+    });
   });
 }
 
@@ -257,9 +296,7 @@ export function buildStaticReplyMatcher(pattern) {
     return (text) => pattern.some(p =>
       typeof p === 'string'
         ? text.toLowerCase().includes(p.toLowerCase())
-        : p instanceof RegExp
-          ? p.test(text)
-          : false
+        : p instanceof RegExp ? p.test(text) : false
     );
   }
   return () => false;
@@ -273,40 +310,9 @@ export function buildStaticReplyMatcher(pattern) {
 export function parseResponseConfig(config = {}) {
   return {
     animate: config.animate !== false,
-    speed: config.speed || 10,
+    speed: config.speed || 12,
     markdown: config.markdown !== false,
     syntax: config.syntax !== false,
     metadata: config.metadata !== false,
   };
-}
-
-/**
- * Escape HTML special characters
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-export function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-/**
- * Sanitize HTML to prevent XSS
- * @param {string} html - HTML to sanitize
- * @returns {string} Sanitized HTML
- */
-export function sanitizeHtml(html) {
-  // Remove script tags and other dangerous content
-  const sanitized = html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/on\w+\s*=\s*'[^']*'/gi, '');
-
-  return sanitized;
 }

@@ -43,7 +43,7 @@ export function showAlert(container, message, type = 'info') {
     <div class="alert alert-${type} alert-dismissible fade show d-flex align-items-center gap-2 py-2 px-3 mb-3" role="alert">
       <i class="bi ${iconMap[type] || iconMap.info} fs-5"></i>
       <span>${message}</span>
-      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+      <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors ml-auto" data-brox-dismiss="alert" aria-label="Close"></button>
     </div>`;
 }
 

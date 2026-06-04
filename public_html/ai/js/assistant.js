@@ -566,11 +566,44 @@ if (!window.BroxAssistantLoaded) {
                 },
             };
             if (this.nodes.btn) {
+                this.syncComposerHeight();
                 this.updateLangUI();
                 this.renderHistorySidebar();
                 this.renderQuickActions();
                 this.updateModelStatus('connecting');
             }
+        }
+
+        syncComposerHeight() {
+            const input = this.nodes.input;
+            if (!input || input.tagName !== 'TEXTAREA') return;
+
+            const minHeight = 48;
+            const maxHeight = 144;
+            input.rows = 1;
+            input.style.height = '0px';
+            const scrollHeight = Math.max(input.scrollHeight || 0, minHeight);
+            const nextHeight = Math.min(scrollHeight, maxHeight);
+            input.style.height = `${nextHeight}px`;
+            input.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+        }
+
+        syncSidebarLayout(isOpen = null) {
+            if (!this.nodes.shell || !this.nodes.sidebar) return;
+
+            const open = typeof isOpen === 'boolean'
+                ? isOpen
+                : !this.nodes.sidebar.classList.contains('hidden');
+
+            this.nodes.shell.classList.toggle('brox-ai-sidebar-open', open);
+
+            if (open) {
+                this.nodes.sidebar.classList.remove('hidden', 'brox-ai-collapsed');
+                return;
+            }
+
+            this.nodes.sidebar.classList.add('brox-ai-collapsed');
+            this.nodes.sidebar.classList.add('hidden');
         }
 
         async bootstrapFrontendSettings() {
@@ -618,6 +651,7 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.status)
                 this.nodes.status.textContent = this.isThinking ? this.t('thinking') : this.t('status');
             this.nodes.input.placeholder = this.t('placeholder');
+            this.syncComposerHeight();
 
             const nameLabel = document.getElementById('introNameLabel');
             const topicLabel = document.getElementById('introTopicLabel');
@@ -955,6 +989,7 @@ if (!window.BroxAssistantLoaded) {
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
                         this.nodes.input.value = event.results[i][0].transcript;
+                        this.syncComposerHeight();
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
@@ -1016,11 +1051,17 @@ if (!window.BroxAssistantLoaded) {
 
             if (this.nodes.toggleSidebar) {
                 this.nodes.toggleSidebar.onclick = () => {
-                    this.nodes.sidebar?.classList.toggle('brox-ai-collapsed');
+                    if (!this.nodes.sidebar) return;
+                    const willOpen = this.nodes.sidebar.classList.contains('hidden') || this.nodes.sidebar.classList.contains('brox-ai-collapsed');
+                    this.syncSidebarLayout(willOpen);
                 };
                 if (this.nodes.title) {
                     this.nodes.title.style.cursor = 'pointer';
-                    this.nodes.title.onclick = () => this.nodes.sidebar?.classList.toggle('brox-ai-collapsed');
+                    this.nodes.title.onclick = () => {
+                        if (!this.nodes.sidebar) return;
+                        const willOpen = this.nodes.sidebar.classList.contains('hidden') || this.nodes.sidebar.classList.contains('brox-ai-collapsed');
+                        this.syncSidebarLayout(willOpen);
+                    };
                 }
             }
 
@@ -1030,6 +1071,7 @@ if (!window.BroxAssistantLoaded) {
             if (this.nodes.send) this.nodes.send.onclick = () => this.handleSend();
             if (this.nodes.input) {
                 this.nodes.input.oninput = () => {
+                    this.syncComposerHeight();
                     this.updateSuggestions();
                     this.markActivity();
                 };
@@ -1040,7 +1082,7 @@ if (!window.BroxAssistantLoaded) {
                         this.handleSend();
                         return;
                     }
-                    // Enter to send (without shift)
+                    // Enter to send, Shift+Enter for a new line when using textarea
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         this.handleSend();
@@ -1065,10 +1107,12 @@ if (!window.BroxAssistantLoaded) {
                         if (firstSuggestion && firstSuggestion.dataset.prompt) {
                             e.preventDefault();
                             this.nodes.input.value = firstSuggestion.dataset.prompt;
+                            this.syncComposerHeight();
                             this.updateSuggestions();
                         }
                     }
                 });
+                this.syncComposerHeight();
             }
 
             if (this.nodes.quickActions) {
@@ -1076,6 +1120,7 @@ if (!window.BroxAssistantLoaded) {
                     const btn = e.target.closest('.brox-ai-action-chip');
                     if (!btn) return;
                     this.nodes.input.value = btn.dataset.prompt || '';
+                    this.syncComposerHeight();
                     this.handleSend();
                 };
             }
@@ -1085,6 +1130,7 @@ if (!window.BroxAssistantLoaded) {
                     const btn = e.target.closest('.brox-ai-suggestion-chip');
                     if (!btn) return;
                     this.nodes.input.value = btn.dataset.prompt || '';
+                    this.syncComposerHeight();
                     this.nodes.input.focus();
                     this.updateSuggestions();
                     this.markActivity();
@@ -1167,6 +1213,7 @@ if (!window.BroxAssistantLoaded) {
             if (!this.nodes.shell.classList.contains('brox-ai-hidden')) return;
 
             this.nodes.shell.classList.remove('brox-ai-hidden');
+            this.syncSidebarLayout(false);
             this.nodes.btn?.classList.add('brox-ai-active');
             this.overlay?.classList.add('brox-ai-overlay-active');
 
@@ -1194,6 +1241,7 @@ if (!window.BroxAssistantLoaded) {
         closeAssistant(options = {}) {
             if (!this.nodes.shell) return;
             this.nodes.shell.classList.add('brox-ai-hidden');
+            this.syncSidebarLayout(false);
             this.nodes.btn?.classList.remove('brox-ai-active');
             this.overlay?.classList.remove('brox-ai-overlay-active');
             if (options.fromPop) {
@@ -1346,6 +1394,7 @@ if (!window.BroxAssistantLoaded) {
             // Sanitize input
             const sanitized = sanitizeInput(text);
             this.nodes.input.value = '';
+            this.syncComposerHeight();
             this.addMessage('user', sanitized);
             this.history.push({ role: 'user', content: sanitized, timestamp: new Date().toISOString(), });
             this.saveHistory();

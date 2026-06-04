@@ -16,7 +16,7 @@
 
  <section class="admin-panel-card">
   <form method="post" action="{{ admin_dir|default('/admin') }}/app-settings" class="needs-validation" enctype="multipart/form-data">
-   <ul class="nav nav-tabs mb-3" id="appSettingsTabs" role="tablist">
+   <ul class="mb-3 flex flex-wrap gap-1 border-b border-slate-200 pb-0" id="appSettingsTabs" role="tablist">
     {% set tabs = {
      "general":"General",
      "contact":"Contact",
@@ -32,13 +32,13 @@
      "security_controls":"Security Controls"
     } %}
     {% for key, label in tabs %}
-    <li class="nav-item">
-     <button class="nav-link {% if loop.first %}active{% endif %}" data-brox-toggle="tab" data-brox-target="#{{ key }}" type="button">{{ label }}</button>
+    <li>
+     <button class="inline-flex items-center gap-1 rounded-t-xl border-b-2 px-4 py-2.5 text-sm font-medium transition {% if loop.first %}border-indigo-600 text-indigo-700 font-semibold{% else %}border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900{% endif %}" data-brox-toggle="tab" data-brox-target="#{{ key }}" type="button">{{ label }}</button>
     </li>
     {% endfor %}
    </ul>
    <div class="tab-content" id="appSettingsTabsContent">
-    <div class="tab-pane fade show active" id="general">
+    <div class="tab-pane block" id="general">
      <div class="mb-3">
       <label class="form-label">Site Name</label>
       <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="site_name" placeholder="Enter your site name" value="{{ settings.site_name|default('') }}" required>
@@ -82,7 +82,7 @@
       </select>
      </div>
     </div>
-    <div class="tab-pane fade" id="contact">
+    <div class="tab-pane hidden" id="contact">
      <div class="mb-3">
       <label class="form-label">Contact Email</label>
       <input type="email" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="contact_email" placeholder="contact@example.com" value="{{ settings.contact_email|default('') }}">
@@ -96,7 +96,7 @@
       <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="contact_address" placeholder="123 Main St, City, Country">{{ settings.contact_address|default('') }}</textarea>
      </div>
     </div>
-    <div class="tab-pane fade" id="seo">
+    <div class="tab-pane hidden" id="seo">
      <div class="mb-3">
       <label class="form-label">Meta Title</label>
       <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="meta_title" placeholder="Enter meta title" value="{{ settings.meta_title|default('') }}">
@@ -110,10 +110,10 @@
       <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" name="meta_keywords" placeholder="keyword1, keyword2, keyword3">{{ settings.meta_keywords|default('') }}</textarea>
      </div>
     </div>
-    <div class="tab-pane fade" id="mcp">
+    <div class="tab-pane hidden" id="mcp">
      {% include 'admin/settings/mcp.twig' %}
     </div>
-    <div class="tab-pane fade" id="ai">
+    <div class="tab-pane hidden" id="ai">
      {% include 'admin/settings/ai.twig' %}
     </div>
    </div>

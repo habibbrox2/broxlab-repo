@@ -11,9 +11,9 @@
  <p>Update your profile information and settings</p>
  </div>
  <!-- Tab Navigation -->
- <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
- <li class="nav-item" role="presentation">
- <button class="nav-link active"
+ <ul class="mb-4 flex flex-wrap gap-1 border-b border-slate-200 pb-0" id="profileTabs" role="tablist">
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-indigo-600 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition"
  id="edit-tab"
  data-brox-toggle="tab"
  data-brox-target="#edit"
@@ -21,11 +21,11 @@
  role="tab"
  aria-controls="edit"
  aria-selected="true">
- <i class="lucide lucide-pencil mr-1"></i> Edit Profile
+ <i class="lucide lucide-pencil"></i> Edit Profile
  </button>
  </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link"
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
  id="password-tab"
  data-brox-toggle="tab"
  data-brox-target="#password"
@@ -33,11 +33,11 @@
  role="tab"
  aria-controls="password"
  aria-selected="false">
- <i class="lucide lucide-key mr-1"></i> Change Password
+ <i class="lucide lucide-key"></i> Change Password
  </button>
  </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link"
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
  id="security-tab"
  data-brox-toggle="tab"
  data-brox-target="#security"
@@ -45,7 +45,7 @@
  role="tab"
  aria-controls="security"
  aria-selected="false">
- <i class="lucide lucide-shield mr-1"></i> 2FA Settings
+ <i class="lucide lucide-shield"></i> 2FA Settings
  </button>
  </li>
  </ul>

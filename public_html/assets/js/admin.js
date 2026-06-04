@@ -101,7 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const syncSidebarActiveState = () => {
-      const links = Array.from(sidebar.querySelectorAll('a.list-group-item-action[href]'));
+      const links = Array.from(
+        sidebar.querySelectorAll('a.admin-sidebar-link[href], a.admin-sidebar-sublink[href]')
+      );
       if (!links.length) return;
 
       const currentPath = normalizePath(window.location.pathname);
@@ -147,24 +149,26 @@ document.addEventListener('DOMContentLoaded', () => {
         link.removeAttribute('aria-current');
       });
 
-      const collapseToggles = Array.from(sidebar.querySelectorAll('a[data-brox-toggle="collapse"]'));
-      collapseToggles.forEach((toggle) => {
+      const submenuToggles = Array.from(sidebar.querySelectorAll('[data-sidebar-toggle="submenu"]'));
+      submenuToggles.forEach((toggle) => {
         toggle.classList.remove('active');
       });
 
       bestMatch.classList.add('active');
       bestMatch.setAttribute('aria-current', 'page');
 
-      let parentCollapse = bestMatch.closest('.collapse');
+      let parentCollapse = bestMatch.closest('.admin-sidebar-submenu');
       while (parentCollapse && parentCollapse.id) {
-        parentCollapse.classList.add('show');
-        const selector = `a[data-brox-toggle="collapse"][href="#${cssEscape(parentCollapse.id)}"]`;
+        parentCollapse.classList.add('is-open');
+        const selector = `[data-sidebar-toggle="submenu"][data-sidebar-target="#${cssEscape(
+          parentCollapse.id
+        )}"]`;
         const toggle = sidebar.querySelector(selector);
         if (toggle) {
           toggle.classList.add('active');
           toggle.setAttribute('aria-expanded', 'true');
         }
-        parentCollapse = parentCollapse.parentElement?.closest('.collapse') || null;
+        parentCollapse = parentCollapse.parentElement?.closest('.admin-sidebar-submenu') || null;
       }
     };
 
@@ -172,6 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const isMobile = window.innerWidth < DESKTOP_WIDTH;
       const isOpen = sidebar.classList.contains('show');
       document.body.classList.toggle('admin-sidebar-open', isMobile && isOpen);
+      sidebarToggles.forEach((toggle) => {
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
     };
 
     const toggleSidebar = () => {
@@ -246,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const applyMiniSidebarState = (forceState = null) => {
-      if (window.innerWidth < 992) {
+      if (window.innerWidth < DESKTOP_WIDTH) {
         document.body.classList.remove('admin-sidebar-mini');
         document.body.classList.remove(MINI_EXPANDED_CLASS);
         resetSidebarWidth();
@@ -467,6 +474,75 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    const submenuStorageKey = 'admin.sidebar.openSubmenus';
+    const submenuToggles = Array.from(sidebar.querySelectorAll('[data-sidebar-toggle="submenu"]'));
+    const submenus = Array.from(sidebar.querySelectorAll('.admin-sidebar-submenu[id]'));
+
+    const getSubmenuTrigger = (submenuId) =>
+      sidebar.querySelector(
+        `[data-sidebar-toggle="submenu"][data-sidebar-target="#${cssEscape(submenuId)}"]`
+      );
+
+    const closeSubmenu = (submenu, persist = true) => {
+      if (!submenu) return;
+      submenu.classList.remove('is-open');
+      const trigger = getSubmenuTrigger(submenu.id);
+      if (trigger) {
+        trigger.classList.remove('active');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      if (persist) {
+        try {
+          const nextOpen = submenus
+            .filter((item) => item !== submenu && item.classList.contains('is-open'))
+            .map((item) => item.id);
+          localStorage.setItem(submenuStorageKey, JSON.stringify(nextOpen));
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+    };
+
+    const openSubmenu = (submenu, persist = true) => {
+      if (!submenu) return;
+      submenus.forEach((item) => {
+        if (item !== submenu) closeSubmenu(item, false);
+      });
+      submenu.classList.add('is-open');
+      const trigger = getSubmenuTrigger(submenu.id);
+      if (trigger) {
+        trigger.classList.add('active');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+      if (persist) {
+        try {
+          localStorage.setItem(submenuStorageKey, JSON.stringify([submenu.id,]));
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+    };
+
+    const toggleSubmenu = (submenu) => {
+      if (!submenu) return;
+      if (submenu.classList.contains('is-open')) {
+        closeSubmenu(submenu);
+        return;
+      }
+      openSubmenu(submenu);
+    };
+
+    submenuToggles.forEach((trigger) => {
+      trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const selector = trigger.getAttribute('data-sidebar-target') || trigger.getAttribute('href');
+        const target = selector ? sidebar.querySelector(selector) : null;
+        toggleSubmenu(target);
+      });
+    });
+
     // Close sidebar on button click (Mobile)
     const closeBtns = document.querySelectorAll('.sidebar-close');
     closeBtns.forEach((btn) => {
@@ -492,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle window resize: remove .show class if switching to desktop view
     window.addEventListener('resize', () => {
-      if (window.innerWidth >= 992 && sidebar.classList.contains('show')) {
+      if (window.innerWidth >= DESKTOP_WIDTH && sidebar.classList.contains('show')) {
         closeSidebar();
       }
       applyMiniSidebarState();
@@ -503,10 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Close sidebar when a menu link is clicked (Mobile)
-    const menuLinks = sidebar.querySelectorAll('a.list-group-item:not([data-brox-toggle])');
+    const menuLinks = sidebar.querySelectorAll(
+      'a.admin-sidebar-link[href]:not([data-sidebar-toggle="submenu"]), a.admin-sidebar-sublink[href]'
+    );
     menuLinks.forEach((link) => {
       link.addEventListener('click', () => {
-        if (window.innerWidth < 992) {
+        if (window.innerWidth < DESKTOP_WIDTH) {
           closeSidebar();
         }
       });
@@ -514,82 +592,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Persist open submenu state across page loads
     try {
-      const STORAGE_KEY = 'admin.sidebar.openSubmenus';
-      const collapses = sidebar.querySelectorAll('.collapse[id]');
-      const openSet = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+      const saved = JSON.parse(localStorage.getItem(submenuStorageKey) || '[]');
+      const openIds = Array.isArray(saved) ? saved.filter((id) => typeof id === 'string' && id.trim()) : [];
 
-      // Restore saved open submenus
-      openSet.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) {
-          try {
-            const bs = broxUI.Collapse.getOrCreateInstance(el, { toggle: false, });
-            bs.show();
-          } catch {
-            // ignore if bootstrap not available yet
+      if (openIds.length > 1) {
+        openIds.splice(1);
+      }
+
+      openIds.forEach((id) => {
+        const submenu = sidebar.querySelector(`#${cssEscape(id)}`);
+        if (submenu) {
+          submenu.classList.add('is-open');
+          const trigger = getSubmenuTrigger(id);
+          if (trigger) {
+            trigger.classList.add('active');
+            trigger.setAttribute('aria-expanded', 'true');
           }
         }
       });
-
-      // Track show/hide events
-      collapses.forEach((c) => {
-        c.addEventListener('brox:shown', () => {
-          openSet.add(c.id);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
-        });
-        c.addEventListener('brox:hidden', () => {
-          openSet.delete(c.id);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
-        });
-      });
     } catch {
-      // localStorage or bootstrap events not available; fail silently
-    }
-
-    // Enforce single expanded submenu at a time.
-    if (typeof broxUI !== 'undefined') {
-      const STORAGE_KEY = 'admin.sidebar.openSubmenus';
-      const collapses = Array.from(sidebar.querySelectorAll('.collapse[id]'));
-      const persistSingleOpen = (id) => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(id ? [id,] : []));
-        } catch {
-          // Ignore storage failures.
-        }
-      };
-      const hideCollapse = (el) => {
-        if (!el || !el.classList.contains('show')) return;
-        try {
-          broxUI.Collapse.getOrCreateInstance(el, { toggle: false, }).hide();
-        } catch {
-          el.classList.remove('show');
-        }
-      };
-
-      const opened = collapses.filter((el) => el.classList.contains('show'));
-      if (opened.length <= 1) {
-        persistSingleOpen(opened[0]?.id || null);
-      } else {
-        opened.slice(1).forEach(hideCollapse);
-        persistSingleOpen(opened[0].id);
-      }
-
-      collapses.forEach((current) => {
-        current.addEventListener('brox:show', () => {
-          collapses.forEach((other) => {
-            if (other !== current) hideCollapse(other);
-          });
-        });
-
-        current.addEventListener('brox:shown', () => {
-          persistSingleOpen(current.id);
-        });
-
-        current.addEventListener('brox:hidden', () => {
-          const active = collapses.find((el) => el.classList.contains('show'));
-          persistSingleOpen(active ? active.id : null);
-        });
-      });
+      // localStorage not available; fail silently
     }
 
     syncSidebarActiveState();
@@ -606,16 +628,6 @@ runWhenReady(() => {
 (function () {
   'use strict';
 
-  const onReady =
-    typeof runWhenReady === 'function'
-      ? runWhenReady
-      : (fn) => {
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', fn, { once: true, });
-        } else {
-          fn();
-        }
-      };
 
   const byId = (id) => document.getElementById(id);
   const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -647,6 +659,17 @@ runWhenReady(() => {
     return String(text ?? '').replace(/[&<>"']/g, (char) => map[char]);
   };
 
+  const onReady =
+    typeof runWhenReady === 'function'
+      ? runWhenReady
+      : (fn) => {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn, { once: true, });
+        } else {
+          fn();
+        }
+      };
+
   function ensureLegacyAdminGlobals() {
     if (typeof window.showMessage !== 'function') {
       window.showMessage = function (message, type = 'info', duration = 5000) {
@@ -664,7 +687,7 @@ runWhenReady(() => {
         toast.style.zIndex = '9999';
         toast.innerHTML = `
                     ${String(message || '')}
-                    <button type="button" class="btn-close" data-brox-dismiss="alert"></button>
+                    <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert"></button>
                 `;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), Number(duration) || 5000);
@@ -1037,7 +1060,7 @@ runWhenReady(() => {
     }, 5000);
   }
 
-  function initPasswordModals() {
+  function initOAuthPasswordModals() {
     const setPasswordForm = byId('setPasswordForm');
     const changePasswordForm = byId('changePasswordForm');
     if (!setPasswordForm && !changePasswordForm) return;
@@ -1280,7 +1303,7 @@ runWhenReady(() => {
     function renderLog(log) {
       const time = new Date(log.created_at).toLocaleString();
       const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || `#${log.user_id || '0'}`;
+      const username = escapeHtml(log.username) || `#${escapeHtml(String(log.user_id || '0'))}`;
       let browserInfo = 'Unknown';
       if (log.details && log.details._browser) browserInfo = log.details._browser;
       else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
@@ -1290,11 +1313,11 @@ runWhenReady(() => {
       row.innerHTML = `
                 <td class="log-time">${time}</td>
                 <td class="log-user"><i class="bi icon-user-circle mr-2"></i>${username}</td>
-                <td class="log-action">${log.action}</td>
-                <td><span class="resource-type">${log.resource_type || 'N/A'} <strong>#${log.resource_id || 'N/A'}</strong></span></td>
+                <td class="log-action">${escapeHtml(String(log.action))}</td>
+                <td><span class="resource-type">${escapeHtml(log.resource_type || 'N/A')} <strong>#${escapeHtml(String(log.resource_id || 'N/A'))}</strong></span></td>
                 <td><span class="badge ${statusClass}">${log.status}</span></td>
                 <td class="ip-badge" title="${escapeHtml(log.user_agent || 'N/A')}">
-                    <div style="font-size: 0.8rem; color: #333; font-weight: 500;">${log.ip_address || 'N/A'}</div>
+                    <div style="font-size: 0.8rem; color: #333; font-weight: 500;">${escapeHtml(log.ip_address || 'N/A')}</div>
                     <div style="font-size: 0.75rem; color: #999;">${browserInfo}</div>
                 </td>
             `;
@@ -1315,7 +1338,7 @@ runWhenReady(() => {
       byId('modalLogAction').textContent = log.action;
       byId('modalLogResource').textContent =
         `${log.resource_type || 'N/A'} #${log.resource_id || 'N/A'}`;
-      byId('modalLogStatus').innerHTML = `<span class="badge ${statusClass}">${log.status}</span>`;
+      byId('modalLogStatus').innerHTML = `<span class="badge ${statusClass}">${escapeHtml(log.status)}</span>`;
       byId('modalLogIp').textContent = log.ip_address || 'N/A';
       byId('modalLogAgent').textContent = log.user_agent || 'N/A';
 
@@ -1323,7 +1346,7 @@ runWhenReady(() => {
       if (log.details && log.details._browser) browserInfo = log.details._browser;
       else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
       byId('modalLogBrowser').innerHTML =
-        `<span class="badge bg-info">${escapeHtml(browserInfo)}</span>`;
+        `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${escapeHtml(browserInfo)}</span>`;
 
       const detailsJson = log.details
         ? JSON.stringify(log.details, null, 2)
@@ -1462,12 +1485,12 @@ runWhenReady(() => {
           if (!btn) return;
           const originalText = btn.innerHTML;
           btn.innerHTML = '<i class="bi icon-check mr-2"></i>Copied!';
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-success');
+          btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+          btn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white');
           setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-primary');
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white');
+            btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white');
           }, 2000);
         })
         .catch(() => {
@@ -1779,7 +1802,7 @@ runWhenReady(() => {
 
     document.querySelectorAll('.form-control, .form-select, .form-check-input').forEach((input) => {
       input.addEventListener('change', () => {
-        if (submitBtn) submitBtn.classList.add('btn-warning');
+        if (submitBtn) submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600', 'text-white');
       });
     });
 
@@ -2205,7 +2228,7 @@ runWhenReady(() => {
                                             <i class="bi icon-file mr-1"></i>
                                             ${(file.size / 1024).toFixed(2)} KB
                                         </p>
-                                        <button type="button" class="btn btn-sm btn-danger w-100" onclick="removePreview('${previewId}-container')">
+                                        <button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg w-full text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors" onclick="removePreview('${previewId}-container')">
                                             <i class="bi icon-trash-2 mr-1"></i>Remove
                                         </button>
                                     </div>
@@ -2264,13 +2287,13 @@ runWhenReady(() => {
       const html = `
                 <div class="row g-2 mb-2 align-items-center">
                     <div class="col-md-5">
-                        <input type="text" class="form-control" placeholder="Key" data-metadata-key>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Key" data-metadata-key>
                     </div>
                     <div class="col-md-6">
-                        <input type="text" class="form-control" placeholder="Value" data-metadata-value>
+                        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Value" data-metadata-value>
                     </div>
                     <div class="col-md-1">
-                        <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeMetadata(this)">
+                        <button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-danger w-100" onclick="removeMetadata(this)">
                             <i class="bi icon-x"></i>
                         </button>
                     </div>
@@ -2289,10 +2312,10 @@ runWhenReady(() => {
                     <div class="card-body p-3">
                         <div class="row g-2 align-items-center">
                             <div class="col-md-3">
-                                <input type="text" class="form-control" placeholder="Field Name" data-field-label>
+                                <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Field Name" data-field-label>
                             </div>
                             <div class="col-md-2">
-                                <select class="form-select" data-field-type>
+                                <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" data-field-type>
                                     <option value="text">Text</option>
                                     <option value="email">Email</option>
                                     <option value="phone">Phone</option>
@@ -2302,16 +2325,16 @@ runWhenReady(() => {
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" data-field-required>
-                                    <label class="form-check-label small">Required</label>
+                                <div class="flex items-center gap-2">
+                                    <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" data-field-required>
+                                    <label class="text-sm text-slate-600">Required</label>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Placeholder text" data-field-placeholder>
+                                <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Placeholder text" data-field-placeholder>
                             </div>
                             <div class="col-md-1">
-                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeFormField(this)">
+                                <button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-danger w-100" onclick="removeFormField(this)">
                                     <i class="bi icon-trash-2"></i>
                                 </button>
                             </div>
@@ -2524,15 +2547,15 @@ runWhenReady(() => {
         .map(
           (app) => `
                 <tr>
-                    <td class="ps-4"><strong>#${app.id}</strong></td>
-                    <td>${app.user_name} <br><small class="text-muted">${app.user_email}</small></td>
-                    <td>${app.service_name}</td>
-                    <td><span class="badge ${getStatusBadgeClass(app.status)}">${app.status}</span></td>
-                    <td><span class="badge ${getPriorityBadgeClass(app.priority)}">${app.priority}</span></td>
+                    <td class="ps-4"><strong>#${escapeHtml(String(app.id))}</strong></td>
+                    <td>${escapeHtml(app.user_name)} <br><small class="text-muted">${escapeHtml(app.user_email)}</small></td>
+                    <td>${escapeHtml(app.service_name)}</td>
+                    <td><span class="badge ${getStatusBadgeClass(app.status)}">${escapeHtml(app.status)}</span></td>
+                    <td><span class="badge ${getPriorityBadgeClass(app.priority)}">${escapeHtml(app.priority)}</span></td>
                     <td class="small text-muted">${new Date(app.created_at).toLocaleDateString()}</td>
-                    <td>${app.approved_by_name || '--'}</td>
+                    <td>${escapeHtml(app.approved_by_name || '--')}</td>
                     <td>
-                        <button class="modern-btn btn-sm btn-outline-primary rounded-2" onclick="viewApplication(${app.id})">
+                        <button class="modern-btn btn-sm btn-outline-primary rounded-2" onclick="viewApplication(${escapeHtml(String(app.id))})">
                             <i class="bi icon-eye"></i> View
                         </button>
                     </td>
@@ -2594,13 +2617,13 @@ runWhenReady(() => {
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="small text-muted">User</div>
-                        <div class="fw-bold">${app.user.username}</div>
-                        <div class="small">${app.user.email}</div>
+                        <div class="fw-bold">${escapeHtml(app.user.username)}</div>
+                        <div class="small">${escapeHtml(app.user.email)}</div>
                     </div>
                     <div class="col-md-6">
                         <div class="small text-muted">Service</div>
-                        <div class="fw-bold">${app.service.name}</div>
-                        <div class="small">${app.service.categories ? app.service.categories.map((c) => c.name).join(', ') : '-'}</div>
+                        <div class="fw-bold">${escapeHtml(app.service.name)}</div>
+                        <div class="small">${app.service.categories ? app.service.categories.map((c) => escapeHtml(c.name)).join(', ') : '-'}</div>
                     </div>
                 </div>
 
@@ -2626,8 +2649,8 @@ runWhenReady(() => {
                     </div>
                     <div class="col-md-3">
                         <div class="small text-muted">Activated</div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="appActivated" ${app.service_activated ? 'checked' : ''}>
+                        <div class="flex items-center gap-2">
+                            <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" id="appActivated" ${app.service_activated ? 'checked' : ''}>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -2870,38 +2893,38 @@ runWhenReady(() => {
             const notif = data.notification;
             detailContent.innerHTML = `
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Title</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Title</label>
                                 <p>${notif.title}</p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Message</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Message</label>
                                 <p>${notif.message}</p>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Recipient Type</label>
-                                    <p><span class="badge bg-info">${notif.recipient_type}</span></p>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Recipient Type</label>
+                                    <p><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${notif.recipient_type}</span></p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Status</label>
-                                    <p><span class="badge bg-secondary">${notif.status}</span></p>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+                                    <p><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${notif.status}</span></p>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Delivery Channels</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Delivery Channels</label>
                                 <p>
                                     ${notif.channels.includes('push') ? '<span class="badge bg-primary mr-2"><i class="bi icon-phone"></i> Push</span>' : ''}
                                     ${notif.channels.includes('email') ? '<span class="badge bg-success mr-2"><i class="bi icon-mail"></i> Email</span>' : ''}
-                                    ${notif.channels.includes('in_app') ? '<span class="badge bg-warning"><i class="bi icon-message-square"></i> In-App</span>' : ''}
+                                    ${notif.channels.includes('in_app') ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="bi icon-message-square"></i> In-App</span>' : ''}
                                 </p>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Created At</label>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Created At</label>
                                     <p>${new Date(notif.created_at).toLocaleString('bn-BD')}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Scheduled At</label>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Scheduled At</label>
                                     <p>${notif.scheduled_at ? new Date(notif.scheduled_at).toLocaleString('bn-BD') : 'Not scheduled'}</p>
                                 </div>
                             </div>
@@ -3018,7 +3041,7 @@ runWhenReady(() => {
                                 <td>#${draft.id}</td>
                                 <td><strong>${draft.title}</strong></td>
                                 <td>${draft.message.substring(0, 50)}...</td>
-                                <td><span class="badge bg-primary">${draft.type}</span></td>
+                                <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">${draft.type}</span></td>
                                 <td>${createdAt}</td>
                                 <td>
                                     <button class="modern-btn btn-sm btn-primary" data-action="edit-draft" data-draft-id="${draft.id}">
@@ -3662,7 +3685,7 @@ runWhenReady(() => {
 
   onReady(() => {
     initFlashMessageAutoDismiss();
-    initPasswordModals();
+    initOAuthPasswordModals();
     initAccountSettings();
     initActivityLog();
     initDashboardData();
@@ -3728,26 +3751,26 @@ runWhenReady(() => {
       switch (status) {
       case 'online':
         indicator.classList.add('online');
-        icon.className = 'bi icon-server';
+        icon.className = 'lucide lucide-server';
         text.textContent = 'Online';
         indicator.title = 'All systems operational';
         break;
       case 'offline':
         indicator.classList.add('offline');
-        icon.className = 'bi icon-alert-triangle';
+        icon.className = 'lucide lucide-triangle-alert';
         text.textContent = 'Offline';
         indicator.title = message || 'Server offline';
         break;
       case 'warning':
         indicator.classList.add('warning');
-        icon.className = 'bi icon-alert-triangle';
+        icon.className = 'lucide lucide-triangle-alert';
         text.textContent = 'Warning';
         indicator.title = message || 'Some services may be degraded';
         break;
       case 'checking':
       default:
         indicator.classList.add('checking');
-        icon.className = 'bi icon-repeat';
+        icon.className = 'lucide lucide-refresh-cw';
         text.textContent = 'Checking...';
         indicator.title = 'Checking server status...';
         break;
@@ -3755,7 +3778,9 @@ runWhenReady(() => {
     };
 
     const updateServiceStatus = (serviceName, status, error = null) => {
-      const item = document.querySelector(`.server-status-item[data-service="${serviceName}"]`);
+      const item = document.querySelector(
+        `.server-status-item[data-service="${serviceName}"], .admin-status-row[data-service="${serviceName}"]`
+      );
       if (!item) return;
 
       const badge = item.querySelector('.status-badge');

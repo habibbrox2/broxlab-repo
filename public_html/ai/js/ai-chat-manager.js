@@ -254,7 +254,7 @@ class AIChatManager {
         </div>
         <div class="chat-item-preview text-truncate small text-muted">${previewText}</div>
         <div class="chat-item-meta mt-1">
-          <span class="badge ${conv.status === 'open' ? 'bg-success' : 'bg-secondary'}">${conv.status || 'open'}</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${conv.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}">${conv.status || 'open'}</span>
         </div>
       </div>
     `;
@@ -330,7 +330,7 @@ class AIChatManager {
     }
 
     if (this.nodes.sideStatus) {
-      this.nodes.sideStatus.className = `badge ${isActive ? 'bg-success' : 'bg-secondary'}`;
+      this.nodes.sideStatus.className = `badge ${isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`;
       this.nodes.sideStatus.textContent = isActive ? 'Active' : 'Inactive';
     }
   }

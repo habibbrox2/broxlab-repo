@@ -14,7 +14,7 @@ function setAlertHtml(container, type, message, strongLabel = '') {
         <div class="alert alert-${safeType} alert-dismissible fade show" role="alert">
             <i class="icon-${icon} mr-2"></i>
             ${strong}${safeMessage}
-            <button type="button" class="btn-close" data-brox-dismiss="alert"></button>
+            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert"></button>
         </div>
     `;
 }

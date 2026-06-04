@@ -1,131 +1,60 @@
-/* =======================
-   BroxLab AI Assistant UI - Premium 2026 Design System
-   Modern, cohesive styling for Public and Admin AI interfaces
-   Features: Distinct visual identities, fluid responsive design, accessibility, performance
-   ======================= */
-
 :root {
-  /* Core Design Tokens */
-  --ai-font-primary: 'Inter', 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --ai-font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
-
-  /* Color Palette - Modern & Accessible */
-  --ai-primary: #0ea5e9;
-  --ai-primary-hover: #0284c7;
-  --ai-primary-light: rgba(14, 165, 233, 0.1);
-  --ai-secondary: #64748b;
-  --ai-secondary-light: rgba(100, 116, 139, 0.1);
-  --ai-success: #10b981;
-  --ai-success-light: rgba(16, 185, 129, 0.1);
-  --ai-warning: #f59e0b;
-  --ai-warning-light: rgba(245, 158, 11, 0.1);
-  --ai-error: #ef4444;
-  --ai-error-light: rgba(239, 68, 68, 0.1);
-
-  /* Surface Colors */
-  --ai-bg-primary: #ffffff;
-  --ai-bg-secondary: #f8fafc;
-  --ai-bg-tertiary: #f1f5f9;
-  --ai-border: rgba(148, 163, 184, 0.3);
-  --ai-border-subtle: rgba(148, 163, 184, 0.2);
-
-  /* Text Colors */
-  --ai-text-primary: #0f172a;
-  --ai-text-secondary: #475569;
-  --ai-text-muted: #64748b;
-  --ai-text-inverse: #ffffff;
-
-  /* Spacing Scale */
-  --ai-space-xs: 0.25rem;
-  /* 4px */
-  --ai-space-sm: 0.5rem;
-  /* 8px */
-  --ai-space-md: 0.75rem;
-  /* 12px */
-  --ai-space-lg: 1rem;
-  /* 16px */
-  --ai-space-xl: 1.25rem;
-  /* 20px */
-  --ai-space-2xl: 1.5rem;
-  /* 24px */
-  --ai-space-3xl: 2rem;
-  /* 32px */
-  --ai-space-4xl: 2.5rem;
-  /* 40px */
-
-  /* Border Radius */
-  --ai-radius-sm: 0.375rem;
-  /* 6px */
-  --ai-radius-md: 0.5rem;
-  /* 8px */
-  --ai-radius-lg: 0.75rem;
-  /* 12px */
-  --ai-radius-xl: 1rem;
-  /* 16px */
-  --ai-radius-2xl: 1.5rem;
-  /* 24px */
-
-  /* Shadows */
-  --ai-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --ai-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-
-  /* Transitions */
-  --ai-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --ai-transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --ai-transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Z-index Scale */
-  --ai-z-dropdown: 1000;
-  --ai-z-sticky: 1020;
-  --ai-z-fixed: 1030;
-  --ai-z-modal-backdrop: 1040;
-  --ai-z-modal: 1050;
-  --ai-z-popover: 1060;
-  --ai-z-tooltip: 1070;
-  --ai-z-toast: 1080;
-  --ai-z-assistant: 9999;
+  --brox-ai-font-primary: 'Inter', 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --brox-ai-font-mono: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --brox-ai-bg: #08111f;
+  --brox-ai-surface: rgba(9, 16, 29, 0.92);
+  --brox-ai-surface-2: rgba(15, 23, 42, 0.92);
+  --brox-ai-card: rgba(255, 255, 255, 0.05);
+  --brox-ai-card-strong: rgba(255, 255, 255, 0.08);
+  --brox-ai-border: rgba(148, 163, 184, 0.18);
+  --brox-ai-border-strong: rgba(148, 163, 184, 0.3);
+  --brox-ai-text: #e5eefb;
+  --brox-ai-text-soft: #9fb1c8;
+  --brox-ai-text-muted: #6f82a0;
+  --brox-ai-primary: #32c7ff;
+  --brox-ai-primary-2: #7c9cff;
+  --brox-ai-success: #2dd4bf;
+  --brox-ai-warning: #fbbf24;
+  --brox-ai-danger: #fb7185;
+  --brox-ai-shadow-lg: 0 20px 70px rgba(2, 6, 23, 0.38);
+  --brox-ai-shadow-xl: 0 28px 90px rgba(2, 6, 23, 0.52);
+  --brox-ai-radius-sm: 0.75rem;
+  --brox-ai-radius-md: 1rem;
+  --brox-ai-radius-lg: 1.4rem;
+  --brox-ai-radius-xl: 1.75rem;
+  --brox-ai-radius-2xl: 2rem;
 }
 
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ai-bg-primary: #0f172a;
-    --ai-bg-secondary: #1e293b;
-    --ai-bg-tertiary: #334155;
-    --ai-border: rgba(100, 116, 139, 0.3);
-    --ai-border-subtle: rgba(100, 116, 139, 0.2);
-    --ai-text-primary: #f1f5f9;
-    --ai-text-secondary: #cbd5e1;
-    --ai-text-muted: #94a3b8;
-  }
+.brox-ai-assistant[data-ai-role="public"] {
+  --brox-ai-bg: #06101d;
+  --brox-ai-surface: rgba(5, 12, 24, 0.93);
+  --brox-ai-surface-2: rgba(11, 19, 35, 0.95);
+  --brox-ai-card: rgba(255, 255, 255, 0.065);
+  --brox-ai-card-strong: rgba(255, 255, 255, 0.095);
+  --brox-ai-border: rgba(114, 232, 255, 0.18);
+  --brox-ai-border-strong: rgba(114, 232, 255, 0.28);
+  --brox-ai-primary: #38e3ff;
+  --brox-ai-primary-2: #8b7dff;
+  --brox-ai-success: #4ade80;
+  --brox-ai-shadow-lg: 0 24px 72px rgba(2, 6, 23, 0.36);
+  --brox-ai-shadow-xl: 0 36px 110px rgba(2, 6, 23, 0.5);
 }
 
-/* Admin Theme Overrides */
-.brox-ai-admin-theme {
-  --ai-primary: #2563eb;
-  --ai-primary-hover: #1d4ed8;
-  --ai-bg-primary: #ffffff;
-  --ai-bg-secondary: #f8fafc;
-  --ai-text-primary: #0f172a;
+.brox-ai-assistant[data-ai-role="admin"] {
+  --brox-ai-bg: #050b16;
+  --brox-ai-surface: rgba(4, 9, 18, 0.97);
+  --brox-ai-surface-2: rgba(8, 14, 26, 0.98);
+  --brox-ai-card: rgba(255, 255, 255, 0.045);
+  --brox-ai-card-strong: rgba(255, 255, 255, 0.08);
+  --brox-ai-border: rgba(148, 163, 184, 0.16);
+  --brox-ai-border-strong: rgba(148, 163, 184, 0.28);
+  --brox-ai-primary: #43e1d7;
+  --brox-ai-primary-2: #81b6ff;
+  --brox-ai-success: #34d399;
+  --brox-ai-shadow-lg: 0 20px 70px rgba(2, 6, 23, 0.42);
+  --brox-ai-shadow-xl: 0 34px 110px rgba(2, 6, 23, 0.58);
 }
 
-/* Public Theme Overrides - Grok Style */
-.brox-ai-public-theme {
-  --ai-primary: #38bdf8;
-  --ai-primary-hover: #0ea5e9;
-  --ai-bg-primary: #0f172a;
-  --ai-bg-secondary: #1e293b;
-  --ai-bg-tertiary: #334155;
-  --ai-border: rgba(56, 189, 248, 0.2);
-  --ai-text-primary: #f1f5f9;
-  --ai-text-secondary: #cbd5e1;
-  --ai-text-muted: #94a3b8;
-}
-
-/* Base Styles */
 *,
 *::before,
 *::after {
@@ -133,2158 +62,25 @@
 }
 
 .brox-ai-assistant {
-  font-family: var(--ai-font-primary);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--ai-text-primary);
-  position: fixed;
-  z-index: var(--ai-z-assistant);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-family: var(--brox-ai-font-primary);
+  color: var(--brox-ai-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* =======================
-   PUBLIC ASSISTANT - GROK STYLE
-   ======================= */
-
-.brox-ai-public {
-  bottom: var(--ai-space-lg);
-  right: var(--ai-space-lg);
-}
-
-/* Floating Action Button - Grok Style */
-#publicAssistantBtn.brox-ai-grok-fab {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: var(--ai-radius-2xl);
-  border: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  font-size: 1.125rem;
-  transition: var(--ai-transition-base);
-  position: relative;
-  box-shadow: var(--ai-shadow-lg);
-  backdrop-filter: blur(12px);
-}
-
-#publicAssistantBtn.brox-ai-grok-fab::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: var(--ai-radius-2xl);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.15));
-  opacity: 0;
-  transition: opacity var(--ai-transition-base);
-  pointer-events: none;
-  z-index: -1;
-}
-
-#publicAssistantBtn.brox-ai-grok-fab:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.25), 0 10px 10px -5px rgba(79, 70, 229, 0.15);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(79, 70, 229, 0.05));
-}
-
-#publicAssistantBtn.brox-ai-grok-fab:hover::before {
-  opacity: 1;
-}
-
-#publicAssistantBtn.brox-ai-grok-fab:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* Chat Window - Grok Style */
-#publicAssistantChat.brox-ai-grok-shell {
-  width: min(26rem, calc(100vw - 2rem));
-  max-height: min(75vh, 40rem);
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-2xl);
-  box-shadow: var(--ai-shadow-2xl);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  backdrop-filter: blur(20px);
-  position: relative;
-  opacity: 0;
-  transform: translateY(1rem) scale(0.95);
-  transition: var(--ai-transition-smooth);
-}
-
-#publicAssistantChat.brox-ai-grok-shell:not(.brox-ai-hidden) {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-#publicAssistantChat.brox-ai-grok-shell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--ai-radius-2xl);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Header - Grok Style */
-.brox-ai-grok-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-lg) var(--ai-space-xl);
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-  color: var(--ai-text-inverse);
-  gap: var(--ai-space-md);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
-  position: relative;
-  overflow: hidden;
-  z-index: 2;
-}
-
-.brox-ai-grok-header::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-  animation: shimmer-header 4s infinite;
-  pointer-events: none;
-}
-
-.brox-ai-grok-title {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.025em;
-  z-index: 1;
-}
-
-.brox-ai-grok-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--ai-text-inverse);
-  padding: 0.125rem var(--ai-space-sm);
-  border-radius: var(--ai-radius-md);
-  backdrop-filter: blur(8px);
-}
-
-.brox-ai-status-indicator {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--ai-success);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-  animation: pulse 2s infinite;
-}
-
-.brox-ai-status-indicator.brox-ai-online {
-  background: var(--ai-success);
-  animation: none;
-}
-
-.brox-ai-grok-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  z-index: 2;
-}
-
-.brox-ai-model-toggle,
-.brox-ai-lang-toggle button,
-.brox-ai-grok-close {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: var(--ai-text-inverse);
-  border-radius: var(--ai-radius-md);
-  padding: var(--ai-space-sm) var(--ai-space-md);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brox-ai-model-toggle:hover,
-.brox-ai-lang-toggle button:hover,
-.brox-ai-grok-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.brox-ai-lang-toggle button.active {
-  background: rgba(255, 255, 255, 0.95);
-  color: #0ea5e9;
-  font-weight: 700;
-}
-
-.brox-ai-grok-close:hover {
-  transform: rotate(90deg);
-}
-
-/* Model Selector */
-#publicAssistantModelBar.brox-ai-model-bar {
-  background: var(--ai-bg-secondary);
-  border-bottom: 1px solid var(--ai-border);
-  padding: var(--ai-space-md) var(--ai-space-xl);
-  transform: translateY(-100%);
-  opacity: 0;
-  transition: var(--ai-transition-base);
-}
-
-#publicAssistantModelBar:not(.brox-ai-collapsed) {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.brox-ai-model-bar-content {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-model-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ai-text-secondary);
-}
-
-.brox-ai-model-select {
-  flex: 1;
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-md);
-  padding: var(--ai-space-sm) var(--ai-space-md);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  font-size: 0.875rem;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-model-select:focus {
-  outline: none;
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-#publicAssistantChat.brox-ai-grok-shell.brox-ai-fullscreen {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  max-width: none;
-  max-height: none;
-  border-radius: 0;
-  margin: 0;
-  transform: none;
-  z-index: 9999;
-}
-
-#publicAssistantChat.brox-ai-grok-shell.brox-ai-fullscreen::before {
-  border-radius: 0;
-}
-
-/* History List */
-.brox-ai-history-list {
-  padding: var(--ai-space-md);
-}
-
-.brox-ai-history-item {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-  padding: var(--ai-space-md);
-  border-radius: var(--ai-radius-lg);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  border: 1px solid transparent;
-}
-
-.brox-ai-history-item:hover {
-  background: var(--ai-bg-secondary);
-  border-color: var(--ai-border);
-}
-
-.brox-ai-history-item.active {
-  background: var(--ai-primary-light);
-  border-color: var(--ai-primary);
-}
-
-.brox-ai-history-item-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--ai-radius-md);
-  background: var(--ai-bg-tertiary);
-  display: grid;
-  place-items: center;
-  color: var(--ai-text-muted);
-}
-
-.brox-ai-history-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.brox-ai-history-item-title {
-  font-weight: 600;
-  color: var(--ai-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.brox-ai-history-item-meta {
-  font-size: 0.75rem;
-  color: var(--ai-text-muted);
-  margin-top: 0.125rem;
-}
-
-/* Modal Styles */
-.brox-ai-grok-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  display: grid;
-  place-items: center;
-  z-index: 20;
-  opacity: 0;
-  visibility: hidden;
-  transition: var(--ai-transition-base);
-}
-
-.brox-ai-grok-modal:not(.brox-ai-hidden) {
-  opacity: 1;
-  visibility: visible;
-}
-
-.brox-ai-grok-modal-content {
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  padding: var(--ai-space-2xl);
-  max-width: 24rem;
-  width: 90vw;
-  box-shadow: var(--ai-shadow-2xl);
-  text-align: center;
-}
-
-.brox-ai-grok-modal-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--ai-radius-xl);
-  background: var(--ai-primary-light);
-  display: grid;
-  place-items: center;
-  margin: 0 auto var(--ai-space-lg);
-  color: var(--ai-primary);
-}
-
-.brox-ai-grok-modal h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--ai-text-primary);
-  margin-bottom: var(--ai-space-md);
-}
-
-.brox-ai-grok-modal p {
-  color: var(--ai-text-secondary);
-  margin-bottom: var(--ai-space-lg);
-}
-
-.brox-ai-grok-consent-options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ai-space-md);
-  margin-bottom: var(--ai-space-xl);
-}
-
-.brox-ai-grok-checkbox {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  cursor: pointer;
-}
-
-.brox-ai-grok-checkbox input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  accent-color: var(--ai-primary);
-}
-
-.brox-ai-grok-checkbox span {
-  font-size: 0.875rem;
-  color: var(--ai-text-secondary);
-}
-
-.brox-ai-grok-modal-actions {
-  display: flex;
-  gap: var(--ai-space-md);
-  justify-content: center;
-}
-
-.brox-ai-grok-btn-secondary,
-.brox-ai-grok-btn-primary {
-  padding: var(--ai-space-sm) var(--ai-space-lg);
-  border-radius: var(--ai-radius-lg);
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  border: 1px solid var(--ai-border);
-}
-
-.brox-ai-grok-btn-secondary {
-  background: var(--ai-bg-secondary);
-  color: var(--ai-text-secondary);
-}
-
-.brox-ai-grok-btn-secondary:hover {
-  background: var(--ai-bg-tertiary);
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-grok-btn-primary {
-  background: var(--ai-primary);
-  color: var(--ai-text-inverse);
-  border-color: var(--ai-primary);
-}
-
-.brox-ai-grok-btn-primary:hover {
-  background: var(--ai-primary-hover);
-}
-
-/* Welcome Screen */
-.brox-ai-grok-welcome {
-  padding: var(--ai-space-3xl);
-  text-align: center;
-  max-width: 28rem;
-  margin: 0 auto;
-}
-
-.brox-ai-grok-logo {
-  width: 4rem;
-  height: 4rem;
-  border-radius: var(--ai-radius-2xl);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  display: grid;
-  place-items: center;
-  margin: 0 auto var(--ai-space-xl);
-  color: var(--ai-text-inverse);
-  box-shadow: var(--ai-shadow-lg);
-}
-
-.brox-ai-grok-welcome h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--ai-text-primary);
-  margin-bottom: var(--ai-space-2xl);
-}
-
-.brox-ai-grok-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ai-space-lg);
-  margin-bottom: var(--ai-space-2xl);
-}
-
-.brox-ai-input-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ai-text-primary);
-  text-align: left;
-}
-
-.brox-ai-grok-input {
-  width: 100%;
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-lg);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  font-size: 1rem;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-grok-input:focus {
-  outline: none;
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-.brox-ai-grok-btn-primary {
-  padding: var(--ai-space-md) var(--ai-space-xl);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  color: var(--ai-text-inverse);
-  border: none;
-  border-radius: var(--ai-radius-lg);
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.brox-ai-grok-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ai-shadow-lg);
-}
-
-.brox-ai-grok-btn-primary:active {
-  transform: translateY(0);
-}
-
-.brox-ai-grok-topic-label {
-  font-size: 0.875rem;
-  color: var(--ai-text-secondary);
-  margin-bottom: var(--ai-space-md);
-}
-
-.brox-ai-topic-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: var(--ai-space-sm);
-}
-
-.brox-ai-topic-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  padding: var(--ai-space-sm) var(--ai-space-md);
-  background: var(--ai-bg-secondary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-topic-chip:hover {
-  background: var(--ai-primary-light);
-  border-color: var(--ai-primary);
-}
-
-.brox-ai-topic-chip input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  accent-color: var(--ai-primary);
-}
-
-.brox-ai-topic-chip span {
-  font-size: 0.875rem;
-  color: var(--ai-text-secondary);
-}
-
-/* Messages Area */
-#publicAssistantMessages.brox-ai-grok-messages {
-  flex: 1;
-  padding: var(--ai-space-lg);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ai-space-lg);
-  background: var(--ai-bg-secondary);
-}
-
-.brox-ai-msg {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--ai-space-md);
-  padding: 1.25rem 1.5rem;
-  border-radius: 2rem;
-  max-width: 80%;
-  word-break: break-word;
-  line-height: 1.7;
-  position: relative;
-  transition: var(--ai-transition-fast);
-  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.brox-ai-msg:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 22px 72px rgba(15, 23, 42, 0.12);
-}
-
-.brox-ai-msg.brox-ai-user {
-  margin-left: auto;
-  grid-template-columns: 1fr auto;
-  align-items: flex-end;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.95), rgba(59, 130, 246, 0.95));
-  color: #fff;
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-.brox-ai-msg.brox-ai-assistant {
-  margin-right: auto;
-  grid-template-columns: auto 1fr;
-  align-items: flex-start;
-  background: rgba(15, 23, 42, 0.92);
-  color: var(--ai-text-primary);
-  border-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-}
-
-.brox-ai-msg.brox-ai-user::before,
-.brox-ai-msg.brox-ai-assistant::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0.35;
-}
-
-.brox-ai-msg.brox-ai-user::before {
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 40%);
-}
-
-.brox-ai-msg.brox-ai-assistant::before {
-  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 38%);
-}
-
-.brox-ai-msg-avatar {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 1rem;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--ai-text-primary);
-  flex-shrink: 0;
-}
-
-.brox-ai-msg.brox-ai-user .brox-ai-msg-avatar {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.brox-ai-msg-content {
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 1rem;
-  color: inherit;
-}
-
-.brox-ai-msg-quote,
-.brox-ai-msg-content blockquote {
-  margin: 0;
-  padding: 0.9rem 1rem;
-  border-left: 3px solid rgba(14, 165, 233, 0.65);
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--ai-radius-xl);
-}
-
-.brox-ai-msg-meta {
-  font-size: 0.78rem;
-  opacity: 0.75;
-  color: rgba(255, 255, 255, 0.65);
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.brox-ai-msg.brox-ai-assistant .brox-ai-msg-meta {
-  justify-content: flex-start;
-  color: rgba(148, 163, 184, 0.85);
-}
-
-.brox-ai-msg-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.brox-ai-msg-actions button,
-.brox-ai-msg-actions a {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
-  padding: 0.55rem 0.9rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-msg-actions button:hover,
-.brox-ai-msg-actions a:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-/* Footer / Input Area */
-.brox-ai-grok-footer {
-  padding: var(--ai-space-lg) var(--ai-space-xl);
-  border-top: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  backdrop-filter: blur(12px);
-}
-
-.brox-ai-grok-input-wrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-grok-input {
-  flex: 1;
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  background: var(--ai-bg-secondary);
-  color: var(--ai-text-primary);
-  font-size: 1rem;
-  outline: none;
-  resize: none;
-  transition: var(--ai-transition-fast);
-  min-height: 2.5rem;
-  max-height: 8rem;
-}
-
-.brox-ai-grok-input:focus {
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-.brox-ai-grok-send {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: none;
-  border-radius: var(--ai-radius-lg);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  color: var(--ai-text-inverse);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  box-shadow: var(--ai-shadow-sm);
-}
-
-.brox-ai-grok-send:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.brox-ai-grok-send:active {
-  transform: translateY(0);
-}
-
-/* =======================
-   ADMIN ASSISTANT - PROFESSIONAL STYLE
-   ======================= */
-
-.brox-ai-admin {
-  bottom: var(--ai-space-lg);
-  right: var(--ai-space-lg);
-}
-
-/* Trigger FAB - Hover/active effects (base styles are inline) */
-#adminAiBtn.brox-ai-trigger-fab::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: var(--ai-radius-2xl);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.15));
-  opacity: 0;
-  transition: opacity var(--ai-transition-base);
-  pointer-events: none;
-  z-index: -1;
-}
-
-#adminAiBtn.brox-ai-trigger-fab:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.25), 0 10px 10px -5px rgba(79, 70, 229, 0.15);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(79, 70, 229, 0.05));
-}
-
-#adminAiBtn.brox-ai-trigger-fab:hover::before {
-  opacity: 1;
-}
-
-#adminAiBtn.brox-ai-trigger-fab:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* Notification Badge */
-.brox-ai-fab-badge {
-  position: absolute;
-  top: -0.25rem;
-  right: -0.25rem;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-  background: var(--ai-error);
-  color: var(--ai-text-inverse);
-  display: grid;
-  place-items: center;
-  font-size: 0.625rem;
-  font-weight: 700;
-  border: 2px solid var(--ai-bg-primary);
-}
-
-/* Main Copilot Sidebar */
-#adminAiShell.brox-ai-copilot-sidebar {
-  width: min(28rem, calc(100vw - 2rem));
-  height: min(80vh, 48rem);
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-2xl);
-  box-shadow: var(--ai-shadow-2xl);
-  overflow: hidden;
-  display: flex;
-  position: relative;
-  opacity: 0;
-  transform: translateY(1rem) scale(0.95);
-  transition: var(--ai-transition-smooth);
-  backdrop-filter: blur(20px);
-}
-
-#adminAiShell.brox-ai-copilot-sidebar:not(.brox-ai-hidden) {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-#adminAiShell.brox-ai-copilot-sidebar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--ai-radius-2xl);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Resizer */
-.admin-assistant-chat-resizer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0.5rem;
-  height: 100%;
-  cursor: ew-resize;
-  background: transparent;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity var(--ai-transition-base), background var(--ai-transition-base);
-}
-
-.admin-assistant-chat-resizer:hover {
-  opacity: 0.5;
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.5), transparent);
-}
-
-.admin-assistant-chat-resizer:active {
-  opacity: 1;
-  background: linear-gradient(90deg, var(--ai-primary), rgba(37, 99, 235, 0.5));
-}
-
-/* Sidebar */
-#adminAiSidebar.brox-ai-sidebar {
-  width: 16rem;
-  background: var(--ai-bg-secondary);
-  border-right: 1px solid var(--ai-border);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transform: translateX(0);
-  opacity: 1;
-  transition: var(--ai-transition-base);
-}
-
-#adminAiSidebar.brox-ai-sidebar.brox-ai-collapsed {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.brox-ai-sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-lg);
-  border-bottom: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-}
-
-.brox-ai-sidebar-header span {
-  font-weight: 700;
-  color: var(--ai-text-primary);
-  font-size: 1rem;
-}
-
-.brox-ai-icon-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-secondary);
-  border-radius: var(--ai-radius-md);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-icon-btn:hover {
-  background: var(--ai-bg-secondary);
-  color: var(--ai-text-primary);
-}
-
-/* Tabs */
-.brox-ai-tabs {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.brox-ai-tabs-nav {
-  display: flex;
-  border-bottom: 1px solid var(--ai-border);
-}
-
-.brox-ai-tabs-nav-item {
-  flex: 1;
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  background: transparent;
-  border: none;
-  color: var(--ai-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ai-space-sm);
-  position: relative;
-}
-
-.brox-ai-tabs-nav-item::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background: var(--ai-primary);
-  transition: var(--ai-transition-base);
-  transform: translateX(-50%);
-}
-
-.brox-ai-tabs-nav-item.brox-ai-tabs-nav-item-active {
-  color: var(--ai-primary);
-}
-
-.brox-ai-tabs-nav-item.brox-ai-tabs-nav-item-active::after {
-  width: 100%;
-}
-
-.brox-ai-tabs-content {
-  flex: 1;
-  overflow: hidden;
-}
-
-.brox-ai-tabs-panel {
-  height: 100%;
-  padding: 0;
-  opacity: 0;
-  transform: translateX(1rem);
-  transition: var(--ai-transition-base);
-  display: none;
-}
-
-.brox-ai-tabs-panel.brox-ai-tabs-panel-active {
-  opacity: 1;
-  transform: translateX(0);
-  display: block;
-}
-
-/* History List */
-#adminAiHistory.brox-ai-history-list {
-  padding: var(--ai-space-md);
-  height: 100%;
-  overflow-y: auto;
-}
-
-.brox-ai-history-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--ai-space-3xl);
-  color: var(--ai-text-muted);
-  text-align: center;
-}
-
-.brox-ai-history-empty i {
-  font-size: 2rem;
-  margin-bottom: var(--ai-space-md);
-  opacity: 0.5;
-}
-
-.brox-ai-history-empty p {
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-/* Settings */
-.brox-ai-settings-content {
-  padding: var(--ai-space-lg);
-  height: 100%;
-  overflow-y: auto;
-}
-
-.brox-ai-setting-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-md) 0;
-  border-bottom: 1px solid var(--ai-border-subtle);
-}
-
-.brox-ai-setting-item:last-child {
-  border-bottom: none;
-}
-
-.brox-ai-setting-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-toggle-switch {
-  background: var(--ai-border);
-  border: none;
-  border-radius: 999px;
-  padding: 0.125rem;
-  width: 3rem;
-  height: 1.5rem;
-  cursor: pointer;
-  position: relative;
-  transition: var(--ai-transition-base);
-  display: flex;
-  align-items: center;
-}
-
-.brox-ai-toggle-switch:hover {
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-}
-
-.brox-ai-toggle-switch.active {
-  background: linear-gradient(135deg, var(--ai-success), #16a34a);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
-}
-
-.brox-ai-toggle-slider {
-  display: block;
-  width: 1.25rem;
-  height: 1.25rem;
-  background: white;
-  border-radius: 999px;
-  position: absolute;
-  left: 0.125rem;
-  transition: left var(--ai-transition-base);
-  box-shadow: var(--ai-shadow-sm);
-}
-
-.brox-ai-toggle-switch.active .brox-ai-toggle-slider {
-  left: 1.625rem;
-}
-
-.brox-ai-setting-inline {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-setting-select {
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-md);
-  padding: var(--ai-space-sm) var(--ai-space-md);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  font-size: 0.875rem;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-setting-select:focus {
-  outline: none;
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-.brox-ai-setting-item-block {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-setting-json {
-  width: 100%;
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-md);
-  padding: var(--ai-space-md);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  font-family: var(--ai-font-mono);
-  font-size: 0.875rem;
-  resize: vertical;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-setting-json:focus {
-  outline: none;
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-/* Chat Main Area */
-.brox-ai-chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-/* Header */
-.brox-ai-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-lg) var(--ai-space-xl);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  color: var(--ai-text-inverse);
-  border-bottom: 1px solid var(--ai-border);
-  z-index: 2;
-}
-
-.brox-ai-header-info {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-header-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-}
-
-.brox-ai-header-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-lg);
-}
-
-.brox-ai-context-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--ai-text-inverse);
-  padding: 0.25rem var(--ai-space-sm);
-  border-radius: var(--ai-radius-md);
-  backdrop-filter: blur(8px);
-}
-
-.brox-ai-save-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--ai-success);
-}
-
-.brox-ai-model-status {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-}
-
-.brox-ai-status-indicator {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--ai-success);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-}
-
-.brox-ai-model-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--ai-text-inverse);
-}
-
-.brox-ai-header-status {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.brox-ai-header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-}
-
-.brox-ai-close-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: var(--ai-text-inverse);
-  border-radius: var(--ai-radius-md);
-  padding: var(--ai-space-sm);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  backdrop-filter: blur(8px);
-}
-
-.brox-ai-close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: rotate(90deg);
-}
-
-/* Body */
-#adminAiBody.brox-ai-body {
-  flex: 1;
-  padding: var(--ai-space-lg) var(--ai-space-xl);
-  overflow-y: auto;
-  background: var(--ai-bg-secondary);
-  position: relative;
-}
-
-/* Welcome Message */
-.brox-ai-welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--ai-space-3xl);
-  max-width: 24rem;
-  margin: 0 auto;
-}
-
-.brox-ai-welcome-icon {
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--ai-radius-xl);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  display: grid;
-  place-items: center;
-  margin-bottom: var(--ai-space-lg);
-  color: var(--ai-text-inverse);
-  box-shadow: var(--ai-shadow-lg);
-}
-
-.brox-ai-welcome h4 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--ai-text-primary);
-  margin-bottom: var(--ai-space-md);
-}
-
-.brox-ai-welcome p {
-  color: var(--ai-text-secondary);
-  margin-bottom: var(--ai-space-xl);
-}
-
-.brox-ai-welcome-commands {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ai-space-sm);
-  width: 100%;
-}
-
-.brox-ai-cmd-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-lg);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  box-shadow: var(--ai-shadow-sm);
-}
-
-.brox-ai-cmd-chip:hover {
-  background: var(--ai-primary-light);
-  border-color: var(--ai-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.brox-ai-cmd-chip i {
-  color: var(--ai-primary);
-}
-
-.brox-ai-cmd-chip strong {
-  color: var(--ai-text-primary);
-  font-weight: 600;
-}
-
-/* Slash Menu */
-#adminAiSlashMenu.brox-ai-slash-menu {
-  position: absolute;
-  bottom: 100%;
-  left: var(--ai-space-lg);
-  right: var(--ai-space-lg);
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  box-shadow: var(--ai-shadow-xl);
-  z-index: 15;
-  max-height: 20rem;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(0.5rem) scale(0.95);
-  transition: var(--ai-transition-base);
-}
-
-#adminAiSlashMenu:not(.brox-ai-hidden) {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.brox-ai-slash-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-lg);
-  border-bottom: 1px solid var(--ai-border);
-  background: var(--ai-bg-secondary);
-}
-
-.brox-ai-slash-header span {
-  font-weight: 700;
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-slash-close {
-  background: none;
-  border: none;
-  color: var(--ai-text-muted);
-  cursor: pointer;
-  padding: var(--ai-space-sm);
-  border-radius: var(--ai-radius-md);
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-slash-close:hover {
-  background: var(--ai-bg-tertiary);
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-slash-list {
-  max-height: 16rem;
-  overflow-y: auto;
-}
-
-.brox-ai-slash-item {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  border-bottom: 1px solid var(--ai-border-subtle);
-}
-
-.brox-ai-slash-item:last-child {
-  border-bottom: none;
-}
-
-.brox-ai-slash-item:hover {
-  background: var(--ai-bg-secondary);
-}
-
-.brox-ai-slash-icon {
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--ai-radius-md);
-  background: var(--ai-primary-light);
-  display: grid;
-  place-items: center;
-  color: var(--ai-primary);
-}
-
-.brox-ai-slash-info strong {
-  color: var(--ai-text-primary);
-  font-weight: 600;
-}
-
-.brox-ai-slash-info small {
-  color: var(--ai-text-muted);
-  font-size: 0.75rem;
-}
-
-/* Suggestion Panel */
-#adminAiSuggestionPanel.brox-ai-suggestion-panel {
-  position: absolute;
-  bottom: 100%;
-  left: var(--ai-space-lg);
-  right: var(--ai-space-lg);
-  background: var(--ai-bg-primary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  box-shadow: var(--ai-shadow-xl);
-  z-index: 15;
-  max-height: 12rem;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(0.5rem) scale(0.95);
-  transition: var(--ai-transition-base);
-}
-
-#adminAiSuggestionPanel:not(.brox-ai-hidden) {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.brox-ai-suggestion-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  border-bottom: 1px solid var(--ai-border);
-  background: var(--ai-bg-secondary);
-}
-
-.brox-ai-suggestion-header span {
-  font-weight: 600;
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-suggestion-close {
-  background: none;
-  border: none;
-  color: var(--ai-text-muted);
-  cursor: pointer;
-  padding: var(--ai-space-sm);
-  border-radius: var(--ai-radius-md);
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-suggestion-close:hover {
-  background: var(--ai-bg-tertiary);
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-suggestion-list {
-  max-height: 8rem;
-  overflow-y: auto;
-}
-
-.brox-ai-suggestion-item {
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  border-bottom: 1px solid var(--ai-border-subtle);
-}
-
-.brox-ai-suggestion-item:last-child {
-  border-bottom: none;
-}
-
-.brox-ai-suggestion-item:hover {
-  background: var(--ai-bg-secondary);
-}
-
-.brox-ai-suggestion-item.active {
-  background: var(--ai-primary-light);
-  color: var(--ai-primary);
-}
-
-.brox-ai-suggestion-meta {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.85rem;
-  color: var(--ai-text-muted);
-}
-
-/* Attachment Preview */
-.brox-ai-attachment-preview {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-md);
-  padding: var(--ai-space-md);
-  background: var(--ai-bg-secondary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-lg);
-  margin-bottom: var(--ai-space-md);
-}
-
-.brox-ai-attachment-info {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  flex: 1;
-}
-
-.brox-ai-attachment-thumb {
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--ai-radius-md);
-  background: var(--ai-bg-tertiary);
-  display: grid;
-  place-items: center;
-  color: var(--ai-text-muted);
-}
-
-.brox-ai-attachment-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-attachment-size {
-  font-size: 0.75rem;
-  color: var(--ai-text-muted);
-}
-
-.brox-ai-attachment-progress {
-  flex: 1;
-  height: 0.25rem;
-  background: var(--ai-bg-tertiary);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.brox-ai-attachment-progress-bar {
-  height: 100%;
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  border-radius: 999px;
-  transition: width var(--ai-transition-base);
-}
-
-.brox-ai-attachment-remove {
-  width: 1.5rem;
-  height: 1.5rem;
-  border: none;
-  background: var(--ai-error);
-  color: var(--ai-text-inverse);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-attachment-remove:hover {
-  transform: scale(1.1);
-}
-
-/* Quick Actions */
-.brox-ai-quick-actions {
-  display: flex;
-  gap: var(--ai-space-sm);
-  padding: var(--ai-space-md) var(--ai-space-xl);
-  border-top: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  flex-wrap: wrap;
-}
-
-.brox-ai-action-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  padding: var(--ai-space-sm) var(--ai-space-md);
-  background: var(--ai-bg-secondary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-lg);
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--ai-text-secondary);
-  box-shadow: var(--ai-shadow-sm);
-}
-
-.brox-ai-action-chip:hover {
-  background: var(--ai-primary-light);
-  border-color: var(--ai-primary);
-  color: var(--ai-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.brox-ai-action-chip:active {
-  transform: translateY(0);
-}
-
-/* Footer */
-#adminAiFooter.brox-ai-footer {
-  padding: var(--ai-space-lg) var(--ai-space-xl);
-  border-top: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  backdrop-filter: blur(12px);
-}
-
-.brox-ai-input-wrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--ai-space-md);
-}
-
-.brox-ai-action-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid var(--ai-border);
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-secondary);
-  border-radius: var(--ai-radius-lg);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-}
-
-.brox-ai-action-btn:hover {
-  background: var(--ai-bg-secondary);
-  color: var(--ai-text-primary);
-}
-
-.brox-ai-input-container {
-  flex: 1;
-  position: relative;
-}
-
-.brox-ai-textarea {
-  width: 100%;
-  min-height: 2.5rem;
-  max-height: 8rem;
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-xl);
-  padding: var(--ai-space-md) var(--ai-space-lg);
-  background: var(--ai-bg-secondary);
-  color: var(--ai-text-primary);
-  font-size: 1rem;
-  outline: none;
-  resize: none;
-  transition: var(--ai-transition-fast);
-  font-family: inherit;
-}
-
-.brox-ai-textarea:focus {
-  border-color: var(--ai-primary);
-  box-shadow: 0 0 0 3px var(--ai-primary-light);
-}
-
-.brox-ai-char-count {
-  position: absolute;
-  bottom: var(--ai-space-sm);
-  right: var(--ai-space-sm);
-  font-size: 0.625rem;
-  color: var(--ai-text-muted);
-  background: var(--ai-bg-secondary);
-  padding: 0.125rem var(--ai-space-sm);
-  border-radius: var(--ai-radius-sm);
-}
-
-.brox-ai-send-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: none;
-  border-radius: var(--ai-radius-lg);
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  color: var(--ai-text-inverse);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: var(--ai-transition-fast);
-  box-shadow: var(--ai-shadow-sm);
-}
-
-.brox-ai-send-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ai-shadow-md);
-}
-
-.brox-ai-send-btn:active {
-  transform: translateY(0);
-}
-
-.brox-ai-input-hint {
-  display: flex;
-  gap: var(--ai-space-lg);
-  margin-top: var(--ai-space-md);
-  font-size: 0.75rem;
-  color: var(--ai-text-muted);
-}
-
-.brox-ai-input-hint kbd {
-  background: var(--ai-bg-tertiary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-sm);
-  padding: 0.125rem var(--ai-space-sm);
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: var(--ai-text-secondary);
-}
-
-/* =======================
-   SHARED COMPONENTS
-   ======================= */
-
-/* Thinking Indicator */
-.thinking-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ai-space-md);
-  padding: var(--ai-space-xl);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(37, 99, 235, 0.02), transparent);
-  border-radius: var(--ai-radius-xl);
-  margin: var(--ai-space-lg) 0;
-  animation: thinking-shimmer 3s ease-in-out infinite;
-  position: relative;
-  overflow: hidden;
-}
-
-.thinking-content {
-  display: flex;
-  align-items: center;
-  gap: var(--ai-space-sm);
-  flex-wrap: wrap;
-}
-
-.thinking-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--ai-text-secondary);
-  letter-spacing: 0.025em;
-  animation: thinking-text-fade 1.5s ease-in-out infinite;
-}
-
-.thinking-dots {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.thinking-dot {
-  width: 0.3125rem;
-  height: 0.3125rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  animation: thinking-dot-pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
-}
-
-.thinking-dot:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.thinking-dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.thinking-dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-/* Messages */
-.brox-ai-message {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ai-space-sm);
-  padding: var(--ai-space-lg);
-  border-radius: var(--ai-radius-xl);
-  max-width: 85%;
-  word-break: break-word;
-  line-height: 1.6;
-  box-shadow: var(--ai-shadow-sm);
-  animation: messageSlide 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
-  transition: var(--ai-transition-base);
-}
-
-.brox-ai-message:hover {
-  box-shadow: var(--ai-shadow-md);
-  transform: translateY(-1px);
-}
-
-.brox-ai-message.brox-ai-user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-hover));
-  color: var(--ai-text-inverse);
-  border: 1px solid var(--ai-primary);
-}
-
-.brox-ai-message.brox-ai-assistant {
-  align-self: flex-start;
-  background: var(--ai-bg-primary);
-  color: var(--ai-text-primary);
-  border: 1px solid var(--ai-border);
-}
-
-.brox-ai-message-content {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 0.95rem;
-}
-
-.brox-ai-message-time {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  text-align: right;
-}
-
-/* Code Blocks */
-.brox-ai-message pre {
-  background: var(--ai-bg-tertiary);
-  border: 1px solid var(--ai-border);
-  border-radius: var(--ai-radius-lg);
-  padding: var(--ai-space-lg);
-  overflow-x: auto;
-  margin: var(--ai-space-md) 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
-}
-
-.brox-ai-message pre::-webkit-scrollbar {
-  height: 0.375rem;
-}
-
-.brox-ai-message pre::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.brox-ai-message pre::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.4);
-  border-radius: 0.1875rem;
-}
-
-.brox-ai-message pre::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
-}
-
-.brox-ai-message pre code {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  color: inherit;
-}
-
-.brox-ai-message code {
-  background: var(--ai-bg-tertiary);
-  color: var(--ai-text-primary);
-  padding: 0.125rem var(--ai-space-sm);
-  border-radius: var(--ai-radius-sm);
-  font-family: var(--ai-font-mono);
-  font-size: 0.875em;
-  letter-spacing: -0.025em;
-}
-
-/* =======================
-   ANIMATIONS
-   ======================= */
-
-@keyframes messageSlide {
-  from {
-    opacity: 0;
-    transform: translateY(0.75rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: 0;
-  }
-}
-
-@keyframes shimmer-header {
-
-  0%,
-  100% {
-    transform: translateX(-100%);
-  }
-
-  50% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes thinking-shimmer {
-  0% {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(37, 99, 235, 0.02), transparent);
-  }
-
-  50% {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.04), transparent);
-  }
-
-  100% {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(37, 99, 235, 0.02), transparent);
-  }
-}
-
-@keyframes thinking-text-fade {
-
-  0%,
-  100% {
-    opacity: 0.7;
-  }
-
-  50% {
-    opacity: 0.9;
-  }
-}
-
-@keyframes thinking-dot-pulse {
-
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* =======================
-   RESPONSIVE DESIGN
-   ======================= */
-
-/* Mobile First - Base styles are mobile-optimized */
-
-/* Small tablets and up */
-@media (min-width: 640px) {
-  .brox-ai-assistant {
-    bottom: var(--ai-space-xl);
-    right: var(--ai-space-xl);
-  }
-
-  #publicAssistantChat.brox-ai-grok-shell,
-  #adminAiShell.brox-ai-copilot-sidebar {
-    width: min(26rem, calc(100vw - 4rem));
-    height: min(75vh, 40rem);
-  }
-
-  .brox-ai-message {
-    max-width: 80%;
-  }
-
-  .brox-ai-message.brox-ai-user {
-    max-width: 75%;
-  }
-
-  .brox-ai-message.brox-ai-assistant {
-    max-width: 85%;
-  }
-}
-
-/* Desktop */
-@media (min-width: 1024px) {
-  #publicAssistantChat.brox-ai-grok-shell {
-    width: min(28rem, calc(100vw - 6rem));
-    height: min(80vh, 48rem);
-  }
-
-  #adminAiShell.brox-ai-copilot-sidebar {
-    width: min(32rem, calc(100vw - 6rem));
-    height: min(85vh, 56rem);
-  }
-
-  .brox-ai-sidebar {
-    width: 18rem;
-  }
-
-  .brox-ai-message {
-    max-width: 75%;
-  }
-
-  .brox-ai-message.brox-ai-user {
-    max-width: 70%;
-  }
-
-  .brox-ai-message.brox-ai-assistant {
-    max-width: 80%;
-  }
-}
-
-/* Large desktop */
-@media (min-width: 1280px) {
-
-  #publicAssistantChat.brox-ai-grok-shell,
-  #adminAiShell.brox-ai-copilot-sidebar {
-    width: min(36rem, calc(100vw - 8rem));
-  }
-
-  .brox-ai-sidebar {
-    width: 20rem;
-  }
-}
-
-/* Touch-friendly interactions */
-@media (hover: none) and (pointer: coarse) {
-  .brox-ai-assistant * {
-    cursor: default;
-  }
-
-  .brox-ai-grok-fab,
-  .brox-ai-trigger-fab,
-  .brox-ai-action-btn,
-  .brox-ai-send-btn,
-  .brox-ai-icon-btn,
-  .brox-ai-tabs-nav-item,
-  .brox-ai-slash-item,
-  .brox-ai-suggestion-item,
-  .brox-ai-action-chip,
-  .brox-ai-cmd-chip {
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-  }
-
-  .brox-ai-textarea {
-    font-size: 16px;
-    min-height: 3rem;
-  }
-
-  .brox-ai-grok-input {
-    font-size: 16px;
-    min-height: 3rem;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --ai-border: rgba(0, 0, 0, 0.8);
-    --ai-text-primary: #000000;
-    --ai-text-secondary: #000000;
-    --ai-bg-primary: #ffffff;
-    --ai-bg-secondary: #f8f8f8;
-  }
-
-  .brox-ai-public-theme {
-    --ai-bg-primary: #000000;
-    --ai-bg-secondary: #1a1a1a;
-    --ai-text-primary: #ffffff;
-    --ai-text-secondary: #ffffff;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .thinking-indicator {
-    animation: none;
-  }
-
-  .thinking-dot {
-    animation: none;
-  }
-}
-
-/* Print styles */
-@media print {
-  .brox-ai-assistant {
-    display: none !important;
-  }
-}
-
-/* =======================
-   ACCESSIBILITY
-   ======================= */
-
-/* Focus management */
 .brox-ai-assistant *:focus-visible {
-  outline: 2px solid var(--ai-primary);
+  outline: 2px solid var(--brox-ai-primary);
   outline-offset: 2px;
-  border-radius: var(--ai-radius-sm);
 }
 
-/* Screen reader only text */
-.brox-ai-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* High contrast focus indicators */
-@media (prefers-contrast: high) {
-  .brox-ai-assistant *:focus-visible {
-    outline: 3px solid;
-    outline-offset: 1px;
-  }
-}
-
-/* Skip links for keyboard navigation */
-.brox-ai-skip-link {
-  position: absolute;
-  top: -40px;
-  left: 6px;
-  background: var(--ai-primary);
-  color: var(--ai-text-inverse);
-  padding: 8px;
-  text-decoration: none;
-  border-radius: var(--ai-radius-md);
-  z-index: var(--ai-z-assistant);
-  transition: top var(--ai-transition-fast);
-}
-
-.brox-ai-skip-link:focus {
-  top: 6px;
-}
-
-/* =======================
-   UTILITY CLASSES
-   ======================= */
-
-.brox-ai-hidden {
+.brox-ai-hidden,
+.d-none,
+.hidden {
   display: none !important;
 }
 
-.brox-ai-visually-hidden {
+.brox-ai-visually-hidden,
+.brox-ai-sr-only {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -2296,28 +92,2499 @@
   border: 0 !important;
 }
 
-.brox-ai-scroll-smooth {
-  scroll-behavior: smooth;
-}
-
-.brox-ai-scrollbar-thin {
+.brox-ai-scrollbar-thin,
+.custom-scrollbar,
+.brox-ai-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--ai-border) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
-.brox-ai-scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+.brox-ai-scrollbar-thin::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.brox-ai-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.brox-ai-scrollbar-thin::-webkit-scrollbar-track {
+.brox-ai-scrollbar-thin::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.brox-ai-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.brox-ai-scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--ai-border);
-  border-radius: 3px;
+.brox-ai-scrollbar-thin::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.brox-ai-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
 }
 
-.brox-ai-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: var(--ai-secondary);
+.brox-ai-scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.brox-ai-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+.brox-ai-trigger-fab,
+.brox-ai-icon-btn,
+.brox-ai-action-btn,
+.brox-ai-send-btn,
+.brox-ai-action-chip,
+.brox-ai-cmd-chip,
+.brox-ai-tabs-nav-item,
+.brox-ai-suggestion-close,
+.brox-ai-attachment-remove,
+.brox-ai-model-toggle,
+.brox-ai-lang-toggle button,
+.brox-ai-grok-close,
+.brox-ai-secondary-btn,
+.brox-ai-primary-btn,
+.brox-ai-toggle-switch {
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.brox-ai-trigger-fab:hover,
+.brox-ai-icon-btn:hover,
+.brox-ai-action-btn:hover,
+.brox-ai-send-btn:hover,
+.brox-ai-action-chip:hover,
+.brox-ai-cmd-chip:hover,
+.brox-ai-tabs-nav-item:hover,
+.brox-ai-suggestion-close:hover,
+.brox-ai-attachment-remove:hover,
+.brox-ai-secondary-btn:hover,
+.brox-ai-primary-btn:hover {
+  transform: translateY(-1px);
+}
+
+#publicAssistantBtn.brox-ai-trigger-fab,
+#adminAiBtn.brox-ai-trigger-fab {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(9, 16, 29, 0.98), rgba(4, 10, 20, 0.98));
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.34);
+}
+
+#publicAssistantBtn.brox-ai-trigger-fab::before,
+#adminAiBtn.brox-ai-trigger-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(50, 199, 255, 0.24), rgba(124, 156, 255, 0.12));
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+#publicAssistantBtn.brox-ai-trigger-fab:hover::before,
+#adminAiBtn.brox-ai-trigger-fab:hover::before {
+  opacity: 1;
+}
+
+.brox-ai-fab-icon-open,
+.brox-ai-fab-icon-close {
+  position: relative;
+  z-index: 1;
+}
+
+.brox-ai-fab-badge {
+  z-index: 2;
+}
+
+#publicAssistantChat.brox-ai-copilot-sidebar,
+#adminAiShell.brox-ai-copilot-sidebar {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--brox-ai-border);
+  background:
+    radial-gradient(circle at top left, rgba(50, 199, 255, 0.16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(124, 156, 255, 0.12), transparent 28%),
+    var(--brox-ai-surface);
+  box-shadow: var(--brox-ai-shadow-xl);
+  backdrop-filter: blur(28px);
+}
+
+#publicAssistantChat.brox-ai-copilot-sidebar::before,
+#adminAiShell.brox-ai-copilot-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#publicAssistantChat.brox-ai-copilot-sidebar:not(.brox-ai-hidden),
+#adminAiShell.brox-ai-copilot-sidebar:not(.brox-ai-hidden) {
+  animation: broxAiPop 220ms ease-out;
+}
+
+#publicAssistantWrapper {
+  z-index: 9999;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+#publicAssistantWrapper>* {
+  pointer-events: auto;
+}
+
+#publicAssistantChat {
+  width: min(26.5rem, calc(100vw - 1.25rem));
+  max-height: calc(100dvh - 1rem);
+}
+
+#adminAiShell.brox-ai-copilot-sidebar {
+  max-height: 100dvh;
+}
+
+#publicAssistantChat .brox-ai-chat-main,
+#adminAiShell .brox-ai-chat-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+#publicAssistantChat .brox-ai-body,
+#adminAiShell .brox-ai-body {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+#publicAssistantMessages,
+#adminAiBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 14rem;
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+}
+
+#publicAssistantChat .brox-ai-footer,
+#adminAiShell .brox-ai-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+#publicAssistantChat .brox-ai-body,
+#adminAiBody.brox-ai-body {
+  scrollbar-gutter: stable;
+  background: transparent;
+}
+
+#publicAssistantSidebar.brox-ai-sidebar,
+#adminAiSidebar.brox-ai-sidebar {
+  background: rgba(8, 13, 24, 0.92);
+  backdrop-filter: blur(24px);
+  max-height: calc(100dvh - 1rem);
+}
+
+#publicAssistantSidebar.brox-ai-sidebar {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#adminAiSidebar.brox-ai-sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-sidebar.brox-ai-collapsed {
+  display: none;
+}
+
+.brox-ai-status-indicator {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.08);
+  flex-shrink: 0;
+}
+
+.brox-ai-status-indicator.brox-ai-online,
+.brox-ai-status-indicator.ready {
+  background: var(--brox-ai-success);
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.12);
+}
+
+.brox-ai-status-indicator.brox-ai-offline {
+  background: var(--brox-ai-warning);
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.12);
+}
+
+.assistant-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.assistant-status.text-success {
+  color: #34d399;
+}
+
+.assistant-status.text-warning {
+  color: #fbbf24;
+}
+
+.brox-ai-model-toggle.active,
+.brox-ai-lang-toggle button.active,
+.brox-ai-tabs-nav-item.brox-ai-tabs-nav-item-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brox-ai-tabs-nav-item {
+  position: relative;
+}
+
+.brox-ai-tabs-nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.35rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brox-ai-primary), var(--brox-ai-primary-2));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 180ms ease;
+}
+
+.brox-ai-tabs-nav-item.brox-ai-tabs-nav-item-active::after {
+  transform: scaleX(1);
+}
+
+.brox-ai-tabs-panel {
+  display: none;
+}
+
+.brox-ai-tabs-panel.brox-ai-tabs-panel-active {
+  display: block;
+}
+
+.brox-ai-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.brox-ai-history-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 1.15rem;
+  padding: 0.9rem 1rem;
+}
+
+.brox-ai-history-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(50, 199, 255, 0.2);
+}
+
+.brox-ai-history-item.active {
+  background: linear-gradient(180deg, rgba(50, 199, 255, 0.12), rgba(124, 156, 255, 0.08));
+  border-color: rgba(50, 199, 255, 0.25);
+}
+
+.brox-ai-history-empty {
+  min-height: 10rem;
+  text-align: center;
+}
+
+.brox-ai-setting-item,
+.brox-ai-setting-item-block {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 12, 22, 0.66);
+}
+
+.brox-ai-setting-select,
+.brox-ai-setting-json,
+.brox-ai-grok-input,
+.brox-ai-input,
+.brox-ai-textarea {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(9, 15, 27, 0.92);
+  color: var(--brox-ai-text);
+  box-shadow: none;
+}
+
+.brox-ai-setting-select:focus,
+.brox-ai-setting-json:focus,
+.brox-ai-grok-input:focus,
+.brox-ai-input:focus,
+.brox-ai-textarea:focus {
+  border-color: rgba(50, 199, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(50, 199, 255, 0.14);
+}
+
+.brox-ai-toggle-switch {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-toggle-switch.active {
+  background: linear-gradient(90deg, var(--brox-ai-primary), var(--brox-ai-primary-2));
+}
+
+.brox-ai-toggle-slider {
+  transition: transform 180ms ease, left 180ms ease;
+}
+
+.brox-ai-toggle-switch.active .brox-ai-toggle-slider {
+  left: calc(100% - 1.45rem);
+}
+
+.brox-ai-message,
+.message {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  width: 100%;
+  max-width: min(100%, 42rem);
+  padding: 1rem 1rem 0.9rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(8, 14, 25, 0.78);
+  border-radius: 1.4rem;
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.16);
+}
+
+.brox-ai-message:hover,
+.message:hover {
+  border-color: rgba(50, 199, 255, 0.18);
+}
+
+.brox-ai-message.brox-ai-user {
+  margin-left: auto;
+  max-width: min(82%, 42rem);
+  background:
+    linear-gradient(180deg, rgba(50, 199, 255, 0.12), rgba(124, 156, 255, 0.08)),
+    rgba(8, 14, 25, 0.82);
+}
+
+.brox-ai-message.brox-ai-assistant {
+  max-width: min(88%, 46rem);
+}
+
+.brox-ai-message-avatar {
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 2.4rem;
+  border-radius: 0.95rem;
+  display: grid;
+  place-items: center;
+  color: #07101d;
+  background: linear-gradient(135deg, rgba(50, 199, 255, 1), rgba(124, 156, 255, 1));
+  box-shadow: 0 10px 25px rgba(50, 199, 255, 0.2);
+}
+
+.brox-ai-message.brox-ai-user .brox-ai-message-avatar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(229, 239, 251, 0.7));
+}
+
+.brox-ai-message-content,
+.message-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.brox-ai-message-text {
+  color: var(--brox-ai-text);
+  line-height: 1.72;
+  overflow-wrap: anywhere;
+}
+
+.brox-ai-message-text>*:first-child {
+  margin-top: 0;
+}
+
+.brox-ai-message-text>*:last-child {
+  margin-bottom: 0;
+}
+
+.brox-ai-message-text p {
+  margin: 0 0 0.75rem;
+}
+
+.brox-ai-message-text strong {
+  color: #fff;
+}
+
+.brox-ai-message-text em {
+  color: #cde4ff;
+}
+
+.brox-ai-message-text br {
+  content: '';
+}
+
+.brox-ai-message-text code,
+.brox-ai-inline-code {
+  font-family: var(--brox-ai-font-mono);
+  font-size: 0.92em;
+  padding: 0.12rem 0.34rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #dff4ff;
+}
+
+.brox-ai-message-text pre,
+.brox-ai-code-block {
+  margin: 0.9rem 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  overflow: auto;
+  background: rgba(2, 6, 23, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-message-text pre code,
+.brox-ai-code-block code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  color: #d8f7ff;
+  white-space: pre;
+}
+
+.brox-ai-message-meta {
+  margin-top: 0.6rem;
+  font-size: 0.74rem;
+  color: var(--brox-ai-text-muted);
+}
+
+.assistant-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.assistant-suggestion-btn {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--brox-ai-text);
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.assistant-suggestion-btn:hover {
+  border-color: rgba(50, 199, 255, 0.24);
+  background: rgba(50, 199, 255, 0.1);
+}
+
+.brox-ai-grok-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.brox-ai-grok-modal-content {
+  width: min(100%, 28rem);
+  border-radius: 1.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 12, 22, 0.98);
+  box-shadow: var(--brox-ai-shadow-xl);
+}
+
+.brox-ai-grok-checkbox {
+  user-select: none;
+}
+
+.brox-ai-grok-consent-options {
+  display: grid;
+}
+
+.brox-ai-quick-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-action-chip,
+.brox-ai-cmd-chip,
+.brox-ai-secondary-btn,
+.brox-ai-primary-btn,
+.brox-ai-icon-btn,
+.brox-ai-action-btn,
+.brox-ai-send-btn,
+.brox-ai-suggestion-close,
+.brox-ai-attachment-remove {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-action-chip,
+.brox-ai-cmd-chip,
+.brox-ai-secondary-btn,
+.brox-ai-icon-btn,
+.brox-ai-action-btn,
+.brox-ai-suggestion-close,
+.brox-ai-attachment-remove {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--brox-ai-text);
+}
+
+.brox-ai-action-chip:hover,
+.brox-ai-cmd-chip:hover,
+.brox-ai-secondary-btn:hover,
+.brox-ai-icon-btn:hover,
+.brox-ai-action-btn:hover,
+.brox-ai-suggestion-close:hover,
+.brox-ai-attachment-remove:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-primary-btn,
+.brox-ai-send-btn {
+  color: #04101b;
+  background: linear-gradient(135deg, var(--brox-ai-primary), var(--brox-ai-primary-2));
+  border-color: transparent;
+  box-shadow: 0 14px 28px rgba(50, 199, 255, 0.18);
+}
+
+.brox-ai-primary-btn:hover,
+.brox-ai-send-btn:hover {
+  filter: brightness(1.06);
+}
+
+.brox-ai-input-wrapper,
+.brox-ai-attachment-preview,
+.brox-ai-suggestion-panel {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(7, 12, 22, 0.92);
+}
+
+.brox-ai-suggestion-panel {
+  box-shadow: var(--brox-ai-shadow-lg);
+}
+
+.brox-ai-attachment-thumb {
+  overflow: hidden;
+}
+
+.brox-ai-attachment-progress {
+  overflow: hidden;
+}
+
+.brox-ai-attachment-progress-bar {
+  width: 100%;
+}
+
+.brox-ai-input-hint kbd {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 15, 27, 0.92);
+  color: var(--brox-ai-text);
+}
+
+.brox-ai-text-error {
+  border: 1px solid rgba(251, 113, 133, 0.16);
+  background: rgba(251, 113, 133, 0.12);
+  color: #ffd9e0;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+#publicAssistantLoading,
+#publicAssistantThinkingIndicator,
+#adminAiTypingIndicator,
+#adminAiThinkingIndicator {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(7, 12, 22, 0.96);
+}
+
+.thinking-indicator,
+.brox-ai-thinking {
+  min-height: 2.75rem;
+}
+
+.brox-ai-status-bar {
+  border-color: rgba(50, 199, 255, 0.14);
+  background: rgba(50, 199, 255, 0.08);
+}
+
+.brox-ai-slash-menu,
+.brox-ai-suggestion-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brox-ai-slash-item,
+.brox-ai-suggestion-item {
+  border-radius: 1rem;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.brox-ai-slash-item:hover,
+.brox-ai-suggestion-item:hover {
+  transform: translateX(2px);
+}
+
+.brox-ai-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  z-index: 9999;
+  background: var(--brox-ai-primary);
+  color: #04101b;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  transition: top 180ms ease;
+}
+
+.brox-ai-skip-link:focus {
+  top: 6px;
+}
+
+@keyframes broxAiPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Fresh UI refresh */
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantWrapper,
+.brox-ai-assistant[data-ai-role="admin"] {
+  position: relative;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 22%),
+    radial-gradient(circle at top left, rgba(54, 213, 255, 0.18), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(124, 156, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(6, 12, 22, 0.92), rgba(4, 9, 18, 0.98));
+  box-shadow:
+    0 28px 100px rgba(2, 6, 23, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar::after,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 25%),
+    linear-gradient(315deg, rgba(54, 213, 255, 0.08), transparent 35%);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantBtn.brox-ai-trigger-fab,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab {
+  box-shadow:
+    0 20px 45px rgba(2, 6, 23, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantBtn.brox-ai-trigger-fab::after,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 48%),
+    linear-gradient(135deg, rgba(54, 213, 255, 0.18), rgba(124, 156, 255, 0.06));
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-action-chip,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-cmd-chip,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-icon-btn,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-secondary-btn,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-suggestion-close,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-attachment-remove,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-action-chip,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-cmd-chip,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-icon-btn,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-secondary-btn,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-suggestion-close,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-attachment-remove {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.14);
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-action-chip:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-cmd-chip:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-icon-btn:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-secondary-btn:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-suggestion-close:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-attachment-remove:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-action-chip:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-cmd-chip:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-icon-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-secondary-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-suggestion-close:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-attachment-remove:hover {
+  background: linear-gradient(180deg, rgba(54, 213, 255, 0.12), rgba(255, 255, 255, 0.08));
+}
+
+.brox-ai-assistant .brox-ai-action-chip,
+.brox-ai-assistant .brox-ai-cmd-chip,
+.brox-ai-assistant .brox-ai-secondary-btn,
+.brox-ai-assistant .brox-ai-primary-btn,
+.brox-ai-assistant .brox-ai-icon-btn,
+.brox-ai-assistant .brox-ai-action-btn,
+.brox-ai-assistant .brox-ai-send-btn {
+  border-radius: 1rem;
+}
+
+.brox-ai-assistant .brox-ai-action-chip,
+.brox-ai-assistant .brox-ai-cmd-chip {
+  gap: 0.55rem;
+  letter-spacing: -0.01em;
+  min-height: 2.6rem;
+}
+
+.brox-ai-assistant .brox-ai-quick-actions {
+  gap: 0.5rem;
+}
+
+.brox-ai-assistant .brox-ai-message,
+.brox-ai-assistant .message {
+  border-radius: 1.5rem;
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03)),
+    rgba(7, 12, 22, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.brox-ai-assistant .brox-ai-message.brox-ai-user {
+  background:
+    linear-gradient(180deg, rgba(54, 213, 255, 0.14), rgba(124, 156, 255, 0.08)),
+    rgba(7, 12, 22, 0.82);
+}
+
+.brox-ai-assistant .brox-ai-message-avatar {
+  box-shadow:
+    0 12px 26px rgba(54, 213, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.brox-ai-assistant .brox-ai-message-text {
+  font-size: 0.96rem;
+}
+
+.brox-ai-assistant .brox-ai-message-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brox-ai-text-soft);
+}
+
+.brox-ai-assistant .brox-ai-history-item,
+.brox-ai-assistant .brox-ai-setting-item,
+.brox-ai-assistant .brox-ai-setting-item-block,
+.brox-ai-assistant .brox-ai-suggestion-panel,
+.brox-ai-assistant .brox-ai-slash-menu,
+.brox-ai-assistant .brox-ai-attachment-preview {
+  border-radius: 1.35rem;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(7, 12, 22, 0.74);
+  backdrop-filter: blur(20px);
+}
+
+.brox-ai-assistant .brox-ai-history-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(54, 213, 255, 0.2);
+}
+
+.brox-ai-assistant .brox-ai-history-item.active {
+  background:
+    linear-gradient(180deg, rgba(54, 213, 255, 0.14), rgba(124, 156, 255, 0.08)),
+    rgba(7, 12, 22, 0.82);
+}
+
+.brox-ai-assistant .brox-ai-setting-select,
+.brox-ai-assistant .brox-ai-setting-json,
+.brox-ai-assistant .brox-ai-input,
+.brox-ai-assistant .brox-ai-textarea {
+  border-radius: 1rem;
+  background: rgba(6, 10, 20, 0.88);
+}
+
+.brox-ai-assistant .brox-ai-input::placeholder,
+.brox-ai-assistant .brox-ai-textarea::placeholder {
+  color: rgba(159, 177, 200, 0.78);
+}
+
+.brox-ai-assistant .brox-ai-input-hint,
+.brox-ai-assistant .brox-ai-status-bar {
+  color: rgba(236, 244, 251, 0.95);
+}
+
+.brox-ai-assistant .brox-ai-input-hint kbd {
+  color: #eff6ff;
+  background: rgba(8, 15, 28, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.brox-ai-assistant .brox-ai-status-bar {
+  background: linear-gradient(90deg, rgba(54, 213, 255, 0.11), rgba(124, 156, 255, 0.08));
+}
+
+.brox-ai-assistant .brox-ai-history-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brox-ai-assistant .brox-ai-grok-modal-content {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 22%),
+    rgba(5, 10, 20, 0.98);
+}
+
+.brox-ai-assistant .brox-ai-grok-modal-content svg,
+.brox-ai-assistant .brox-ai-grok-modal-content i {
+  color: var(--brox-ai-primary);
+}
+
+@media (min-width: 1024px) {
+  #publicAssistantChat {
+    width: min(29rem, calc(100vw - 6rem));
+  }
+
+  #publicAssistantSidebar.brox-ai-sidebar {
+    width: 18rem;
+  }
+
+  #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(34rem, calc(100vw - 6rem));
+  }
+
+  #adminAiSidebar.brox-ai-sidebar {
+    width: 19rem;
+  }
+
+  .brox-ai-message.brox-ai-user {
+    max-width: 70%;
+  }
+}
+
+@media (min-width: 1280px) {
+  #publicAssistantChat {
+    width: min(35rem, calc(100vw - 8rem));
+  }
+
+  #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(40rem, calc(100vw - 8rem));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+
+  .brox-ai-trigger-fab,
+  .brox-ai-icon-btn,
+  .brox-ai-action-btn,
+  .brox-ai-send-btn,
+  .brox-ai-tabs-nav-item,
+  .brox-ai-action-chip,
+  .brox-ai-cmd-chip,
+  .brox-ai-suggestion-close,
+  .brox-ai-attachment-remove {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .brox-ai-input,
+  .brox-ai-grok-input {
+    font-size: 16px;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat {
+    padding-bottom: 5.5rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat>div {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat {
+    padding: 0.7rem 0.7rem 5.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat>div {
+    padding: 0.85rem;
+    border-radius: 1.35rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-prechat-copy,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-prechat-benefits {
+    display: none;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-prechat-rail {
+    margin-bottom: 0.6rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat[data-prechat-step="step-name"] .brox-ai-prechat-rail-segment:nth-child(1),
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat[data-prechat-step="step-contact"] .brox-ai-prechat-rail-segment:nth-child(-n+2),
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat[data-prechat-step="step-topic"] .brox-ai-prechat-rail-segment {
+    background: linear-gradient(90deg, var(--brox-ai-primary), var(--brox-ai-primary-2));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 18px rgba(56, 227, 255, 0.18);
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-prechat-steps {
+    margin-top: 0.9rem;
+    gap: 0.7rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-contact,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-topic {
+    padding: 0.7rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-form-group {
+    gap: 0.3rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-primary-btn {
+    margin-top: 0.9rem;
+    min-height: 2.9rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name {
+    gap: 0.3rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat h4 {
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name .brox-ai-input,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-contact .brox-ai-input,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-topic .brox-ai-input {
+    border-radius: 1rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name .brox-ai-primary-btn,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-contact .brox-ai-primary-btn,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-topic .brox-ai-primary-btn {
+    min-height: 2.65rem;
+    font-size: 0.82rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name .brox-ai-input,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-contact .brox-ai-input,
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-topic .brox-ai-input {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantQuickActions {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantQuickActions .brox-ai-action-chip {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    font-size: 0.82rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantFooter {
+    position: sticky;
+    bottom: 0;
+    z-index: 25;
+    backdrop-filter: blur(18px);
+  }
+
+  .brox-ai-assistant[data-ai-role="public"] #publicAssistantFooter .brox-ai-input-wrapper {
+    padding: 0.4rem;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --brox-ai-border: rgba(255, 255, 255, 0.7);
+    --brox-ai-text: #ffffff;
+    --brox-ai-text-soft: #ffffff;
+    --brox-ai-text-muted: #e5e7eb;
+  }
+
+  .brox-ai-message,
+  .assistant-suggestion-btn,
+  .brox-ai-history-item,
+  .brox-ai-setting-item,
+  .brox-ai-setting-item-block {
+    border-color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .brox-ai-assistant {
+    display: none !important;
+  }
+}
+
+/* Bold cockpit refresh */
+.brox-ai-assistant[data-ai-role="public"],
+.brox-ai-assistant[data-ai-role="admin"] {
+  position: relative;
+  isolation: isolate;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.1), transparent 16%),
+    radial-gradient(circle at top left, rgba(54, 213, 255, 0.22), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(124, 156, 255, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(6, 12, 24, 0.92), rgba(3, 8, 18, 0.98));
+  box-shadow:
+    0 34px 120px rgba(2, 6, 23, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(54, 213, 255, 0.08);
+  filter: saturate(1.08);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar::after,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 18%),
+    linear-gradient(135deg, rgba(54, 213, 255, 0.08), transparent 30%),
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.03) 42px 43px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar {
+  border-radius: 2.2rem;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat.brox-ai-copilot-sidebar::after {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.12), transparent 12%),
+    linear-gradient(135deg, rgba(56, 227, 255, 0.12), transparent 28%),
+    linear-gradient(315deg, rgba(139, 125, 255, 0.08), transparent 34%);
+  opacity: 0.7;
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat .brox-ai-chat-main,
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat .brox-ai-prechat,
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat .brox-ai-body {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at top, rgba(56, 227, 255, 0.04), transparent 26%);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantChat .brox-ai-message.brox-ai-user {
+  border-color: rgba(56, 227, 255, 0.26);
+  box-shadow:
+    0 18px 36px rgba(56, 227, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat>div {
+  background:
+    radial-gradient(circle at top, rgba(56, 227, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-name,
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-contact,
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat .brox-ai-step-topic {
+  background:
+    radial-gradient(circle at top right, rgba(56, 227, 255, 0.07), transparent 28%),
+    rgba(7, 12, 22, 0.7);
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-history-item.active,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-setting-item-block {
+  box-shadow:
+    0 16px 36px rgba(2, 6, 23, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-action-chip:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-cmd-chip:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-icon-btn:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-secondary-btn:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-suggestion-close:hover,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-attachment-remove:hover {
+  background: linear-gradient(180deg, rgba(56, 227, 255, 0.14), rgba(139, 125, 255, 0.08));
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-primary-btn,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-send-btn {
+  box-shadow:
+    0 20px 44px rgba(56, 227, 255, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-history-empty {
+  background:
+    radial-gradient(circle at top, rgba(56, 227, 255, 0.08), transparent 28%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  border-radius: 0 2.15rem 2.15rem 0;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 16%),
+    linear-gradient(135deg, rgba(67, 225, 215, 0.09), transparent 28%),
+    repeating-linear-gradient(0deg, transparent 0 26px, rgba(255, 255, 255, 0.02) 26px 27px);
+  opacity: 0.5;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+  background:
+    linear-gradient(180deg, rgba(6, 12, 22, 0.98), rgba(4, 9, 18, 0.96)),
+    rgba(6, 12, 22, 0.96);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar>div:first-child {
+  background:
+    radial-gradient(circle at top left, rgba(67, 225, 215, 0.08), transparent 24%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-tabs-nav {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-tabs-nav-item-active {
+  background:
+    linear-gradient(180deg, rgba(67, 225, 215, 0.14), rgba(129, 182, 255, 0.08));
+  border-color: rgba(67, 225, 215, 0.25);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-item.active {
+  border-color: rgba(67, 225, 215, 0.28);
+  background:
+    linear-gradient(180deg, rgba(67, 225, 215, 0.16), rgba(129, 182, 255, 0.1)),
+    rgba(7, 12, 22, 0.82);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-user {
+  border-color: rgba(67, 225, 215, 0.22);
+  box-shadow:
+    0 18px 38px rgba(67, 225, 215, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-assistant {
+  border-left: 3px solid rgba(129, 182, 255, 0.3);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-action-chip:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-cmd-chip:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-icon-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-secondary-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-suggestion-close:hover,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-attachment-remove:hover {
+  background: linear-gradient(180deg, rgba(67, 225, 215, 0.12), rgba(129, 182, 255, 0.08));
+}
+
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-primary-btn,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-send-btn {
+  box-shadow:
+    0 18px 40px rgba(67, 225, 215, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.07) inset;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-history-empty {
+  background:
+    radial-gradient(circle at top, rgba(67, 225, 215, 0.06), transparent 28%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-setting-item-block {
+  border-left: 3px solid rgba(67, 225, 215, 0.12);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-empty {
+  background:
+    radial-gradient(circle at top, rgba(67, 225, 215, 0.05), transparent 26%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantBtn.brox-ai-trigger-fab,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab {
+  box-shadow:
+    0 22px 54px rgba(2, 6, 23, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 0 0 6px rgba(54, 213, 255, 0.08);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantBtn.brox-ai-trigger-fab:hover,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab:hover {
+  box-shadow:
+    0 26px 72px rgba(2, 6, 23, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 0 8px rgba(54, 213, 255, 0.12);
+}
+
+.brox-ai-assistant[data-ai-role="public"] #publicAssistantPreChat>div,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiWelcome>div,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-suggestion-panel,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-suggestion-panel,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-slash-menu,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-slash-menu,
+.brox-ai-assistant[data-ai-role="public"] .brox-ai-attachment-preview,
+.brox-ai-assistant[data-ai-role="admin"] .brox-ai-attachment-preview {
+  border-radius: 1.5rem;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(9, 15, 27, 0.88), rgba(5, 10, 20, 0.82));
+  box-shadow:
+    0 18px 50px rgba(2, 6, 23, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.brox-ai-assistant .brox-ai-message,
+.brox-ai-assistant .message {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.55rem;
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)),
+    rgba(6, 11, 21, 0.78);
+  box-shadow:
+    0 20px 50px rgba(2, 6, 23, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant .brox-ai-message::before,
+.brox-ai-assistant .message::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 26%),
+    linear-gradient(90deg, rgba(54, 213, 255, 0.08), transparent 30%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.brox-ai-assistant .brox-ai-message>*,
+.brox-ai-assistant .message>* {
+  position: relative;
+  z-index: 1;
+}
+
+.brox-ai-assistant .brox-ai-message.brox-ai-user {
+  background:
+    linear-gradient(180deg, rgba(54, 213, 255, 0.18), rgba(124, 156, 255, 0.1)),
+    rgba(6, 11, 21, 0.88);
+  border-color: rgba(54, 213, 255, 0.2);
+}
+
+.brox-ai-assistant .brox-ai-message.brox-ai-assistant {
+  border-left: 3px solid rgba(54, 213, 255, 0.28);
+}
+
+.brox-ai-assistant .brox-ai-message-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.brox-ai-assistant .brox-ai-action-chip,
+.brox-ai-assistant .brox-ai-cmd-chip,
+.brox-ai-assistant .brox-ai-secondary-btn,
+.brox-ai-assistant .brox-ai-primary-btn,
+.brox-ai-assistant .brox-ai-icon-btn,
+.brox-ai-assistant .brox-ai-action-btn,
+.brox-ai-assistant .brox-ai-send-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.brox-ai-assistant .brox-ai-action-chip::before,
+.brox-ai-assistant .brox-ai-cmd-chip::before,
+.brox-ai-assistant .brox-ai-secondary-btn::before,
+.brox-ai-assistant .brox-ai-primary-btn::before,
+.brox-ai-assistant .brox-ai-icon-btn::before,
+.brox-ai-assistant .brox-ai-action-btn::before,
+.brox-ai-assistant .brox-ai-send-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 30%);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.brox-ai-assistant .brox-ai-action-chip:hover::before,
+.brox-ai-assistant .brox-ai-cmd-chip:hover::before,
+.brox-ai-assistant .brox-ai-secondary-btn:hover::before,
+.brox-ai-assistant .brox-ai-primary-btn:hover::before,
+.brox-ai-assistant .brox-ai-icon-btn:hover::before,
+.brox-ai-assistant .brox-ai-action-btn:hover::before,
+.brox-ai-assistant .brox-ai-send-btn:hover::before {
+  opacity: 1;
+}
+
+.brox-ai-assistant .brox-ai-primary-btn,
+.brox-ai-assistant .brox-ai-send-btn {
+  box-shadow:
+    0 18px 36px rgba(54, 213, 255, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.brox-ai-assistant .brox-ai-history-item,
+.brox-ai-assistant .brox-ai-setting-item,
+.brox-ai-assistant .brox-ai-setting-item-block {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.brox-ai-assistant .brox-ai-history-item.active {
+  box-shadow:
+    0 16px 36px rgba(2, 6, 23, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brox-ai-assistant .brox-ai-input,
+.brox-ai-assistant .brox-ai-textarea,
+.brox-ai-assistant .brox-ai-setting-select,
+.brox-ai-assistant .brox-ai-setting-json,
+.brox-ai-assistant .brox-ai-grok-input {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(54, 213, 255, 0.04);
+}
+
+.brox-ai-assistant .brox-ai-input::placeholder,
+.brox-ai-assistant .brox-ai-textarea::placeholder,
+.brox-ai-assistant .brox-ai-grok-input::placeholder {
+  color: rgba(159, 177, 200, 0.8);
+}
+
+.brox-ai-assistant .brox-ai-input-hint kbd {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(5, 10, 20, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant .brox-ai-status-bar {
+  background:
+    linear-gradient(90deg, rgba(54, 213, 255, 0.14), rgba(124, 156, 255, 0.08)),
+    rgba(7, 12, 22, 0.9);
+}
+
+.brox-ai-assistant .brox-ai-tabs-nav-item-active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 22px rgba(2, 6, 23, 0.18);
+}
+
+.brox-ai-assistant .brox-ai-grok-modal-content {
+  box-shadow:
+    0 30px 90px rgba(2, 6, 23, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Admin assistant visual refresh */
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  width: min(100vw - 1rem, 76rem);
+  max-width: 76rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(67, 225, 215, 0.14), transparent 30%),
+    radial-gradient(circle at top right, rgba(129, 182, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(4, 9, 18, 0.98), rgba(5, 11, 22, 0.96));
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell::before {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 24%),
+    radial-gradient(circle at 18% 8%, rgba(67, 225, 215, 0.12), transparent 18%),
+    radial-gradient(circle at 82% 14%, rgba(129, 182, 255, 0.11), transparent 16%);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 18%),
+    linear-gradient(90deg, rgba(67, 225, 215, 0.03), transparent 24%, rgba(129, 182, 255, 0.03));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell > .relative {
+  position: relative;
+  z-index: 1;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(67, 225, 215, 0.06), transparent 18%),
+    radial-gradient(circle at 82% 10%, rgba(129, 182, 255, 0.08), transparent 20%);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header {
+  background:
+    linear-gradient(180deg, rgba(8, 14, 26, 0.94), rgba(5, 10, 20, 0.88)),
+    rgba(8, 14, 26, 0.88);
+  border-bottom-color: rgba(148, 163, 184, 0.14);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiTitle {
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextBadge,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextModule,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiCurrentModel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiStatusText,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSaveIndicator {
+  box-shadow:
+    0 14px 30px rgba(2, 6, 23, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextModule {
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbeafe;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiCurrentModel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiStatusText,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSaveIndicator {
+  background: rgba(255, 255, 255, 0.05);
+  color: #dbeafe;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > div:first-child {
+  border-radius: 1.6rem;
+  border: 1px solid rgba(67, 225, 215, 0.12);
+  background:
+    radial-gradient(circle at top left, rgba(67, 225, 215, 0.14), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(129, 182, 255, 0.1), transparent 24%),
+    rgba(8, 13, 24, 0.9);
+  box-shadow:
+    0 18px 52px rgba(2, 6, 23, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > div:first-child .flex.h-10.w-10 {
+  box-shadow: 0 18px 34px rgba(67, 225, 215, 0.18);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > .mt-3 {
+  margin-top: 0.25rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip {
+  border-radius: 9999px;
+  border-color: rgba(148, 163, 184, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)),
+    rgba(7, 12, 22, 0.88);
+  box-shadow:
+    0 14px 30px rgba(2, 6, 23, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBody {
+  padding-top: 0.9rem;
+  padding-bottom: 1rem;
+  gap: 0.9rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message {
+  width: min(100%, 46rem);
+  margin-bottom: 0.15rem;
+  padding: 1rem 1rem 0.95rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message.brox-ai-user {
+  margin-left: auto;
+  width: min(100%, 41rem);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiThinkingIndicator {
+  background:
+    linear-gradient(180deg, rgba(67, 225, 215, 0.1), rgba(129, 182, 255, 0.06)),
+    rgba(7, 12, 22, 0.88);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiThinkingIndicator,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiAttachmentPreview,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSuggestionPanel {
+  border-top-color: rgba(148, 163, 184, 0.12);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSuggestionPanel {
+  border-color: rgba(67, 225, 215, 0.14);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiFooter {
+  background:
+    linear-gradient(180deg, rgba(8, 14, 26, 0.82), rgba(5, 10, 20, 0.96)),
+    rgba(5, 10, 20, 0.94);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiFooter .brox-ai-input-wrapper {
+  min-height: 4.45rem;
+  border-radius: 1.6rem;
+  border-color: rgba(67, 225, 215, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(67, 225, 215, 0.1), transparent 22%),
+    rgba(8, 14, 26, 0.86);
+  box-shadow:
+    0 22px 48px rgba(2, 6, 23, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiInput {
+  min-height: 3.25rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSend {
+  box-shadow:
+    0 18px 36px rgba(67, 225, 215, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiHistoryTogglePane {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(5, 10, 20, 0.92);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+  background:
+    linear-gradient(180deg, rgba(7, 12, 22, 0.98), rgba(4, 8, 16, 0.98)),
+    rgba(4, 8, 16, 0.98);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-item {
+  border-radius: 1.15rem;
+}
+
+@media (min-width: 1024px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell .relative.flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+    display: grid;
+    grid-template-columns: minmax(18rem, 21rem) minmax(0, 1fr);
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+    display: flex !important;
+    flex-direction: column;
+    border-right: 1px solid rgba(148, 163, 184, 0.12);
+    border-bottom: 0;
+    max-height: none;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell section {
+    min-width: 0;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiHistoryTogglePane {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(100vw - 0.75rem, 72rem);
+    border-radius: 1.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message.brox-ai-user {
+    width: min(100%, 100%);
+    max-width: 100%;
+  }
+}
+
+/* Admin assistant: light workspace variant */
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.98), rgba(236, 246, 255, 0.98)),
+    linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(226, 239, 255, 0.98)) !important;
+  color: #0f172a !important;
+  box-shadow:
+    0 22px 50px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 0 0 8px rgba(59, 130, 246, 0.06) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiBtn.brox-ai-trigger-fab::before {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(99, 102, 241, 0.1)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.09), transparent 24%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.07), transparent 22%),
+    linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(244, 248, 252, 0.98)) !important;
+  color: #0f172a !important;
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar::before {
+  border-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 18%),
+    linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.04), transparent 20%) !important;
+  opacity: 1 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell * {
+  color: #0f172a;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 250, 255, 0.88)),
+    rgba(255, 255, 255, 0.9) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiTitle {
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiTitle .inline-flex,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiWelcome .inline-flex,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextBadge {
+  box-shadow: 0 16px 34px rgba(59, 130, 246, 0.12);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextBadge {
+  border-color: rgba(59, 130, 246, 0.18) !important;
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.95), rgba(239, 246, 255, 0.95)) !important;
+  color: #1d4ed8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiContextModule,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiCurrentModel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiStatusText,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSaveIndicator {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #475569 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiFooter,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiThinkingIndicator,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiAttachmentPreview,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSuggestionPanel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+  box-shadow: inset -1px 0 0 rgba(148, 163, 184, 0.16);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar > div:first-child,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiHistoryTogglePane {
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.92)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar p,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar span,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar button,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome p,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome h4,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome button,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome span {
+  color: inherit;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-empty {
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.06), transparent 28%),
+    rgba(255, 255, 255, 0.92) !important;
+  color: #64748b !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96)) !important;
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item.active {
+  border-color: rgba(59, 130, 246, 0.22) !important;
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.88), rgba(239, 246, 255, 0.96)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)) !important;
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip:hover {
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(224, 242, 254, 0.94)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > div:first-child,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-suggestion-panel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-attachment-preview {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.95)) !important;
+  box-shadow:
+    0 16px 42px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > div:first-child {
+  border-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome h4 {
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome p,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-text,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-meta,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item *,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item *,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block * {
+  color: #334155 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-user {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(226, 232, 240, 0.88)) !important;
+  border-color: rgba(96, 165, 250, 0.2) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-assistant {
+  border-left-color: rgba(59, 130, 246, 0.24) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-avatar {
+  color: #0f172a !important;
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.98), rgba(219, 234, 254, 0.98)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-wrapper {
+  border-color: rgba(59, 130, 246, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)) !important;
+  box-shadow:
+    0 20px 40px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-textarea,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-select,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-json,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-input {
+  background: transparent !important;
+  color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-textarea::placeholder,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input::placeholder,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-input::placeholder {
+  color: rgba(100, 116, 139, 0.85) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-send-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-primary-btn {
+  background: linear-gradient(135deg, #38bdf8, #6366f1) !important;
+  color: #fff !important;
+  box-shadow:
+    0 18px 36px rgba(59, 130, 246, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.34) inset !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-secondary-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-icon-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.95)) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #334155 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-primary-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-send-btn:hover {
+  filter: brightness(1.02);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-hint,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-hint span,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-empty p,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-empty i {
+  color: #64748b !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-status-bar {
+  background:
+    linear-gradient(90deg, rgba(219, 234, 254, 0.95), rgba(241, 245, 249, 0.9)) !important;
+  color: #1d4ed8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-status-indicator.brox-ai-thinking {
+  background: #38bdf8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal {
+  background: rgba(15, 23, 42, 0.36) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal-content {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  color: #0f172a !important;
+}
+
+@media (min-width: 1024px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(100vw - 1rem, 76rem);
+    max-width: 76rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 252, 0.96)) !important;
+  }
+}
+
+/* Apple-like frosted glass polish for admin workspace */
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.86), transparent 24%),
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.26), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 250, 252, 0.58)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow:
+    0 28px 80px rgba(15, 23, 42, 0.12),
+    0 8px 24px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84) !important;
+  backdrop-filter: blur(28px) saturate(1.45) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.45) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiFooter,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiThinkingIndicator,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiAttachmentPreview,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSuggestionPanel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(248, 250, 252, 0.62)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  backdrop-filter: blur(18px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.3) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header {
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-secondary-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-icon-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-wrapper {
+  backdrop-filter: blur(16px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.25) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(248, 250, 252, 0.7)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-user {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(219, 234, 254, 0.72)) !important;
+  border-color: rgba(96, 165, 250, 0.16) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-assistant {
+  border-left-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-wrapper {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.72)) !important;
+  box-shadow:
+    0 20px 40px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-textarea,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-select,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-json,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-input {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.34) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-send-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-primary-btn {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.96), rgba(99, 102, 241, 0.96)) !important;
+  box-shadow:
+    0 18px 32px rgba(59, 130, 246, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip:hover,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-secondary-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-icon-btn:hover,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(235, 242, 250, 0.82)) !important;
+  border-color: rgba(96, 165, 250, 0.18) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-status-bar {
+  background:
+    linear-gradient(90deg, rgba(239, 246, 255, 0.92), rgba(248, 250, 252, 0.72)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal {
+  background: rgba(255, 255, 255, 0.34) !important;
+  backdrop-filter: blur(18px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal-content {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.86)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+@media (min-width: 1024px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(100vw - 1rem, 80rem);
+    max-width: 80rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell .relative.flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+    grid-template-columns: minmax(18rem, 20rem) minmax(0, 1fr);
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiBody,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiThinkingIndicator,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiAttachmentPreview,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiFooter {
+    width: min(100%, 56rem);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiSuggestionPanel {
+    left: 50%;
+    right: auto;
+    width: min(calc(100% - 2rem), 56rem);
+    transform: translateX(-50%);
+  }
+}
+
+/* Admin assistant refresh: clearer hierarchy and lighter workspace */
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 24%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.06), transparent 20%),
+    linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(244, 248, 252, 0.97)) !important;
+  box-shadow:
+    0 32px 88px rgba(15, 23, 42, 0.14),
+    0 12px 32px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .relative.flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+  display: grid !important;
+  grid-template-columns: minmax(19rem, 22rem) minmax(0, 1fr);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(59, 130, 246, 0.04), transparent 20%),
+    radial-gradient(circle at 82% 12%, rgba(14, 165, 233, 0.05), transparent 18%);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+  gap: 0;
+  border-right: 1px solid rgba(148, 163, 184, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.94)) !important;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.7);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 252, 0.96)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-list {
+  gap: 0.55rem;
+  padding-top: 0.25rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-empty {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.05), transparent 22%),
+    rgba(255, 255, 255, 0.94);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-feature-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-feature-item {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #475569 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96)) !important;
+  box-shadow:
+    0 16px 30px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-item.active {
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(219, 234, 254, 0.88), rgba(239, 246, 255, 0.96)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiFooter,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiThinkingIndicator,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiAttachmentPreview,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiSuggestionPanel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.82)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiTitle {
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiTitle .inline-flex,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome .inline-flex,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiContextBadge {
+  box-shadow: 0 14px 30px rgba(59, 130, 246, 0.12);
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiContextBadge {
+  border-color: rgba(59, 130, 246, 0.18) !important;
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.92), rgba(239, 246, 255, 0.96)) !important;
+  color: #1d4ed8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiContextModule,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiCurrentModel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiStatusText,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiSaveIndicator {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #475569 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome {
+  display: grid;
+  width: 100%;
+  justify-items: stretch;
+  gap: 0.95rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > div:first-child,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome > .mt-4,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-suggestion-panel,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-attachment-preview {
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  box-shadow:
+    0 16px 38px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiWelcome p,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-text,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-meta,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-history-item *,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item *,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-item-block * {
+  color: #334155 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)) !important;
+  color: #0f172a !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-chip:hover {
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(224, 242, 254, 0.94)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message {
+  gap: 0.85rem;
+  width: min(100%, 46rem);
+  padding: 1rem 1rem 0.95rem;
+  border-radius: 1.35rem;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message.brox-ai-user {
+  margin-left: auto;
+  width: min(100%, 40rem);
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(226, 232, 240, 0.9)) !important;
+  border-color: rgba(96, 165, 250, 0.18) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-message-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #0f172a !important;
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.98), rgba(219, 234, 254, 0.98)) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input-wrapper {
+  min-height: 4.5rem;
+  border-color: rgba(59, 130, 246, 0.14) !important;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 22%),
+    rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    0 20px 40px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-textarea,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-select,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-setting-json,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-input {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-textarea::placeholder,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-input::placeholder,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-input::placeholder {
+  color: rgba(100, 116, 139, 0.82) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-send-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-primary-btn {
+  background: linear-gradient(135deg, #38bdf8, #6366f1) !important;
+  color: #fff !important;
+  box-shadow:
+    0 18px 32px rgba(59, 130, 246, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-secondary-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-icon-btn,
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-action-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.95)) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #334155 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-status-bar {
+  background:
+    linear-gradient(90deg, rgba(219, 234, 254, 0.95), rgba(241, 245, 249, 0.92)) !important;
+  color: #1d4ed8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-status-indicator.brox-ai-thinking {
+  background: #38bdf8 !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal {
+  background: rgba(255, 255, 255, 0.34) !important;
+  backdrop-filter: blur(18px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.25) !important;
+}
+
+.brox-ai-assistant[data-ai-role="admin"] #adminAiShell .brox-ai-grok-modal-content {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9)) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+@media (min-width: 1024px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell .relative.flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+    grid-template-columns: minmax(20rem, 22rem) minmax(0, 1fr);
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+    max-height: none;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiHistoryTogglePane {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell.brox-ai-copilot-sidebar {
+    width: min(100vw - 0.75rem, 72rem);
+    border-radius: 1.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell .relative.flex.h-\[min\(84dvh\2c 52rem\)\].min-h-0.flex-col {
+    position: relative;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    width: 100% !important;
+    max-height: none !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 1.4rem !important;
+    box-shadow:
+      0 22px 60px rgba(15, 23, 42, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar > div:first-child {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary {
+    padding: 0.8rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary p:first-child {
+    letter-spacing: 0.18em;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary .text-sm {
+    font-size: 0.95rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary .text-xs {
+    font-size: 0.7rem;
+    line-height: 1.45;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-sidebar-summary .inline-flex.h-10.w-10 {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-list {
+    padding-right: 0.15rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-empty {
+    margin-top: 0.25rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-feature-list {
+    display: none;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-history-item {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item .text-xs,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block .text-xs {
+    font-size: 0.68rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item .text-sm,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block .text-sm {
+    font-size: 0.9rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item .h-8.w-14,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block .h-8.w-14 {
+    width: 3.25rem;
+    height: 1.75rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item .h-6.w-6,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebar .brox-ai-setting-item-block .h-6.w-6 {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebarQuickActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiSidebarQuickActions button {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+    font-size: 0.875rem;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message,
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiBody .brox-ai-message.brox-ai-user {
+    width: min(100%, 100%);
+    max-width: 100%;
+  }
+
+  .brox-ai-assistant[data-ai-role="admin"] #adminAiShell #adminAiHistoryTogglePane {
+    position: sticky;
+    bottom: 0;
+    z-index: 24;
+    padding-top: 0.65rem;
+    padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  }
 }

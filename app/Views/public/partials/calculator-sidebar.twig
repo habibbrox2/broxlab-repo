@@ -7,9 +7,9 @@
  </div>
  </div>
 
- <div class="list-group calculator-nav">
+ <div class="flex flex-col calculator-nav">
  <a href="/calculators"
- class="list-group-item list-group-item-action py-3 {% if current_type is not defined or == 'all' %}active{% endif %}">
+ class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 {% if current_type is not defined or == 'all' %}bg-slate-900 text-white hover:bg-slate-800 hover:text-white{% endif %}">
  <div class="flex items-center justify-between">
  <div>
  <div class="font-semibold">{{ current_lang == 'bn' ? 'à¦¸à¦®à¦¸à§à¦¤ à¦•à§à¦¯à¦¾à¦²à¦•à§à¦²à§‡à¦Ÿà¦°' : 'All Calculators' }}</div>
@@ -30,7 +30,7 @@
  </div>
  {% for item in group.items %}
  <a href="/calculators/{{ item.type }}"
- class="list-group-item list-group-item-action flex items-center justify-between py-2 {% if item.type == current_type %}active{% endif %}">
+ class="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 {% if item.type == current_type %}bg-indigo-50 font-semibold text-indigo-700{% endif %}">
  <span class="small mb-0">{{ item.label }}</span>
  {% if item.type == current_type %}
  <i class="lucide lucide-check"></i>

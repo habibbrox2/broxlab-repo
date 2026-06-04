@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="small text-muted mb-1">${notif.message}</div>
                         <div class="small text-secondary">${new Date(notif.created_at).toLocaleString()}</div>
                     </div>
-                    ${notif.is_read == 0 ? '<button type="button" class="btn btn-sm btn-outline-primary" data-action="mark-read" data-notification-id="' + notif.id + '">Read</button>' : ''}
+                    ${notif.is_read == 0 ? '<button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="mark-read" data-notification-id="' + notif.id + '">Read</button>' : ''}
                 </div>
             `;
             notificationList.appendChild(entry);
