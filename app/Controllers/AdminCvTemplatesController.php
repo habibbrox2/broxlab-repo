@@ -363,6 +363,49 @@ $router->get('/admin/cv-templates/preview/{slug}', ['middleware' => ['auth', 'ad
     exit;
 });
 
+// ========== PREVIEW FROM CONTENT (AJAX) ==========
+$router->post('/admin/cv-templates/preview-content', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig) {
+    $content = $_POST['content'] ?? '';
+    $slug = sanitize_input($_POST['slug'] ?? 'modern');
+    if (empty($content)) {
+        jsonResponse(['success' => false, 'error' => 'Empty content'], 400);
+        return;
+    }
+
+    $targetDir = dirname(__DIR__, 1) . '/Views/cv/templates/';
+    $tempFile = $targetDir . '_preview_' . basename($slug) . '.twig';
+    $written = file_put_contents($tempFile, $content) !== false;
+    if (!$written) {
+        jsonResponse(['success' => false, 'error' => 'Failed to write temp template'], 500);
+        return;
+    }
+
+    try {
+        $html = $twig->render('cv/templates/_preview_' . basename($slug) . '.twig', [
+            'cv' => ['title' => 'Sample CV', 'full_name' => 'John Doe', 'email' => 'john@example.com',
+                     'phone' => '+1 (555) 123-4567', 'location' => 'San Francisco, CA',
+                     'professional_summary' => 'Experienced professional with a track record of delivering results.'],
+            'sections' => [
+                ['title' => 'Summary', 'section_type' => 'summary', 'items' => [
+                    ['content' => ['text' => 'Results-driven software engineer with 8+ years building scalable web applications.']]]],
+                ['title' => 'Experience', 'section_type' => 'experience', 'items' => [
+                    ['content' => ['position' => 'Senior Software Engineer', 'company' => 'Tech Corp', 'start_date' => '2020', 'end_date' => 'Present', 'description' => 'Led microservices architecture.']],
+                    ['content' => ['position' => 'Software Engineer', 'company' => 'Startup Inc', 'start_date' => '2016', 'end_date' => '2020', 'description' => 'Built full-stack features.']]]],
+                ['title' => 'Education', 'section_type' => 'education', 'items' => [
+                    ['content' => ['degree' => 'B.S. Computer Science', 'institution' => 'University of Technology', 'start_date' => '2012', 'end_date' => '2016']]]],
+                ['title' => 'Skills', 'section_type' => 'skills', 'items' => [
+                    ['content' => ['technical' => ['JavaScript', 'Python', 'React', 'Node.js', 'AWS'], 'soft' => ['Leadership']]]]]
+            ],
+            'is_preview' => true, 'is_public' => false
+        ]);
+        jsonResponse(['success' => true, 'html' => $html]);
+    } catch (Throwable $e) {
+        jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+    } finally {
+        @unlink($tempFile);
+    }
+});
+
 // ========== FAVORITES API ==========
 $router->post('/api/cv/templates/favorite', ['middleware' => ['auth', 'csrf']], function () use ($mysqli) {
     $userId = getCurrentUserId();

@@ -6,256 +6,358 @@
 
 {% block stylesheets %}
 <style>
-.upload-dropzone {
-  border: 2px dashed #d1d5db;
-  border-radius: 12px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f9fafb;
-}
-.upload-dropzone:hover,
-.upload-dropzone.drag-over {
-  border-color: #6366f1;
-  background: #eef2ff;
-}
-.upload-dropzone.drag-over {
-  transform: scale(1.01);
-}
-.upload-dropzone-icon {
-  width: 48px;
-  height: 48px;
-  background: #e0e7ff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.75rem;
-  color: #6366f1;
-  transition: all 0.2s;
-}
-.upload-dropzone.drag-over .upload-dropzone-icon {
-  background: #6366f1;
-  color: white;
-  transform: scale(1.1);
-}
-.upload-progress-bar {
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.upload-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-  width: 0%;
-}
+  /* ═══════════════════════════════════════════════════════════════ */
+  /* Enhanced Upload Dropzone with Modern Animations               */
+  /* ═══════════════════════════════════════════════════════════════ */
+  .upload-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  }
+  .upload-dropzone:hover {
+    border-color: #818cf8;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    transform: translateY(-2px);
+  }
+  .upload-dropzone.drag-over {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%);
+    transform: scale(1.02) translateY(-4px);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+  }
+  .upload-dropzone-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #c7d2fe 0%, #e9d5ff 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: #6366f1;
+    transition: all 0.3s;
+    font-size: 28px;
+  }
+  .upload-dropzone.drag-over .upload-dropzone-icon {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    transform: scale(1.2);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  }
+  .upload-progress-bar {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+  }
+
+  /* ═════════════════════════════════════════════════════════════ */
+  /* Enhanced Template Cards Grid                                  */
+  /* ═════════════════════════════════════════════════════════════ */
+  .cv-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  .cv-template-card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .cv-template-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+  }
+  .cv-template-preview {
+    height: 160px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    opacity: 0.9;
+    position: relative;
+    overflow: hidden;
+  }
+  .cv-template-preview::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 50%);
+  }
+  .cv-template-body {
+    flex: 1;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .cv-template-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .cv-template-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  .cv-template-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .cv-template-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto;
+  }
+  .cv-template-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
- {% set template_meta = {
- 'modern': {
- 'desc': 'Clean design with bold accents',
- 'gradient': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
- 'icon': 'lucide lucide-palette'
- },
- 'minimal': {
- 'desc': 'Simple, elegant typography',
- 'gradient': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)',
- 'icon': 'lucide lucide-square'
- },
- 'ats': {
- 'desc': 'Optimized for ATS scanners',
- 'gradient': 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
- 'icon': 'lucide lucide-robot'
- },
- 'professional': {
- 'desc': 'Classic business layout',
- 'gradient': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
- 'icon': 'lucide lucide-briefcase'
- }
- } %}
-
- <div class="container-app py-4 cv-admin-page">
- <div class="cv-admin-hero">
- <div>
- <div class="cv-admin-title">CV Template Management</div>
- <div class="cv-admin-subtitle">Preview and manage template keys across the platform.</div>
- </div>
- <div class="cv-admin-hero-actions">
- <a href="/admin/cv-templates/create" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700">
- <i class="lucide lucide-plus-circle mr-1"></i> Create Template
- </a>
- <button type="button" id="tpl-show-upload-btn" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700" onclick="document.getElementById('tpl-upload-section').classList.toggle('hidden')">
- <i class="lucide lucide-upload mr-1"></i> Install from ZIP
- </button>
- <a href="/admin/cv-templates/tutorial" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-sky-600 text-white hover:bg-sky-700">
- <i class="lucide lucide-book-open mr-1"></i> Tutorial
- </a>
- <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
- <i class="lucide lucide-arrow-left mr-1"></i> Back to CVs
- </a>
- </div>
- </div>
-
- {# ===== ZIP Upload Section (hidden by default) ===== #}
- <div id="tpl-upload-section" class="hidden mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-  <div class="border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-   <h5 class="font-semibold text-slate-800 flex items-center gap-2">
-    <i class="lucide lucide-package text-emerald-600"></i>
-    Install Template from ZIP
-   </h5>
-   <button type="button" class="text-slate-400 hover:text-slate-600 text-lg leading-none" onclick="document.getElementById('tpl-upload-section').classList.add('hidden')">&times;</button>
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# HERO SECTION                                                    #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 px-6 py-8 md:px-8 md:py-10 shadow-lg">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
+    </div>
+    <div class="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+      <div class="flex-1">
+        <div class="mb-2 flex items-center gap-2">
+          <span class="inline-flex items-center justify-center rounded-full bg-white/20 p-2.5 text-white">
+            <i class="lucide lucide-layout-grid text-xl"></i>
+          </span>
+        </div>
+        <h1 class="text-3xl font-bold text-white md:text-4xl">Template Library</h1>
+        <p class="mt-2 text-base text-purple-50">Create, manage, and customize professional CV templates. Upload new designs or edit existing ones.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 md:flex-col">
+        <a href="/admin/cv-templates/create" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white text-indigo-600 px-4 py-2.5 text-sm font-semibold backdrop-blur-sm transition-all duration-200 hover:bg-gray-50 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white/30">
+          <i class="lucide lucide-plus text-base"></i> Create Template
+        </a>
+        <button type="button" id="tpl-show-upload-btn" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 text-white px-4 py-2.5 text-sm font-semibold backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white/30" onclick="document.getElementById('tpl-upload-section').classList.toggle('hidden')">
+          <i class="lucide lucide-upload text-base"></i> Install ZIP
+        </button>
+        <a href="/admin/cv-templates/tutorial" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 text-white px-4 py-2.5 text-sm font-semibold backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-white/30">
+          <i class="lucide lucide-book-open text-base"></i> Guide
+        </a>
+      </div>
+    </div>
   </div>
-  <div class="p-4">
-   <form id="tpl-upload-form" action="/admin/cv-templates/upload-zip" method="post" enctype="multipart/form-data">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token|default('') }}">
-    <input type="file" id="tpl-upload-input" name="template_zip" accept=".zip" class="hidden">
 
-    <div id="tpl-upload-dropzone" class="upload-dropzone">
-     <div class="upload-dropzone-icon">
-      <i class="lucide lucide-upload" style="width:24px;height:24px"></i>
-     </div>
-     <p class="text-sm font-medium text-slate-700 mb-1">Drop a ZIP package here or click to browse</p>
-     <p class="text-xs text-slate-400">Supports: <strong>config.json</strong>, <strong>template.twig</strong>, preview.png (max 10MB)</p>
-     <p class="text-xs text-slate-400 mt-1 upload-status-text">No file selected</p>
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# ZIP UPLOAD SECTION                                              #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  <div id="tpl-upload-section" class="hidden mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-transparent px-6 py-4 flex items-center justify-between">
+      <h5 class="font-semibold text-slate-800 flex items-center gap-2">
+        <i class="lucide lucide-package text-emerald-600 text-lg"></i>
+        Install Template from ZIP
+      </h5>
+      <button type="button" class="text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100 p-1.5" onclick="document.getElementById('tpl-upload-section').classList.add('hidden')">
+        <i class="lucide lucide-x text-lg"></i>
+      </button>
     </div>
+    <div class="p-6">
+      <form id="tpl-upload-form" action="/admin/cv-templates/upload-zip" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token|default('') }}">
+        <input type="file" id="tpl-upload-input" name="template_zip" accept=".zip" class="hidden">
 
-    <div id="tpl-progress-container" class="mt-3 hidden">
-     <div class="upload-progress-bar">
-      <div id="tpl-upload-progress" class="upload-progress-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-     </div>
-     <p class="text-xs text-slate-400 mt-1">Installing template...</p>
+        <div id="tpl-upload-dropzone" class="upload-dropzone cursor-pointer">
+          <div class="upload-dropzone-icon">
+            <i class="lucide lucide-upload"></i>
+          </div>
+          <p class="text-sm font-semibold text-slate-800 mb-1">Drop ZIP package here or click to browse</p>
+          <p class="text-xs text-slate-600">Supports: <strong>config.json</strong>, <strong>template.twig</strong>, preview.png</p>
+          <p class="text-xs text-slate-500 mt-2 upload-status-text">Max 10MB • No file selected</p>
+        </div>
+
+        <div id="tpl-progress-container" class="mt-4 hidden">
+          <div class="upload-progress-bar">
+            <div id="tpl-upload-progress" class="upload-progress-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <p class="text-xs text-slate-600 mt-2">Installing template...</p>
+        </div>
+
+        <div id="tpl-upload-result" class="mt-4" style="display:none"></div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <button type="submit" id="tpl-upload-btn" class="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="lucide lucide-check text-base"></i> Install Template
+          </button>
+          <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition text-slate-600 hover:bg-slate-100" onclick="document.getElementById('tpl-upload-section').classList.add('hidden')">Cancel</button>
+        </div>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-slate-200">
+        <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">📦 ZIP Package Requirements:</p>
+        <ul class="text-xs text-slate-600 space-y-2">
+          <li class="flex gap-2">
+            <span class="text-indigo-600 font-mono bg-indigo-50 px-2 py-1 rounded whitespace-nowrap">config.json</span>
+            <span>Required. Contains name, slug, description, category</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-indigo-600 font-mono bg-indigo-50 px-2 py-1 rounded whitespace-nowrap">template.twig</span>
+            <span>Required. The CV template in Twig/HTML format</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-emerald-600 font-mono bg-emerald-50 px-2 py-1 rounded whitespace-nowrap">preview.png</span>
+            <span>Optional. Preview image (max 2MB)</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-sky-600 font-mono bg-sky-50 px-2 py-1 rounded whitespace-nowrap">thumbnail.png</span>
+            <span>Optional. Thumbnail (max 512KB)</span>
+          </li>
+        </ul>
+      </div>
     </div>
-
-    <div id="tpl-upload-result" class="mt-3" style="display:none"></div>
-
-    <div class="mt-3 flex items-center gap-2">
-     <button type="submit" id="tpl-upload-btn" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-      <i class="lucide lucide-upload mr-1"></i> Install Template
-     </button>
-     <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:text-slate-800 hover:bg-slate-100" onclick="document.getElementById('tpl-upload-section').classList.add('hidden')">Cancel</button>
-    </div>
-   </form>
-
-   <div class="mt-4 pt-3 border-t border-slate-100">
-    <p class="text-xs font-semibold text-slate-500 mb-2">ZIP Package Requirements:</p>
-    <ul class="text-xs text-slate-400 space-y-1">
-     <li><code class="text-indigo-600 bg-indigo-50 px-1 rounded">config.json</code> — Required. Contains <code>name</code>, <code>slug</code>, <code>description</code>, <code>category</code></li>
-     <li><code class="text-indigo-600 bg-indigo-50 px-1 rounded">template.twig</code> — Required. The CV template in Twig/HTML format</li>
-     <li><code class="text-indigo-600 bg-indigo-50 px-1 rounded">preview.png</code> — Optional. Preview image for marketplace (max 2MB)</li>
-     <li><code class="text-indigo-600 bg-indigo-50 px-1 rounded">thumbnail.png</code> — Optional. Thumbnail image (max 512KB)</li>
-    </ul>
-   </div>
   </div>
- </div>
 
- {% if templates is not empty %}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# BULK DELETE ACTION BAR                                          #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {% if templates is not empty %}
+  <div id="bulk-delete-bar" class="hidden mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3" data-bulk-delete-bar>
+    <label class="flex items-center gap-2 text-sm text-red-700 cursor-pointer">
+      <input type="checkbox" id="bulk-select-all" data-bulk-select-all class="rounded border-red-300 text-red-600 focus:ring-red-500">
+      <span class="font-semibold">Select All (<span data-selected-count>0</span> selected)</span>
+    </label>
+    <div class="flex-1"></div>
+    <button type="button" id="bulk-delete-btn" data-bulk-delete class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+      <i class="lucide lucide-trash-2 text-base"></i> Delete Selected
+    </button>
+    <button type="button" id="bulk-cancel-btn" data-bulk-cancel class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-red-600 hover:bg-red-100 border border-red-200">
+      <i class="lucide lucide-x text-base"></i> Cancel
+    </button>
+  </div>
 
- {# ===== Bulk Action Bar (hidden by default) ===== #}
- <div id="bulk-delete-bar" class="hidden mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3" data-bulk-delete-bar>
-  <label class="flex items-center gap-2 text-sm text-red-700 cursor-pointer">
-   <input type="checkbox" id="bulk-select-all" data-bulk-select-all
-    class="rounded border-red-300 text-red-600 focus:ring-red-500">
-   <span class="font-medium">Select All (<span data-selected-count>0</span> selected)</span>
-  </label>
-  <div class="flex-1"></div>
-  <button type="button" id="bulk-delete-btn" data-bulk-delete
-   class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-   disabled>
-   <i class="lucide lucide-trash-2 mr-1"></i> Delete Selected
-  </button>
-  <button type="button" id="bulk-cancel-btn" data-bulk-cancel
-   class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-red-600 hover:bg-red-100 border border-red-200">
-   Cancel
-  </button>
- </div>
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# TEMPLATES GRID                                                  #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {% set template_meta = {
+    'modern': {'desc': 'Clean design with bold accents', 'gradient': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', 'icon': 'lucide lucide-palette'},
+    'minimal': {'desc': 'Simple, elegant typography', 'gradient': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)', 'icon': 'lucide lucide-square'},
+    'ats': {'desc': 'Optimized for ATS scanners', 'gradient': 'linear-gradient(135deg, #059669 0%, #10B981 100%)', 'icon': 'lucide lucide-shield-check'},
+    'professional': {'desc': 'Classic business layout', 'gradient': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)', 'icon': 'lucide lucide-briefcase'}
+  } %}
 
- <div class="cv-template-grid" data-bulk-container>
- {% for key, template in templates %}
- {% set meta = template_meta[key]|default({'desc': template.description|default('CV template'), '': 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 'icon': 'lucide lucide-file-text'}) %}
- <div class="cv-template-rounded-xl border border-slate-200 bg-white shadow-sm" data-template-card="{{ key }}">
-  {% if template.is_custom %}
-  <div class="flex items-center gap-2 px-4 pt-3 pb-0">
-   <input type="checkbox" class="item-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-    data-template-slug="{{ key }}" data-template-name="{{ template.name|e('html_attr') }}">
+  <div class="cv-template-grid" data-bulk-container>
+    {% for key, template in templates %}
+    {% set meta = template_meta[key]|default({'desc': template.description|default('CV template'), 'gradient': 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)', 'icon': 'lucide lucide-file-text'}) %}
+    <div class="cv-template-card" data-template-card="{{ key }}">
+      {% if template.is_custom %}
+      <div class="px-4 pt-3 pb-0 flex items-center">
+        <input type="checkbox" class="item-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-template-slug="{{ key }}" data-template-name="{{ template.name|e('html_attr') }}">
+      </div>
+      {% endif %}
+      <div class="cv-template-preview" style="background: {{ meta.gradient|default('linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)') }};">
+        <i class="{{ meta.icon }}"></i>
+      </div>
+      <div class="cv-template-body">
+        <h3 class="cv-template-title">
+          {{ template.name }}
+          {% if template.status == 'disabled' %}
+          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 ml-auto"><i class="lucide lucide-slash-circle text-xs mr-1"></i>Disabled</span>
+          {% else %}
+          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 ml-auto"><i class="lucide lucide-check-circle text-xs mr-1"></i>Active</span>
+          {% endif %}
+        </h3>
+        <p class="cv-template-desc">{{ template.description|default(meta.desc) }}</p>
+        <div class="cv-template-meta">
+          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
+            <i class="lucide lucide-code text-xs mr-1"></i> {{ key }}
+          </span>
+          {% if template.is_custom %}
+          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-700">
+            <i class="lucide lucide-star text-xs mr-1"></i> Custom
+          </span>
+          {% endif %}
+        </div>
+        <div class="cv-template-actions">
+          <a href="/admin/cv-templates/preview/{{ key }}" class="cv-template-action-btn bg-slate-100 text-slate-700 hover:bg-slate-200" target="_blank" title="Preview template">
+            <i class="lucide lucide-eye text-sm"></i> Preview
+          </a>
+          <a href="/admin/cv-templates/{{ key }}/edit" class="cv-template-action-btn bg-indigo-600 text-white hover:bg-indigo-700" title="Edit template">
+            <i class="lucide lucide-pencil text-sm"></i> Edit
+          </a>
+          <form method="post" action="/admin/cv-templates/{{ key }}/toggle" class="inline" data-toggle-form>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="cv-template-action-btn w-full {% if template.status == 'active' %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-emerald-100 text-emerald-700 hover:bg-emerald-200{% endif %}" title="{% if template.status == 'active' %}Disable{% else %}Enable{% endif %} template">
+              <i class="lucide {% if template.status == 'active' %}lucide-pause{% else %}lucide-play{% endif %} text-sm"></i>
+              {% if template.status == 'active' %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+          <button type="button" class="cv-template-action-btn bg-sky-100 text-sky-700 hover:bg-sky-200" data-copy-template data-template-key="{{ key }}" title="Copy template key">
+            <i class="lucide lucide-copy text-sm"></i> Copy Key
+          </button>
+          {% if template.is_custom %}
+          <form method="post" action="/admin/cv-templates/{{ key }}/delete" class="inline w-full" data-delete-form data-template-name="{{ template.name|e('html_attr') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="cv-template-action-btn w-full bg-red-100 text-red-700 hover:bg-red-200" title="Delete template">
+              <i class="lucide lucide-trash-2 text-sm"></i> Delete
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-xl border border-sky-200 bg-sky-50 p-6 text-center">
+    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sky-100 mb-3">
+      <i class="lucide lucide-inbox text-lg text-sky-600"></i>
+    </div>
+    <p class="text-sm text-sky-800">
+      <i class="lucide lucide-info text-sm"></i> No templates found in <code class="bg-white px-2 py-1 rounded text-xs font-mono">app/Views/cv/templates</code>
+    </p>
   </div>
   {% endif %}
- <div class="cv-template-preview" style="background: {{ meta.gradient|default('linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)') }};">
- <i class="bi {{ meta.icon }}"></i>
- </div>
- <div class="cv-template-body">
- <div class="cv-template-title">
- {{ template.name }}
- {% if template.status == 'disabled' %}
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-600 ml-2">Disabled</span>
- {% else %}
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600 ml-2">Active</span>
- {% endif %}
- </div>
- <div class="cv-template-desc">{{ template.description|default(meta.desc) }}</div>
- <div class="cv-template-meta flex flex-wrap items-center gap-2">
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500">Key: {{ key }}</span>
- {% if template.is_custom %}
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600">Custom</span>
- {% endif %}
- </div>
- <div class="cv-template-actions">
- <a href="/admin/cv-templates/preview/{{ key }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200"
- target="_blank">
- <i class="lucide lucide-eye mr-1"></i> Preview
- </a>
- <a href="/admin/cv-templates/{{ key }}/edit"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-700">
- <i class="lucide lucide-pencil mr-1"></i> Edit
- </a>
- <form method="post" action="/admin/cv-templates/{{ key }}/toggle" class="inline" data-toggle-form>
- <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
- <button type="submit"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs {% if template.status == 'active' %}bg-red-600 text-white hover:bg-red-700{% else %}bg-emerald-600 hover:bg-emerald-700{% endif %}">
- <i class="lucide {% if template.status == 'active' %}lucide-pause{% else %}lucide-play{% endif %} mr-1"></i>
- {% if template.status == 'active' %}Disable{% else %}Enable{% endif %}
- </button>
- </form> <button type="button"
-             class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-slate-600 hover:bg-slate-100"
-             data-copy-template
-             data-template-key="{{ key }}">
-             <i class="lucide lucide-clipboard mr-1"></i> Copy Key
-            </button>
-            {% if template.is_custom %}
-            <form method="post" action="/admin/cv-templates/{{ key }}/delete" class="inline" data-delete-form data-template-name="{{ template.name|e('html_attr') }}">
-             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-             <button type="submit"
-              class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-300">
-              <i class="lucide lucide-trash-2 mr-1"></i> Delete
-             </button>
-            </form>
-            {% endif %}
-            </div>
- </div>
- </div>
- {% endfor %}
- </div>
- {% else %}
- <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
- <i class="lucide lucide-info mr-1"></i> No templates found in <code>app/Views/cv/templates</code>.
- </div>
- {% endif %}
- </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
- {{ parent() }}
- <script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}"></script>
+  {{ parent() }}
+  <script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}"></script>
 {% endblock %}
-
-
-
-
-
-

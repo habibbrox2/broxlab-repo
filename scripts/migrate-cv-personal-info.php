@@ -38,6 +38,7 @@ $newColumns = [
     'national_id_no' => "ALTER TABLE cv_personal_info ADD COLUMN `national_id_no` VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'National ID / Aadhaar / SSN' AFTER `portfolio`",
     'passport_no' => "ALTER TABLE cv_personal_info ADD COLUMN `passport_no` VARCHAR(50) NOT NULL DEFAULT '' COMMENT 'Passport number' AFTER `national_id_no`",
     'birth_certificate_no' => "ALTER TABLE cv_personal_info ADD COLUMN `birth_certificate_no` VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Birth certificate number' AFTER `passport_no`",
+    'religion' => "ALTER TABLE cv_personal_info ADD COLUMN `religion` VARCHAR(50) NOT NULL DEFAULT '' COMMENT 'Religion' AFTER `birth_certificate_no`",
 ];
 foreach ($newColumns as $colName => $alterSql) {
     $chk = $mysqli->query("SHOW COLUMNS FROM cv_personal_info LIKE '$colName'");

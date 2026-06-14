@@ -1,199 +1,263 @@
 {% extends "admin/layout.twig" %}
 
-{% block title %}CV Personal Info{% endblock %}
+{% block title %}CV Personal Info Directory{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% set current_page = current_page|default('cv-personal-info') %}
 
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 cv-admin-page">
-  <div class="cv-admin-hero">
-    <div>
-      <div class="cv-admin-title">CV Personal Info</div>
-      <div class="cv-admin-subtitle">View all structured personal info records from the builder.</div>
+<div class="py-4">
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# HERO SECTION                                                    #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-8 md:px-8 md:py-10 shadow-lg">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
     </div>
-    <div class="cv-admin-hero-actions">
-      <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
-        <i class="lucide lucide-arrow-left mr-1"></i> Back to CVs
+    <div class="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <div class="flex-1">
+        <div class="mb-2 flex items-center gap-2">
+          <span class="inline-flex items-center justify-center rounded-full bg-white/20 p-2.5 text-white">
+            <i class="lucide lucide-users text-xl"></i>
+          </span>
+        </div>
+        <h1 class="text-3xl font-bold text-white md:text-4xl">Personal Information Directory</h1>
+        <p class="mt-2 text-base text-cyan-50">View and manage all CV personal information records. Search, filter, and export data.</p>
+      </div>
+      <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 text-white px-4 py-2.5 text-sm font-semibold backdrop-blur-sm transition-all duration-200 hover:bg-white/20">
+        <i class="lucide lucide-arrow-left text-base"></i> Back to CVs
       </a>
     </div>
   </div>
 
-  {# Stats cards #}
-  <div class="cv-admin-stats">
-    <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
-      <div class="cv-admin-stat-icon bg-indigo-600-subtle text-indigo-600">
-        <i class="lucide lucide-file-text"></i>
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# STATISTICS CARDS                                                #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-indigo-200 hover:shadow-md">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="rounded-lg bg-indigo-100 p-3 text-indigo-600">
+          <i class="lucide lucide-database text-xl"></i>
+        </div>
+        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">all</span>
       </div>
-      <div>
-        <div class="cv-admin-stat-value">{{ stats.total|default(0) }}</div>
-        <div class="cv-admin-stat-label">Total Records</div>
-      </div>
+      <div class="text-3xl font-bold text-slate-900">{{ stats.total|default(0) }}</div>
+      <p class="mt-1 text-sm text-slate-600">Total Records</p>
     </div>
-    <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
-      <div class="cv-admin-stat-icon bg-emerald-600-subtle text-emerald-600">
-        <i class="lucide lucide-mail"></i>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-emerald-200 hover:shadow-md">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="rounded-lg bg-emerald-100 p-3 text-emerald-600">
+          <i class="lucide lucide-mail text-xl"></i>
+        </div>
+        <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">verified</span>
       </div>
-      <div>
-        <div class="cv-admin-stat-value">{{ stats.has_email|default(0) }}</div>
-        <div class="cv-admin-stat-label">With Email</div>
-      </div>
+      <div class="text-3xl font-bold text-slate-900">{{ stats.has_email|default(0) }}</div>
+      <p class="mt-1 text-sm text-slate-600">With Email Address</p>
     </div>
-    <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
-      <div class="cv-admin-stat-icon bg-sky-500-subtle text-sky-600">
-        <i class="lucide lucide-users"></i>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-cyan-200 hover:shadow-md">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="rounded-lg bg-cyan-100 p-3 text-cyan-600">
+          <i class="lucide lucide-user-check text-xl"></i>
+        </div>
+        <span class="text-xs font-semibold text-cyan-600 bg-cyan-50 px-2.5 py-1 rounded-full\">unique</span>
       </div>
-      <div>
-        <div class="cv-admin-stat-value">{{ stats.users|default(0) }}</div>
-        <div class="cv-admin-stat-label">Unique Users</div>
-      </div>
+      <div class="text-3xl font-bold text-slate-900">{{ stats.users|default(0) }}</div>
+      <p class="mt-1 text-sm text-slate-600">Unique Users</p>
     </div>
-    <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
-      <div class="cv-admin-stat-icon bg-amber-500-subtle text-amber-600">
-        <i class="lucide lucide-layers"></i>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-amber-200 hover:shadow-md">
+      <div class="mb-4 flex items-center justify-between">
+        <div class="rounded-lg bg-amber-100 p-3 text-amber-600">
+          <i class="lucide lucide-file-text text-xl"></i>
+        </div>
+        <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">linked</span>
       </div>
-      <div>
-        <div class="cv-admin-stat-value">{{ stats.cvs|default(0) }}</div>
-        <div class="cv-admin-stat-label">Linked CVs</div>
-      </div>
+      <div class="text-3xl font-bold text-slate-900">{{ stats.cvs|default(0) }}</div>
+      <p class="mt-1 text-sm text-slate-600">Associated CVs</p>
     </div>
   </div>
 
-  {# Filters #}
-  <div class=" border border-slate-200 bg-white shadow-sm mb-4 cv-admin-filters">
-    <div class="p-4">
-      <form class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 items-end" method="get" action="">
-        <div class="lg:col-span-6">
-          <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Search</label>
-          <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
-            <span class="shrink-0 flex items-center px-3 py-2 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-search"></i></span>
-            <input type="text"
-              name="search"
-              value="{{ filters.search|default('') }}"
-              class="w-full border-0 px-3 py-2 text-sm focus:outline-none bg-white"
-              placeholder="Search by name, email, phone, nationality, or ID no.">
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# ADVANCED FILTERS                                                #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  <div class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-transparent px-6 py-4">
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <i class="lucide lucide-sliders-horizontal text-base text-cyan-600"></i>
+        Advanced Search & Filter
+      </h3>
+    </div>
+    <div class="p-6">
+      <form class="space-y-4" method="get" action="">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <!-- Search Input -->
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Search</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3 text-slate-400"><i class="lucide lucide-search text-base"></i></span>
+              <input type="text"
+                name="search"
+                value="{{ filters.search|default('') }}"
+                class="w-full border border-slate-300 pl-10 pr-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition"
+                placeholder="Search by name, email, phone, nationality, ID...">
+            </div>
           </div>
         </div>
-        <div class="lg:col-span-2 md:col-span-4">
-          <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Sort</label>
-          <select name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-            <option value="updated_at" {% if filters.sort == 'updated_at' %}selected{% endif %}>Updated</option>
-            <option value="created_at" {% if filters.sort == 'created_at' %}selected{% endif %}>Created</option>
-            <option value="full_name" {% if filters.sort == 'full_name' %}selected{% endif %}>Name</option>
-            <option value="email" {% if filters.sort == 'email' %}selected{% endif %}>Email</option>
-            <option value="id" {% if filters.sort == 'id' %}selected{% endif %}>ID</option>
-          </select>
-        </div>
-        <div class="lg:col-span-2 md:col-span-4">
-          <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Order</label>
-          <select name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-            <option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest</option>
-            <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest</option>
-          </select>
-        </div>
-        <div class="lg:col-span-2 md:col-span-4">
-          <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Limit</label>
-          <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-            {% for size in [10, 20, 50, 100] %}
-            <option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="lg:col-span-2 md:col-span-4">
-          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
-            <i class="lucide lucide-filter mr-1"></i>Apply
-          </button>
-        </div>
-        <div class="lg:col-span-2 md:col-span-4">
-          <a href="/admin/cv-personal-info" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline w-full">
-            <i class="lucide lucide-rotate-ccw mr-1"></i>Reset
-          </a>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <!-- Sort By -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Sort By</label>
+            <select name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 appearance-none">
+              <option value="updated_at" {% if filters.sort == 'updated_at' %}selected{% endif %}>Last Updated</option>
+              <option value="created_at" {% if filters.sort == 'created_at' %}selected{% endif %}>Created Date</option>
+              <option value="full_name" {% if filters.sort == 'full_name' %}selected{% endif %}>Name (A-Z)</option>
+              <option value="email" {% if filters.sort == 'email' %}selected{% endif %}>Email (A-Z)</option>
+              <option value="id" {% if filters.sort == 'id' %}selected{% endif %}>ID Number</option>
+            </select>
+          </div>
+          <!-- Order -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Order</label>
+            <select name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 appearance-none">
+              <option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest First</option>
+              <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest First</option>
+            </select>
+          </div>
+          <!-- Per Page -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2\">Per Page</label>
+            <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 appearance-none">
+              {% for size in [10, 20, 50, 100, 200] %}
+              <option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }} Records</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- Apply & Reset -->
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-cyan-600 text-white hover:bg-cyan-700 hover:shadow-md">
+              <i class="lucide lucide-filter text-base"></i> Apply
+            </button>
+            <a href="/admin/cv-personal-info" class="inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold transition border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+              <i class="lucide lucide-rotate-ccw text-base"></i>
+            </a>
+          </div>
         </div>
       </form>
     </div>
   </div>
 
-  {# Records table #}
+  {# ═══════════════════════════════════════════════════════════════ #}
+  {# RECORDS TABLE                                                   #}
+  {# ═══════════════════════════════════════════════════════════════ #}
   {% if records is not empty %}
-  <div class="border border-slate-200 bg-white shadow-sm">
-    <div class="p-4">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm align-middle cv-admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Full Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Nationality</th>
-              <th>Gender</th>
-              <th>User</th>
-              <th>CV</th>
-              <th>Date of Birth</th>
-              <th>ID No.</th>
-              <th>Passport</th>
-              <th>Created</th>
-              <th class="text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for rec in records %}
-            {% set user_name = (rec.first_name ~ ' ' ~ rec.last_name)|trim %}
-            {% set user_name = user_name ? user_name : rec.username|default('—') %}
-            <tr data-id="{{ rec.id }}">
-              <td class="font-semibold" data-label="ID">#{{ rec.id }}</td>
-              <td data-label="Full Name">
-                <div class="font-semibold">{{ rec.full_name|default('—') }}</div>
-                <div class="text-slate-500 small">{{ rec.job_title|default('') }}</div>
-              </td>
-              <td data-label="Email">
-                {% if rec.email %}
-                <a href="mailto:{{ rec.email }}" class="text-indigo-600 hover:underline">{{ rec.email }}</a>
-                {% else %}
-                <span class="text-slate-400">—</span>
-                {% endif %}
-              </td>
-              <td data-label="Phone">{{ rec.phone|default('—') }}</td>
-              <td data-label="Nationality">{{ rec.nationality|default('—') }}</td>
-              <td data-label="Gender">{{ rec.gender|default('—') }}</td>
-              <td data-label="User">
-                <a href="/admin/users/{{ rec.user_id }}" class="text-indigo-600 hover:underline">
-                  {{ user_name }} <span class="text-xs text-slate-400">#{{ rec.user_id }}</span>
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gradient-to-r from-slate-50 to-transparent border-b border-slate-200">
+          <tr>
+            <th class="px-6 py-4 font-semibold text-slate-700">ID</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Full Name</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Email</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Phone</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">User</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Birth Date</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Gender</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Nationality</th>
+            <th class="px-6 py-4 font-semibold text-slate-700">Created</th>
+            <th class="px-6 py-4 text-center font-semibold text-slate-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          {% for rec in records %}
+          {% set user_name = (rec.first_name ~ ' ' ~ rec.last_name)|trim %}
+          {% set user_name = user_name ? user_name : (rec.username|default('Unknown')) %}
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-slate-900">#{{ rec.id }}</td>
+            <td class="px-6 py-4">
+              <div class="font-semibold text-slate-900">{{ rec.full_name|default('—') }}</div>
+              {% if rec.job_title %}
+              <div class="text-xs text-slate-600">{{ rec.job_title }}</div>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if rec.email %}
+              <a href="mailto:{{ rec.email }}" class="text-cyan-600 hover:text-cyan-700 hover:underline inline-flex items-center gap-1" title="Send email">
+                <i class="lucide lucide-mail text-sm"></i> {{ rec.email }}
+              </a>
+              {% else %}
+              <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if rec.phone %}
+              <a href="tel:{{ rec.phone }}" class="text-slate-900 hover:text-slate-700 hover:underline font-medium" title="Call">
+                {{ rec.phone }}
+              </a>
+              {% else %}
+              <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-slate-900">{{ user_name }}</div>
+              <div class="text-xs text-slate-600">ID: {{ rec.user_id }}</div>
+            </td>
+            <td class="px-6 py-4">
+              {% if rec.date_of_birth %}
+              <span class="text-sm text-slate-900">{{ rec.date_of_birth|date('M d, Y') }}</span>
+              {% else %}
+              <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if rec.gender %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {% if rec.gender == 'M' %}bg-blue-100 text-blue-800{% elseif rec.gender == 'F' %}bg-pink-100 text-pink-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+                {% if rec.gender == 'M' %}<i class="lucide lucide-user text-sm mr-1"></i> Male{% elseif rec.gender == 'F' %}<i class="lucide lucide-user text-sm mr-1"></i> Female{% else %}{{ rec.gender }}{% endif %}
+              </span>
+              {% else %}
+              <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if rec.nationality %}
+              <span class="text-sm text-slate-900">{{ rec.nationality }}</span>
+              {% else %}
+              <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <span class="text-sm text-slate-600">{{ rec.created_at|date('M d, Y') }}</span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <a href="/admin/cvs/{{ rec.cv_id }}" class="inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-xs font-medium bg-cyan-50 text-cyan-600 hover:bg-cyan-100 transition border border-cyan-200 hover:border-cyan-300" title="View CV">
+                  <i class="lucide lucide-external-link text-sm"></i> <span class="hidden sm:inline">View</span>
                 </a>
-              </td>
-              <td data-label="CV">
-                {% if rec.cv_id %}
-                <a href="/admin/cvs/{{ rec.cv_id }}/preview" class="text-indigo-600 hover:underline" target="_blank">
-                  {{ rec.cv_title|default('CV #' ~ rec.cv_id) }}
-                </a>
-                {% if rec.cv_is_active %}
-                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 ml-1">Active</span>
-                {% else %}
-                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-500 ml-1">Inactive</span>
-                {% endif %}
-                {% else %}
-                <span class="text-slate-400">—</span>
-                {% endif %}
-              </td>
-              <td data-label="DOB">{{ rec.date_of_birth ? rec.date_of_birth : '—' }}</td>
-              <td data-label="ID No.">{{ rec.national_id_no|default('—') }}</td>
-              <td data-label="Passport">{{ rec.passport_no|default('—') }}</td>
-              <td class="text-slate-500" data-label="Created">{{ rec.created_at ? rec.created_at|date('M d, Y') : '—' }}</td>
-              <td class="text-center" data-label="Actions">
-                <a href="/admin/cvs/{{ rec.cv_id }}/preview" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-sky-500 text-white hover:bg-sky-600" target="_blank" title="View CV">
-                  <i class="lucide lucide-eye"></i>
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+
+  {# Pagination #}
   {% include "admin/partials/pagination.twig" %}
+
   {% else %}
-  <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
-    <i class="lucide lucide-info mr-1"></i> No personal info records found.
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="px-8 py-12 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+        <i class="lucide lucide-inbox text-2xl text-slate-400"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-2">No Records Found</h3>
+      <p class="text-slate-600 mb-6 max-w-md mx-auto">No personal information records match your search criteria. Try adjusting your filters or clearing the search.</p>
+      <a href="/admin/cv-personal-info" class="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition">
+        <i class="lucide lucide-rotate-ccw"></i> Clear Filters
+      </a>
+    </div>
   </div>
   {% endif %}
 </div>

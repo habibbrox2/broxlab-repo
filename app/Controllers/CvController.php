@@ -1427,6 +1427,7 @@ $router->get('/api/cv/{id}/personal-info', ['middleware' => ['auth']], function 
                     'national_id_no' => $data['national_id_no'] ?? '',
                     'passport_no' => $data['passport_no'] ?? '',
                     'birth_certificate_no' => $data['birth_certificate_no'] ?? '',
+                    'religion' => $data['religion'] ?? '',
                 ]
             ]);
         } else {

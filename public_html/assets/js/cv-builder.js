@@ -133,7 +133,7 @@
           `<div class="bld-form-group"><label class="bld-label">Passport No.</label><input class="bld-input" id="bld-field-passport_no" value="${ fill('passport_no') }" placeholder="e.g. AB123456"></div></div>` +
           '<div class="bld-input-group">' +
           `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${ fill('birth_certificate_no') }" placeholder="Birth certificate number"></div>` +
-          '<div class="bld-form-group"></div></div>';
+          `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${ d.religion === 'islam' ? ' selected' : '' }>Islam</option><option value="hinduism"${ d.religion === 'hinduism' ? ' selected' : '' }>Hinduism</option><option value="christianity"${ d.religion === 'christianity' ? ' selected' : '' }>Christianity</option><option value="buddhism"${ d.religion === 'buddhism' ? ' selected' : '' }>Buddhism</option><option value="other"${ d.religion === 'other' ? ' selected' : '' }>Other</option></select></div></div>';
 
     case 'summary': {
       let s = '';
@@ -411,7 +411,7 @@
   function collectStepData(stepId) {
     switch (stepId) {
     case 'personal':
-      return { full_name: val('bld-field-full_name'), job_title: val('bld-field-job_title'), email: val('bld-field-email'), phone: val('bld-field-phone'), date_of_birth: val('bld-field-dob'), nationality: val('bld-field-nationality'), gender: val('bld-field-gender'), address: val('bld-field-address'), website: val('bld-field-website'), linkedin: val('bld-field-linkedin'), github: val('bld-field-github'), twitter: val('bld-field-twitter'), national_id_no: val('bld-field-national_id_no'), passport_no: val('bld-field-passport_no'), birth_certificate_no: val('bld-field-birth_certificate_no'), };
+      return { full_name: val('bld-field-full_name'), job_title: val('bld-field-job_title'), email: val('bld-field-email'), phone: val('bld-field-phone'), date_of_birth: val('bld-field-dob'), nationality: val('bld-field-nationality'), gender: val('bld-field-gender'), address: val('bld-field-address'), website: val('bld-field-website'), linkedin: val('bld-field-linkedin'), github: val('bld-field-github'), twitter: val('bld-field-twitter'), national_id_no: val('bld-field-national_id_no'), passport_no: val('bld-field-passport_no'), birth_certificate_no: val('bld-field-birth_certificate_no'), religion: val('bld-field-religion'), };
     case 'summary':
       return { professional_summary: val('bld-field-professional_summary'), career_objective: val('bld-field-career_objective'), job_title: (document.getElementById('bld-job-title') || {}).value || '', };
     case 'experience': {
@@ -501,6 +501,12 @@
       STATE.data[stepId] = collectStepData(stepId);
     }
     STATE.currentStep--;
+    renderStep(STATE.currentStep);
+  };
+
+  window.bldSkipStep = function () {
+    if (STATE.currentStep >= STEPS.length - 1) return;
+    STATE.currentStep++;
     renderStep(STATE.currentStep);
   };
 

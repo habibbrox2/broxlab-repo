@@ -75,6 +75,7 @@ class CvPersonalInfoModel
             'national_id_no' => $data['national_id_no'] ?? '',
             'passport_no' => $data['passport_no'] ?? '',
             'birth_certificate_no' => $data['birth_certificate_no'] ?? '',
+            'religion' => $data['religion'] ?? '',
         ];
 
         $stmt = $this->mysqli->prepare(
@@ -82,8 +83,8 @@ class CvPersonalInfoModel
              (cv_id, user_id, full_name, job_title, email, phone, address,
               date_of_birth, nationality, gender, driving_license,
               website, linkedin, github, twitter, portfolio,
-              national_id_no, passport_no, birth_certificate_no)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              national_id_no, passport_no, birth_certificate_no, religion)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
              user_id = VALUES(user_id),
              full_name = VALUES(full_name),
@@ -102,14 +103,15 @@ class CvPersonalInfoModel
              portfolio = VALUES(portfolio),
              national_id_no = VALUES(national_id_no),
              passport_no = VALUES(passport_no),
-             birth_certificate_no = VALUES(birth_certificate_no)"
+             birth_certificate_no = VALUES(birth_certificate_no),
+             religion = VALUES(religion)"
         );
 
         $dob = $fields['date_of_birth'];
         $gender = $fields['gender'];
 
         $stmt->bind_param(
-            'iisssssssssssssssss',
+            'iissssssssssssssssss',
             $fields['cv_id'],
             $fields['user_id'],
             $fields['full_name'],
@@ -128,7 +130,8 @@ class CvPersonalInfoModel
             $fields['portfolio'],
             $fields['national_id_no'],
             $fields['passport_no'],
-            $fields['birth_certificate_no']
+            $fields['birth_certificate_no'],
+            $fields['religion']
         );
 
         return $stmt->execute();
@@ -186,6 +189,7 @@ class CvPersonalInfoModel
             'national_id_no' => $personal['national_id_no'] ?? '',
             'passport_no' => $personal['passport_no'] ?? '',
             'birth_certificate_no' => $personal['birth_certificate_no'] ?? '',
+            'religion' => $personal['religion'] ?? '',
         ];
     }
 
