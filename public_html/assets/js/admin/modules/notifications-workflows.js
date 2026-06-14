@@ -1,7 +1,7 @@
 import { escapeHtml } from './core.js';
+import { getCsrfToken, parseJsonResponse } from '../../shared/utils.js';
 
 const byId = (id) => document.getElementById(id);
-const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
 async function initNotificationModuleHelpers() {
   try {
@@ -759,15 +759,15 @@ export async function initNotificationsScheduled() {
       });
 
       if (result?.success) {
-        alert('Notification scheduled successfully.');
+        window.showMessage('Notification scheduled successfully.', 'success');
         scheduleModal?.hide();
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed to schedule notification: ${result?.error || 'Unknown error'}`);
+        window.showMessage(`Failed to schedule notification: ${result?.error || 'Unknown error'}`, 'danger');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(`Server error: ${error.message}`);
+      window.showMessage(`Server error: ${error.message}`, 'danger');
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -869,7 +869,7 @@ export async function initNotificationsScheduled() {
   }
 
   async function cancelScheduled(id) {
-    if (!confirm('Cancel this scheduled notification?')) return;
+    if (!(await window.showConfirm('Cancel this scheduled notification?'))) return;
     try {
       const response = await fetch(`/api/notification/scheduled/${id}`, {
         method: 'DELETE',
@@ -877,19 +877,19 @@ export async function initNotificationsScheduled() {
       });
       const data = await response.json();
       if (data.success) {
-        alert('Schedule cancelled.');
+        window.showMessage('Schedule cancelled.', 'success');
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed: ${data.message || data.error || 'Unknown error'}`);
+        window.showMessage(`Failed: ${data.message || data.error || 'Unknown error'}`, 'danger');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Server error while cancelling.');
+      window.showMessage('Server error while cancelling.', 'danger');
     }
   }
 
   function viewScheduledDetail(id) {
-    alert(`Detailed view is coming soon. ID: ${id}`);
+    window.showMessage(`Detailed view is coming soon. ID: ${id}`, 'info');
   }
 
   document.addEventListener('click', (event) => {
@@ -1118,15 +1118,15 @@ export function initNotificationsDeviceSync() {
       });
       const data = await parseJsonResponse(response);
       if (data.success) {
-        alert('Sync completed successfully');
+        window.showMessage('Sync completed successfully', 'success');
         loadSyncLog();
         loadDevicesList();
       } else {
-        alert(`Sync failed: ${data.error || data.message || 'Unknown error'}`);
+        window.showMessage(`Sync failed: ${data.error || data.message || 'Unknown error'}`, 'danger');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Server error while syncing');
+      window.showMessage('Server error while syncing', 'danger');
     }
   }
 
@@ -1143,20 +1143,20 @@ export function initNotificationsDeviceSync() {
       });
       const data = await parseJsonResponse(response);
       if (data.success) {
-        alert('Device synced successfully');
+        window.showMessage('Device synced successfully', 'success');
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Device sync failed: ${data.error || data.message || 'Unknown error'}`);
+        window.showMessage(`Device sync failed: ${data.error || data.message || 'Unknown error'}`, 'danger');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Server error while syncing device');
+      window.showMessage('Server error while syncing device', 'danger');
     }
   }
 
   async function removeDevice(deviceId) {
-    if (!confirm('Are you sure you want to remove this device?')) return;
+    if (!(await window.showConfirm('Are you sure you want to remove this device?'))) return;
     try {
       const response = await fetch(`/api/notification/devices/${encodeURIComponent(deviceId)}`, {
         method: 'DELETE',
@@ -1164,20 +1164,20 @@ export function initNotificationsDeviceSync() {
       });
       const data = await parseJsonResponse(response);
       if (data.success) {
-        alert('Device removed successfully');
+        window.showMessage('Device removed successfully', 'success');
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Failed to remove device: ${data.error || data.message || 'Unknown error'}`);
+        window.showMessage(`Failed to remove device: ${data.error || data.message || 'Unknown error'}`, 'danger');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Server error while removing device');
+      window.showMessage('Server error while removing device', 'danger');
     }
   }
 
   function clearSyncLog() {
-    alert('Clear log API is not configured in backend.');
+    window.showMessage('Clear log API is not configured in backend.', 'info');
     loadSyncLog();
   }
 
@@ -1344,32 +1344,32 @@ export async function initNotificationsOfflineHandler() {
     async function processQueue() {
       try {
         await offlineHandler?.processQueue?.();
-        alert('Queue processed successfully');
+        window.showMessage('Queue processed successfully', 'success');
         refreshBuffer();
         loadRetryQueue();
       } catch (error) {
-        alert(`Error: ${error.message}`);
+        window.showMessage(`Error: ${error.message}`, 'danger');
       }
     }
 
     async function clearExpiredCache() {
       try {
         await offlineHandler?.clearExpiredCache?.();
-        alert('Expired cache cleared successfully');
+        window.showMessage('Expired cache cleared successfully', 'success');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${error.message}`);
+        window.showMessage(`Error: ${error.message}`, 'danger');
       }
     }
 
     async function clearAllBuffer() {
-      if (!confirm('Do you want to clear all buffered notifications? This action cannot be undone.')) return;
+      if (!(await window.showConfirm('Do you want to clear all buffered notifications? This action cannot be undone.'))) return;
       try {
         await offlineHandler?.clearCache?.();
-        alert('All buffered notifications were cleared');
+        window.showMessage('All buffered notifications were cleared', 'success');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${error.message}`);
+        window.showMessage(`Error: ${error.message}`, 'danger');
       }
     }
 
@@ -1380,13 +1380,13 @@ export async function initNotificationsOfflineHandler() {
       if (offlineModal) {
         offlineModal.show();
       } else {
-        alert('Offline simulation modal is not available');
+        window.showMessage('Offline simulation modal is not available', 'info');
       }
     }
 
     function applyOfflineMode() {
       const mode = document.querySelector('input[name="offlineMode"]:checked')?.value;
-      alert(`Offline simulation mode set to: ${mode}. Verify behavior in DevTools network panel.`);
+      window.showMessage(`Offline simulation mode set to: ${mode}. Verify behavior in DevTools network panel.`, 'info');
       offlineModal?.hide();
     }
 
@@ -1520,7 +1520,7 @@ export async function initNotificationsView() {
   const trackResend = analytics?.trackAdminNotificationResend;
 
   async function resendNotificationNow() {
-    if (!confirm('Do you want to resend this notification now?')) return;
+    if (!(await window.showConfirm('Do you want to resend this notification now?'))) return;
     try {
       const response = await fetch('/api/notification/resend', {
         method: 'POST',
@@ -1546,7 +1546,7 @@ export async function initNotificationsView() {
   }
 
   function deleteNotification() {
-    if (confirm('Do you want to delete this notification?')) {
+    if (window.showConfirm('Do you want to delete this notification?')) {
       showInfo?.('Delete notification feature is coming soon.');
     }
   }
@@ -1691,8 +1691,8 @@ export function initNotificationsDashboard() {
       });
   };
 
-  window.deleteNotification = function (notifId) {
-    if (!confirm('Do you want to delete this notification?')) return;
+  window.deleteNotification = async function (notifId) {
+    if (!(await window.showConfirm('Do you want to delete this notification?'))) return;
     fetch(`/api/notification/${notifId}`, {
       method: 'DELETE',
       headers: { 'X-CSRF-Token': getCsrfToken(), },
@@ -1702,7 +1702,7 @@ export function initNotificationsDashboard() {
         if (data.success) {
           location.reload();
         } else {
-          alert('Failed to delete notification');
+          window.showMessage('Failed to delete notification', 'danger');
         }
       });
   };
@@ -1804,7 +1804,7 @@ export async function initNotificationsDrafts() {
   }
 
   async function deleteDraft(draftId) {
-    if (!confirm('Do you want to delete this draft?')) return;
+    if (!(await window.showConfirm('Do you want to delete this draft?'))) return;
     try {
       const response = await fetch('/api/notification/delete-draft', {
         method: 'POST',
@@ -1825,7 +1825,7 @@ export async function initNotificationsDrafts() {
   }
 
   async function sendDraft(draftId) {
-    if (!confirm('Do you want to send this draft now?')) return;
+    if (!(await window.showConfirm('Do you want to send this draft now?'))) return;
     try {
       const response = await fetch('/api/notification/send-draft', {
         method: 'POST',

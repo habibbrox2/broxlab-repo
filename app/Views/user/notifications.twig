@@ -409,37 +409,99 @@ async function loadTopicPreferences() {
  }
 }
 
-// Toggle topic subscription
 async function toggleTopic(e) {
- const topic = e.target.dataset.topic;
- const shouldSubscribe = e.target.checked;
- const endpoint = shouldSubscribe ? '/api/topics/subscribe' : '/api/topics/unsubscribe';
+  const topic = e.target.dataset.topic;
+  const shouldSubscribe = e.target.checked;
+  const endpoint = shouldSubscribe ? '/api/topics/subscribe' : '/api/topics/unsubscribe';
 
- try {
- const res = await fetch(endpoint, {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'X-CSRF-Token': getCsrfToken()
- },
- body: JSON.stringify({ topic })
- });
+  try {
+  const res = await fetch(endpoint, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': getCsrfToken()
+  },
+  body: JSON.stringify({ topic })
+  });
 
- if (!res.ok) {
- e.target.checked = !shouldSubscribe; // Revert
- showToast('❌ বিষয় আপডেট করতে ব্যর্থ', 'danger');
- } else {
- const action = shouldSubscribe ? 'সাবস্ক্রাইব' : 'আনসাবস্ক্রাইব';
- showToast(`✅ ${topic} থেকে ${action} হয়েছে`, 'success');
- }
- } catch (err) {
- e.target.checked = !shouldSubscribe;
- console.error('Topic toggle error:', err);
- showToast('❌ সার্ভার ত্রুটি', 'danger');
- }
+  if (!res.ok) {
+  e.target.checked = !shouldSubscribe; // Revert
+  showToast('❌ বিষয় আপডেট করতে ব্যর্থ', 'danger');
+  } else {
+  const action = shouldSubscribe ? 'সাবস্ক্রাইব' : 'আনসাবস্ক্রাইব';
+  showToast(`✅ ${topic} থেকে ${action} হয়েছে`, 'success');
+  }
+  } catch (err) {
+  e.target.checked = !shouldSubscribe;
+  console.error('Topic toggle error:', err);
+  showToast('❌ সার্ভার ত্রুটি', 'danger');
+  }
 }
- </script>
-{% endblock %}
+
+async function markAsRead(notificationId) {
+  try {
+  const res = await fetch('/api/notification/mark-read', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': getCsrfToken()
+  },
+  body: JSON.stringify({ notification_id: notificationId })
+  });
+
+  if (res.ok) {
+  const data = await res.json();
+  if (data.success) {
+  const card = document.querySelector(`[data-notification-id="${notificationId}"]`);
+  if (card) {
+    card.classList.remove('border-l-4', 'border-l-primary', 'bg-blue-50');
+    if (card.classList.contains('dark:bg-blue-900/15')) {
+      card.classList.remove('dark:bg-blue-900/15');
+    }
+  }
+  showToast('✅ পড়া হিসেবে চিহ্নিত হয়েছে', 'success');
+  location.reload();
+  } else {
+  showToast('❌ আপডেট করতে ব্যর্থ', 'danger');
+  }
+  } else {
+  showToast('❌ সার্ভার ত্রুটি', 'danger');
+  }
+  } catch (err) {
+  console.error('Mark as read error:', err);
+  showToast('❌ সার্ভার ত্রুটি', 'danger');
+  }
+}
+
+async function markAllAsRead() {
+  try {
+  const res = await fetch('/api/notification/mark-all-read', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': getCsrfToken()
+  },
+  body: JSON.stringify({})
+  });
+
+  if (res.ok) {
+  const data = await res.json();
+  if (data.success) {
+  showToast('✅ সব নোটিফিকেশন পড়া হিসেবে চিহ্নিত হয়েছে', 'success');
+  location.reload();
+  } else {
+  showToast('❌ আপডেট করতে ব্যর্থ', 'danger');
+  }
+  } else {
+  showToast('❌ সার্ভার ত্রুটি', 'danger');
+  }
+  } catch (err) {
+  console.error('Mark all as read error:', err);
+  showToast('❌ সার্ভার ত্রুটি', 'danger');
+  }
+}
+  </script>
+  {% endblock %}
 
 
 

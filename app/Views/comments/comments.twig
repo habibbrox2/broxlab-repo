@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // DELEGATED EVENT LISTENERS (Comments List)
   // ==========================================
   if (commentsList) {
-    commentsList.addEventListener('click', function(e) {
+    commentsList.addEventListener('click', async function(e) {
       const commentItem = e.target.closest('.comment-item');
       if (!commentItem) return;
 
@@ -751,7 +751,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target.closest('.delete-comment-btn')) {
         e.preventDefault();
 
-        if (!confirm('Are you sure you want to delete this comment?')) {
+        if (!await window.showConfirm('Are you sure you want to delete this comment?')) {
           return;
         }
 

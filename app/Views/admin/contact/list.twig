@@ -99,7 +99,7 @@
  <a href="/admin/contact/delete/{{ msg.id }}"
  class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700-outline rounded-full"
  title="Delete"
- onclick="return confirm('Are you sure?')">
+ onclick="return window.confirmAction(event, this, 'Are you sure?')">
  <i class="lucide lucide-trash-2"></i>
  </a>
  </td>

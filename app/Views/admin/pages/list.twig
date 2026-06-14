@@ -121,7 +121,7 @@
         <a href="/admin/pages/edit?id={{ page.id }}" class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:-translate-y-0.5" title="Edit">
          <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
         </a>
-        <a href="/admin/pages/delete?id={{ page.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return confirm('Are you sure?');">
+        <a href="/admin/pages/delete?id={{ page.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return window.confirmAction(event, this, 'Are you sure?')">
          <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
         </a>
        </div>

@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bijoyOutput.value = bijoyText;
       } catch (error) {
         console.error('Conversion error:', error);
-        alert('Error converting text. Please check the console for details.');
+        window.showMessage('Error converting text. Please check the console for details.', 'danger');
       }
     }
   });
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         unicodeInput.value = unicodeText;
       } catch (error) {
         console.error('Conversion error:', error);
-        alert('Error converting text. Please check the console for details.');
+        window.showMessage('Error converting text. Please check the console for details.', 'danger');
       }
     }
   });

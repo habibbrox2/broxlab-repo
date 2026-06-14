@@ -29,7 +29,7 @@ export function initMediaDetail() {
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        alert('URL copied to clipboard!');
+        window.showMessage('URL copied to clipboard!', 'success');
       })
       .catch((err) => {
         console.error('Failed to copy:', err);

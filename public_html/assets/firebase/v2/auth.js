@@ -95,7 +95,7 @@ export async function syncIdTokenWithBackend(user, options = {}) {
       return { success: false, conflict: payload?.conflict || null, status: 409, data: payload, };
     }
 
-    if (!ok || payload?.success === false) {
+    if (!response.ok || payload?.success === false) {
       const errorCode = payload?.error_code || payload?.code || 'signin_failed';
       const errorMessage = payload?.error || payload?.message || 'Sign-in sync failed.';
       return { success: false, error: errorMessage, error_code: errorCode, status, data: payload, };

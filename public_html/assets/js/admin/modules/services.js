@@ -71,7 +71,7 @@ export function initServicesForms({ byId, parseJson, }) {
     Array.from(files).forEach((file, index) => {
       if (file.type.startsWith('image/')) {
         if (file.size > 10 * 1024 * 1024) {
-          alert(`Image "${file.name}" is too large (max 10MB)`);
+          window.showMessage(`Image "${file.name}" is too large (max 10MB)`, 'warning');
           return;
         }
 

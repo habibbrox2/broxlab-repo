@@ -35,6 +35,8 @@ const buildOptions = {
   format: 'esm',
   outdir: outDir,
   external: [],
+  legalComments: 'none',
+  drop: ['debugger'],
 };
 
 (async () => {

@@ -360,8 +360,8 @@ document.getElementById('deleteCommentBtn')?.addEventListener('click', function(
 });
 
 // Delete comment
-function deleteComment(commentId) {
- if (!confirm('Delete this comment permanently? This action cannot be undone.')) return;
+async function deleteComment(commentId) {
+ if (!(await window.showConfirm('Delete this comment permanently? This action cannot be undone.', 'Confirm Delete', 'error'))) return;
  fetch('/admin/comments/' + commentId + '/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
   .then(r => r.json())
   .then(data => {
@@ -369,53 +369,54 @@ function deleteComment(commentId) {
     const el = document.getElementById('commentModal');
     const modal = broxUI.Modal.getInstance(el);
     if (modal) modal.hide();
-    alert('Comment deleted successfully');
+    window.showMessage('Comment deleted successfully', 'success');
     location.reload();
    } else {
-    alert('Error: ' + (data.message || 'Failed to delete comment'));
+    window.showMessage('Error: ' + (data.message || 'Failed to delete comment'), 'danger');
    }
   })
-  .catch(() => alert('Error deleting comment'));
+  .catch(() => window.showMessage('Error deleting comment', 'danger'));
 }
 
 // Edit comment
 function editCommentQuick(commentId) { window.location.href = '/admin/comments/' + commentId; }
 
 // Hide comment
-function hideCommentQuick(commentId) {
- const reason = prompt('Why are you hiding this comment? (optional)');
+async function hideCommentQuick(commentId) {
+ const reason = await window.showPrompt('Why are you hiding this comment? (optional)', '', 'Hide Reason', { required: false });
+ if (reason === null) return;
  const formData = new FormData();
  if (reason) formData.append('reason', reason);
  fetch('/admin/comments/' + commentId + '/hide', { method: 'POST', body: formData })
   .then(r => r.json())
   .then(data => {
-   if (data.success) { alert('Comment hidden successfully'); location.reload(); }
-   else { alert('Error: ' + (data.message || 'Failed to hide comment')); }
+   if (data.success) { window.showMessage('Comment hidden successfully', 'success'); location.reload(); }
+   else { window.showMessage('Error: ' + (data.message || 'Failed to hide comment'), 'danger'); }
   })
-  .catch(() => alert('Error hiding comment'));
+  .catch(() => window.showMessage('Error hiding comment', 'danger'));
 }
 
 // Unhide comment
-function unhideCommentQuick(commentId) {
- if (!confirm('Unhide this comment?')) return;
+async function unhideCommentQuick(commentId) {
+ if (!(await window.showConfirm('Unhide this comment?', 'Confirm', 'info'))) return;
  fetch('/admin/comments/' + commentId + '/unhide', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
   .then(r => r.json())
   .then(data => {
-   if (data.success) { alert('Comment unhidden successfully'); location.reload(); }
-   else { alert('Error: ' + (data.message || 'Failed to unhide comment')); }
+   if (data.success) { window.showMessage('Comment unhidden successfully', 'success'); location.reload(); }
+   else { window.showMessage('Error: ' + (data.message || 'Failed to unhide comment'), 'danger'); }
   })
-  .catch(() => alert('Error unhiding comment'));
+  .catch(() => window.showMessage('Error unhiding comment', 'danger'));
 }
 
 // Bulk actions
-function executeBulkAction() {
+async function executeBulkAction() {
  const action = document.getElementById('bulkAction').value;
  const checked = document.querySelectorAll('.comment-checkbox:checked');
- if (!action) { alert('Please select an action'); return; }
- if (checked.length === 0) { alert('Please select at least one comment'); return; }
+ if (!action) { window.showMessage('Please select an action', 'warning'); return; }
+ if (checked.length === 0) { window.showMessage('Please select at least one comment', 'warning'); return; }
  const ids = Array.from(checked).map(c => parseInt(c.value));
- let confirmMsg = action === 'approve' ? 'Approve ' + ids.length + ' comment(s)?' : 'Delete ' + ids.length + ' comment(s) permanently? This action cannot be undone.';
- if (!confirm(confirmMsg)) return;
+ const confirmMsg = action === 'approve' ? 'Approve ' + ids.length + ' comment(s)?' : 'Delete ' + ids.length + ' comment(s) permanently? This action cannot be undone.';
+ if (!(await window.showConfirm(confirmMsg, 'Confirm Action', 'warning'))) return;
  fetch('/admin/comments/bulk-action', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -423,10 +424,10 @@ function executeBulkAction() {
  })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert(data.message || 'Bulk action completed'); location.reload(); }
-  else { alert('Error: ' + (data.message || 'Failed to complete bulk action')); }
+  if (data.success) { window.showMessage(data.message || 'Bulk action completed', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + (data.message || 'Failed to complete bulk action'), 'danger'); }
  })
- .catch(() => alert('Error executing bulk action'));
+ .catch(() => window.showMessage('Error executing bulk action', 'danger'));
 }
  </script>
 {% endblock %}

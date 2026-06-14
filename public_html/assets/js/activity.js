@@ -5,6 +5,9 @@
 
 'use strict';
 
+import { runWhenReady } from './modules/utils.js';
+import { debounce } from './shared/utils.js';
+
 const CONFIG = {
   INIT_DELAY: 30000,
   LOG_ENDPOINT: '/api/log-activity',
@@ -29,22 +32,6 @@ const State = {
   fullTrackingTimerId: null,
   ajaxTrackingInstalled: false,
 };
-
-function runWhenReady(fn) {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fn, { once: true, });
-  } else {
-    fn();
-  }
-}
-
-function debounce(func, wait) {
-  let timeout;
-  return function (...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-}
 
 function isRateLimited() {
   const now = Date.now();

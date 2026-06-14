@@ -256,7 +256,7 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
         }, 2000);
       })
       .catch(() => {
-        alert('Failed to copy to clipboard');
+        window.showMessage('Failed to copy to clipboard', 'danger');
       });
   });
 
@@ -274,15 +274,16 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
         byId('toggleActivityLabel').textContent = activityEnabled
           ? 'Activity: ON'
           : 'Activity: OFF';
-        alert(
+        window.showMessage(
           data.message ||
-            (activityEnabled ? 'Activity logging enabled' : 'Activity logging disabled')
+            (activityEnabled ? 'Activity logging enabled' : 'Activity logging disabled'),
+          'success'
         );
       } else {
-        alert(data.message || 'Failed to update activity logging');
+        window.showMessage(data.message || 'Failed to update activity logging', 'danger');
       }
     } catch {
-      alert('Error updating activity logging');
+      window.showMessage('Error updating activity logging', 'danger');
     }
   });
 

@@ -267,27 +267,96 @@
  @media print {
  body {
  font-size: 10pt;
+ color: #000;
+ background: #fff;
  }
  
  .cv-container {
- padding: 10mm 15mm;
+ padding: 0;
+ max-width: 100%;
+ }
+ 
+ .cv-header {
+ margin-bottom: 20px;
+ padding-bottom: 15px;
+ }
+ 
+ .cv-section {
+ page-break-inside: avoid;
+ margin-bottom: 18px;
+ }
+ 
+ .cv-item {
+ page-break-inside: avoid;
+ background: none !important;
+ padding: 8px 0;
+ border-left: 3px solid #4F46E5;
  }
  
  .cv-item:hover {
- background: var(--gray-50);
+ background: none !important;
  transform: none;
+ }
+ 
+ .skill-item {
+ background: #EEF2FF !important;
+ color: #4F46E5 !important;
+ border: 1px solid rgba(79, 70, 229, 0.2);
+ transform: none !important;
  }
  
  .skill-item:hover {
- background: linear-gradient(135deg, var(--primary-light), #E0E7FF);
- color: var(--primary);
- transform: none;
- }
+ background: #EEF2FF !important;
+ color: #4F46E5 !important;
+ transform: none !important;
  }
  
- /* Page Break */
+ .summary-text {
+ background: none;
+ border-left: 4px solid #4F46E5;
+ padding: 0 0 0 15px;
+ }
+ 
+ .section-icon {
+ background: #4F46E5 !important;
+ -webkit-print-color-adjust: exact;
+ print-color-adjust: exact;
+ }
+ 
+ .item-date {
+ background: #4F46E5 !important;
+ -webkit-print-color-adjust: exact;
+ print-color-adjust: exact;
+ }
+ 
+ .cv-header::after {
+ background: #4F46E5 !important;
+ -webkit-print-color-adjust: exact;
+ print-color-adjust: exact;
+ }
+ 
+ /* Prevent section titles from being orphaned at bottom of page */
+ .section-header {
+ page-break-after: avoid;
+ }
+ 
+ }
+ 
+ .section-content {
+ /* mPDF handles widows/orphans via use_kwt config */
+ }
+ 
+ /* Page Break (for manual insertion) */
  .page-break {
  page-break-before: always;
+ }
+ 
+ /* mPDF-specific: force color rendering for PDF */
+ .section-icon,
+ .item-date,
+ .cv-header::after {
+ -webkit-print-color-adjust: exact;
+ print-color-adjust: exact;
  }
  </style>
 </head>

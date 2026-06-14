@@ -1,229 +1,246 @@
-{% extends"admin/layout.twig" %}
+{% extends "admin/layout.twig" %}
 
 {% block title %}CV Management{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% set current_page = current_page|default('cvs') %}
 
-
+{% block stylesheets %}
+{{ parent() }}
+<link rel="stylesheet" href="{{ asset('/assets/css/cv-admin.css') }}">
+{% endblock %}
 
 {% block content %}
- {% set filters = filters|default({}) %}
- {% set selected_template = filters.template|default('modern') %}
- {% set template_query = selected_template ? '?template=' ~ selected_template : '' %}
+{% set filters = filters|default({}) %}
+{% set selected_template = filters.template|default('modern') %}
+{% set template_query = selected_template ? '?template=' ~ selected_template : '' %}
 
- <div class="w-full px-4 sm:px-6 py-4 cv-admin-page">
- <div class="cv-admin-hero">
- <div>
- <div class="cv-admin-title">CV Management</div>
- <div class="cv-admin-subtitle">Monitor CV activity, preview templates, and export files.</div>
- </div>
- <div class="cv-admin-hero-actions">
- <a href="/admin/cv-templates" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
- <i class="lucide lucide-grid-3x3 mr-1"></i> Template Library
- </a>
- </div>
- </div>
+<div class="w-full px-4 sm:px-6 py-4 cv-admin-page">
 
- <div class="cv-admin-stats">
- <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
- <div class="cv-admin-stat-icon bg-indigo-600-subtle text-indigo-600">
- <i class="lucide lucide-files"></i>
- </div>
- <div>
- <div class="cv-admin-stat-value">{{ stats.total|default(0) }}</div>
- <div class="cv-admin-stat-label">Total CVs</div>
- </div>
- </div>
- <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
- <div class="cv-admin-stat-icon bg-emerald-600-subtle text-emerald-600">
- <i class="lucide lucide-check-circle"></i>
- </div>
- <div>
- <div class="cv-admin-stat-value">{{ stats.active|default(0) }}</div>
- <div class="cv-admin-stat-label">Active CVs</div>
- </div>
- </div>
- <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
- <div class="cv-admin-stat-icon bg-amber-500-subtle text-amber-600">
- <i class="lucide lucide-pause-circle"></i>
- </div>
- <div>
- <div class="cv-admin-stat-value">{{ stats.inactive|default(0) }}</div>
- <div class="cv-admin-stat-label">Inactive CVs</div>
- </div>
- </div>
- <div class="cv-admin- border border-slate-200 bg-white shadow-sm">
- <div class="cv-admin-stat-icon bg-sky-500-subtle text-sky-600">
- <i class="lucide lucide-users"></i>
- </div>
- <div>
- <div class="cv-admin-stat-value">{{ stats.users_with_cvs|default(0) }}</div>
- <div class="cv-admin-stat-label">Users with CVs</div>
- </div>
- </div>
- </div>
+<!-- Hero Section -->
+<div class="cv-admin-hero">
+<div>
+<div class="cv-admin-title">CV Management</div>
+<div class="cv-admin-subtitle">Monitor CV activity, preview templates, and export files with modern dashboard insights.</div>
+</div>
+<div class="cv-admin-hero-actions">
+<a href="/admin/cv-templates" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-500/30">
+<i class="lucide lucide-grid-3x3 mr-1"></i> Template Library
+</a>
+</div>
+</div>
 
- <div class=" border border-slate-200 bg-white shadow-sm mb-4 cv-admin-filters">
- <div class="p-4">
- <form class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 items-end" method="get" action="">
- <div class="lg:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Search</label>
- <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
- <span class="shrink-0 flex items-center px-3 py-2 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-search"></i></span>
- <input type="text"
- name="search"
- value="{{ filters.search|default('') }}"
- class="w-full border-0 px-3 py-2 text-sm focus:outline-none bg-white"
- placeholder="Search by title, user, or email">
- </div>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Status</label>
- <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
- <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All</option>
- <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
- <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
- </select>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Sort</label>
- <select name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
- <option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Updated</option>
- <option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Created</option>
- <option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option>
- <option value="owner" {% if filters.sort == 'owner' %}selected{% endif %}>Owner</option>
- </select>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Order</label>
- <select name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
- <option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest</option>
- <option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest</option>
- </select>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Template</label>
- <select name="template" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" data-template-select>
- {% for template in templates|default([]) %}
- <option value="{{ template }}" {% if template == selected_template %}selected{% endif %}>
- {{ template|capitalize }}
- </option>
- {% endfor %}
- </select>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500">Limit</label>
- <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
- {% for size in [10, 20, 50, 100] %}
- <option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }}</option>
- {% endfor %}
- </select>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
- <i class="lucide lucide-filter mr-1"></i>Apply
- </button>
- </div>
- <div class="lg:col-span-2 md:col-span-4">
- <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline w-full">
- <i class="lucide lucide-rotate-ccw mr-1"></i>Reset
- </a>
- </div>
- </form>
- </div>
- </div>
+<!-- Statistics Cards -->
+<div class="cv-admin-stats">
+<div class="cv-admin-stat">
+<div class="cv-admin-stat-icon bg-indigo-600-subtle">
+<i class="lucide lucide-files"></i>
+</div>
+<div>
+<div class="cv-admin-stat-value">{{ stats.total|default(0) }}</div>
+<div class="cv-admin-stat-label">Total CVs</div>
+</div>
+</div>
+<div class="cv-admin-stat">
+<div class="cv-admin-stat-icon bg-emerald-600-subtle">
+<i class="lucide lucide-check-circle"></i>
+</div>
+<div>
+<div class="cv-admin-stat-value">{{ stats.active|default(0) }}</div>
+<div class="cv-admin-stat-label">Active CVs</div>
+</div>
+</div>
+<div class="cv-admin-stat">
+<div class="cv-admin-stat-icon bg-amber-500-subtle">
+<i class="lucide lucide-pause-circle"></i>
+</div>
+<div>
+<div class="cv-admin-stat-value">{{ stats.inactive|default(0) }}</div>
+<div class="cv-admin-stat-label">Inactive CVs</div>
+</div>
+</div>
+<div class="cv-admin-stat">
+<div class="cv-admin-stat-icon bg-sky-500-subtle">
+<i class="lucide lucide-users"></i>
+</div>
+<div>
+<div class="cv-admin-stat-value">{{ stats.users_with_cvs|default(0) }}</div>
+<div class="cv-admin-stat-label">Users with CVs</div>
+</div>
+</div>
+</div>
 
- <div class="cv-admin-bulk">
- <div class="cv-admin-selection" data-cv-selection>
- <span class="text-slate-500">Selected:</span>
- <span class="font-semibold" data-selected-count>0</span>
- </div>
- <div class="cv-admin-bulk-actions">
- <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700" data-bulk-export>
- <i class="lucide lucide-file-down mr-1"></i> Bulk Export PDF
- </button>
- <span class="text-slate-500 small">Limit: 50 CVs per export.</span>
- </div>
- </div>
- <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hidden mt-3" data-bulk-error></div>
+<!-- Filters Section -->
+<div class="cv-admin-filters">
+<div class="p-5">
+<form class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 items-end" method="get" action="">
+<div class="lg:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Search</label>
+<div class="flex items-center rounded-xl border border-slate-200 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
+<span class="shrink-0 flex items-center px-3.5 py-2.5 bg-slate-50 border-r border-slate-200 text-slate-400"><i class="lucide lucide-search w-4 h-4"></i></span>
+<input type="text"
+name="search"
+value="{{ filters.search|default('') }}"
+class="w-full border-0 px-3.5 py-2.5 text-sm focus:outline-none bg-white"
+placeholder="Search by title, user, or email">
+</div>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+<select name="status" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none">
+<option value="all" {% if filters.status == 'all' %}selected{% endif %}>All</option>
+<option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+<option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+</select>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Sort</label>
+<select name="sort" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none">
+<option value="updated" {% if filters.sort == 'updated' %}selected{% endif %}>Updated</option>
+<option value="created" {% if filters.sort == 'created' %}selected{% endif %}>Created</option>
+<option value="title" {% if filters.sort == 'title' %}selected{% endif %}>Title</option>
+<option value="owner" {% if filters.sort == 'owner' %}selected{% endif %}>Owner</option>
+</select>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Order</label>
+<select name="order" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none">
+<option value="desc" {% if filters.order == 'desc' %}selected{% endif %}>Newest</option>
+<option value="asc" {% if filters.order == 'asc' %}selected{% endif %}>Oldest</option>
+</select>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Template</label>
+<select name="template" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none" data-template-select>
+{% for template in templates|default([]) %}
+<option value="{{ template }}" {% if template == selected_template %}selected{% endif %}>
+{{ template|capitalize }}
+</option>
+{% endfor %}
+</select>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Limit</label>
+<select name="limit" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none">
+{% for size in [10, 20, 50, 100] %}
+<option value="{{ size }}" {% if filters.limit == size %}selected{% endif %}>{{ size }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md w-full">
+<i class="lucide lucide-filter w-4 h-4"></i> Apply
+</button>
+</div>
+<div class="lg:col-span-2 md:col-span-4">
+<a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 w-full">
+<i class="lucide lucide-rotate-ccw w-4 h-4"></i> Reset
+</a>
+</div>
+</form>
+</div>
+</div>
 
- {% if cvs is not empty %}
- <div class=" border border-slate-200 bg-white shadow-sm">
- <div class="p-4">
- <div class="overflow-x-auto">
- <table class="w-full text-left text-sm align-middle cv-admin-table">
- <thead>
- <tr>
- <th>ID</th>
- <th>Title</th>
- <th>Owner</th>
- <th>Status</th>
- <th>Created</th>
- <th>Updated</th>
- <th class="text-center">Actions</th>
- </tr>
- </thead>
- <tbody>
- {% for cv in cvs %}
- {% set owner_name = (cv.first_name ~ ' ' ~ cv.last_name)|trim %}
- {% set owner_name = owner_name ? owner_name : (cv.username|default('Unknown')) %}
- <tr data-id="{{ cv.id }}">
- <td class="font-semibold" data-label="ID">#{{ cv.id }}</td>
- <td data-label="Title">
- <div class="font-semibold">{{ cv.title|default('Untitled CV') }}</div>
- <div class="text-slate-500 small">User ID: {{ cv.user_id }}</div>
- </td>
- <td data-label="Owner">
- <div class="font-semibold">{{ owner_name }}</div>
- <div class="text-slate-500 small">{{ cv.email|default('') }}</div>
- </td>
- <td data-label="Status">
- {% if cv.is_active %}
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-emerald-600-subtle text-emerald-600">Active</span>
- {% else %}
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-600-subtle text-slate-500">Inactive</span>
- {% endif %}
- </td>
- <td class="text-slate-500" data-label="Created">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : '—' }}</td>
- <td class="text-slate-500" data-label="Updated">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : '—' }}</td>
- <td class="text-center" data-label="Actions">
- <a href="/admin/cvs/{{ cv.id }}/preview{{ template_query }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-sky-500 text-white hover:bg-sky-600 mr-1"
- target="_blank"
- title="Preview HTML">
- <i class="lucide lucide-eye"></i>
- </a>
- <a href="/admin/cvs/{{ cv.id }}/export{{ template_query }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700"
- target="_blank"
- title="Export PDF">
- <i class="lucide lucide-file-text"></i>
- </a>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- </div>
- </div>
- {% include"admin/partials/pagination.twig" %}
- {% else %}
- <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
- <i class="lucide lucide-info mr-1"></i> No CVs found matching your filters.
- </div>
- {% endif %}
- </div>
+<!-- Bulk Actions Bar -->
+<div class="cv-admin-bulk">
+<div class="cv-admin-selection" data-cv-selection>
+<span class="text-slate-500">Selected:</span>
+<span class="font-semibold" data-selected-count>0</span>
+</div>
+<div class="cv-admin-bulk-actions">
+<button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700" data-bulk-export>
+<i class="lucide lucide-file-down w-4 h-4"></i> Bulk Export PDF
+</button>
+<span class="text-slate-500 text-xs">Limit: 50 CVs per export.</span>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 hidden mt-3" data-bulk-error></div>
+
+{% if cvs is not empty %}
+<div class="cv-admin-table-wrapper">
+<table class="cv-admin-table">
+<thead>
+<tr>
+<th class="w-12"></th>
+<th>ID</th>
+<th>Title</th>
+<th>Owner</th>
+<th>Status</th>
+<th>Created</th>
+<th>Updated</th>
+<th class="text-center">Actions</th>
+</tr>
+</thead>
+<tbody>
+{% for cv in cvs %}
+{% set owner_name = (cv.first_name ~ ' ' ~ cv.last_name)|trim %}
+{% set owner_name = owner_name ? owner_name : (cv.username|default('Unknown')) %}
+<tr data-id="{{ cv.id }}">
+<td class="text-center">
+<input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" value="{{ cv.id }}">
+</td>
+<td class="font-medium" data-label="ID">#{{ cv.id }}</td>
+<td data-label="Title">
+<div class="font-semibold text-slate-900">{{ cv.title|default('Untitled CV') }}</div>
+<div class="text-slate-500 text-xs">User ID: {{ cv.user_id }}</div>
+</td>
+<td data-label="Owner">
+<div class="font-semibold text-slate-900">{{ owner_name }}</div>
+<div class="text-slate-500 text-xs">{{ cv.email|default('') }}</div>
+</td>
+<td data-label="Status">
+{% if cv.is_active %}
+<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800">
+<i class="lucide lucide-check-circle w-3 h-3 mr-1"></i> Active
+</span>
+{% else %}
+<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
+<i class="lucide lucide-pause-circle w-3 h-3 mr-1"></i> Inactive
+</span>
+{% endif %}
+</td>
+<td class="text-slate-600" data-label="Created">{{ cv.created_at ? (cv.created_at|date('M d, Y')) : '—' }}</td>
+<td class="text-slate-600" data-label="Updated">{{ cv.updated_at ? (cv.updated_at|date('M d, Y')) : '—' }}</td>
+<td class="text-center" data-label="Actions">
+<div class="flex items-center justify-center gap-2">
+<a href="/admin/cvs/{{ cv.id }}/preview{{ template_query }}"
+class="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-sky-500 text-white hover:bg-sky-600 transition"
+target="_blank"
+title="Preview HTML">
+<i class="lucide lucide-eye w-3.5 h-3.5"></i> Preview
+</a>
+<a href="/admin/cvs/{{ cv.id }}/export{{ template_query }}"
+class="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition"
+target="_blank"
+title="Export PDF">
+<i class="lucide lucide-file-text w-3.5 h-3.5"></i> Export
+</a>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% include "admin/partials/pagination.twig" %}
+
+{% else %}
+<div class="cv-admin-empty">
+<div class="empty-state-content">
+<i class="lucide lucide-file-text w-10 h-10"></i>
+<h3>No CVs Found</h3>
+<p class="max-w-md">No CVs match your current filters. Try adjusting your search criteria or clear the filters to see all CVs.</p>
+<a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition">
+<i class="lucide lucide-rotate-ccw w-4 h-4"></i> Clear Filters
+</a>
+</div>
+</div>
+{% endif %}
+
+</div>
 {% endblock %}
 
 {% block scripts %}
- {{ parent() }}
- <script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}"></script>
+{{ parent() }}
+<script type="module" src="{{ asset('/assets/js/dist/cv-admin.js') }}"></script>
 {% endblock %}
-
-
-
-
-
-
-

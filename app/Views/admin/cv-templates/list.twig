@@ -60,22 +60,22 @@
  {% set template_meta = {
  'modern': {
  'desc': 'Clean design with bold accents',
- '': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+ 'gradient': 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
  'icon': 'lucide lucide-palette'
  },
  'minimal': {
  'desc': 'Simple, elegant typography',
- '': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)',
+ 'gradient': 'linear-gradient(135deg, #374151 0%, #6B7280 100%)',
  'icon': 'lucide lucide-square'
  },
  'ats': {
  'desc': 'Optimized for ATS scanners',
- '': 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+ 'gradient': 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
  'icon': 'lucide lucide-robot'
  },
  'professional': {
  'desc': 'Classic business layout',
- '': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
+ 'gradient': 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
  'icon': 'lucide lucide-briefcase'
  }
  } %}
@@ -93,6 +93,9 @@
  <button type="button" id="tpl-show-upload-btn" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700" onclick="document.getElementById('tpl-upload-section').classList.toggle('hidden')">
  <i class="lucide lucide-upload mr-1"></i> Install from ZIP
  </button>
+ <a href="/admin/cv-templates/tutorial" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-sky-600 text-white hover:bg-sky-700">
+ <i class="lucide lucide-book-open mr-1"></i> Tutorial
+ </a>
  <a href="/admin/cvs" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition transition-outline">
  <i class="lucide lucide-arrow-left mr-1"></i> Back to CVs
  </a>
@@ -182,7 +185,7 @@
     data-template-slug="{{ key }}" data-template-name="{{ template.name|e('html_attr') }}">
   </div>
   {% endif %}
- <div class="cv-template-preview" style="background: {{ meta. }};">
+ <div class="cv-template-preview" style="background: {{ meta.gradient|default('linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)') }};">
  <i class="bi {{ meta.icon }}"></i>
  </div>
  <div class="cv-template-body">

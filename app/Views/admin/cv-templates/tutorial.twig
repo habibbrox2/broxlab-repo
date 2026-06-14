@@ -1,0 +1,143 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}CV Template Creation Tutorial{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% set current_page = current_page|default('cv-templates') %}
+
+{% block stylesheets %}
+<style>
+.tutorial-container { max-width: 900px; margin: 0 auto; }
+.tutorial-header {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A855F7 100%);
+  border-radius: 1rem; padding: 2.5rem 2rem; color: white;
+  margin-bottom: 2rem; position: relative; overflow: hidden;
+}
+.tutorial-header::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+.tutorial-header h1 { font-size: 1.75rem; font-weight: 800; position: relative; z-index: 1; margin-bottom: 0.5rem; }
+.tutorial-header p { font-size: 0.95rem; opacity: 0.9; position: relative; z-index: 1; max-width: 600px; }
+.tutorial-section {
+  background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+  margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.tutorial-section-header {
+  display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem;
+  background: #f8fafc; border-bottom: 1px solid #e2e8f0; cursor: pointer;
+  user-select: none; transition: background 0.15s;
+}
+.tutorial-section-header:hover { background: #f1f5f9; }
+.tutorial-section-header .step-number {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; background: #4F46E5;
+  color: white; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+}
+.tutorial-section-header h2 { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; flex: 1; }
+.tutorial-section-header .toggle-icon { color: #94a3b8; transition: transform 0.2s; }
+.tutorial-section-header .toggle-icon.open { transform: rotate(180deg); }
+.tutorial-section-body { padding: 1.25rem; display: none; }
+.tutorial-section-body.open { display: block; }
+.tutorial-section-body h3 { font-size: 0.9rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem; }
+.tutorial-section-body h3:first-child { margin-top: 0; }
+.tutorial-section-body p, .tutorial-section-body li { font-size: 0.88rem; line-height: 1.7; color: #475569; }
+.tutorial-section-body ul, .tutorial-section-body ol { padding-left: 1.25rem; margin: 0.5rem 0; }
+.tutorial-section-body li { margin-bottom: 0.3rem; }
+.tutorial-section-body code { font-size: 0.82rem; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; color: #6366f1; border: 1px solid #e2e8f0; }
+.tutorial-section-body pre {
+  background: #0f172a; color: #e2e8f0; border-radius: 0.5rem; padding: 1rem;
+  overflow-x: auto; font-size: 0.82rem; line-height: 1.5; margin: 0.75rem 0;
+}
+.tutorial-tip {
+  background: #fef9c3; border: 1px solid #fde68a; border-radius: 0.5rem;
+  padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.85rem; color: #92400e;
+}
+.tutorial-warning {
+  background: #fee2e2; border: 1px solid #fca5a5; border-radius: 0.5rem;
+  padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.85rem; color: #991b1b;
+}
+.tutorial-info {
+  background: #dbeafe; border: 1px solid #93c5fd; border-radius: 0.5rem;
+  padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.85rem; color: #1e40af;
+}
+.tutorial-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+.tutorial-table th { background: #f1f5f9; text-align: left; padding: 0.5rem 0.75rem; font-weight: 700; color: #334155; border: 1px solid #e2e8f0; }
+.tutorial-table td { padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; color: #475569; }
+.tutorial-table tr:nth-child(even) td { background: #f8fafc; }
+.nav-links { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.print-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: white; border: 1px solid #cbd5e1; color: #475569;
+  border-radius: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.print-btn:hover { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
+
+@media print {
+  body { background: white !important; }
+  .nav-links { display: none !important; }
+  .container-app { padding: 0 !important; max-width: 100% !important; }
+  .tutorial-container { max-width: 100% !important; }
+  .tutorial-header {
+    background: #4F46E5 !important; -webkit-print-color-adjust: exact;
+    print-color-adjust: exact; border-radius: 0 !important; padding: 1.5rem 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .tutorial-header h1 { font-size: 1.4rem !important; }
+  .tutorial-section { break-inside: avoid; border: 1px solid #e2e8f0 !important; box-shadow: none !important; }
+  .tutorial-section-body { display: block !important; }
+  .tutorial-section-header { cursor: default !important; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .toggle-icon { display: none !important; }
+  .tutorial-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tutorial-tip, .tutorial-info, .tutorial-warning { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .step-number { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-app py-4">
+  <div class="nav-links">
+    <a href="/admin/cv-templates" class="border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
+      <i class="lucide lucide-arrow-left" style="width:1em;height:1em"></i> Back to Templates
+    </a>
+    <div style="display:flex;align-items:center;gap:0.75rem">
+      <button onclick="window.print()" class="print-btn">
+        <i class="lucide lucide-printer" style="width:1em;height:1em"></i> Print Tutorial
+      </button>
+      <span class="text-xs text-slate-400">Last updated: {{ "now"|date("F j, Y") }}</span>
+    </div>
+  </div>
+
+  <div class="tutorial-container">
+    <div class="tutorial-header">
+      <h1><i class="lucide lucide-book-open" style="width:1.75rem;height:1.75rem;margin-right:0.5rem;vertical-align:middle"></i> CV Template Creation Guide</h1>
+      <p>A complete walkthrough for creating, editing, and managing CV templates in the BroxLab admin panel. From understanding template structure to publishing your finished design.</p>
+    </div>
+
+    {% for section in tutorial_sections %}
+    <div class="tutorial-section" data-section>
+      <div class="tutorial-section-header" onclick="toggleSection(this)">
+        <span class="step-number">{{ section.step }}</span>
+        <h2>{{ section.title }}</h2>
+        <i class="lucide lucide-chevron-down toggle-icon{% if loop.first %} open{% endif %}" style="width:1.1em;height:1.1em"></i>
+      </div>
+      <div class="tutorial-section-body{% if loop.first %} open{% endif %}">
+        {{ section.content|raw }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+function toggleSection(header) {
+  var body = header.nextElementSibling;
+  var icon = header.querySelector('.toggle-icon');
+  body.classList.toggle('open');
+  icon.classList.toggle('open');
+}
+</script>
+{% endblock %}

@@ -7,24 +7,12 @@ export function initLinkedEmails(options = {}) {
   const containerSelector = options.containerSelector || '#linked-emails-container';
   const formSelector = options.formSelector || '#link-email-form';
   const emailInputSelector = options.emailInputSelector || '#new-email';
-  const messageSelector = options.messageSelector || '#link-email-message';
-  const csrfTokenSelector = options.csrfTokenSelector || null;
 
   const container = document.querySelector(containerSelector);
   const form = document.querySelector(formSelector);
   const emailInput = document.querySelector(emailInputSelector);
-  document.querySelector(messageSelector);
 
   if (!container && !form) return null;
-
-  // Helper: Get CSRF token
-  const getCsrfToken = () => {
-    const metaToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    if (metaToken) return metaToken;
-    if (!csrfTokenSelector) return '';
-    const csrfTokenEl = document.querySelector(csrfTokenSelector);
-    return csrfTokenEl?.value || csrfTokenEl?.content || '';
-  };
 
   const showError = (error) => {
     const message = error?.message || 'An unexpected error occurred.';
@@ -127,9 +115,9 @@ export function initLinkedEmails(options = {}) {
     container.querySelectorAll('.js-unlink-email').forEach((btn) => {
       btn.addEventListener('click', () => {
         const email = btn.dataset.email;
-        if (confirm(`Are you sure you want to unlink ${email}?`)) {
-          unlinkEmail(email);
-        }
+        window.showConfirm(`Are you sure you want to unlink ${email}?`).then(confirmed => {
+          if (confirmed) unlinkEmail(email);
+        });
       });
     });
   };
@@ -238,16 +226,6 @@ export function initLinkedEmails(options = {}) {
   };
 }
 
-// Helper: Escape HTML
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
+import { escapeHtml, getCsrfToken } from './shared/utils.js';
 
 export default initLinkedEmails;

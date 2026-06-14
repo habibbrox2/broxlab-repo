@@ -3,6 +3,8 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
+{# Safelist all avatar gradient colors for Tailwind detection #}
+<div class="hidden from-blue-400 to-purple-500 from-emerald-400 to-teal-500 from-orange-400 to-rose-500 from-cyan-400 to-blue-500 from-pink-400 to-fuchsia-500 from-amber-400 to-orange-500 from-violet-400 to-indigo-500 from-green-400 to-emerald-500 from-red-400 to-pink-500 from-indigo-400 to-violet-500 from-teal-400 to-cyan-500 from-rose-400 to-red-500 from-sky-400 to-indigo-500 from-lime-400 to-green-500 from-purple-400 to-fuchsia-500 from-yellow-400 to-amber-500" aria-hidden="true"></div>
 <div class="min-h-screen bg-white pb-32" id="cv-dashboard-container">
   <!-- Header with Back Button -->
   <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -22,11 +24,20 @@
       <div class="flex gap-4 mb-6">
         <!-- Profile Photo -->
         <div class="flex-shrink-0">
-          <div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-md overflow-hidden">
+          <div class="w-20 h-20 bg-gradient-to-br {{ user.avatar_color|default('from-blue-400 to-purple-500') }} rounded-lg flex items-center justify-center text-white shadow-md overflow-hidden" title="{{ user.name|default('User') }}">
             {% if user.profile_photo %}
-              <img src="{{ user.profile_photo }}" alt="{{ user.name }}" class="w-full h-full object-cover">
+              <img src="{{ user.profile_photo }}" alt="{{ user.name }}" class="w-full h-full object-cover" title="{{ user.name|default('User') }}">
             {% else %}
-              <i class="lucide-user text-4xl"></i>
+              {% if user.name|trim is not empty %}
+                {% set name_parts = user.name|split(' ') %}
+                {% set initials = (name_parts|first)|first|upper %}
+                {% if name_parts|length > 1 %}
+                  {% set initials = initials ~ (name_parts|last)|first|upper %}
+                {% endif %}
+                <span class="text-2xl font-bold text-white">{{ initials }}</span>
+              {% else %}
+                <i class="lucide-user text-4xl"></i>
+              {% endif %}
             {% endif %}
           </div>
         </div>
@@ -73,7 +84,7 @@
       </div>
 
       <!-- Download CV -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/cv/download'">
+      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/cv-builder/download'">
         <div class="flex items-start justify-between mb-3">
           <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
             <i class="lucide-download text-xl"></i>
@@ -83,19 +94,9 @@
         <p class="text-xs text-gray-600">সিভি ডাউনলোড করে চাকরির আবেদন করুন</p>
       </div>
 
-      <!-- Career Advice -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/advice'">
-        <div class="flex items-start justify-between mb-3">
-          <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
-            <i class="lucide-users text-xl"></i>
-          </div>
-        </div>
-        <h3 class="font-bold text-gray-900 text-sm mb-1">ক্যারিয়ার পরামর্শ নিন</h3>
-        <p class="text-xs text-gray-600">ক্যারিয়ারের জন্য পরামর্শকের সাথা আপনার আইডিয়া আলোচনা করুন</p>
-      </div>
 
       <!-- CV Template -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/templates'">
+      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/cv-builder/templates'">
         <div class="flex items-start justify-between mb-3">
           <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
             <i class="lucide-layout-template text-xl"></i>
@@ -105,42 +106,9 @@
         <p class="text-xs text-gray-600">চমকের টেমপ্লেট দিয়ে আপনার সিভির ডিজাইন করুন</p>
       </div>
 
-      <!-- Job Search -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer relative" onclick="window.location='/jobs'">
-        <div class="absolute top-3 right-3 bg-teal-600 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center">300</div>
-        <div class="flex items-start justify-between mb-3">
-          <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
-            <i class="lucide-briefcase text-xl"></i>
-          </div>
-        </div>
-        <h3 class="font-bold text-gray-900 text-sm mb-1">চাকরি খুঁজুন</h3>
-        <p class="text-xs text-gray-600">বিভিন্ন আপনার অধ্যায়ের চাকরি খুঁজে নিন</p>
-      </div>
-
-      <!-- Call Expert -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/expert-call'">
-        <div class="flex items-start justify-between mb-3">
-          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-            <i class="lucide-phone text-xl"></i>
-          </div>
-        </div>
-        <h3 class="font-bold text-gray-900 text-sm mb-1">বিশেষজ্ঞকে কল করুন</h3>
-        <p class="text-xs text-gray-600">পেশাদার বিশেষজ্ঞদের সাথে কথা বলুন</p>
-      </div>
-
-      <!-- Specialist Consultation -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/specialist'">
-        <div class="flex items-start justify-between mb-3">
-          <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
-            <i class="lucide-message-circle text-xl"></i>
-          </div>
-        </div>
-        <h3 class="font-bold text-gray-900 text-sm mb-1">বিশেষজ্ঞকে কল করুন</h3>
-        <p class="text-xs text-gray-600">পরামর্শের জন্য সাহায্য করুন এবং উপদেশ পান</p>
-      </div>
 
       <!-- Share CV -->
-      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/cv/share'">
+      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='/cv-builder/share'">
         <div class="flex items-start justify-between mb-3">
           <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
             <i class="lucide-share-2 text-xl"></i>
@@ -155,7 +123,7 @@
   <!-- Fixed Bottom Button -->
   <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200" id="bottom-button">
     <div class="max-w-2xl mx-auto px-4 py-3">
-      <button onclick="window.location='/cv/view'" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+      <button onclick="window.location='/cv-builder/view'" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
         সিভি দেখুন
       </button>
     </div>
@@ -181,7 +149,7 @@
 <script>
 // Load CV form dynamically
 function showCVForm() {
-  fetch('/cv/form-data')
+  fetch('/cv-builder/form-data')
     .then(r => r.json())
     .then(data => {
       const container = document.getElementById('cv-form-container');
@@ -202,7 +170,7 @@ function showCVForm() {
     })
     .catch(err => {
       console.error('Error loading form:', err);
-      alert('ফর্ম লোড করতে সমস্যা হয়েছে');
+      window.showMessage('ফর্ম লোড করতে সমস্যা হয়েছে', 'danger');
     });
 }
 
@@ -239,7 +207,7 @@ function saveCVForm(event) {
   event.preventDefault();
   const formData = new FormData(event.target);
   
-  fetch('/cv/save', {
+  fetch('/cv-builder/save', {
     method: 'POST',
     body: formData,
     headers: {
@@ -249,16 +217,16 @@ function saveCVForm(event) {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      alert('সিভি সফলভাবে সংরক্ষণ হয়েছে');
+      window.showMessage('সিভি সফলভাবে সংরক্ষণ হয়েছে', 'success');
       closeCVForm();
       location.reload();
     } else {
-      alert('সংরক্ষণ ব্যর্থ: ' + data.message);
+      window.showMessage('সংরক্ষণ ব্যর্থ: ' + data.message, 'danger');
     }
   })
   .catch(err => {
     console.error('Error:', err);
-    alert('সংরক্ষণে ত্রুটি হয়েছে');
+    window.showMessage('সংরক্ষণে ত্রুটি হয়েছে', 'danger');
   });
 }
 </script>

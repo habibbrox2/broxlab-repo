@@ -1,3 +1,5 @@
+export { escapeHtml } from '../../shared/utils.js';
+
 export const byId = (id) => document.getElementById(id);
 
 export function resolveNumericId(...candidates) {
@@ -71,18 +73,6 @@ export function initContentPreviewSync(contentId = 'content', previewId = 'previ
   });
 
   syncPreview();
-}
-
-// merged from dom-utils.js
-export function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  return String(text ?? '').replace(/[&<>"']/g, (char) => map[char]);
 }
 
 export function setText(el, text) {

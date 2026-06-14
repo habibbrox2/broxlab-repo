@@ -16,19 +16,10 @@ const state = {
   notificationPermissionRequested: false,
 };
 
-// Store template data globally for chart rendering
-const parseJson = (value, fallback) => {
-  if (!value) return fallback;
-  try { return JSON.parse(value); } catch (e) { return fallback; }
-};
+import { parseJson } from './shared/utils.js';
+import { runWhenReady } from './modules/utils.js';
 
-const runWhenReady = (fn) => {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fn, { once: true, });
-  } else {
-    fn();
-  }
-};
+// Store template data globally for chart rendering
 
 const deferNonCritical = (fn, timeout = 250) => {
   if (typeof window.requestIdleCallback === 'function') {
@@ -707,7 +698,7 @@ function setupEventListeners() {
    * Clear old logs
    */
 async function clearLogs() {
-  if (!confirm('Clear logs older than 90 days? This cannot be undone.')) return;
+  if (!(await window.showConfirm('Clear logs older than 90 days? This cannot be undone.'))) return;
 
   try {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -719,13 +710,13 @@ async function clearLogs() {
       body: `log_type=all&csrf_token=${csrfToken}`,
     });
     if (data && data.success) {
-      alert('Logs cleared successfully!');
+      window.showMessage('Logs cleared successfully!', 'success');
       location.reload();
     } else {
-      alert(`Error: ${data?.error || 'Unknown error'}`);
+      window.showMessage(`Error: ${data?.error || 'Unknown error'}`, 'danger');
     }
   } catch (error) {
-    alert(`Error clearing logs: ${error.message}`);
+    window.showMessage(`Error clearing logs: ${error.message}`, 'danger');
   }
 }
 

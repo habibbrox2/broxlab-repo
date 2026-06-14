@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
  updateBulkActionsBar();
  });
 
- bulkDeleteBtn.addEventListener('click', function() {
+ bulkDeleteBtn.addEventListener('click', async function() {
  const selectedLogs = Array.from(logCheckboxes)
  .filter(cb => cb.checked)
  .map(cb => cb.getAttribute('data-log-id'));
@@ -809,7 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
  if (selectedLogs.length === 0) return;
 
  const logText = selectedLogs.length === 1 ? '1 log' : selectedLogs.length + ' logs';
- if (!confirm(`Delete ${logText}? This action cannot be undone.`)) {
+ if (!(await window.showConfirm(`Delete ${logText}? This action cannot be undone.`, 'Delete Logs', 'error'))) {
  return;
  }
 
@@ -862,11 +862,11 @@ document.addEventListener('DOMContentLoaded', function() {
  });
 
  deleteLogBtns.forEach(btn => {
- btn.addEventListener('click', function() {
+ btn.addEventListener('click', async function() {
  const logId = this.getAttribute('data-log-id');
  const row = document.querySelector(`.push-log-row[data-log-id="${logId}"]`);
 
- if (!confirm('Delete this log? This action cannot be undone.')) {
+ if (!(await window.showConfirm('Delete this log? This action cannot be undone.', 'Delete Log', 'error'))) {
  return;
  }
 
@@ -892,14 +892,14 @@ document.addEventListener('DOMContentLoaded', function() {
  } else {
  this.disabled = false;
  this.innerHTML = originalHTML;
- alert('Failed to delete log');
+ window.showMessage('Failed to delete log', 'danger');
  }
  })
  .catch(error => {
  console.error('Error deleting log:', error);
  this.disabled = false;
  this.innerHTML = originalHTML;
- alert('Error: ' + error.message);
+ window.showMessage('Error: ' + error.message, 'danger');
  });
  });
  });

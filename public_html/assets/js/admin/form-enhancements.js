@@ -289,7 +289,7 @@ const PostFormEnhancements = (() => {
      * Setup field focus effects
      */
     const setupFieldFocus = () => {
-        const formInputs = document.querySelectorAll('.form-input, .form-select, .form-textarea');
+        const formInputs = document.querySelectorAll('[data-form-control], .form-input, .form-select, .form-textarea, form input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), form select, form textarea');
 
         formInputs.forEach((field) => {
             field.addEventListener('focus', () => {
@@ -380,16 +380,23 @@ const PostFormEnhancements = (() => {
      * Setup toggle switch buttons (role="switch")
      */
     const setupToggleSwitches = () => {
-        document.querySelectorAll('.toggle-switch[role="switch"]').forEach((toggle) => {
+        document.querySelectorAll('[data-ui-switch][role="switch"], .toggle-switch[role="switch"]').forEach((toggle) => {
             toggle.addEventListener('click', () => {
                 const isChecked = toggle.getAttribute('aria-checked') === 'true';
                 const newState = !isChecked;
                 toggle.setAttribute('aria-checked', newState.toString());
+                toggle.setAttribute('data-checked', newState ? 'true' : 'false');
 
                 // Update hidden input value
                 const hiddenInput = toggle.nextElementSibling;
                 if (hiddenInput && hiddenInput.type === 'hidden') {
                     hiddenInput.value = newState ? '1' : '0';
+                }
+
+                const thumb = toggle.querySelector('span');
+                if (thumb) {
+                    thumb.classList.toggle('translate-x-5', newState);
+                    thumb.classList.toggle('translate-x-0', !newState);
                 }
 
                 // Dispatch change event for form dirty tracking
@@ -415,15 +422,17 @@ const PostFormEnhancements = (() => {
      * Setup pill group radio buttons
      */
     const setupPillGroups = () => {
-        document.querySelectorAll('.pill-group').forEach((group) => {
-            group.querySelectorAll('.pill-option input[type="radio"]').forEach((radio) => {
+        document.querySelectorAll('[data-pill-group], .pill-group').forEach((group) => {
+            group.querySelectorAll('[data-pill-option] input[type="radio"], .pill-option input[type="radio"]').forEach((radio) => {
                 radio.addEventListener('change', () => {
                     if (!radio.checked) return;
 
                     // Update visual state for all pills in this group
-                    group.querySelectorAll('.pill-option').forEach((pill) => {
+                    group.querySelectorAll('[data-pill-option], .pill-option').forEach((pill) => {
                         const pillRadio = pill.querySelector('input[type="radio"]');
-                        pill.classList.toggle('active', pillRadio && pillRadio.checked);
+                        const active = !!(pillRadio && pillRadio.checked);
+                        pill.dataset.active = active ? 'true' : 'false';
+                        pill.classList.toggle('active', active);
                     });
 
                     // Native radio change event already bubbles to form for dirty tracking

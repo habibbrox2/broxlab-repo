@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
           btn.disabled = false;
           spinner.classList.add('hidden');
           btnText.innerHTML = '<i class="lucide lucide-shield-check h-5 w-5"></i> Verify Code';
-          alert(data.message || 'Invalid code. Please try again.');
+          window.showMessage(data.message || 'Invalid code. Please try again.', 'danger');
         }
       })
       .catch(() => {
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.success) {
           window.location.href = data.redirect || '/user/dashboard';
         } else {
-          alert(data.message || 'Invalid backup code.');
+          window.showMessage(data.message || 'Invalid backup code.', 'danger');
         }
       });
     });

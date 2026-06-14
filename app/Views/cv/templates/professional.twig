@@ -5,4 +5,129 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
  <title>{{ cv.title }}</title> 
  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"> 
+ <style>
+ * { margin: 0; padding: 0; box-sizing: border-box; }
+ body {
+   font-family: 'Roboto', Arial, sans-serif;
+   font-size: 11pt;
+   line-height: 1.5;
+   color: #333;
+   background: #fff;
+ }
+ .cv-container { max-width: 210mm; margin: 0 auto; padding: 15mm 20mm; }
+ .cv-header { text-align: left; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #1E40AF; }
+ .cv-name { font-size: 26pt; font-weight: 700; color: #1E3A5F; margin-bottom: 8px; }
+ .cv-contact { font-size: 9pt; color: #555; display: flex; flex-wrap: wrap; gap: 15px; }
+ .contact-item { display: flex; align-items: center; gap: 4px; }
+ .cv-section { margin-bottom: 20px; page-break-inside: avoid; }
+ .section-title { font-size: 12pt; font-weight: 700; color: #1E40AF; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #DBEAFE; padding-bottom: 5px; page-break-after: avoid; }
+ .section-content { margin-left: 0; }
+ .cv-item { margin-bottom: 12px; padding: 0; page-break-inside: avoid; }
+ .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+ .item-title { font-weight: 600; color: #1E3A5F; }
+ .item-subtitle { color: #1E40AF; }
+ .item-date { font-size: 9pt; color: #6B7280; white-space: nowrap; }
+ .item-description { font-size: 10pt; color: #4B5563; margin-top: 4px; }
+ .skills-container { display: flex; flex-wrap: wrap; gap: 6px; }
+ .skill-item { background: #EFF6FF; color: #1E40AF; padding: 4px 12px; border-radius: 4px; font-size: 9pt; border: 1px solid #BFDBFE; }
+ .summary-text { font-size: 10.5pt; line-height: 1.6; color: #4B5563; }
+ 
+ @media print {
+   body { font-size: 10pt; color: #000; }
+   .cv-container { padding: 0; max-width: 100%; }
+   .cv-item { background: none !important; }
+   .section-title { page-break-after: avoid; }
+   .cv-section { page-break-inside: avoid; }
+   .skill-item { background: #EFF6FF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   .cv-header { border-bottom-color: #1E40AF; }
+ }
+ </style>
+</head>
+<body>
+<div class="cv-container">
+  <!-- Header -->
+  <header class="cv-header">
+    <h1 class="cv-name">{{ cv.title }}</h1>
+    <div class="cv-contact">
+      {% for section in sections %}
+        {% if section.section_type == 'summary' %}
+          {% for item in section.items %}
+            {% if item.content.email %}
+              <span class="contact-item">✉ {{ item.content.email }}</span>
+            {% endif %}
+            {% if item.content.phone %}
+              <span class="contact-item">📞 {{ item.content.phone }}</span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </header>
 
+  <!-- Sections -->
+  {% for section in sections %}
+    <div class="cv-section">
+      <div class="section-title">{{ section.title }}</div>
+
+      {% if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          <div class="summary-text">{{ item.content.text ?? item.content.summary ?? '' }}</div>
+        {% endfor %}
+
+      {% elseif section.section_type == 'experience' %}
+        {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-header">
+              <div class="item-title">{{ item.content.position ?? 'Position' }}</div>
+              <span class="item-date">{{ item.content.start_date ?? '' }} - {{ item.content.end_date ?? 'Present' }}</span>
+            </div>
+            <div class="item-subtitle">{{ item.content.company ?? '' }} · {{ item.content.location ?? '' }}</div>
+            {% if item.content.description %}
+              <div class="item-description">{{ item.content.description|nl2br }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+      {% elseif section.section_type == 'education' %}
+        {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-title">{{ item.content.degree ?? '' }}{% if item.content.field %} in {{ item.content.field }}{% endif %}</div>
+            <div class="item-subtitle">{{ item.content.institution ?? '' }}</div>
+            <div class="item-date" style="font-size:9pt;color:#6B7280;">{{ item.content.start_date ?? '' }} - {{ item.content.end_date ?? '' }}</div>
+          </div>
+        {% endfor %}
+
+      {% elseif section.section_type == 'skills' %}
+        <div class="skills-container">
+          {% for item in section.items %}
+            <span class="skill-item">{{ item.content.name ?? '' }}</span>
+          {% endfor %}
+        </div>
+
+      {% elseif section.section_type == 'projects' %}
+        {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-title">{{ item.content.name ?? '' }}</div>
+            {% if item.content.description %}
+              <div class="item-description">{{ item.content.description|nl2br }}</div>
+            {% endif %}
+            {% if item.content.technologies %}
+              <div style="font-size:9pt;color:#6B7280;margin-top:4px;">Tech: {{ item.content.technologies }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+      {% elseif section.section_type == 'certifications' %}
+        {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-title">{{ item.content.name ?? '' }}</div>
+            {% if item.content.issuer %}<div class="item-subtitle">{{ item.content.issuer }}</div>{% endif %}
+            {% if item.content.date %}<div class="item-date" style="font-size:9pt;">{{ item.content.date }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+</body>
+</html>

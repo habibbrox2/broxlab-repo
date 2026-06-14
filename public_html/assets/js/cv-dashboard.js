@@ -30,9 +30,9 @@ function setupDeleteButtons() {
       const cvId = this.getAttribute('data-cv-id');
       const cvTitle = this.getAttribute('data-cv-title') || 'CV';
 
-      if (confirm(`Are you sure you want to delete "${cvTitle}"? This action cannot be undone.`)) {
-        deleteCv(cvId);
-      }
+      window.showConfirm(`Are you sure you want to delete "${cvTitle}"? This action cannot be undone.`).then(confirmed => {
+        if (confirmed) deleteCv(cvId);
+      });
     });
   });
 }
@@ -93,7 +93,7 @@ function setupShareButtons() {
  * Show share modal for CV
  */
 function showShareModal(cvId, cvTitle) {
-  const shareUrl = `${window.location.origin}/cv/view/${cvId}`;
+  const shareUrl = `${window.location.origin}/cv-builder/view/${cvId}`;
   const shareTitle = `Check out my CV: ${cvTitle}`;
 
   // Create modal if it doesn't exist

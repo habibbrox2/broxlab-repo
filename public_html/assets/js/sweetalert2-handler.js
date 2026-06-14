@@ -428,6 +428,40 @@ const MessageHandlerConfig = {
 window.MessageHandlerConfig = MessageHandlerConfig;
 
 /**
+   * Inline confirm helper for HTML onclick attributes.
+   * Handles <a> and <form> elements.
+   * Usage: onclick="return window.confirmAction(event, this, 'Are you sure?')"
+   */
+window.confirmAction = async function(event, element, message, options = {}) {
+  event.preventDefault();
+  const Swal = typeof Swal !== 'undefined' ? Swal : null;
+  if (!Swal) {
+    return window.confirm(message);
+  }
+  const opts = typeof options === 'object' ? options : {};
+  const result = await Swal.fire({
+    title: message,
+    icon: opts.icon || 'warning',
+    showCancelButton: true,
+    confirmButtonText: opts.confirmText || 'Yes, proceed',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    reverseButtons: true,
+    ...opts
+  });
+  if (result.isConfirmed) {
+    if (element.tagName === 'FORM') {
+      element.submit();
+    } else if (element.tagName === 'A') {
+      window.location.href = element.href;
+    } else if (opts.callback) {
+      opts.callback();
+    }
+  }
+};
+
+/**
    * ========================================
    * MESSAGE HANDLER OBJECT
    * ========================================

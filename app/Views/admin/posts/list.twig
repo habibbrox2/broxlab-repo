@@ -125,7 +125,7 @@
         <a href="/admin/posts/edit?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5" title="Edit">
          <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
         </a>
-        <a href="/admin/posts/delete?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return confirm('Delete this post?')">
+        <a href="/admin/posts/delete?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return window.confirmAction(event, this, 'Delete this post?')">
          <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
         </a>
        </div>

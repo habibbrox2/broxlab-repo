@@ -1,5 +1,7 @@
 'use strict';
 
+import { escapeHtml } from './shared/utils.js';
+
 const path = window.location.pathname.replace(/\/+$/, '');
 const isCompaniesPage = path === '/medex' || path === '/medex/companies';
 const companyMatch = path.match(/^\/medex\/company\/(\d+)$/);
@@ -23,15 +25,6 @@ const state = {
   brandDetailsBn: null,
   langInitialized: false,
 };
-
-function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 function formatNumber(value) {
   return new Intl.NumberFormat('en-US').format(Number(value) || 0);

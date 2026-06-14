@@ -1,31 +1,11 @@
 import { fetchJson } from './shared/fetch-utils.js';
+import { escapeHtml, getCsrfToken, withAssetVersion } from './shared/utils.js';
 
 const PROVIDER_UI = {
   google: { name: 'Google', icon: 'google', color: '#EA4335', btn: 'danger', },
   facebook: { name: 'Facebook', icon: 'facebook', color: '#1877F2', btn: 'primary', },
   github: { name: 'GitHub', icon: 'github', color: '#333333', btn: 'dark', },
 };
-
-const runtimeAssetVersion = (() => {
-  try {
-    return new URL(import.meta.url).searchParams.get('v') || '';
-  } catch {
-    return '';
-  }
-})();
-
-function withAssetVersion(url) {
-  if (!runtimeAssetVersion) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${encodeURIComponent(runtimeAssetVersion)}`;
-}
-
-function escapeHtml(value) {
-  if (value === null || value === undefined) return '';
-  const div = document.createElement('div');
-  div.textContent = String(value);
-  return div.innerHTML;
-}
 
 function sanitizeCssColor(color, fallback = '#0d6efd') {
   if (typeof color !== 'string') return fallback;
@@ -73,20 +53,6 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
   setTimeout(() => {
     alertDiv.remove?.();
   }, 5000);
-}
-
-function getCsrfToken(selector) {
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  if (meta?.content) return meta.content;
-
-  if (selector) {
-    const el = document.querySelector(selector);
-    if (el) return el.value || el.content || '';
-  }
-
-  const hidden = document.getElementById('csrf_token');
-  if (hidden?.value) return hidden.value;
-  return '';
 }
 
 function mapErrorCodeToMessage(code, fallbackMessage) {
@@ -530,7 +496,7 @@ export function initAccountSettingsOAuth(options = {}) {
 
   const unlink = async (provider) => {
     const providerLabel = provider.charAt(0).toUpperCase() + provider.slice(1);
-    if (!window.confirm(`Are you sure you want to unlink your ${providerLabel} account?`)) {
+    if (!(await window.showConfirm(`Are you sure you want to unlink your ${providerLabel} account?`))) {
       return;
     }
 
@@ -566,7 +532,7 @@ export function initAccountSettingsOAuth(options = {}) {
     const token = csrfToken();
 
     if (currentHasPassword) {
-      const currentPassword = window.prompt('For security, enter your current password to continue:');
+      const currentPassword = await window.showPrompt('For security, enter your current password to continue:', '');
       if (currentPassword === null) {
         showAlert('Re-authentication was cancelled.', 'warning');
         return false;

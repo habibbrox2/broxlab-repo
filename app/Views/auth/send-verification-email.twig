@@ -247,7 +247,7 @@ function copyToken(event) {
       }, 2000);
     }
   }).catch(() => {
-    alert('Failed to copy token. Please copy manually.');
+    window.showMessage('Failed to copy token. Please copy manually.', 'danger');
   });
 }
 </script>

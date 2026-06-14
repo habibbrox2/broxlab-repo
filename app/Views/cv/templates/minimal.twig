@@ -77,6 +77,33 @@
  ul {
  margin-left: 15px;
  }
+ 
+ /* Print/PDF Styles */
+ @media print {
+ body {
+ font-size: 10pt;
+ color: #000;
+ }
+ 
+ .mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 {
+ padding: 0;
+ max-width: 100%;
+ }
+ 
+ .section {
+ page-break-inside: avoid;
+ margin-bottom: 12px;
+ }
+ 
+ .section-title {
+ page-break-after: avoid;
+ border-bottom-color: #000;
+ }
+ 
+ .item {
+ page-break-inside: avoid;
+ }
+ }
  </style>
 </head>
 <body>

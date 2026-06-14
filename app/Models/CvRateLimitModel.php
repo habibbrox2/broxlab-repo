@@ -12,6 +12,7 @@ class CvRateLimitModel
         'ai_ats_score' => ['limit' => 10, 'window' => 3600], // 10 requests per hour
         'ai_keywords' => ['limit' => 15, 'window' => 3600], // 15 requests per hour
         'ai_parse' => ['limit' => 5, 'window' => 3600], // 5 requests per hour
+        'ai_cover_letter' => ['limit' => 10, 'window' => 3600], // 10 cover letters per hour
         'pdf_export' => ['limit' => 30, 'window' => 3600], // 30 requests per hour
     ];
 

@@ -186,7 +186,7 @@
           {{ s == 'active' ? 'Pause' : 'Activate' }}
          </button>
         </form>
-        <form method="GET" action="/admin/revenue/ads/delete/{{ p.id }}" style="display:inline" onsubmit="return confirm('Delete this ad placement?')">
+        <form method="GET" action="/admin/revenue/ads/delete/{{ p.id }}" style="display:inline" onsubmit="return window.confirmAction(event, this, 'Delete this ad placement?')">
          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
          <button class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition-all hover:bg-red-50 hover:-translate-y-0.5">Delete</button>
         </form>

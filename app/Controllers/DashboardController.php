@@ -1245,7 +1245,7 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
                     'time' => $cv['updated_at'] ?? $cv['created_at'] ?? '',
                     'icon' => 'file-text',
                     'color' => 'violet',
-                    'url' => '/cv/' . ($cv['id'] ?? 0),
+                    'url' => '/cv-builder/' . ($cv['id'] ?? 0),
                 ];
             }
 

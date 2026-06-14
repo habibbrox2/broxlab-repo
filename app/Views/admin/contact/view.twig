@@ -69,7 +69,7 @@
  <a href="/admin/contact" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200"><i class="lucide lucide-arrow-left"></i> Back</a>
  <a href="/admin/contact/delete/{{ message.id }}"
  class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700"
- onclick="return confirm('Delete this message?')"><i class="lucide lucide-trash-2"></i> Delete</a>
+ onclick="return window.confirmAction(event, this, 'Delete this message?')"><i class="lucide lucide-trash-2"></i> Delete</a>
  </div>
  </div>
  </div>

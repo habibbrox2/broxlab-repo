@@ -403,20 +403,11 @@
      ───────────────────────────────────────────── #}
 
   {# ── Inline: core UI behaviours (no deps, runs immediately) ── #}
+  {# debounce/throttle are provided by public_html/assets/js/shared/dom-helpers.js #}
+  <script src="{{ asset('/assets/js/shared/dom-helpers.js') }}"></script>
   <script>
   (function () {
     'use strict';
-
-    /* ── Helpers ── */
-    function debounce(fn, ms) {
-      var t;
-      return function () { var a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(this, a); }, ms); };
-    }
-
-    function throttle(fn, ms) {
-      var last = 0;
-      return function () { var now = Date.now(); if (now - last >= ms) { last = now; fn.apply(this, arguments); } };
-    }
 
     function scrollTop() {
       return window.pageYOffset || document.documentElement.scrollTop || 0;

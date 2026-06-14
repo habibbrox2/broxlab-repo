@@ -1520,9 +1520,9 @@ function initAssistant(root) {
 
   // Delete conversation button (public only — deletes from server and local)
   if (els.deleteConvBtn) {
-    els.deleteConvBtn.addEventListener('click', () => {
+    els.deleteConvBtn.addEventListener('click', async () => {
       if (!state.conversationId) return;
-      if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
+      if (!(await window.showConfirm('Delete this conversation? This cannot be undone.'))) return;
       const btn = els.deleteConvBtn;
       btn.disabled = true;
       btn.innerHTML = '<svg class="ai-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>';

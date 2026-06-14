@@ -24,7 +24,7 @@
     <a href="/admin/permissions/{{ permission.id }}/edit" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
      <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i> Edit
     </a>
-    <form method="POST" action="/admin/permissions/{{ permission.id }}/delete" class="inline" onsubmit="return confirm('Delete this permission?')">
+    <form method="POST" action="/admin/permissions/{{ permission.id }}/delete" class="inline" onsubmit="return window.confirmAction(event, this, 'Delete this permission?')">
      <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-500/20 px-4 py-2 text-xs font-semibold text-rose-200 shadow-sm backdrop-blur transition-all duration-200 hover:bg-rose-500/30 hover:-translate-y-0.5 active:scale-[0.97]">
       <i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i> Delete
      </button>

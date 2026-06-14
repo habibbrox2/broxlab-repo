@@ -1055,8 +1055,8 @@ function loadUserDevices() {
  });
 }
 
-function revokeDevice(deviceId) {
- if (!confirm('Are you sure you want to revoke this device? You will need to grant notification permission again.')) {
+async function revokeDevice(deviceId) {
+ if (!(await window.showConfirm('Are you sure you want to revoke this device? You will need to grant notification permission again.', 'Revoke Device', 'error'))) {
  return;
  }
 
@@ -1121,8 +1121,8 @@ function setupDeviceManagement() {
  // Revoke all devices button
  const revokeAllBtn = document.getElementById('revoke-all-btn');
  if (revokeAllBtn) {
- revokeAllBtn.addEventListener('click', function() {
- if (!confirm('This will revoke ALL devices. You will need to grant notification permission again on each device. Continue?')) {
+ revokeAllBtn.addEventListener('click', async function() {
+ if (!(await window.showConfirm('This will revoke ALL devices. You will need to grant notification permission again on each device. Continue?', 'Revoke All Devices', 'error'))) {
  return;
  }
 
@@ -1160,8 +1160,8 @@ function setupDeviceManagement() {
  // Sign out device button
  const signoutBtn = document.getElementById('signout-device-btn');
  if (signoutBtn) {
- signoutBtn.addEventListener('click', function() {
- if (confirm('Sign out from this device? You will be logged out immediately.')) {          import('/assets/js/shared/logout-runtime.js').then(mod => {
+ signoutBtn.addEventListener('click', async function() {
+ if (await window.showConfirm('Sign out from this device? You will be logged out immediately.', 'Sign Out', 'warning')) {          import('/assets/js/shared/logout-runtime.js').then(mod => {
             mod.performUnifiedLogout({ context: 'user-settings' });
           }).catch(() => {
             window.location.href = '/logout';

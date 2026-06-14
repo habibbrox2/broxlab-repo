@@ -196,6 +196,24 @@
 
   <div class="rte-toolbar-divider"></div>
 
+  <!-- Text Effects -->
+  <div class="rte-toolbar-section rte-text-effects">
+   <button type="button" class="rte-btn" title="Subscript" data-command="subscript" data-editor="{{ editorId }}">
+    <i class="rte-icon material-icons">subscript</i>
+    <span class="rte-tooltip">Subscript</span>
+   </button>
+   <button type="button" class="rte-btn" title="Superscript" data-command="superscript" data-editor="{{ editorId }}">
+    <i class="rte-icon material-icons">superscript</i>
+    <span class="rte-tooltip">Superscript</span>
+   </button>
+   <button type="button" class="rte-btn" title="Inline code" data-action="insertCode" data-editor="{{ editorId }}">
+    <i class="rte-icon material-icons">code</i>
+    <span class="rte-tooltip">Code</span>
+   </button>
+  </div>
+
+  <div class="rte-toolbar-divider"></div>
+
   <!-- Insert -->
   <div class="rte-toolbar-section rte-insert">
    <button type="button" class="rte-btn" title="Insert/Edit Link" data-action="insertLink" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ editorId }}-link-modal" data-editor="{{ editorId }}">
@@ -290,13 +308,28 @@
     <i class="rte-icon material-icons">clear_all</i>
     <span class="rte-tooltip">Clear</span>
    </button>
+   <button type="button" class="rte-btn" title="Toggle fullscreen (Ctrl+Shift+F)" data-action="toggleFullscreen" data-editor="{{ editorId }}">
+    <i class="rte-icon material-icons rte-fullscreen-icon">fullscreen</i>
+    <span class="rte-tooltip">Fullscreen</span>
+   </button>
    <div class="rte-more-dropdown">
     <button type="button" class="rte-btn" title="More options" data-action="toggleMore" data-editor="{{ editorId }}">
      <i class="rte-icon material-icons">more_vert</i>
      <span class="rte-tooltip">More</span>
     </button>
-    <div class="rte-more-menu" style="display: none;">
-     <div class="rte-more-item">Custom extensions go here</div>
+    <div class="rte-more-menu" role="menu" style="display: none;">
+     <div class="rte-more-item" data-action="insertTable" role="menuitem" tabindex="-1">
+      <i class="rte-icon material-icons">table_chart</i> Insert Table
+     </div>
+     <div class="rte-more-item" data-action="insertCodeBlock" role="menuitem" tabindex="-1">
+      <i class="rte-icon material-icons">code_off</i> Code Block
+     </div>
+     <div class="rte-more-item" data-action="selectAll" role="menuitem" tabindex="-1">
+      <i class="rte-icon material-icons">select_all</i> Select All
+     </div>
+     <div class="rte-more-item" data-action="showWordCount" role="menuitem" tabindex="-1">
+      <i class="rte-icon material-icons">data_usage</i> Word Count
+     </div>
     </div>
    </div>
   </div>

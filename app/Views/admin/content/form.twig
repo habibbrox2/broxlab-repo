@@ -7,7 +7,6 @@
  <!-- Google Material Icons for RTE toolbar -->
  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
  <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
- {% include 'admin/partials/_shared-form-styles.twig' %}
  <style>
 
  /* ── Status/Indexing Pills ── */
@@ -690,30 +689,47 @@
 {% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
- <div class="min-h-screen bg-slate-50">
- <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
- <!-- Page Header -->
- <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
- <div class="flex items-center gap-4">
- <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg">
- <i class="lucide {{ not isCreate ? 'lucide-pen-square' : 'lucide-plus-circle' }} text-xl"></i>
- </div>
- <div>
- <h1 class="text-3xl font-bold text-slate-900">
- {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
- </h1>
- <p class="mt-1 text-sm text-slate-600">
- {{ not isCreate
- ? (type == 'posts' ? 'Update post content and settings' : 'Update page content and settings')
- : (type == 'posts' ? 'Create a new blog post' : 'Create a new page')
- }}
- </p>
- </div>
- </div>
- <a href="/admin/{{ type }}" class="btn-outline self-start sm:self-auto">
- <i class="lucide lucide-arrow-left text-base"></i>
- Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
- </a>
+ <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+ <div class="mx-auto max-w-[1520px]">
+<!-- Page Header -->
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-900 p-5 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)] sm:p-6">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.22),transparent_28%)]" aria-hidden="true"></div>
+  <div class="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+   <div class="flex items-start gap-4">
+    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white shadow-lg ring-1 ring-white/10 backdrop-blur">
+     <i class="lucide {{ type == 'posts' ? 'lucide-file-text' : 'lucide-file' }} text-xl"></i>
+    </div>
+    <div class="min-w-0">
+     <div class="flex flex-wrap items-center gap-2">
+      <span class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur">{{ type == 'posts' ? 'Content Studio' : 'Page Studio' }}</span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
+       <i class="lucide {{ not isCreate ? 'lucide-pencil' : 'lucide-plus-circle' }} w-3.5 h-3.5"></i>
+       {{ not isCreate ? 'Editing mode' : 'Create mode' }}
+      </span>
+     </div>
+     <h1 class="mt-3 text-2xl font-black tracking-tight sm:text-[2rem]">
+      {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
+     </h1>
+     <p class="mt-1 max-w-2xl text-sm leading-6 text-white/72">
+      {{ not isCreate
+       ? (type == 'posts' ? 'Update the article, metadata, and publishing controls in one streamlined workspace.' : 'Update the page content, metadata, and publishing controls in one streamlined workspace.')
+       : (type == 'posts' ? 'Create a polished new article with the editor, SEO, and publish settings in one place.' : 'Create a polished new page with the editor, SEO, and publish settings in one place.')
+      }}
+     </p>
+     <div class="mt-4 flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-monitor w-3.5 h-3.5 text-indigo-600"></i>Responsive layout</span>
+      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-save w-3.5 h-3.5 text-indigo-600"></i>Autosave ready</span>
+      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-zap w-3.5 h-3.5 text-indigo-600"></i>AI assisted</span>
+     </div>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2 xl:justify-end">
+    <a href="/admin/{{ type }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98] self-start sm:self-auto">
+     <i class="lucide lucide-arrow-left text-base"></i>
+     Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
+    </a>
+   </div>
+  </div>
  </div>
  <!-- Main Form -->
  <form method="post"
@@ -739,127 +755,131 @@
  {% endif %}
  <input type="hidden" id="item_permalink" name="permalink" value="">
  {% endif %}
- <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
- <!-- Main Content Column -->
- <div class="lg:col-span-8 space-y-6">
+ <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)] xl:items-start">
+<!-- Main Content Column -->
+ <div class="space-y-6 xl:space-y-8">
  <!-- Basic Information Card -->
- <div class="card-base">
- <div class="card-header">
- <h3 class="card-title">
+ <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50">
+ <div class="flex items-center gap-2 border-b border-slate-200 px-5 py-3 bg-gradient-to-r from-slate-50/50 to-slate-100/50">
+ <h3 class="m-0 flex items-center gap-2 text-base font-semibold text-slate-900">
  <i class="lucide lucide-file-text"></i>
  {{ type == 'posts' ? 'Post Details' : 'Page Details' }}
  </h3>
  </div>
- <div class="card-body">
+ <div class="p-5 space-y-2">
  <!-- Title Input -->
- <div class="form-group">
- <label for="title" class="form-label">
+ <div class="space-y-1.5">
+ <label for="title" class="block text-sm font-semibold tracking-tight text-slate-700">
  Title
- <span class="required">*</span>
+ <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
  </label>
  <input type="text"
- class="form-input"
+ class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
  id="title"
  name="title"
  placeholder="Enter {{ type == 'posts' ? 'post' : 'page' }} title"
  value="{{ item.title|default("") }}"
  required>
- <span class="form-hint">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</span>
+ <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</span>
  </div>
 
  <!-- URL Slug -->
- <div class="form-group">
- <label for="seo" class="form-label">
+ <div class="space-y-1.5">
+ <label for="seo" class="block text-sm font-semibold tracking-tight text-slate-700">
  URL Slug
- <span class="required">*</span>
+ <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
  </label>
  <div class="relative">
  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
  <i class="lucide lucide-link text-base"></i>
  </span>
  <input type="text"
- class="form-input pl-10"
+ class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 pl-10 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
  id="seo"
  name="slug"
  placeholder="example-slug"
  value="{{ item.slug|default("") }}"
  required>
  </div>
- <div id="slugPreview" class="slug-preview">
+ <div id="slugPreview" class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
  <i class="lucide lucide-arrow-right text-xs"></i>
  <span>{{ site_url|default(base_url|default('https://example.com/')) }}<span class="slug-text" id="slugText">{{ item.slug|default('enter-title')|lower|replace({' ':'-','--':'-'}) }}</span></span>
  </div>
- <div id="seo-feedback" class="form-hint"></div>
+ <div id="seo-feedback" class="mt-1.5 block text-xs leading-relaxed text-slate-500"></div>
  </div>
 
  <!-- SEO Title -->
- <div class="form-group">
- <label for="meta_title" class="form-label">SEO Title</label>
+ <div class="space-y-1.5">
+ <label for="meta_title" class="block text-sm font-semibold tracking-tight text-slate-700">SEO Title</label>
  <input type="text"
- class="form-input"
+ class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
  id="meta_title"
  name="meta_title"
  placeholder="Optional SEO title"
  maxlength="60"
  value="{{ item.meta_title|default("") }}"
  data-char-max="60">
- <div class="char-progress">
+ <div class="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
  <span>A custom SEO title for search engines</span>
- <div class="char-progress-track">
- <div class="char-progress-bar" id="metaTitleProgress" style="width: {{ (item.meta_title|default('')|length / 60 * 100)|round }}%"></div>
+ <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+ <div class="h-full rounded-full bg-indigo-500 transition-all duration-300 ease-out" id="metaTitleProgress" style="width: {{ (item.meta_title|default('')|length / 60 * 100)|round }}%"></div>
  </div>
  <span id="metaTitleCount">{{ item.meta_title|default('')|length }}/60</span>
  </div>
  </div>
 
  <!-- SEO Description -->
- <div class="form-group">
- <label for="meta_description" class="form-label">SEO Description</label>
- <textarea class="form-textarea h-20"
+ <div class="space-y-1.5">
+ <label for="meta_description" class="block text-sm font-semibold tracking-tight text-slate-700">SEO Description</label>
+ <textarea class="min-h-[96px] w-full resize-y rounded-xl border border-slate-300 bg-white/95 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 h-20"
  id="meta_description"
  name="meta_description"
  placeholder="Optional SEO description"
  maxlength="160"
  data-char-max="160">{{ item.meta_description|default("") }}</textarea>
- <div class="char-progress">
+ <div class="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
  <span>A short summary for search results and social media</span>
- <div class="char-progress-track">
- <div class="char-progress-bar" id="metaDescProgress" style="width: {{ (item.meta_description|default('')|length / 160 * 100)|round }}%"></div>
+ <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+ <div class="h-full rounded-full bg-indigo-500 transition-all duration-300 ease-out" id="metaDescProgress" style="width: {{ (item.meta_description|default('')|length / 160 * 100)|round }}%"></div>
  </div>
  <span id="metaDescCount">{{ item.meta_description|default('')|length }}/160</span>
  </div>
  </div>
 
  <!-- Content Editor -->
- <div class="form-group">
- <label for="content" class="form-label">
+ <div class="space-y-1.5">
+ <label for="content" class="block text-sm font-semibold tracking-tight text-slate-700">
  Content
- <span class="required">*</span>
+ <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
  </label>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" data-editor-shell="content">
  {% include 'partials/editor.twig' with {
  'editorId': 'content',
  'editorName': 'content',
- 'editorClass': 'modern-rich-editor',
  'initialContent': item.content|default(''),
  'darkMode': false,
  'rtl': false
- } %}
- <span class="form-hint">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</span>
+} %}
+ </div>
+ <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</span>
  </div>
  </div>
  </div>
 
  <!-- Categories & Tags Card -->
- <div class="card-base">
- <div class="card-header">
- <h3 class="card-title">
- <i class="lucide lucide-tags"></i>
- Categories & Tags
- </h3>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+ <div class="flex items-center gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-3.5 sm:px-6">
+ <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+  <i class="lucide lucide-tags"></i>
  </div>
- <div class="card-body">
- <div class="form-group">
- <label class="form-label">Categories</label>
+ <div class="min-w-0">
+  <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">Labels</p>
+  <h3 class="m-0 text-[0.95rem] font-semibold tracking-tight text-slate-900">Categories & Tags</h3>
+ </div>
+ </div>
+ <div class="space-y-4 p-5 sm:p-6">
+ <div class="space-y-1.5">
+ <label class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Categories</label>
  {% include 'admin/partials/_categories.twig' with {
  'categories': categories|default([]),
  'selectedCategories': selectedCategories|default([])
@@ -878,26 +898,26 @@
  AI Article Writer
  </h5>
  <div class="flex items-center gap-2 ms-auto">
- <button type="button" class="btn-sm btn-secondary" id="aiWriterMinimizeBtn" aria-label="Minimize AI Writer" title="Minimize">
+ <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]" id="aiWriterMinimizeBtn" aria-label="Minimize AI Writer" title="Minimize">
  <i class="lucide lucide-minus"></i>
  </button>
- <button type="button" class="btn-sm btn-secondary" data-brox-dismiss="modal" aria-label="Close">
+ <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]" data-brox-dismiss="modal" aria-label="Close">
  <i class="lucide lucide-x"></i>
  </button>
  </div>
  </div>
  <div class="modal-body">
  <div class="space-y-4">
- <div class="form-group">
- <label for="aiTopic" class="form-label">Topic</label>
- <input type="text" class="form-input" id="aiTopic"
+ <div class="space-y-1.5">
+ <label for="aiTopic" class="block text-sm font-semibold tracking-tight text-slate-700">Topic</label>
+ <input type="text" class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiTopic"
  placeholder="e.g., Benefits of AI in Healthcare">
  </div>
 
  <div class="grid grid-cols-2 gap-4">
- <div class="form-group">
- <label for="aiTone" class="form-label">Tone</label>
- <select class="form-select" id="aiTone">
+ <div class="space-y-1.5">
+ <label for="aiTone" class="block text-sm font-semibold tracking-tight text-slate-700">Tone</label>
+ <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiTone">
  <option value="informative">Informative</option>
  <option value="professional">Professional</option>
  <option value="conversational">Conversational</option>
@@ -906,9 +926,9 @@
  </select>
  </div>
 
- <div class="form-group">
- <label for="aiLength" class="form-label">Length</label>
- <select class="form-select" id="aiLength">
+ <div class="space-y-1.5">
+ <label for="aiLength" class="block text-sm font-semibold tracking-tight text-slate-700">Length</label>
+ <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiLength">
  <option value="short">Short</option>
  <option value="medium" selected>Medium</option>
  <option value="long">Long</option>
@@ -918,9 +938,9 @@
  </div>
 
  <div class="grid grid-cols-2 gap-4">
- <div class="form-group">
- <label for="aiLanguage" class="form-label">Language</label>
- <select class="form-select" id="aiLanguage">
+ <div class="space-y-1.5">
+ <label for="aiLanguage" class="block text-sm font-semibold tracking-tight text-slate-700">Language</label>
+ <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiLanguage">
  <option value="en">🇺🇸 English</option>
  <option value="bn">🇧🇩 Bengali</option>
  <option value="hi">🇮🇳 Hindi</option>
@@ -928,18 +948,18 @@
  </select>
  </div>
 
- <div class="form-group">
- <label for="aiKeywords" class="form-label">Keywords (optional)</label>
- <input type="text" class="form-input" id="aiKeywords"
+ <div class="space-y-1.5">
+ <label for="aiKeywords" class="block text-sm font-semibold tracking-tight text-slate-700">Keywords (optional)</label>
+ <input type="text" class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiKeywords"
  placeholder="e.g., statistics, research">
  </div>
  </div>
 
  <div class="space-y-2">
- <button type="button" class="btn-outline w-full justify-start" id="pexelsBtn">
+ <button type="button" class="inline-flex w-full items-center justify-start gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]" id="pexelsBtn">
  <i class="lucide lucide-image"></i> Find Image from Pexels
  </button>
- <button type="button" class="btn-outline w-full justify-start" id="pixabayBtn">
+ <button type="button" class="inline-flex w-full items-center justify-start gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]" id="pixabayBtn">
  <i class="lucide lucide-image"></i> Find Image from Pixabay
  </button>
  </div>
@@ -955,8 +975,8 @@
  </div>
  </div>
  <div class="modal-footer border-t border-slate-200 bg-slate-50">
- <button type="button" class="btn-secondary" data-brox-dismiss="modal">Close</button>
- <button class="btn-primary" id="aiGenerateBtn">
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-slate-300 active:scale-[0.98]" data-brox-dismiss="modal">Close</button>
+ <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98]" id="aiGenerateBtn">
  <i class="lucide lucide-sparkles"></i> Generate Article
  </button>
  </div>
@@ -967,68 +987,73 @@
  </div>
  </div>
  <!-- Sidebar Column -->
- <div class="lg:col-span-4">
- <div class="sticky-sidebar">
+ <div class="space-y-6">
+ <div class="sticky top-24 space-y-4">
  <!-- Tags Card -->
- <div class="card-base">
- <div class="card-header">
- <h3 class="card-title">
- <i class="lucide lucide-tag"></i>
- {{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}
- </h3>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+ <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-3.5 sm:px-6">
+ <div class="flex items-center gap-3">
+  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+   <i class="lucide lucide-tag"></i>
+  </div>
+  <div class="min-w-0">
+   <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">Labels</p>
+   <h3 class="m-0 text-[0.95rem] font-semibold tracking-tight text-slate-900">{{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}</h3>
+  </div>
  </div>
- <div class="card-body">
- <div class="form-group">
- <label class="form-label">Tags</label>
+ </div>
+ <div class="space-y-4 p-5 sm:p-6">
+ <div class="space-y-1.5">
+ <label class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Tags</label>
  {% include 'admin/partials/_tags.twig' with {
  'allTags': allTags|default([]),
  'selectedTags': selectedTags|default([])
  } %}
- <span class="form-hint">Select or create tags for better organization</span>
+ <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Select or create tags for better organization</span>
  </div>
  </div>
  </div>
 
  <!-- Settings Card -->
- <div class="card-base">
- <div class="card-header">
- <h3 class="card-title">
+ <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm">
+ <div class="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-4 sm:px-6">
+ <h3 class="m-0 flex items-center gap-2 text-base font-semibold text-slate-900">
  <i class="lucide lucide-sliders-horizontal"></i>
  {{ type == 'posts' ? 'Post Settings' : 'Page Settings' }}
  </h3>
  </div>
- <div class="card-body space-y-4">
+ <div class="space-y-5 p-5 sm:p-6">
  <!-- Status -->
- <div class="form-group">
- <label class="form-label">
- Status <span class="required">*</span>
+ <div class="space-y-1.5">
+ <label class="block text-sm font-semibold tracking-tight text-slate-700">
+ Status <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
  </label>
  {% set current_status = item.status|default(status|default('draft')) %}
- <div class="pill-group" role="radiogroup" aria-label="Post status">
- <label class="pill-option {{ current_status == 'draft' ? 'active' : '' }}" data-value="draft">
+ <div data-pill-group class="flex flex-wrap gap-2" role="radiogroup" aria-label="Post status">
+ <label data-pill-option data-active="{{ current_status == 'draft' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20" data-value="draft">
  <input type="radio" name="status" value="draft" {{ current_status == 'draft' ? 'checked' : '' }}>
  <i class="lucide lucide-pencil text-xs"></i>
  Draft
  </label>
- <label class="pill-option {{ current_status == 'published' ? 'active' : '' }}" data-value="published">
+ <label data-pill-option data-active="{{ current_status == 'published' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20" data-value="published">
  <input type="radio" name="status" value="published" {{ current_status == 'published' ? 'checked' : '' }}>
  <i class="lucide lucide-globe text-xs"></i>
  Published
  </label>
  </div>
- <span class="form-hint">Set the visibility of this {{ type == 'posts' ? 'post' : 'page' }}</span>
+ <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Set the visibility of this {{ type == 'posts' ? 'post' : 'page' }}</span>
  </div>
 
  {% if isCreate %}
  <!-- Push Notification Toggle -->
  <div class="flex items-start gap-3 p-3.5 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:from-indigo-950/30 dark:to-blue-950/30 dark:border-indigo-800"><button type="button"
- class="toggle-switch"
+ data-ui-switch class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full bg-slate-300 transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-2 aria-checked:bg-indigo-600"
  id="send_push_notification"
  role="switch"
  aria-checked="false"
  aria-label="Send push notification"
  tabindex="0">
- <span class="toggle-thumb"></span>
+ <span class="inline-block h-5 w-5 translate-x-0 rounded-full bg-white shadow-sm transition-all duration-200 ease-out aria-checked:translate-x-5"></span>
 </button>
  <input type="hidden" name="send_push_notification" value="0">
  <div class="flex-1 min-w-0">
@@ -1042,47 +1067,47 @@
 
  <!-- SEO Indexing -->
  {% if type == 'posts' %}
- <div class="form-group">
- <label class="form-label">
+ <div class="space-y-1.5">
+ <label class="block text-sm font-semibold tracking-tight text-slate-700">
  <i class="lucide lucide-search text-indigo-600 dark:text-indigo-400"></i>
  SEO Indexing
  </label>
- <div class="pill-group" role="radiogroup" aria-label="SEO indexing">
- <label class="pill-option {{ not item.reader_indexing or item.reader_indexing == '' ? 'active' : '' }}">
+ <div data-pill-group class="flex flex-wrap gap-2" role="radiogroup" aria-label="SEO indexing">
+ <label data-pill-option data-active="{{ not item.reader_indexing or item.reader_indexing == '' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
  <input type="radio" name="reader_indexing" value="" {{ not item.reader_indexing or item.reader_indexing == '' ? 'checked' : '' }}>
  <i class="lucide lucide-check-circle text-xs"></i>
  Index & Follow
  </label>
- <label class="pill-option {{ item.reader_indexing == 'noindex' ? 'active' : '' }}">
+ <label data-pill-option data-active="{{ item.reader_indexing == 'noindex' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
  <input type="radio" name="reader_indexing" value="noindex" {{ item.reader_indexing == 'noindex' ? 'checked' : '' }}>
  <i class="lucide lucide-eye-off text-xs"></i>
  No Index
  </label>
- <label class="pill-option {{ item.reader_indexing == 'nofollow' ? 'active' : '' }}">
+ <label data-pill-option data-active="{{ item.reader_indexing == 'nofollow' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
  <input type="radio" name="reader_indexing" value="nofollow" {{ item.reader_indexing == 'nofollow' ? 'checked' : '' }}>
  <i class="lucide lucide-link-2-off text-xs"></i>
  No Follow
  </label>
  </div>
- <span class="form-hint">Control how search engines index this content</span>
+ <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Control how search engines index this content</span>
  </div>
  {% endif %}
  </div>
  </div>
 
  <!-- Quick Actions Card -->
- <div class="card-base border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-indigo-100/50">
- <div class="card-body">
- <h3 class="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+ <div class="overflow-hidden rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50 via-white to-sky-50 shadow-sm">
+ <div class="space-y-3 p-5 sm:p-6">
+ <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
  <i class="lucide lucide-zap text-indigo-600"></i>
  Ready to {{ not isCreate ? 'update' : 'publish' }}?
  </h3>
  <div class="space-y-2.5">
- <button type="submit" class="btn-primary w-full">
+ <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98]">
  <i class="lucide lucide-check-circle"></i>
  {{ not isCreate ? (type == 'posts' ? 'Update Post' : 'Update Page') : (type == 'posts' ? 'Publish Post' : 'Publish Page') }}
  </button>
- <a href="/admin/{{ type }}" class="btn-outline w-full justify-center">
+ <a href="/admin/{{ type }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]">
  <i class="lucide lucide-x"></i>
  Cancel
  </a>
@@ -1139,8 +1164,8 @@
  <p class="dock-status" id="aiWriterDockStatus">Ready to generate your post.</p>
  </div>
  <div class="dock-actions">
- <button type="button" class="dock-btn dock-btn-secondary" id="aiWriterDockStatusBtn">Status</button>
- <button type="button" class="dock-btn dock-btn-primary" id="aiWriterRestoreBtn">
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-slate-300 active:scale-[0.98]" id="aiWriterDockStatusBtn">Status</button>
+ <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98]" id="aiWriterRestoreBtn">
  <i class="lucide lucide-window mr-1"></i>Restore
  </button>
  </div>
@@ -1222,8 +1247,7 @@
  const text = String(html || '').replace(/<[^>]+>/g, '').trim();
 
  if (!text) {
- event.preventDefault();
- alert('Content is required.');
+ event.preventDefault();      window.showMessage('Content is required.', 'warning');
  }
  });
  }, { once: true });
@@ -1492,7 +1516,7 @@
  }
  }
  if (contentFilled) {
- var editorEl = document.querySelector('.modern-rich-editor');
+ var editorEl = document.querySelector('[data-editor-shell="content"] [contenteditable="true"]');
  if (editorEl) flashField(editorEl, 'Content');
  prefilledFields.push('Content');
  }
@@ -3155,10 +3179,3 @@ showCompletion(true, 'Article streamed successfully! The form has been updated.'
  <!-- Form Enhancements: Validation, Auto-save, and UX improvements -->
  <script src="/assets/js/admin/form-enhancements.js"></script>
 {% endblock %}
-
-
-
-
-
-
-

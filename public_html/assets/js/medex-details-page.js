@@ -176,10 +176,10 @@ function initScraperUI() {
     try {
       const result = await scraper.saveToServer();
       logToUI(`SUCCESS: ${ result.saved || '?' } companies saved. Backup: ${ result.backup || 'none'}`);
-      alert('Data uploaded successfully! The /medex pages will now use the fresh dataset.');
+      window.showMessage('Data uploaded successfully! The /medex pages will now use the fresh dataset.', 'success');
     } catch (err) {
       logToUI(`Upload failed: ${ err.message}`);
-      alert(`Upload failed: ${ err.message}`);
+      window.showMessage(`Upload failed: ${ err.message}`, 'danger');
     } finally {
       uploadBtn.innerHTML = orig;
       uploadBtn.disabled = false;

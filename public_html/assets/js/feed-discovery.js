@@ -454,7 +454,7 @@ const FeedDiscovery = {
       document.execCommand('copy');
       FeedDiscovery._showCopied(btn);
     } catch (e) {
-      prompt('Copy this link:', text);
+      window.showPrompt('Copy this link:', text);
     }
     document.body.removeChild(ta);
   },

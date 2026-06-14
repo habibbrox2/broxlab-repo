@@ -1,17 +1,6 @@
 /* exported setTool, rotateImage, flipImage, applyFilter, applyAllFilters, resetFilters, undo, redo, zoomIn, zoomOut, resetZoom, bgRemove, downloadImage, openPrintSheetModal, closePrintSheetModal, generatePrintSheet, deleteCurrentImage, toggleToolsPanel, preparePrintReady, fitToGuide, centerSubject, clearBackgroundLayer, setBackgroundColor, toggleGuides, applyCrop */
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
-
-async function parseJsonResponse(response) {
-  const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { success: false, error: 'Invalid server response', };
-  }
-}
+import { parseJsonResponse, getCsrfToken } from '../shared/utils.js';
 
 function createBlobFromCanvas(canvas, type = 'image/png', quality = 0.92) {
   return new Promise((resolve, reject) => {
@@ -1527,7 +1516,7 @@ class PhotoStudio {
 
   async deleteTrayImage(index) {
     const imageMeta = this.trayImages[index];
-    if (!imageMeta || !window.confirm('Delete this image from the tray?')) {
+    if (!imageMeta || !(await window.showConfirm('Delete this image from the tray?'))) {
       return;
     }
 

@@ -433,12 +433,12 @@ runWhenReady(initNavbarUserDropdownMobileFallback);
 runWhenReady(initPublicHeaderDropdowns);
 
 // Export functions for external use
+import { withAssetVersion } from './shared/utils.js';
+
 let notificationSystemApiPromise = null;
 const loadNotificationSystemApi = () => {
   if (!notificationSystemApiPromise) {
-    const moduleUrl = typeof withAssetVersion === 'function'
-      ? withAssetVersion('/assets/firebase/v2/dist/notification-system.js')
-      : '/assets/firebase/v2/dist/notification-system.js';
+    const moduleUrl = withAssetVersion('/assets/firebase/v2/dist/notification-system.js');
     notificationSystemApiPromise = import(moduleUrl)
       .catch((error) => {
         notificationSystemApiPromise = null;

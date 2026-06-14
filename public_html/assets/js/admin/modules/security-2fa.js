@@ -118,14 +118,14 @@ export function initSecurity2FABackup(options = {}) {
         btn.classList.remove('disabled');
       }, 2000);
     }).catch(() => {
-      alert('Failed to copy codes. Please try again.');
+      window.showMessage('Failed to copy codes. Please try again.', 'danger');
     });
   };
 
   window.regenerateBackupCodes = function (buttonEl) {
     const password = byId('password')?.value.trim();
     if (!password) {
-      alert('Please enter your password');
+      window.showMessage('Please enter your password', 'warning');
       return;
     }
 
@@ -145,16 +145,16 @@ export function initSecurity2FABackup(options = {}) {
       .then((response) => response.json())
       .then((data) => {
         if (data?.success) {
-          alert('New backup codes generated! This page will refresh to display them.');
-          location.reload();
+          window.showMessage('New backup codes generated! Refreshing page...', 'success');
+          setTimeout(() => location.reload(), 1500);
           return;
         }
-        alert(`Error: ${ data?.error || 'Failed to generate codes'}`);
+        window.showMessage(`Error: ${ data?.error || 'Failed to generate codes'}`, 'danger');
         btn.disabled = false;
         btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
       })
       .catch(() => {
-        alert('An error occurred. Please try again.');
+        window.showMessage('An error occurred. Please try again.', 'danger');
         btn.disabled = false;
         btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
       });

@@ -369,22 +369,22 @@
 {% endif %}
 
 <script>
-function approveComment(id) {
- if (!confirm('Are you sure you want to approve this comment?')) return;
+async function approveComment(id) {
+ if (!(await window.showConfirm('Are you sure you want to approve this comment?', 'Approve Comment', 'info'))) return;
  fetch('/admin/comments/' + id + '/approve', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
  })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment approved!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment approved!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
-function rejectComment(id) {
+async function rejectComment(id) {
  const reason = document.getElementById('rejectReason').value;
- if (!reason.trim()) { alert('Please provide a rejection reason.'); return; }
+ if (!reason.trim()) { window.showMessage('Please provide a rejection reason.', 'warning'); return; }
  fetch('/admin/comments/' + id + '/reject', {
   method: 'POST',
   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -392,10 +392,10 @@ function rejectComment(id) {
  })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment rejected!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment rejected!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
 function toggleEditComment() {
@@ -408,50 +408,50 @@ function cancelEditComment() {
  document.getElementById('commentContentEdit').style.display = 'none';
 }
 
-function saveEditComment(id) {
+async function saveEditComment(id) {
  const newContent = document.getElementById('editCommentContent').value;
- if (!newContent.trim()) { alert('Comment content cannot be empty!'); return; }
+ if (!newContent.trim()) { window.showMessage('Comment content cannot be empty!', 'warning'); return; }
  const formData = new FormData();
  formData.append('content', newContent);
  fetch('/admin/comments/' + id + '/edit', { method: 'POST', body: formData })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment updated!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment updated!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
-function hideComment(id) {
+async function hideComment(id) {
  const reason = document.getElementById('hideReason').value;
  const formData = new FormData();
  if (reason) formData.append('reason', reason);
  fetch('/admin/comments/' + id + '/hide', { method: 'POST', body: formData })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment hidden!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment hidden!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
-function unhideComment(id) {
- if (!confirm('Are you sure you want to unhide this comment?')) return;
+async function unhideComment(id) {
+ if (!(await window.showConfirm('Are you sure you want to unhide this comment?', 'Unhide Comment', 'info'))) return;
  fetch('/admin/comments/' + id + '/unhide', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
  })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment unhidden!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment unhidden!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
-function submitAdminReply(event, parentId, contentType, contentId) {
+async function submitAdminReply(event, parentId, contentType, contentId) {
  event.preventDefault();
  const content = document.getElementById('adminReplyContent').value;
- if (!content.trim()) { alert('Reply cannot be empty!'); return; }
+ if (!content.trim()) { window.showMessage('Reply cannot be empty!', 'warning'); return; }
  const formData = new FormData();
  formData.append('content', content);
  formData.append('content_type', contentType);
@@ -459,23 +459,23 @@ function submitAdminReply(event, parentId, contentType, contentId) {
  fetch('/admin/comments/' + parentId + '/reply', { method: 'POST', body: formData })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Admin reply posted!'); location.reload(); }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Admin reply posted!', 'success'); location.reload(); }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 
-function deleteComment(id) {
- if (!confirm('Are you sure you want to permanently delete this comment and its replies?')) return;
+async function deleteComment(id) {
+ if (!(await window.showConfirm('Are you sure you want to permanently delete this comment and its replies?', 'Delete Comment', 'error'))) return;
  fetch('/admin/comments/' + id + '/delete', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
  })
  .then(r => r.json())
  .then(data => {
-  if (data.success) { alert('Comment deleted!'); window.location.href = '/admin/comments'; }
-  else { alert('Error: ' + data.message); }
+  if (data.success) { window.showMessage('Comment deleted!', 'success'); window.location.href = '/admin/comments'; }
+  else { window.showMessage('Error: ' + data.message, 'danger'); }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
 }
 </script>
 {% endblock %}

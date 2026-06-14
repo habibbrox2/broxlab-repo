@@ -841,11 +841,7 @@ async function runTestConnection() {
   });
 
   if (!model) {
-    if (window.showAlert) {
-      await window.showAlert('Please select a model before testing.', 'Warning', 'warning');
-    } else {
-      alert('Please select a model before testing.');
-    }
+    await window.showAlert('Please select a model before testing.', 'Warning', 'warning');
     return;
   }
 
@@ -874,37 +870,25 @@ async function runTestConnection() {
     const data = await response.json();
 
     if (data.success) {
-      if (window.showAlert) {
-        await window.showAlert(
-          `<strong>Model:</strong> ${data.model}<br><br><strong>Response:</strong> ${data.response || 'OK'}`,
-          'Connection Successful!',
-          'success',
-          { allowHtml: true, }
-        );
-      } else {
-        alert(`Connection successful!\n\nModel: ${data.model}\nResponse: ${data.response || 'OK'}`);
-      }
+      await window.showAlert(
+        `<strong>Model:</strong> ${data.model}<br><br><strong>Response:</strong> ${data.response || 'OK'}`,
+        'Connection Successful!',
+        'success',
+        { allowHtml: true, }
+      );
       handleTestResult(provider.provider_name, 'success', `Response: ${data.response || 'OK'}`);
     } else {
-      if (window.showAlert) {
-        await window.showAlert(
-          data.error || 'Unknown error occurred',
-          'Connection Failed',
-          'error'
-        );
-      } else {
-        alert(`Connection failed: ${data.error || 'Unknown error'}`);
-      }
+      await window.showAlert(
+        data.error || 'Unknown error occurred',
+        'Connection Failed',
+        'error'
+      );
       handleTestResult(provider.provider_name, 'error', data.error || 'Unknown error occurred');
     }
 
     // ensure health badge and summary are up to date (helper already handles this)
   } catch (e) {
-    if (window.showAlert) {
-      await window.showAlert(`Network error: ${e.message}`, 'Error', 'error');
-    } else {
-      alert(`Network error: ${e.message}`);
-    }
+    await window.showAlert(`Network error: ${e.message}`, 'Error', 'error');
     handleTestResult(provider.provider_name, 'error', e.message || 'Network error');
   } finally {
     btn.disabled = false;
@@ -944,11 +928,7 @@ async function toggleProviderActive(inputEl) {
   } catch (e) {
     inputEl.checked = !active;
     const errMsg = e && e.message ? e.message : 'Failed to update provider';
-    if (window.showAlert) {
-      await window.showAlert(errMsg, 'Error', 'error');
-    } else {
-      alert(errMsg);
-    }
+    await window.showAlert(errMsg, 'Error', 'error');
   } finally {
     inputEl.disabled = false;
   }
@@ -1001,11 +981,7 @@ async function toggleProviderMultimodal(inputEl) {
   } catch (e) {
     inputEl.checked = !enabled;
     const errMsg = e && e.message ? e.message : 'Failed to update provider';
-    if (window.showAlert) {
-      await window.showAlert(errMsg, 'Error', 'error');
-    } else {
-      alert(errMsg);
-    }
+    await window.showAlert(errMsg, 'Error', 'error');
   } finally {
     inputEl.disabled = false;
   }
@@ -1055,16 +1031,10 @@ async function setDefaultProvider(providerId, buttonEl) {
     }
 
     refreshDefaultProviderRows(providerId);
-    if (window.showAlert) {
-      await window.showAlert('Default provider updated successfully.', 'Success', 'success');
-    }
+    await window.showAlert('Default provider updated successfully.', 'Success', 'success');
   } catch (error) {
     console.warn('Failed to set default provider', error);
-    if (window.showAlert) {
-      await window.showAlert(error.message || 'Failed to set default provider', 'Error', 'error');
-    } else {
-      alert(error.message || 'Failed to set default provider');
-    }
+    await window.showAlert(error.message || 'Failed to set default provider', 'Error', 'error');
   } finally {
     buttonEl.disabled = false;
   }
@@ -1435,11 +1405,7 @@ async function saveProviderConfig() {
 
 // Delete provider
 async function deleteProvider(id) {
-  const confirmed = window.showConfirm
-    ? await window.showConfirm('Are you sure you want to delete this provider?', 'Delete Provider')
-    : confirm('Are you sure you want to delete this provider?');
-  if (!confirmed) return;
-
+  const confirmed = await window.showConfirm('Are you sure you want to delete this provider?', 'Delete Provider');
   if (!confirmed) return;
 
   const csrfInput = document.querySelector('input[name="csrf_token"]');
@@ -1459,9 +1425,7 @@ async function deleteProvider(id) {
       throw new Error(data.error || 'Delete failed');
     }
 
-    if (window.showAlert) {
-      await window.showAlert('Provider deleted successfully.', 'Success', 'success');
-    }
+    await window.showAlert('Provider deleted successfully.', 'Success', 'success');
 
     // Reload page
     setTimeout(() => {
@@ -1469,11 +1433,7 @@ async function deleteProvider(id) {
     }, 1000);
   } catch (e) {
     const errMsg = e && e.message ? e.message : 'Failed to delete provider';
-    if (window.showAlert) {
-      await window.showAlert(errMsg, 'Error', 'error');
-    } else {
-      alert(errMsg);
-    }
+    await window.showAlert(errMsg, 'Error', 'error');
   }
 }
 

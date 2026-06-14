@@ -142,7 +142,7 @@
         <a href="/admin/users/edit?id={{ user.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5" title="Edit">
          <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
         </a>
-        <form method="POST" action="/admin/users/delete" class="inline" onsubmit="return confirm('Delete this user?')">
+        <form method="POST" action="/admin/users/delete" class="inline" onsubmit="return window.confirmAction(event, this, 'Delete this user?')">
          <input type="hidden" name="id" value="{{ user.id }}">
          <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete">
           <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>

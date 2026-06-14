@@ -11,8 +11,8 @@ import {
     getOutDirs,
     ensureOutDir,
     logBuildTiming,
-} from '../lib/build-config.mjs';
-import { Logger, exit } from '../lib/utils.mjs';
+} from './lib/build-config.mjs';
+import { Logger, exit } from './lib/utils.mjs';
 
 async function build() {
     const context = createBuildContext();
@@ -32,6 +32,8 @@ async function build() {
                 entryPoints: getAppEntryPoints(),
                 outdir: outDirs.js,
                 metafile: isAnalyze,
+                legalComments: 'none',
+                drop: ['debugger'],
             });
 
             if (isAnalyze) {

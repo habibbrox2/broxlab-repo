@@ -1542,7 +1542,14 @@ if (_RTE_shouldDefine) {
                     } else {
                         console.warn('AI assistant not available');
                     }
-                }
+                },
+                'insertCode': () => this.insertInlineCode(),
+                'toggleFullscreen': () => this.toggleFullscreen(),
+                'insertTable': () => this.showTableModal(),
+                'insertCodeBlock': () => this.insertCodeBlock(),
+                'showWordCount': () => this.showWordCount(),
+                'exportHtml': () => this.exportHtml(),
+                'selectAll': () => this.selectAll()
             };
 
             const handler = actions[action];
@@ -2524,6 +2531,146 @@ if (_RTE_shouldDefine) {
             this._inIMEComposition = false;
             this._finalizationInProgress = false;
             this._finalizePending = false;
+        }
+
+        /**
+         * Insert inline code around selection
+         */
+        insertInlineCode() {
+            try {
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+                const range = sel.getRangeAt(0);
+                const selectedText = range.toString();
+                if (!selectedText) return false;
+                const code = document.createElement('code');
+                code.style.cssText = 'background:rgba(99,102,241,0.12);padding:0.15em 0.4em;border-radius:4px;font-family:var(--rte-font-mono,JetBrains Mono,monospace);font-size:0.9em;color:var(--rte-primary-color,#6366f1);word-break:break-word;';
+                code.textContent = selectedText;
+                range.deleteContents();
+                range.insertNode(code);
+                const newRange = document.createRange();
+                newRange.selectNodeContents(code);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                this.updateHiddenInput();
+                this.saveToHistory();
+                return true;
+            } catch (err) {
+                console.warn('insertInlineCode error:', err);
+                return false;
+            }
+        }
+
+        /**
+         * Toggle fullscreen mode
+         */
+        toggleFullscreen() {
+            try {
+                this.wrapper.classList.toggle('rte-fullscreen');
+                document.body.classList.toggle('rte-fullscreen-active');
+                setTimeout(() => this.autoGrowEditorHeight({ force: true, overrideManual: true }), 50);
+                return false;
+            } catch (err) {
+                console.warn('toggleFullscreen error:', err);
+                return false;
+            }
+        }
+
+        /**
+         * Show table insertion modal or fallback
+         */
+        showTableModal() {
+            if (this._isDelegated('showTableModal')) {
+                return this._ensureModule('installModalHelpers', RichTextEditor.prototype.showTableModal);
+            }
+            try {
+                document.execCommand('insertHTML', false, '<table class="rte-table"><thead><tr><th>Header</th><th>Header</th></tr></thead><tbody><tr><td>Cell</td><td>Cell</td></tr></tbody></table>');
+                return false;
+            } catch (err) {
+                console.warn('showTableModal error:', err);
+                return false;
+            }
+        }
+
+        /**
+         * Insert a code block
+         */
+        insertCodeBlock() {
+            try {
+                const pre = document.createElement('pre');
+                pre.style.cssText = 'background:#1e1e2e;color:#cdd6f4;padding:1rem;border-radius:8px;overflow-x:auto;font-family:var(--rte-font-mono,JetBrains Mono,monospace);font-size:0.875rem;line-height:1.6;border:1px solid rgba(99,102,241,0.2);';
+                const code = document.createElement('code');
+                code.textContent = '// Your code here';
+                pre.appendChild(code);
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                    const range = sel.getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(pre);
+                } else {
+                    this.editor.appendChild(pre);
+                    const p = document.createElement('p');
+                    p.innerHTML = '<br>';
+                    pre.parentNode.insertBefore(p, pre.nextSibling);
+                }
+                this.updateHiddenInput();
+                this.saveToHistory();
+                this.autoGrowEditorHeight({ force: true });
+                return true;
+            } catch (err) {
+                console.warn('insertCodeBlock error:', err);
+                return false;
+            }
+        }
+
+        /**
+         * Show word/character count as toast
+         */
+        showWordCount() {
+            try {
+                const text = this.editor.innerText || this.editor.textContent || '';
+                const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const charCount = text.length;
+                const charNoSpace = text.replace(/\s/g, '').length;
+                const msg = `Words: ${wordCount} | Characters: ${charCount} (no spaces: ${charNoSpace})`;
+                if (typeof window.showToast === 'function') {
+                    window.showToast(msg, 'info', 3000);
+                } else {
+                    console.log(msg);
+                }
+                return false;
+            } catch (err) {
+                console.warn('showWordCount error:', err);
+                return false;
+            }
+        }
+
+        /**
+         * Export HTML to clipboard
+         */
+        exportHtml() {
+            try {
+                const html = this.getContent();
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    navigator.clipboard.writeText(html).catch(function(err) { console.warn('exportHtml clipboard error:', err); });
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = html;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                if (typeof window.showToast === 'function') {
+                    window.showToast('HTML copied to clipboard!', 'success', 2000);
+                }
+                return false;
+            } catch (err) {
+                console.warn('exportHtml error:', err);
+                return false;
+            }
         }
 
         // =========================================================================

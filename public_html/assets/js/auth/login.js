@@ -9,14 +9,7 @@
  */
 
 import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
-
-const runWhenReady = (fn) => {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fn, { once: true, });
-  } else {
-    fn();
-  }
-};
+import { runWhenReady } from '../modules/utils.js';
 
 (function () {
   'use strict';

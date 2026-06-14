@@ -117,6 +117,35 @@ class CvAiHelper
         }
     }
 
+    /**
+     * Generate a cover letter based on CV data and job details
+     * @param array $cvData The CV data (summary, experience, education, skills)
+     * @param string $companyName Target company name
+     * @param string $jobTitle Target job title
+     * @param string $jobDescription Optional job description
+     * @return array Result with cover_letter text
+     */
+    public function generateCoverLetter(array $cvData, string $companyName, string $jobTitle, string $jobDescription = ''): array
+    {
+        $prompt = $this->buildCoverLetterPrompt($cvData, $companyName, $jobTitle, $jobDescription);
+
+        try {
+            $messages = [
+                ['role' => 'user', 'content' => $prompt]
+            ];
+            $response = $this->agentClient->chat($messages, 'openrouter', null, null, false);
+
+            return [
+                'cover_letter' => $response,
+                'word_count' => str_word_count($response),
+                'generated_at' => date('c')
+            ];
+        } catch (Exception $e) {
+            // Fallback to local generation
+            return $this->localCoverLetter($cvData, $companyName, $jobTitle, $jobDescription);
+        }
+    }
+
     // ========== PROMPT BUILDERS ==========
 
     private function buildImprovePrompt(string $text, string $type): string
@@ -131,6 +160,68 @@ class CvAiHelper
 Original text: {$text}
 
 Provide only the improved text without any explanation.";
+
+        return $systemPrompt . "\n\n" . $userPrompt;
+    }
+
+    private function buildCoverLetterPrompt(array $cvData, string $companyName, string $jobTitle, string $jobDescription): string
+    {
+        $systemPrompt = <<<EOT
+You are a professional cover letter writer and career coach. Your task is to write a compelling, personalized cover letter.
+
+The cover letter should:
+1. Be addressed to the hiring manager
+2. Open with a strong hook about the applicant's enthusiasm for the role
+3. Highlight 2-3 key achievements from the CV that are relevant to the target role
+4. Connect the applicant's skills to the company's needs
+5. Close with a call to action for an interview
+6. Be professional but warm in tone
+7. Be 3-4 paragraphs (250-400 words)
+
+Write only the body of the letter without any meta-commentary, subject lines, or salutation instructions.
+EOT;
+
+        $cvSummary = !empty($cvData['summary']) ? $cvData['summary'] : 'Not provided';
+
+        $experienceText = '';
+        if (!empty($cvData['experience'])) {
+            $expItems = [];
+            foreach ($cvData['experience'] as $exp) {
+                $title = $exp['position'] ?? $exp['title'] ?? 'Role';
+                $company = $exp['company'] ?? '';
+                $desc = $exp['description'] ?? '';
+                $expItems[] = "- {$title} at {$company}: {$desc}";
+            }
+            $experienceText = implode("\n", $expItems);
+        }
+
+        $skillsText = '';
+        if (!empty($cvData['skills'])) {
+            $skillsText = implode(', ', array_map(function ($s) {
+                return is_string($s) ? $s : ($s['name'] ?? '');
+            }, $cvData['skills']));
+        }
+
+        $userPrompt = <<<EOT
+Write a personalized cover letter for the following:
+
+TARGET COMPANY: {$companyName}
+TARGET POSITION: {$jobTitle}
+
+JOB DESCRIPTION (if available):
+{$jobDescription}
+
+APPLICANT CV DATA:
+Summary: {$cvSummary}
+
+Experience:
+{$experienceText}
+
+Skills: {$skillsText}
+
+---
+Write a compelling cover letter tailored to this specific role and company. Use the applicant's actual experience to demonstrate fit.
+EOT;
 
         return $systemPrompt . "\n\n" . $userPrompt;
     }
@@ -299,6 +390,34 @@ Provide only valid JSON without any markdown formatting.";
         return [
             'improved' => $improved,
             'score' => $this->calculateImprovementScore($improved)
+        ];
+    }
+
+    private function localCoverLetter(array $cvData, string $companyName, string $jobTitle, string $jobDescription): array
+    {
+        $name = $cvData['personal']['full_name'] ?? 'the applicant';
+        $summary = $cvData['summary'] ?? '';
+
+        $letter = <<<LETTER
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the {$jobTitle} position at {$companyName}. As a professional with a proven track record of delivering results, I am confident that my skills and experience align perfectly with the requirements of this role.
+
+{$summary}
+
+Throughout my career, I have developed expertise in delivering high-quality outcomes while collaborating effectively with cross-functional teams. I am particularly drawn to {$companyName} because of its reputation for innovation and excellence in the industry.
+
+I would welcome the opportunity to discuss how my background and skills can contribute to the continued success of {$companyName}. Thank you for considering my application.
+
+Sincerely,
+{$name}
+LETTER;
+
+        return [
+            'cover_letter' => $letter,
+            'word_count' => str_word_count($letter),
+            'generated_at' => date('c')
         ];
     }
 

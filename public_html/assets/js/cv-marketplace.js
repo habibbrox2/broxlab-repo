@@ -62,7 +62,7 @@
     STATE.selected=slug;
     const form=document.createElement('form');
     form.method='POST';
-    form.action='/cv';
+    form.action='/cv-builder';
     const csrf=document.createElement('input');
     csrf.type='hidden';csrf.name='csrf_token';csrf.value=STATE.csrf;
     const tmpl=document.createElement('input');

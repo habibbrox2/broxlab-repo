@@ -62,6 +62,8 @@ const buildOptions = {
   format: 'esm',
   outdir: JS_OUT_DIR,
   logLevel: 'info',
+  legalComments: 'none',
+  drop: ['debugger'],
   external: [
     '/assets/firebase/v2/dist/*.js',
     'firebase/app',

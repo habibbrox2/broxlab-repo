@@ -45,12 +45,11 @@ export function initEmailTemplatesEdit({ byId, getAdminDir, escapeHtml, }) {
 
 export function initEmailTemplatesList({ getAdminDir, }) {
   if (!document.querySelector('[data-email-template-list]')) return;
-  window.deleteTemplate = function (id, name) {
-    if (
-      !confirm(
-        `Are you sure you want to delete the email template "${name}"? This action cannot be undone.`
-      )
-    ) {
+  window.deleteTemplate = async function (id, name) {
+    const confirmed = await window.showConfirm(
+      `Are you sure you want to delete the email template "${name}"? This action cannot be undone.`
+    );
+    if (!confirmed) {
       return;
     }
     fetch(`${getAdminDir()}/email-templates/${id}/delete`, {

@@ -89,8 +89,8 @@ export function initApplicationsView({ byId, getCsrfToken, }) {
       .catch(() => showToast('Error', 'Failed to add note', 'error'));
   };
 
-  window.activateService = function (appId) {
-    if (!confirm('Activate this service for the user?')) return;
+  window.activateService = async function (appId) {
+    if (!(await window.showConfirm('Activate this service for the user?'))) return;
     const formData = new FormData();
     formData.append('csrf_token', csrf);
     submitAction(`/admin/applications/${appId}/activate`, formData)
@@ -101,8 +101,8 @@ export function initApplicationsView({ byId, getCsrfToken, }) {
       .catch(() => showToast('Error', 'Failed to activate service', 'error'));
   };
 
-  window.revertStatus = function (appId) {
-    if (!confirm('Revert application status to pending?')) return;
+  window.revertStatus = async function (appId) {
+    if (!(await window.showConfirm('Revert application status to pending?'))) return;
     fetch(`/api/admin/applications/${appId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },

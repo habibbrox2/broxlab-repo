@@ -21,7 +21,7 @@
  {% endif %}
 {% endfor %}
 
-<select multiple class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 blogspot-tags" id="tags" name="tags[]">
+<select multiple class="block w-full min-h-44 rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400" id="tags" name="tags[]">
  {% for tag in allTags %}
  {% set tagId = tag.id ~ '' %}
  {% set isSelected = (tagId in selectedIds) or (tag.name in selectedNames) %}
@@ -42,6 +42,6 @@
  {% endif %}
  {% endfor %}
 </select>
-<small class="text-xs text-neutral-400 mt-1">Type to search and press Enter to select or create</small>
+<p class="text-[11px] leading-relaxed text-slate-500">Search or create labels, then press Enter.</p>
 
 

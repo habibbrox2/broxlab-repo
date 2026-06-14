@@ -379,7 +379,7 @@
  </div>
  <button type="reset"
    class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-100 hover:-translate-y-0.5"
-   onclick="return confirm('Are you sure you want to reset all changes?')">
+   onclick="return window.confirmAction(event, this, 'Are you sure you want to reset all changes?')">
  <i class="lucide lucide-rotate-ccw" style="width:0.875em;height:0.875em;"></i>Reset Form
  </button>
  </div>

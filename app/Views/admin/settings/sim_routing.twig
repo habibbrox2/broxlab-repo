@@ -102,7 +102,7 @@
            <i class="lucide lucide-pencil text-sm"></i>
           </button>
           <form action="/admin/sim-routing/delete" method="POST" class="inline"
-           onsubmit="return confirm('Delete this route?')">
+           onsubmit="return window.confirmAction(event, this, 'Delete this route?')">
            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
            <input type="hidden" name="id" value="{{ route.id }}">
            <button type="submit" class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-500 hover:bg-red-50 transition-all" title="Delete">

@@ -177,7 +177,7 @@
  <p class="text-slate-500 mb-3">Delete this media file. This action can be reversed from the trash for 30 days.</p>
  <form method="POST"
  action="/admin/media/{{ media.id }}/delete"
- onsubmit="return confirm('Are you sure? This media will be moved to trash.');">
+ onsubmit="return window.confirmAction(event, this, 'Are you sure? This media will be moved to trash.')">
  <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
  <i class="lucide lucide-trash-2"></i> Delete Media
  </button>

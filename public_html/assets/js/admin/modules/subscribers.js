@@ -16,7 +16,7 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
     } else if (typeof window.showMessage === 'function') {
       window.showMessage(message, type === 'success' ? 'success' : 'danger');
     } else {
-      alert(message);
+      window.showMessage(message, 'info');
     }
   };
 
@@ -116,7 +116,7 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
 
   window.revokeDevice = async function (deviceId, btn) {
     if (!deviceId) return;
-    if (!confirm('Do you want to revoke subscription for this device?')) return;
+    if (!(await window.showConfirm('Do you want to revoke subscription for this device?'))) return;
     if (btn) btn.disabled = true;
     try {
       const endpoints = [
@@ -153,7 +153,7 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
 
   window.deleteDevicePermanent = async function (deviceId, btn) {
     if (!deviceId) return;
-    if (!confirm('Delete this device permanently? This action cannot be undone.')) return;
+    if (!(await window.showConfirm('Delete this device permanently? This action cannot be undone.'))) return;
     if (btn) btn.disabled = true;
     try {
       const res = await fetch('/api/admin/notification-subscribers/revoke', {
@@ -184,7 +184,7 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
     const confirmText = permanent
       ? `Delete all filtered devices permanently?\n(${scopeLabel})\nThis action cannot be undone.`
       : `Revoke all filtered devices?\n(${scopeLabel})`;
-    if (!confirm(confirmText)) return;
+    if (!(await window.showConfirm(confirmText))) return;
 
     try {
       const res = await fetch('/api/admin/notification-subscribers/revoke-all', {
@@ -373,8 +373,8 @@ export function initNotificationsKillSwitch({ byId, }) {
       body: JSON.stringify({ enabled, message, }),
     });
     const j = await res.json();
-    if (j.success) alert('Saved');
-    else alert('Error');
+    if (j.success) window.showMessage('Saved', 'success');
+    else window.showMessage('Error', 'danger');
   });
 
   load();

@@ -422,29 +422,13 @@
   }
 
   /**
-   * Show a toast notification
+   * Show a toast notification via SweetAlert2 (always available in admin context)
    * @param {string} message
    * @param {'success'|'error'|'warning'|'info'} type
    */
   function showToast(message, type) {
-    if (typeof window.showAlert === 'function') {
-      window.showAlert(message, type.charAt(0).toUpperCase() + type.slice(1), type);
-      return;
-    }
-    // Fallback: create a temporary toast element
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg animate-slide-down ${
-      type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-      type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
-      'bg-sky-50 text-sky-700 border border-sky-200'
-    }`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    typeof window.showAlert === 'function' && window.showAlert(message, label, type);
   }
 
   // ── Public API ──

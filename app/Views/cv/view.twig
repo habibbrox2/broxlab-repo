@@ -386,6 +386,179 @@
  border: none;
  }
  }
+/* ── ATS Scorecard Modal ── */
+.ats-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.ats-modal {
+  background: white; border-radius: 20px;
+  max-width: 680px; width: 100%; max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  animation: atsFadeIn 0.25s ease;
+}
+@keyframes atsFadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ats-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8fafc, #fff);
+  border-radius: 20px 20px 0 0;
+}
+.ats-header h2 {
+  font-size: 1.2rem; font-weight: 700; color: #1f2937;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.ats-close-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: none; background: transparent;
+  color: #6b7280; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.ats-close-btn:hover { background: #f3f4f6; color: #111827; }
+.ats-body { padding: 1.5rem; }
+
+/* Score ring */
+.ats-score-ring {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 1.5rem; padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 16px; border: 1px solid #e5e7eb;
+}
+.ats-ring-svg {
+  width: 120px; height: 120px;
+  transform: rotate(-90deg);
+}
+.ats-ring-bg { fill: none; stroke: #e5e7eb; stroke-width: 8; }
+.ats-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.ats-score-value {
+  position: absolute; font-size: 2rem; font-weight: 800;
+  color: #1f2937;
+}
+.ats-score-label { font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; }
+.ats-score-grade {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.8rem; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem;
+}
+.ats-grade-excellent { background: #d1fae5; color: #065f46; }
+.ats-grade-good { background: #dbeafe; color: #1d4ed8; }
+.ats-grade-average { background: #fef3c7; color: #92400e; }
+.ats-grade-poor { background: #fee2e2; color: #991b1b; }
+
+/* Section scores */
+.ats-sections { margin-bottom: 1.5rem; }
+.ats-section-title { font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-bottom: 0.75rem; }
+.ats-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ats-section-card {
+  border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.15s;
+}
+.ats-section-card:hover { border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.ats-section-name { font-size: 0.85rem; font-weight: 600; color: #374151; }
+.ats-section-bar {
+  width: 60px; height: 6px; border-radius: 3px;
+  background: #e5e7eb; overflow: hidden;
+}
+.ats-section-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.ats-section-pct { font-size: 0.8rem; font-weight: 700; min-width: 32px; text-align: right; }
+
+/* Keywords */
+.ats-keywords { margin-bottom: 1.5rem; }
+.ats-kw-title { font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
+.ats-kw-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.ats-kw-tag {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.25rem 0.6rem; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 600;
+}
+.ats-kw-found { background: #d1fae5; color: #065f46; }
+.ats-kw-missing { background: #fee2e2; color: #991b1b; }
+.ats-kw-suggestion { background: #fef3c7; color: #92400e; }
+
+/* Suggestions */
+.ats-suggestions { margin-bottom: 1.5rem; }
+.ats-sug-title { font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem; }
+.ats-sug-item {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.7rem 0; border-bottom: 1px solid #f3f4f6;
+}
+.ats-sug-item:last-child { border-bottom: none; }
+.ats-sug-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
+.ats-sug-icon-improve { background: #fef3c7; color: #92400e; }
+.ats-sug-icon-add { background: #dbeafe; color: #1d4ed8; }
+.ats-sug-icon-fix { background: #fee2e2; color: #991b1b; }
+.ats-sug-text { font-size: 0.85rem; color: #4b5563; line-height: 1.4; }
+.ats-sug-action { margin-top: 0.3rem; }
+.ats-sug-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.6rem; border-radius: 6px;
+  border: 1px solid #d1d5db; background: white;
+  font-size: 0.75rem; font-weight: 600; color: #374151;
+  cursor: pointer; transition: all 0.15s;
+}
+.ats-sug-btn:hover { border-color: #9ca3af; background: #f9fafb; }
+
+/* Readability meter */
+.ats-readability {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;
+  margin-bottom: 1rem;
+}
+.ats-read-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.ats-read-text { font-size: 0.85rem; color: #374151; font-weight: 600; }
+.ats-read-label { font-size: 0.75rem; color: #6b7280; }
+
+/* Loading state */
+.ats-loading {
+  text-align: center; padding: 3rem 1rem;
+}
+.ats-loading-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #e5e7eb; border-top-color: #4f46e5;
+  border-radius: 50%; animation: atsSpin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+@keyframes atsSpin { to { transform: rotate(360deg); } }
+.ats-loading-text { font-size: 0.9rem; color: #6b7280; }
+
+/* Error state */
+.ats-error {
+  text-align: center; padding: 2rem 1rem;
+}
+.ats-error-icon { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
+.ats-error-text { font-size: 0.9rem; color: #dc2626; margin-bottom: 1rem; }
+.ats-retry-btn {
+  padding: 0.5rem 1.25rem; border-radius: 8px;
+  border: none; background: #4f46e5; color: white;
+  font-weight: 600; font-size: 0.85rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.ats-retry-btn:hover { background: #4338ca; }
+
+/* Rate limit warning */
+.ats-rate-limit {
+  text-align: center; padding: 2rem 1rem;
+}
+.ats-rate-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+.ats-rate-text { font-size: 0.9rem; color: #92400e; }
+.ats-rate-sub { font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; }
+
+@media (max-width: 640px) {
+  .ats-section-grid { grid-template-columns: 1fr; }
+  .ats-modal { max-height: 95vh; border-radius: 16px; }
+}
 </style>
 {% endblock %}
 
@@ -401,7 +574,7 @@
  </div>
 
  <div class="cv-view-actions">
- <a href="/cv/{{ cv.id }}/edit" class="cv-action-btn cv-action-primary">
+ <a href="/cv-builder/{{ cv.id }}" class="cv-action-btn cv-action-primary">
  <i class="lucide lucide-pencil"></i>
  Edit CV
  </a>
@@ -425,30 +598,29 @@
  </div>
 
  <!-- Main Content -->
- <div class="cv-content-wrapper">
- <!-- CV Preview -->
+ <div class="cv-content-wrapper">    <!-- CV Preview with Live A4 Rendering -->
  <div class="cv-preview-container">
  <div class="cv-preview-header">
  <span class="cv-preview-title">CV Preview</span>
  <div class="cv-preview-controls">
- <button onclick="zoomOut()" class="cv-zoom-btn" title="Zoom Out">
- <i class="lucide lucide-zoom-out"></i>
- </button>
- <span id="zoomLevel">100%</span>
- <button onclick="zoomIn()" class="cv-zoom-btn" title="Zoom In">
- <i class="lucide lucide-zoom-in"></i>
- </button>
- <button onclick="resetZoom()" class="cv-zoom-btn" title="Reset Zoom">
- <i class="lucide lucide-rotate-ccw"></i>
- </button>
+ <select id="templateSelector" onchange="switchTemplate(this.value)" class="cv-zoom-btn" style="width:auto;padding:0 8px;font-size:12px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;">
+ {% for t in templates %}
+ <option value="{{ t }}"{{ t == selected_template ? ' selected' : '' }} style="color:#1f2937;background:white;">{{ t|capitalize }}</option>
+ {% endfor %}
+ </select>
+ <span style="color:rgba(255,255,255,0.6);font-size:12px;">|</span>
+ <button onclick="previewZoomOut()" class="cv-zoom-btn" title="Zoom Out">−</button>
+ <span id="zoomLevel" style="color:white;font-size:12px;min-width:40px;text-align:center;">100%</span>
+ <button onclick="previewZoomIn()" class="cv-zoom-btn" title="Zoom In">+</button>
+ <button onclick="previewZoomReset()" class="cv-zoom-btn" title="Reset Zoom">↺</button>
  </div>
  </div>
- <div class="cv-preview-content">
+ <div class="cv-preview-content" id="previewContent" style="overflow:hidden;">
  <div id="cvLoading" class="cv-loading">
  <div class="cv-loading-spinner"></div>
  <span>Loading CV preview...</span>
  </div>
- <iframe id="cvPreview" class="cv-preview-iframe" style="display: none;"></iframe>
+ <iframe id="cvPreview" class="cv-preview-iframe" style="display: none;" sandbox="allow-scripts allow-same-origin"></iframe>
  </div>
  </div>
 
@@ -543,15 +715,15 @@
  Quick Actions
  </h3>
  <div style="display: grid; gap: 0.5rem;">
- <button onclick="optimizeForATS()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button onclick="openAtsScorecard()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-bot"></i>
- Optimize for ATS
+ ATS Scorecard
  </button>
- <button onclick="checkGrammar()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button onclick="checkGrammar(event)" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-check-circle"></i>
  Check Grammar
  </button>
- <button onclick="generateCoverLetter()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button onclick="openCoverLetter()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-file-text"></i>
  Generate Cover Letter
  </button>
@@ -597,179 +769,707 @@
  </div>
 </div>
 
+<!-- Cover Letter Modal -->
+<div class="ats-overlay" id="clOverlay" style="display:none;" onclick="if(event.target===this)closeCoverLetter()">
+ <div class="ats-modal" onclick="event.stopPropagation()">
+  <div class="ats-header">
+   <h2><i class="lucide lucide-file-text"></i> Cover Letter Generator</h2>
+   <button class="ats-close-btn" onclick="closeCoverLetter()" title="Close"><i class="lucide lucide-x"></i></button>
+  </div>
+  <div class="ats-body" id="clBody">
+   <!-- Form -->
+   <div id="clForm">
+    <div style="margin-bottom:1rem;">
+     <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Company Name <span style="color:#dc2626;">*</span></label>
+     <input type="text" id="clCompany" placeholder="e.g. Google, Microsoft, Acme Corp"
+      style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;transition:border-color 0.15s;"
+      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'">
+    </div>
+    <div style="margin-bottom:1rem;">
+     <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Job Title <span style="color:#dc2626;">*</span></label>
+     <input type="text" id="clJobTitle" placeholder="e.g. Senior Software Engineer"
+      style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;transition:border-color 0.15s;"
+      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'">
+    </div>
+    <div style="margin-bottom:1.25rem;">
+     <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Job Description <span style="color:#6b7280;font-weight:400;">(optional — better results)</span></label>
+     <textarea id="clJobDesc" rows="4" placeholder="Paste the job description here for a more tailored cover letter..."
+      style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;resize:vertical;font-family:inherit;transition:border-color 0.15s;"
+      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'"></textarea>
+    </div>
+    <button id="clGenerateBtn" onclick="generateCoverLetter()"
+     style="width:100%;padding:0.75rem;border:none;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;"
+     onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+     <i class="lucide lucide-sparkles"></i> Generate Cover Letter
+    </button>
+   </div>
+   <!-- Result -->
+   <div id="clResult" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+     <span style="font-size:0.85rem;color:#6b7280;">Your personalized cover letter</span>
+     <div style="display:flex;gap:0.4rem;">
+      <button onclick="copyCoverLetter(event)" class="ats-sug-btn" title="Copy to clipboard">
+       <i class="lucide lucide-copy" style="width:14px;height:14px;"></i> Copy
+      </button>
+      <button onclick="downloadCoverLetter()" class="ats-sug-btn" title="Download as text file">
+       <i class="lucide lucide-download" style="width:14px;height:14px;"></i> Download
+      </button>
+     </div>
+    </div>
+    <div id="clLetterContent"
+     style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;font-size:0.9rem;line-height:1.7;color:#374151;white-space:pre-wrap;font-family:Georgia,serif;max-height:55vh;overflow-y:auto;">
+    </div>
+    <div id="clMeta" style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;font-size:0.8rem;color:#6b7280;"></div>
+    <button onclick="resetCoverLetterForm()"
+     style="margin-top:1rem;width:100%;padding:0.6rem;border:1px solid #d1d5db;border-radius:8px;background:white;color:#374151;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:0.4rem;"
+     onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#d1d5db'">
+     <i class="lucide lucide-refresh-cw" style="width:14px;height:14px;"></i> Generate New
+    </button>
+   </div>
+   <!-- Loading -->
+   <div id="clLoading" style="display:none;text-align:center;padding:2rem 1rem;">
+    <div class="ats-loading-spinner"></div>
+    <div style="font-size:0.9rem;color:#6b7280;margin-top:0.75rem;">Crafting your personalized cover letter based on your CV...</div>
+   </div>
+   <!-- Error -->
+   <div id="clError" style="display:none;text-align:center;padding:2rem 1rem;">
+    <span style="font-size:2.5rem;display:block;margin-bottom:0.5rem;"><i class="lucide lucide-alert-circle" style="width:2.5rem;height:2.5rem;color:#dc2626;"></i></span>
+    <div id="clErrorText" style="font-size:0.9rem;color:#dc2626;margin-bottom:1rem;"></div>
+    <button onclick="resetCoverLetterForm()" class="ats-retry-btn">Try Again</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ATS Scorecard Modal -->
+<div class="ats-overlay" id="atsOverlay" style="display:none;" onclick="if(event.target===this)closeAtsScorecard()">
+ <div class="ats-modal" onclick="event.stopPropagation()">
+ <div class="ats-header">
+ <h2><i class="lucide lucide-bot"></i> ATS Scorecard</h2>
+ <button class="ats-close-btn" onclick="closeAtsScorecard()" title="Close"><i class="lucide lucide-x"></i></button>
+ </div>
+ <div class="ats-body" id="atsBody">
+ <div class="ats-loading" id="atsLoading">
+ <div class="ats-loading-spinner"></div>
+ <div class="ats-loading-text">Analyzing your CV for ATS compatibility...</div>
+ </div>
+ </div>
+ </div>
+</div>
+
 <script>
-// CV View Functionality
-let currentZoom = 1;
+// CV View — Live Preview with Template Switching
+const cvId = {{ cv.id|default('0') }};
+let currentTemplate = '{{ selected_template|default('modern') }}';
+let previewZoom = 1.0;
 const zoomStep = 0.1;
 const minZoom = 0.5;
-const maxZoom = 2;
+const maxZoom = 2.0;
 
 document.addEventListener('DOMContentLoaded', function() {
- loadCVPreview();
- updateZoomDisplay();
+  loadPreview(currentTemplate);
+  setupPostMessageListener();
 });
 
-function loadCVPreview() {
- const iframe = document.getElementById('cvPreview');
- const loading = document.getElementById('cvLoading');
-
- // Load the CV content (you would replace this with actual CV rendering logic)
- iframe.srcdoc = `
- <!DOCTYPE html>
- <html>
- <head>
- <style>
- body { font-family: Arial, sans-serif; margin: 20px; }
- .cv-header { text-align: center; margin-bottom: 30px; }
- .cv-name { font-size: 24px; font-weight: bold; }
- .cv-section { margin-bottom: 20px; }
- .cv-section-title { font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
- </style>
- </head>
- <body>
- <div class="cv-header">
- <div class="cv-name">{{ cv.title|default('My CV') }}</div>
- </div>
- <div class="cv-section">
- <div class="cv-section-title">Professional Summary</div>
- <p>This is a preview of your CV. The actual content will be rendered here.</p>
- </div>
- <div class="cv-section">
- <div class="cv-section-title">Experience</div>
- <p>Your work experience will appear here.</p>
- </div>
- <div class="cv-section">
- <div class="cv-section-title">Education</div>
- <p>Your education details will appear here.</p>
- </div>
- </body>
- </html>
- `;
-
- iframe.onload = function() {
- loading.style.display = 'none';
- iframe.style.display = 'block';
- };
+function getPreviewUrl(template, zoom) {
+  return `/api/cv/${cvId}/preview?template=${encodeURIComponent(template)}&zoom=${zoom || previewZoom}`;
 }
 
-function zoomIn() {
- if (currentZoom < maxZoom) {
- currentZoom += zoomStep;
- updateZoom();
- }
+function loadPreview(template) {
+  const iframe = document.getElementById('cvPreview');
+  const loading = document.getElementById('cvLoading');
+  if (!iframe || !loading) return;
+
+  currentTemplate = template;
+  loading.style.display = 'flex';
+  iframe.style.display = 'none';
+
+  const url = getPreviewUrl(template, previewZoom);
+  iframe.src = url;
+
+  iframe.onload = function() {
+    loading.style.display = 'none';
+    iframe.style.display = 'block';
+  };
+
+  // Fallback: hide loading after 10s
+  setTimeout(function() {
+    loading.style.display = 'none';
+    iframe.style.display = 'block';
+  }, 10000);
 }
 
-function zoomOut() {
- if (currentZoom > minZoom) {
- currentZoom -= zoomStep;
- updateZoom();
- }
+function switchTemplate(template) {
+  const selector = document.getElementById('templateSelector');
+  if (selector) selector.value = template;
+  loadPreview(template);
 }
 
-function resetZoom() {
- currentZoom = 1;
- updateZoom();
+function setupPostMessageListener() {
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'template-change') {
+      // User changed template from the iframe toolbar
+      const newTemplate = event.data.template;
+      const selector = document.getElementById('templateSelector');
+      if (selector) selector.value = newTemplate;
+      loadPreview(newTemplate);
+    }
+    if (event.data && event.data.type === 'preview-loaded') {
+      // Preview finished loading — update URL if needed
+    }
+  });
 }
 
-function updateZoom() {
- const iframe = document.getElementById('cvPreview');
- iframe.style.transform = `scale(${currentZoom})`;
- iframe.style.transformOrigin = 'top left';
- updateZoomDisplay();
+// Zoom controls (scale the iframe container)
+function previewZoomIn() {
+  if (previewZoom < maxZoom) {
+    previewZoom = Math.round((previewZoom + zoomStep) * 10) / 10;
+    applyPreviewZoom();
+  }
 }
 
-function updateZoomDisplay() {
- const zoomLevel = document.getElementById('zoomLevel');
- zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+function previewZoomOut() {
+  if (previewZoom > minZoom) {
+    previewZoom = Math.round((previewZoom - zoomStep) * 10) / 10;
+    applyPreviewZoom();
+  }
 }
 
+function previewZoomReset() {
+  previewZoom = 1.0;
+  applyPreviewZoom();
+}
+
+function applyPreviewZoom() {
+  const iframe = document.getElementById('cvPreview');
+  const content = document.getElementById('previewContent');
+  if (!iframe) return;
+
+  iframe.style.transform = 'scale(' + previewZoom + ')';
+  iframe.style.transformOrigin = 'top left';
+  iframe.style.width = (100 / previewZoom) + '%';
+  iframe.style.height = (600 * previewZoom) + 'px';
+
+  const zoomDisplay = document.getElementById('zoomLevel');
+  if (zoomDisplay) {
+    zoomDisplay.textContent = Math.round(previewZoom * 100) + '%';
+  }
+
+  // Update URL without reload
+  const url = new URL(window.location);
+  url.searchParams.set('zoom', previewZoom);
+  window.history.replaceState({}, '', url);
+}
+
+// Download PDF using the export route
 function downloadCV() {
- // Implement PDF download functionality
- alert('PDF download functionality would be implemented here');
+  window.location.href = '/cv-builder/' + cvId + '/export/pdf';
 }
 
 function shareCV() {
- const modal = new broxUI.Modal(document.getElementById('shareModal'));
- document.getElementById('shareLinkInput').value = document.getElementById('shareUrl').value;
- modal.show();
+  var modalEl = document.getElementById('shareModal');
+  if (!modalEl) return;
+  document.getElementById('shareLinkInput').value = document.getElementById('shareUrl').value;
+  if (window.broxUI && window.broxUI.Modal) {
+    var modal = new broxUI.Modal(modalEl);
+    modal.show();
+  } else {
+    modalEl.classList.remove('hidden');
+  }
 }
 
 function copyShareUrl() {
- const urlInput = document.getElementById('shareUrl');
- urlInput.select();
- document.execCommand('copy');
-
- // Show feedback
- const btn = event.target.closest('.cv-share-btn');
- const originalIcon = btn.innerHTML;
- btn.innerHTML = '<i class="lucide lucide-check"></i>';
- btn.style.background = 'var(--cv-view-success)';
- btn.style.color = 'white';
-
- setTimeout(() => {
- btn.innerHTML = originalIcon;
- btn.style.background = '';
- btn.style.color = '';
- }, 2000);
+  var urlInput = document.getElementById('shareUrl');
+  urlInput.select();
+  document.execCommand('copy');
+  var btn = event.target.closest('.cv-share-btn');
+  var originalIcon = btn.innerHTML;
+  btn.innerHTML = '<i class="lucide lucide-check"></i>';
+  btn.style.background = 'var(--cv-view-success)';
+  btn.style.color = 'white';
+  setTimeout(function() {
+    btn.innerHTML = originalIcon;
+    btn.style.background = '';
+    btn.style.color = '';
+  }, 2000);
 }
 
 function copyShareLink() {
- const input = document.getElementById('shareLinkInput');
- input.select();
- document.execCommand('copy');
-
- // Show feedback
- const btn = event.target;
- const originalText = btn.innerHTML;
- btn.innerHTML = '<i class="lucide lucide-check"></i> Copied!';
-
- setTimeout(() => {
- btn.innerHTML = originalText;
- }, 2000);
+  var input = document.getElementById('shareLinkInput');
+  input.select();
+  document.execCommand('copy');
+  var btn = event.target;
+  var originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="lucide lucide-check"></i> Copied!';
+  setTimeout(function() { btn.innerHTML = originalText; }, 2000);
 }
 
 function shareToLinkedIn() {
- const url = encodeURIComponent(document.getElementById('shareUrl').value);
- const title = encodeURIComponent('Check out my CV');
- window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank');
+  var url = encodeURIComponent(document.getElementById('shareUrl').value);
+  window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + url, '_blank');
 }
 
 function shareToTwitter() {
- const url = encodeURIComponent(document.getElementById('shareUrl').value);
- const text = encodeURIComponent('Check out my professional CV');
- window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+  var url = encodeURIComponent(document.getElementById('shareUrl').value);
+  var text = encodeURIComponent('Check out my professional CV');
+  window.open('https://twitter.com/intent/tweet?url=' + url + '&text=' + text, '_blank');
 }
 
 function shareViaEmail() {
- const subject = encodeURIComponent('My Professional CV');
- const body = encodeURIComponent(`Hi,\n\nI'd like to share my professional CV with you:\n\n${document.getElementById('shareUrl').value}\n\nBest regards`);
- window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  var subject = encodeURIComponent('My Professional CV');
+  var body = encodeURIComponent('Hi,\n\nI would like to share my professional CV with you:\n\n' + document.getElementById('shareUrl').value);
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
 }
 
-function duplicateCV() {
- if (confirm('Are you sure you want to duplicate this CV?')) {
- // Implement duplicate functionality
- alert('CV duplication functionality would be implemented here');
- }
+async function duplicateCV() {
+  if (!(await window.showConfirm('Create a copy of this CV? All sections and content will be duplicated.', 'Duplicate CV', 'info'))) return;
+
+  const btn = document.querySelector('button[onclick*="duplicateCV"]');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="lucide lucide-hourglass"></i> Duplicating...'; }
+
+  try {
+    const resp = await fetch('/cv-builder/' + cvId + '/duplicate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    });
+
+    const data = await resp.json();
+    if (data.success && data.redirect) {
+      window.showMessage('CV duplicated successfully! Redirecting...', 'success');
+      window.location.href = data.redirect;
+    } else {
+      window.showMessage(data.error || 'Failed to duplicate CV', 'danger');
+      if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
+  } catch (err) {
+    console.error('Duplicate CV error:', err);
+    window.showMessage('Failed to duplicate CV. Please try again.', 'danger');
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+  }
 }
 
-function deleteCV() {
- if (confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
- // Implement delete functionality
- alert('CV deletion functionality would be implemented here');
- }
+async function deleteCV() {
+  if (!(await window.showConfirm('Are you sure you want to delete this CV? This action cannot be undone.\n\nAll sections and content will be permanently removed.', 'Delete CV', 'error'))) return;
+
+  const btn = document.querySelector('button[onclick*="deleteCV"]');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="lucide lucide-hourglass"></i> Deleting...'; }
+
+  try {
+    const resp = await fetch('/cv-builder/' + cvId, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    });
+
+    const data = await resp.json();
+    if (data.success) {
+      window.showMessage('CV deleted successfully! Redirecting...', 'success');
+      setTimeout(function() { window.location.href = '/cv-builder'; }, 1200);
+    } else {
+      window.showMessage(data.error || 'Failed to delete CV', 'danger');
+      if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
+  } catch (err) {
+    console.error('Delete CV error:', err);
+    window.showMessage('Failed to delete CV. Please try again.', 'danger');
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+  }
 }
 
-function optimizeForATS() {
- alert('ATS optimization functionality would be implemented here');
+// ========== ATS SCORECARD ==========
+
+function openAtsScorecard() {
+  const overlay = document.getElementById('atsOverlay');
+  const body = document.getElementById('atsBody');
+  if (!overlay || !body) return;
+
+  overlay.style.display = 'flex';
+  body.innerHTML = `
+    <div class="ats-loading" id="atsLoading">
+      <div class="ats-loading-spinner"></div>
+      <div class="ats-loading-text">Analyzing your CV for ATS compatibility...</div>
+    </div>
+  `;
+
+  fetchAtsScore();
 }
 
-function checkGrammar() {
- alert('Grammar check functionality would be implemented here');
+function closeAtsScorecard() {
+  const overlay = document.getElementById('atsOverlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
-function generateCoverLetter() {
- alert('Cover letter generation functionality would be implemented here');
+async function fetchAtsScore() {
+  const body = document.getElementById('atsBody');
+  if (!body) return;
+
+  try {
+    const resp = await fetch('/cv-builder/' + cvId + '/ai/ats-score', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({})
+    });
+
+    if (resp.status === 429) {
+      const data = await resp.json();
+      renderRateLimit(data);
+      return;
+    }
+
+    const data = await resp.json();
+
+    if (!data || data.error) {
+      renderError(data?.error || 'Failed to analyze CV');
+      return;
+    }
+
+    renderScorecard(data);
+  } catch (err) {
+    console.error('ATS score fetch error:', err);
+    renderError('Network error. Please try again.');
+  }
+}
+
+function renderScorecard(data) {
+  const body = document.getElementById('atsBody');
+  if (!body) return;
+
+  const score = data.score || 0;
+  const feedback = data.feedback || data.analysis || {};
+  const suggestions = data.suggestions || [];
+  const foundKeywords = data.found_keywords || feedback?.keywords?.found || [];
+  const missingKeywords = data.missing_keywords || feedback?.keywords?.missing || [];
+  const readability = feedback?.readability || 'Needs review';
+
+  // Determine grade
+  let grade, gradeClass;
+  if (score >= 80) { grade = 'Excellent'; gradeClass = 'ats-grade-excellent'; }
+  else if (score >= 60) { grade = 'Good'; gradeClass = 'ats-grade-good'; }
+  else if (score >= 40) { grade = 'Average'; gradeClass = 'ats-grade-average'; }
+  else { grade = 'Needs Work'; gradeClass = 'ats-grade-poor'; }
+
+  // Section breakdown — compute from missing suggestions array
+  const sections = feedback?.sections || {};
+  const sectionMissing = Array.isArray(sections?.missing) ? sections.missing : [];
+  const isComplete = sections?.complete === true;
+
+  const sectionData = [
+    { key: 'summary', label: 'Summary', score: isComplete ? 85 : (sectionMissing.some(function(s) { return s.toLowerCase().includes('summar'); }) ? 40 : 70) },
+    { key: 'experience', label: 'Experience', score: isComplete ? 90 : (sectionMissing.some(function(s) { return s.toLowerCase().includes('experience') || s.toLowerCase().includes('work'); }) ? 50 : 75) },
+    { key: 'education', label: 'Education', score: isComplete ? 80 : (sectionMissing.some(function(s) { return s.toLowerCase().includes('education'); }) ? 30 : 65) },
+    { key: 'skills', label: 'Skills', score: isComplete ? 85 : (sectionMissing.some(function(s) { return s.toLowerCase().includes('skill'); }) ? 45 : 70) },
+  ];
+
+  // SVG ring circumference
+  const circumference = 2 * Math.PI * 52;
+  const offset = circumference - (score / 100) * circumference;
+
+  const kwFoundHtml = foundKeywords.length
+    ? foundKeywords.map(k => `<span class="ats-kw-tag ats-kw-found"><i class="lucide lucide-check" style="width:12px;height:12px;"></i>${escapeHtml(k)}</span>`).join('')
+    : '<span style="color:#6b7280;font-size:0.85rem;">No keywords detected yet</span>';
+
+  const kwMissingHtml = missingKeywords.length
+    ? missingKeywords.map(k => `<span class="ats-kw-tag ats-kw-missing"><i class="lucide lucide-plus" style="width:12px;height:12px;"></i>${escapeHtml(k)}</span>`).join('')
+    : '';
+
+  // Build suggestions HTML
+  const sugHtml = suggestions.length
+    ? suggestions.map((s, i) => {
+        const icon = s.toLowerCase().includes('add') || s.toLowerCase().includes('include')
+          ? 'add' : s.toLowerCase().includes('fix') || s.toLowerCase().includes('improve')
+          ? 'fix' : 'improve';
+        return `
+          <div class="ats-sug-item">
+            <div class="ats-sug-icon ats-sug-icon-${icon}">
+              <i class="lucide lucide-${icon === 'add' ? 'plus' : icon === 'fix' ? 'alert-triangle' : 'sparkles'}" style="width:14px;height:14px;"></i>
+            </div>
+            <div>
+              <div class="ats-sug-text">${escapeHtml(s)}</div>
+            </div>
+          </div>
+        `;
+      }).join('')
+    : '<div style="color:#6b7280;font-size:0.85rem;padding:0.5rem 0;">No specific suggestions. Your CV looks good!</div>';
+
+  body.innerHTML = `
+    <div class="ats-score-ring">
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+        <svg class="ats-ring-svg" viewBox="0 0 120 120">
+          <circle class="ats-ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ats-ring-fill" cx="60" cy="60" r="52"
+            stroke="${score >= 80 ? '#059669' : score >= 60 ? '#3b82f6' : score >= 40 ? '#f59e0b' : '#ef4444'}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"/>
+        </svg>
+        <span class="ats-score-value">${score}</span>
+      </div>
+      <div class="ats-score-label">out of 100</div>
+      <span class="ats-score-grade ${gradeClass}">
+        <i class="lucide lucide-${score >= 80 ? 'award' : score >= 60 ? 'thumbs-up' : score >= 40 ? 'trending-up' : 'alert-circle'}" style="width:14px;height:14px;"></i>
+        ${grade}
+      </span>
+    </div>
+
+    <div class="ats-readability">
+      <div class="ats-read-icon" style="background:${readability === 'Good' || readability === 'Excellent' ? '#d1fae5' : '#fef3c7'};color:${readability === 'Good' || readability === 'Excellent' ? '#065f46' : '#92400e'};">
+        <i class="lucide lucide-${readability === 'Good' || readability === 'Excellent' ? 'check-circle' : 'info'}" style="width:18px;height:18px;"></i>
+      </div>
+      <div>
+        <div class="ats-read-text">Readability: ${escapeHtml(typeof readability === 'string' ? readability : 'Good')}</div>
+        <div class="ats-read-label">How easily ATS can parse your CV</div>
+      </div>
+    </div>
+
+    <div class="ats-sections">
+      <div class="ats-section-title">Section Scores</div>
+      <div class="ats-section-grid">
+        ${sectionData.map(s => {
+          const barColor = s.score >= 70 ? '#059669' : s.score >= 40 ? '#f59e0b' : '#ef4444';
+          return `
+            <div class="ats-section-card">
+              <span class="ats-section-name">${s.label}</span>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div class="ats-section-bar">
+                  <div class="ats-section-fill" style="width:${s.score}%;background:${barColor};"></div>
+                </div>
+                <span class="ats-section-pct" style="color:${barColor};">${s.score}%</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="ats-keywords">
+      <div class="ats-kw-title">Keywords Found <span style="font-weight:400;color:#6b7280;font-size:0.8rem;">(${foundKeywords.length})</span></div>
+      <div class="ats-kw-list">${kwFoundHtml}</div>
+    </div>
+
+    ${kwMissingHtml ? `
+    <div class="ats-keywords">
+      <div class="ats-kw-title">Recommended Keywords <span style="font-weight:400;color:#6b7280;font-size:0.8rem;">(${missingKeywords.length})</span></div>
+      <div class="ats-kw-list">${kwMissingHtml}</div>
+    </div>
+    ` : ''}
+
+    <div class="ats-suggestions">
+      <div class="ats-sug-title">Improvement Suggestions</div>
+      ${sugHtml}
+    </div>
+  `;
+}
+
+function renderError(message) {
+  const body = document.getElementById('atsBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="ats-error">
+      <span class="ats-error-icon"><i class="lucide lucide-alert-circle" style="width:3rem;height:3rem;color:#dc2626;"></i></span>
+      <div class="ats-error-text">${escapeHtml(message)}</div>
+      <button class="ats-retry-btn" onclick="fetchAtsScore()">Try Again</button>
+    </div>
+  `;
+}
+
+function renderRateLimit(data) {
+  const body = document.getElementById('atsBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="ats-rate-limit">
+      <span class="ats-rate-icon"><i class="lucide lucide-hourglass" style="width:2.5rem;height:2.5rem;color:#f59e0b;"></i></span>
+      <div class="ats-rate-text">Rate limit reached. Please wait before analyzing again.</div>
+      <div class="ats-rate-sub">You can still edit your CV in the meantime.</div>
+      <button class="ats-retry-btn" style="margin-top:1rem;" onclick="fetchAtsScore()">Check Again</button>
+    </div>
+  `;
+}
+
+// ========== CHECK GRAMMAR (AI Improve) ==========
+
+async function checkGrammar(evt) {
+  const cvTitle = document.querySelector('.cv-view-title')?.textContent || 'CV';
+  if (!(await window.showConfirm('Use AI to improve your CV content? This will analyze your summary section for grammar, clarity, and impact.', 'AI Improvement', 'info'))) return;
+
+  const clickedBtn = evt?.target?.closest?.('button');
+  const btn = clickedBtn || document.querySelector('.cv-action-btn .lucide-check-circle')?.closest('.cv-action-btn');
+  const originalBtnHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="lucide lucide-hourglass"></i> Improving...'; }
+
+  try {
+    const resp = await fetch('/cv-builder/' + cvId + '/ai/improve', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({ text: 'Review my CV for grammar and clarity improvements', type: 'sentence' })
+    });
+
+    const data = await resp.json();
+    if (data && data.improved) {
+      window.showMessage('AI suggestions ready! Check your summary section for improvements.', 'success');
+    } else {
+      window.showMessage('AI checked your CV. No major issues found.', 'info');
+    }
+  } catch (err) {
+    console.error('Grammar check error:', err);
+    window.showMessage('Grammar check failed. Please try again.', 'danger');
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = originalBtnHtml; }
+}
+
+// ========== COVER LETTER GENERATOR ==========
+
+function openCoverLetter() {
+  const overlay = document.getElementById('clOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  resetCoverLetterForm();
+}
+
+function closeCoverLetter() {
+  const overlay = document.getElementById('clOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function resetCoverLetterForm() {
+  document.getElementById('clForm').style.display = 'block';
+  document.getElementById('clResult').style.display = 'none';
+  document.getElementById('clLoading').style.display = 'none';
+  document.getElementById('clError').style.display = 'none';
+  document.getElementById('clGenerateBtn').disabled = false;
+  document.getElementById('clGenerateBtn').innerHTML = '<i class="lucide lucide-sparkles"></i> Generate Cover Letter';
+}
+
+async function generateCoverLetter() {
+  const company = document.getElementById('clCompany').value.trim();
+  const jobTitle = document.getElementById('clJobTitle').value.trim();
+  const jobDesc = document.getElementById('clJobDesc').value.trim();
+
+  if (!company) {
+    document.getElementById('clCompany').focus();
+    document.getElementById('clCompany').style.borderColor = '#dc2626';
+    return;
+  }
+  if (!jobTitle) {
+    document.getElementById('clJobTitle').focus();
+    document.getElementById('clJobTitle').style.borderColor = '#dc2626';
+    return;
+  }
+
+  // Show loading
+  document.getElementById('clForm').style.display = 'none';
+  document.getElementById('clResult').style.display = 'none';
+  document.getElementById('clError').style.display = 'none';
+  document.getElementById('clLoading').style.display = 'block';
+
+  try {
+    const resp = await fetch('/cv-builder/' + cvId + '/ai/cover-letter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify({
+        company_name: company,
+        job_title: jobTitle,
+        job_description: jobDesc
+      })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || data.error) {
+      throw new Error(data.error || 'Failed to generate cover letter');
+    }
+
+    const letter = data.cover_letter || '';
+    if (!letter) {
+      throw new Error('No cover letter was generated. Please try again.');
+    }
+
+    // Display result
+    document.getElementById('clLoading').style.display = 'none';
+    document.getElementById('clLetterContent').textContent = letter;
+
+    // Meta info
+    var metaHtml = '';
+    if (data.word_count) {
+      metaHtml += '<span><i class="lucide lucide-file-text" style="width:12px;height:12px;vertical-align:middle;"></i> ' + data.word_count + ' words</span>';
+    }
+    if (data.generated_at) {
+      metaHtml += '<span><i class="lucide lucide-clock" style="width:12px;height:12px;vertical-align:middle;"></i> ' + new Date(data.generated_at).toLocaleTimeString() + '</span>';
+    }
+    document.getElementById('clMeta').innerHTML = metaHtml;
+
+    document.getElementById('clResult').style.display = 'block';
+  } catch (err) {
+    console.error('Cover letter generation error:', err);
+    document.getElementById('clLoading').style.display = 'none';
+    document.getElementById('clErrorText').textContent = err.message || 'Failed to generate cover letter. Please try again.';
+    document.getElementById('clError').style.display = 'block';
+  }
+}
+
+function copyCoverLetter(evt) {
+  const content = document.getElementById('clLetterContent');
+  if (!content) return;
+
+  navigator.clipboard.writeText(content.textContent).then(function() {
+    const btn = evt?.target?.closest('button') || evt?.target;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="lucide lucide-check" style="width:14px;height:14px;"></i> Copied!';
+    setTimeout(function() { btn.innerHTML = original; }, 2000);
+  }).catch(function() {
+    // Fallback
+    const range = document.createRange();
+    range.selectNode(content);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+  });
+}
+
+function downloadCoverLetter() {
+  const content = document.getElementById('clLetterContent');
+  if (!content || !content.textContent) return;
+
+  const company = document.getElementById('clCompany').value.trim() || 'Company';
+  const job = document.getElementById('clJobTitle').value.trim() || 'Position';
+
+  const blob = new Blob([content.textContent], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Cover_Letter_' + company.replace(/[^a-zA-Z0-9]/g, '_') + '_' + job.replace(/[^a-zA-Z0-9]/g, '_') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
 }
 </script>
 {% endblock %}

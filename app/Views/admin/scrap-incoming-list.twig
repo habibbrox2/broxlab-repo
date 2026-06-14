@@ -566,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function() {
  });
  
  // Handle bulk delete
- bulkDeleteBtn.addEventListener("click", function() {
+ bulkDeleteBtn.addEventListener("click", async function() {
  const selectedItems = Array.from(itemCheckboxes)
  .filter(cb => cb.checked)
  .map(cb => ({
@@ -577,7 +577,7 @@ document.addEventListener("DOMContentLoaded", function() {
  if (selectedItems.length === 0) return;
  
  const itemText = selectedItems.length === 1 ?"1 item" : selectedItems.length +" items";
- if (!confirm(`Are you sure you want to delete ${itemText}?\n\nThis action cannot be undone.`)) {
+ if (!(await window.showConfirm(`Are you sure you want to delete ${itemText}? This action cannot be undone.`, 'Delete Items', 'error'))) {
  return;
  }
  
@@ -632,12 +632,12 @@ document.addEventListener("DOMContentLoaded", function() {
  
  // Handle delete individual item buttons
  document.querySelectorAll(".delete-incoming-item").forEach(button => {
- button.addEventListener("click", function() {
+ button.addEventListener("click", async function() {
  const itemId = this.getAttribute("data-item-id");
  const itemType = this.getAttribute("data-item-type");
  const itemTitle = this.getAttribute("data-item-title");
  
- if (confirm(`Are you sure you want to delete this ${itemType} item?\n\n"${itemTitle}"\n\nThis action cannot be undone.`)) {
+ if (await window.showConfirm(`Are you sure you want to delete this ${itemType} item? "${itemTitle}" This action cannot be undone.`, 'Delete Item', 'error')) {
  // Show loading state
  this.disabled = true;
  this.innerHTML ="<i class=\"lucide lucide-hourglass\"></i> Deleting...";

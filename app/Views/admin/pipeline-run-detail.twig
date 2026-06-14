@@ -392,8 +392,8 @@
 </div>
 
 <script>
- function retryRun(id) {
- if (!confirm('Are you sure you want to retry this pipeline run?')) return;
+ async function retryRun(id) {
+ if (!(await window.showConfirm('Are you sure you want to retry this pipeline run?', 'Retry Run', 'info'))) return;
  
  const formData = new FormData();
  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -409,17 +409,17 @@
  .then(r => r.json())
  .then(data => {
  if (data.success) {
- alert('Pipeline run retry initiated');
+ window.showMessage('Pipeline run retry initiated', 'success');
  location.reload();
  } else {
- alert('Error: ' + (data.error || 'Unknown error'));
+ window.showMessage('Error: ' + (data.error || 'Unknown error'), 'danger');
  }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
  }
  
- function deleteRun(id) {
- if (!confirm('Are you sure you want to delete this pipeline run? This action cannot be undone.')) return;
+ async function deleteRun(id) {
+ if (!(await window.showConfirm('Are you sure you want to delete this pipeline run? This action cannot be undone.', 'Delete Run', 'error'))) return;
  
  const formData = new FormData();
  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -435,13 +435,13 @@
  .then(r => r.json())
  .then(data => {
  if (data.success) {
- alert('Pipeline run deleted');
+ window.showMessage('Pipeline run deleted', 'success');
  window.location.href = '{{ route_base }}/pipeline-runs';
  } else {
- alert('Error: ' + (data.error || 'Unknown error'));
+ window.showMessage('Error: ' + (data.error || 'Unknown error'), 'danger');
  }
  })
- .catch(e => alert('Error: ' + e.message));
+ .catch(e => window.showMessage('Error: ' + e.message, 'danger'));
  }
 </script>
 

@@ -3,6 +3,15 @@
    Stack: Tailwind CSS · Lucide Icons · Vanilla JS (brox-ui.js)
    ═══════════════════════════════════════════════════════════════════ #}
 
+<style>
+/* Header submenu: show on hover (desktop) */
+@media (min-width: 1024px) {
+  header nav li.group:hover > ul.header-submenu {
+    display: flex !important;
+  }
+}
+</style>
+
 {# ── Resolve current path for active-state detection ── #}
 {% set navCurrentPath = request.path|default(current_path|default('/')) %}
 
@@ -36,10 +45,10 @@
         },
         { 'label': 'Portfolio',  'label_bn': 'পোর্টফোলিও',   'url': '/portfolio',  'icon': 'image',   'match': '/portfolio' },
         { 'label': 'Contact',    'label_bn': 'যোগাযোগ',       'url': '/contact',    'icon': 'mail',        'match': '/contact' },
-        { 'label': 'CV Builder',  'label_bn': 'সিভি বিল্ডার',   'url': '/cv/templates', 'icon': 'file-text', 'match': '/cv',
+        { 'label': 'CV Builder',  'label_bn': 'সিভি বিল্ডার',   'url': '/cv-builder/templates', 'icon': 'file-text', 'match': '/cv-builder',
           'submenu': [
-            { 'label': 'Templates',    'label_bn': 'টেমপ্লেট',      'url': '/cv/templates',    'icon': 'layout' },
-            { 'label': 'My CVs',       'label_bn': 'আমার সিভি',    'url': '/cv',              'icon': 'file' }
+            { 'label': 'Templates',    'label_bn': 'টেমপ্লেট',      'url': '/cv-builder/templates',    'icon': 'layout' },
+            { 'label': 'My CVs',       'label_bn': 'আমার সিভি',    'url': '/cv-builder',              'icon': 'file' }
           ]
         },
         { 'label': 'Jobs',       'label_bn': 'চাকরি',          'url': '/category/chakribd', 'icon': 'briefcase',  'match': '/category/chakribd' },
@@ -202,7 +211,7 @@
                 </a>
 
                 {% if _hasSub %}
-                  <ul class="hidden lg:group-hover:flex absolute top-full left-0 mt-1 w-48 flex-col bg-[rgb(var(--surface))] backdrop-blur-md border border-[rgb(var(--border))] rounded-xl shadow-xl shadow-slate-900/30 overflow-hidden z-50">
+                  <ul class="header-submenu hidden absolute top-full left-0 mt-1 w-48 flex-col bg-[rgb(var(--surface))] backdrop-blur-md border border-[rgb(var(--border))] rounded-xl shadow-xl shadow-slate-900/30 overflow-hidden z-50">
 
                     {% for sub in item.submenu %}
                       <li role="none">

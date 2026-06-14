@@ -1,14 +1,7 @@
 import { escapeHtml, setText, toSafeId } from './core.js';
+import { debounce } from '../../shared/utils.js';
 
 const byIdDefault = (id) => document.getElementById(id);
-
-function debounce(fn, waitMs) {
-  let timeout = null;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), waitMs);
-  };
-}
 
 function toggleCheckedClass(selector) {
   document.querySelectorAll(selector).forEach((checkbox) => {
@@ -207,8 +200,8 @@ export function initRbacUserRoles(options = {}) {
     loadUserPermissions(id);
   };
 
-  window.removeUserRole = function (userId, roleId) {
-    if (!confirm('Remove this role from the user?')) return;
+  window.removeUserRole = async function (userId, roleId) {
+    if (!(await window.showConfirm('Remove this role from the user?'))) return;
     fetch(`/api/user-roles/${userId}/remove/${roleId}`, { method: 'POST', })
       .then((response) => response.json())
       .then((data) => {
@@ -217,7 +210,7 @@ export function initRbacUserRoles(options = {}) {
           loadUserPermissions(userId);
           return;
         }
-        alert(`Error: ${ data?.error || 'Unknown error'}`);
+        window.showMessage(`Error: ${ data?.error || 'Unknown error'}`, 'danger');
       });
   };
 
@@ -233,7 +226,7 @@ export function initRbacUserRoles(options = {}) {
 
   function showAssignRoleModal() {
     if (!selectedUserId) {
-      alert('Please select a user first');
+      window.showMessage('Please select a user first', 'warning');
       return;
     }
     fetch('/api/rbac/roles')
@@ -265,7 +258,7 @@ export function initRbacUserRoles(options = {}) {
       document.querySelectorAll('#availableRolesCheckboxes input:checked')
     ).map((el) => el.value);
     if (checkedRoles.length === 0) {
-      alert('Please select at least one role');
+      window.showMessage('Please select at least one role', 'warning');
       return;
     }
 
@@ -282,10 +275,10 @@ export function initRbacUserRoles(options = {}) {
           broxUI.Modal.getInstance(byId('assignRoleModal'))?.hide();
           loadUserRoles(selectedUserId);
           loadUserPermissions(selectedUserId);
-          alert('Roles assigned successfully!');
+          window.showMessage('Roles assigned successfully!', 'success');
           return;
         }
-        alert(`Error: ${ data?.error || 'Unknown error'}`);
+        window.showMessage(`Error: ${ data?.error || 'Unknown error'}`, 'danger');
       });
   }
 

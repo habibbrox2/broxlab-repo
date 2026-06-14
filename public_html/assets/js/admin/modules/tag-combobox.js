@@ -1,3 +1,5 @@
+import { escapeHtml } from '../../shared/utils.js';
+
 const DEFAULT_OPTIONS = {
   allowCreate: true,
   searchMode: 'client',
@@ -47,15 +49,6 @@ function normalizeName(value) {
 
 function normalizeNameKey(value) {
   return normalizeName(value).toLowerCase();
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function toSelectedIdSet(select, selectedIds = []) {
@@ -236,7 +229,7 @@ class TagCombobox {
   init() {
     if (this.root) return;
 
-    this.select.classList.add('tag-combobox-source');
+    this.select.classList.add('hidden', 'tag-combobox-source');
     this.select.setAttribute('aria-hidden', 'true');
 
     this.root = document.createElement('div');
@@ -293,7 +286,7 @@ class TagCombobox {
   }
 
   destroy() {
-    this.select.classList.remove('tag-combobox-source');
+    this.select.classList.remove('hidden', 'tag-combobox-source');
     this.select.removeAttribute('aria-hidden');
     this.select.removeEventListener('change', this.boundOnSelectChange);
     document.removeEventListener('click', this.boundOnDocumentClick);

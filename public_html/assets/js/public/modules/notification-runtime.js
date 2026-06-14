@@ -16,14 +16,12 @@ const NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 // Injected by initPublicNotificationRuntime — references the navbar's emitNavbarDropdownState
 let _emitNavbarDropdownState = function () {};
 
+import { escapeHtml, getCsrfToken } from '../../shared/utils.js';
+
 // Injected by initPublicNotificationRuntime
 let _runWhenReady = function () {};
 let _getUserId = () => null;
 let _translateSiteText = (key, defaultValue) => defaultValue || key;
-
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
 
 function emitFcmSupportResolved(supported, context = 'default') {
   if (typeof window === 'undefined') return;
@@ -36,16 +34,6 @@ function emitFcmSupportResolved(supported, context = 'default') {
   } catch (err) {
     // Ignore dispatch failures.
   }
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  }[char] || char));
 }
 
 function toSafeUrl(url) {

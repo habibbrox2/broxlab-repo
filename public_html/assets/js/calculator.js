@@ -12,6 +12,8 @@
  */
 'use strict';
 
+import { escapeHtml } from './shared/utils.js';
+
 // ── DOM references ──────────────────────────────────────────────────────
 const form = document.getElementById('calculator-form');
 const resultsPanel = document.getElementById('calc-results');
@@ -290,15 +292,6 @@ if (form) {
             '</div></div>';
   }
 
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   function renderResult(type, r) {
     switch (type) {
     case 'simple-interest':
@@ -375,7 +368,7 @@ if (form) {
 
     const data = collectForm();
     const typeEl = form.querySelector('input[name="calc_type"]');
-    if (!typeEl) { alert('Calc type not found in form.'); return; }
+    if (!typeEl) { window.showMessage('Calc type not found in form.', 'danger'); return; }
     const type = typeEl.value;
 
     setLoading(true);

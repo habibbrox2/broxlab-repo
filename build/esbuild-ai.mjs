@@ -37,6 +37,8 @@ const commonJsOptions = {
     outdir: outDir,
     entryNames: '[name]',
     logLevel: 'info',
+    legalComments: 'none',
+    drop: ['debugger'],
 };
 
 function ensureOutputDir() {

@@ -51,8 +51,8 @@ export function initNotificationsSendByTopic() {
       body: JSON.stringify({ topic, title, message, channels: ['push',], }),
     });
     const j = await res.json();
-    if (j.success) alert(`Queued: ${j.notification_id}`);
-    else alert(`Error: ${j.error || 'unknown'}`);
+    if (j.success) window.showMessage(`Queued: ${j.notification_id}`, 'success');
+    else window.showMessage(`Error: ${j.error || 'unknown'}`, 'danger');
   });
 
   loadTopics();

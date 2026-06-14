@@ -40,8 +40,8 @@ export function initSettingsPage({ byId, getCsrfToken, getAdminDir, }) {
     });
   }
 
-  byId('removeLogoBtn')?.addEventListener('click', () => {
-    if (!confirm('Remove site logo? This will clear the saved logo.')) return;
+  byId('removeLogoBtn')?.addEventListener('click', async () => {
+    if (!(await window.showConfirm('Remove site logo? This will clear the saved logo.'))) return;
     const hidden = byId('remove_site_logo');
     if (hidden) hidden.value = '1';
     settingsRoot.querySelector('form.needs-validation')?.submit();
@@ -146,11 +146,11 @@ export function initSettingsPage({ byId, getCsrfToken, getAdminDir, }) {
             tabPane?.insertBefore(alertDiv, tabPane.firstChild);
             broxUI.Modal.getInstance(byId('require2faAdminModal'))?.hide();
           } else {
-            alert(`Error: ${data.message}`);
+            window.showMessage(`Error: ${data.message}`, 'danger');
           }
         })
         .catch(() => {
-          alert('An error occurred. Please try again.');
+          window.showMessage('An error occurred. Please try again.', 'danger');
         })
         .finally(() => {
           btn.disabled = false;
@@ -178,7 +178,7 @@ export function initAppSecuritySettings({ byId, getCsrfToken, }) {
     const fileInput = byId('settingsFile');
     const file = fileInput?.files?.[0];
     if (!file) {
-      alert('Please select a file');
+      window.showMessage('Please select a file', 'warning');
       return;
     }
     const formData = new FormData(byId('importForm'));
