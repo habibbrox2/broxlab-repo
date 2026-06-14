@@ -1,5 +1,5 @@
 import { escapeHtml } from './core.js';
-import { getCsrfToken, parseJsonResponse } from '../../shared/utils.js';
+import { getCsrfToken } from '../../shared/utils.js';
 
 const byId = (id) => document.getElementById(id);
 
@@ -1686,7 +1686,7 @@ export function initNotificationsDashboard() {
       .catch(() => {
         if (detailContent) {
           detailContent.innerHTML =
-              '<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">Failed to load notification details</div>';
+            '<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">Failed to load notification details</div>';
         }
       });
   };
@@ -1712,7 +1712,7 @@ export async function initNotificationsDrafts() {
   const list = byId('draftsList');
   if (!list) return;
   const notificationSystem =
-      await import('/assets/firebase/v2/dist/notification-system.js').catch(() => null);
+    await import('/assets/firebase/v2/dist/notification-system.js').catch(() => null);
   const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
   const showError = notificationSystem?.showError || window.showError || window.showMessage;
 

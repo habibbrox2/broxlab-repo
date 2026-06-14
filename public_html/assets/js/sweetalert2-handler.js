@@ -432,7 +432,7 @@ window.MessageHandlerConfig = MessageHandlerConfig;
    * Handles <a> and <form> elements.
    * Usage: onclick="return window.confirmAction(event, this, 'Are you sure?')"
    */
-window.confirmAction = async function(event, element, message, options = {}) {
+window.confirmAction = async function (event, element, message, options = {}) {
   event.preventDefault();
   const Swal = typeof Swal !== 'undefined' ? Swal : null;
   if (!Swal) {
@@ -448,7 +448,7 @@ window.confirmAction = async function(event, element, message, options = {}) {
     confirmButtonColor: '#dc3545',
     cancelButtonColor: '#6c757d',
     reverseButtons: true,
-    ...opts
+    ...opts,
   });
   if (result.isConfirmed) {
     if (element.tagName === 'FORM') {

@@ -213,7 +213,7 @@ runWhenReady(() => {
           checkSlug(window.transliterateAndGenerateSlug(slugInput.value));
         } else { generate(); }
 
-        return { destroy() { if (timer) clearTimeout(timer); } };
+        return { destroy() { if (timer) clearTimeout(timer); }, };
       };
     }
 
@@ -392,7 +392,7 @@ runWhenReady(() => {
       .then((mod) => {
         const initFn = mod?.initAccountSettingsOAuth || mod?.default?.initAccountSettingsOAuth;
         if (typeof initFn !== 'function') return;
-        initFn({ theme: 'modern', accountsContainerId: 'oauth-accounts-container', providersContainerId: 'oauth-providers-container', alertsContainerId: 'alert-container' });
+        initFn({ theme: 'modern', accountsContainerId: 'oauth-accounts-container', providersContainerId: 'oauth-providers-container', alertsContainerId: 'alert-container', });
       })
       .catch((error) => console.error('Failed to initialize account settings helper:', error));
   }

@@ -63,7 +63,7 @@
           }
         }
       })
-      .catch(function () {});
+      .catch(function () { });
   }
 
   function renderStep(index) {
@@ -71,9 +71,9 @@
     if (!step) return;
     STATE.currentStep = index;
     let html = '<div class="bld-step-header">' +
-      `<div class="bld-step-number"><i class="lucide lucide-${ step.icon }" style="width:1em;height:1em;"></i> Step ${ index + 1 } of ${ STEPS.length }</div>` +
-      `<h2 class="bld-step-title">${ step.title }</h2>` +
-      `<p class="bld-step-desc">${ step.desc }</p></div>`;
+      `<div class="bld-step-number"><i class="lucide lucide-${step.icon}" style="width:1em;height:1em;"></i> Step ${index + 1} of ${STEPS.length}</div>` +
+      `<h2 class="bld-step-title">${step.title}</h2>` +
+      `<p class="bld-step-desc">${step.desc}</p></div>`;
     html += renderStepContent(index);
     const container = document.getElementById('bld-step-content');
     if (container) container.innerHTML = html;
@@ -109,50 +109,51 @@
     const fill = function (key, def) { return d && d[key] !== undefined && d[key] !== null ? escHtml(String(d[key])) : def || ''; };
 
     switch (stepId) {
-    case 'personal':
-      return '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Full Name *</label><input class="bld-input" id="bld-field-full_name" value="${ fill('full_name') }" placeholder="e.g. John Doe"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Job Title *</label><input class="bld-input" id="bld-field-job_title" value="${ fill('job_title') }" placeholder="e.g. Software Engineer"></div></div>` +
+      case 'personal':
+        return '<div class="bld-input-group">' +
+          `<div class="bld-form-group"><label class="bld-label">Full Name *</label><input class="bld-input" id="bld-field-full_name" value="${fill('full_name')}" placeholder="e.g. John Doe"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Job Title *</label><input class="bld-input" id="bld-field-job_title" value="${fill('job_title')}" placeholder="e.g. Software Engineer"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input" id="bld-field-email" type="email" value="${ fill('email') }" placeholder="john@example.com"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Phone</label><input class="bld-input" id="bld-field-phone" type="tel" value="${ fill('phone') }" placeholder="+1 555-0000"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input" id="bld-field-email" type="email" value="${fill('email')}" placeholder="john@example.com"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Phone</label><input class="bld-input" id="bld-field-phone" type="tel" value="${fill('phone')}" placeholder="+1 555-0000"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Date of Birth</label><input class="bld-input" id="bld-field-dob" type="date" value="${ fill('date_of_birth') }"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Nationality</label><input class="bld-input" id="bld-field-nationality" value="${ fill('nationality') }" placeholder="e.g. American"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Date of Birth</label><input class="bld-input" id="bld-field-dob" type="date" value="${fill('date_of_birth')}"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Nationality</label><input class="bld-input" id="bld-field-nationality" value="${fill('nationality')}" placeholder="e.g. American"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Gender</label><select class="bld-select" id="bld-field-gender"><option value="">Select...</option><option value="male"${ d.gender === 'male' ? ' selected' : '' }>Male</option><option value="female"${ d.gender === 'female' ? ' selected' : '' }>Female</option><option value="other"${ d.gender === 'other' ? ' selected' : '' }>Other</option></select></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Address</label><input class="bld-input" id="bld-field-address" value="${ fill('address') }" placeholder="City, Country"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Gender</label><select class="bld-select" id="bld-field-gender"><option value="">Select...</option><option value="male"${d.gender === 'male' ? ' selected' : ''}>Male</option><option value="female"${d.gender === 'female' ? ' selected' : ''}>Female</option><option value="other"${d.gender === 'other' ? ' selected' : ''}>Other</option></select></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Address</label><input class="bld-input" id="bld-field-address" value="${fill('address')}" placeholder="City, Country"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Website / Portfolio</label><input class="bld-input" id="bld-field-website" value="${ fill('website') }" placeholder="https://yoursite.com"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">LinkedIn</label><input class="bld-input" id="bld-field-linkedin" value="${ fill('linkedin') }" placeholder="linkedin.com/in/yourprofile"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Website / Portfolio</label><input class="bld-input" id="bld-field-website" value="${fill('website')}" placeholder="https://yoursite.com"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">LinkedIn</label><input class="bld-input" id="bld-field-linkedin" value="${fill('linkedin')}" placeholder="linkedin.com/in/yourprofile"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">GitHub</label><input class="bld-input" id="bld-field-github" value="${ fill('github') }" placeholder="github.com/yourusername"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Twitter / X</label><input class="bld-input" id="bld-field-twitter" value="${ fill('twitter') }" placeholder="twitter.com/yourhandle"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">GitHub</label><input class="bld-input" id="bld-field-github" value="${fill('github')}" placeholder="github.com/yourusername"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Twitter / X</label><input class="bld-input" id="bld-field-twitter" value="${fill('twitter')}" placeholder="twitter.com/yourhandle"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">National ID No.</label><input class="bld-input" id="bld-field-national_id_no" value="${ fill('national_id_no') }" placeholder="e.g. Aadhaar, SSN, NID"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Passport No.</label><input class="bld-input" id="bld-field-passport_no" value="${ fill('passport_no') }" placeholder="e.g. AB123456"></div></div>` +
+          `<div class="bld-form-group"><label class="bld-label">National ID No.</label><input class="bld-input" id="bld-field-national_id_no" value="${fill('national_id_no')}" placeholder="e.g. Aadhaar, SSN, NID"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Passport No.</label><input class="bld-input" id="bld-field-passport_no" value="${fill('passport_no')}" placeholder="e.g. AB123456"></div></div>` +
           '<div class="bld-input-group">' +
-          `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${ fill('birth_certificate_no') }" placeholder="Birth certificate number"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${ d.religion === 'islam' ? ' selected' : '' }>Islam</option><option value="hinduism"${ d.religion === 'hinduism' ? ' selected' : '' }>Hinduism</option><option value="christianity"${ d.religion === 'christianity' ? ' selected' : '' }>Christianity</option><option value="buddhism"${ d.religion === 'buddhism' ? ' selected' : '' }>Buddhism</option><option value="other"${ d.religion === 'other' ? ' selected' : '' }>Other</option></select></div></div>';
+          `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${fill('birth_certificate_no')}" placeholder="Birth certificate number"></div>` +
+          `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>';
 
     case 'summary': {
       let s = '';
       if (STATE.data.summary && STATE.data.summary._suggestions) {
         const suggs = STATE.data.summary._suggestions;
         for (let si = 0; si < suggs.length; si++) {
-          s += `<div class="bld-suggest-box" data-suggest-idx="${ si }">`;
-          s += `<h4>${ escHtml(suggs[si].type === 'summary' ? 'Suggested Professional Summary' : 'Suggested Career Objective') }</h4>`;
-          s += `<div class="bld-suggest-text">${ escHtml(suggs[si].content) }</div>`;
+          s += `< div class="bld-suggest-box" data - suggest - idx="${si}" > `;
+          s += `< h4 > ${ escHtml(suggs[si].type === 'summary' ? 'Suggested Professional Summary' : 'Suggested Career Objective') }</h4 > `;
+          s += `< div class="bld-suggest-text" > ${ escHtml(suggs[si].content) }</div > `;
           s += '<div class="bld-suggest-actions">';
-          s += `<button class="bld-btn-sm bld-btn-accept" onclick="window.bldAcceptSuggestion(${ si })">Accept</button>`;
-          s += `<button class="bld-btn-sm bld-btn-edit" onclick="window.bldEditSuggestion(${ si })">Edit</button>`;
-          s += `<button class="bld-btn-sm bld-btn-remove" onclick="window.bldRemoveSuggestion(${ si })">Remove</button>`;
+          s += `< button class="bld-btn-sm bld-btn-accept" onclick = "window.bldAcceptSuggestion(${si})" > Accept</button > `;
+          s += `< button class="bld-btn-sm bld-btn-edit" onclick = "window.bldEditSuggestion(${si})" > Edit</button > `;
+          s += `< button class="bld-btn-sm bld-btn-remove" onclick = "window.bldRemoveSuggestion(${si})" > Remove</button > `;
           s += '</div></div>';
         }
       }
-      return `${s
-      }<div class="bld-form-group"><label class="bld-label">Professional Summary</label><textarea class="bld-textarea" id="bld-field-professional_summary" placeholder="Write a brief professional summary...">${ fill('professional_summary') }</textarea></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Career Objective</label><textarea class="bld-textarea" id="bld-field-career_objective" placeholder="What are your career aspirations?\">${ fill('career_objective') }</textarea></div>`;
+      return `${
+          s
+        } <div class="bld-form-group"><label class="bld-label">Professional Summary</label><textarea class="bld-textarea" id="bld-field-professional_summary" placeholder="Write a brief professional summary...">${fill('professional_summary')}</textarea></div>` +
+          `< div class="bld-form-group" ><label class="bld-label">Career Objective</label><textarea class="bld-textarea" id="bld-field-career_objective" placeholder="What are your career aspirations?\">${ fill('career_objective') }</textarea></div > `;
     }
 
     case 'experience': {
@@ -161,7 +162,7 @@
       for (let ei = 0; ei < exps.length; ei++) {
         expHtml += renderExperienceEntry(exps[ei], ei);
       }
-      return `<div id="bld-experience-list">${ expHtml }</div>` +
+      return `< div id = "bld-experience-list" > ${ expHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddExperience()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Experience</button>';
     }
 
@@ -171,7 +172,7 @@
       for (let edi = 0; edi < eds.length; edi++) {
         eduHtml += renderEducationEntry(eds[edi], edi);
       }
-      return `<div id="bld-education-list">${ eduHtml }</div>` +
+      return `< div id = "bld-education-list" > ${ eduHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddEducation()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Education</button>';
     }
 
@@ -180,10 +181,10 @@
       const technical = Array.isArray(sk.technical) ? sk.technical : [];
       const soft = Array.isArray(sk.soft) ? sk.soft : [];
       return '<div class="bld-form-group"><label class="bld-label">Technical Skills</label>' +
-          `<div class="bld-skills-area" id="bld-skills-technical">${ renderSkillTags(technical, 'technical') }</div>` +
+          `< div class="bld-skills-area" id = "bld-skills-technical" > ${ renderSkillTags(technical, 'technical') }</div > ` +
           '<input class="bld-skill-input" id="bld-skill-input-technical" placeholder="Type and press Enter..." onkeydown="window.bldAddSkill(event)"></div>' +
           '<div class="bld-form-group"><label class="bld-label">Soft Skills</label>' +
-          `<div class="bld-skills-area" id="bld-skills-soft">${ renderSkillTags(soft, 'soft') }</div>` +
+          `< div class="bld-skills-area" id = "bld-skills-soft" > ${ renderSkillTags(soft, 'soft') }</div > ` +
           '<input class="bld-skill-input" id="bld-skill-input-soft" placeholder="Type and press Enter..." onkeydown="window.bldAddSkill(event)"></div>';
     }
 
@@ -194,7 +195,7 @@
         langHtml += renderLanguageEntry(langs[li], li);
       }
       return '<p style="color: var(--bld-gray-400); font-size: 0.85rem; margin-bottom: 1rem;">Add languages you speak and your proficiency level.</p>' +
-          `<div id="bld-languages-list">${ langHtml }</div>` +
+          `< div id = "bld-languages-list" > ${ langHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddLanguage()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Language</button>';
     }
 
@@ -204,7 +205,7 @@
       for (let ci = 0; ci < certs.length; ci++) {
         certHtml += renderCertificateEntry(certs[ci], ci);
       }
-      return `<div id="bld-certificates-list">${ certHtml }</div>` +
+      return `< div id = "bld-certificates-list" > ${ certHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddCertificate()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Certification</button>';
     }
 
@@ -214,7 +215,7 @@
       for (let pi = 0; pi < projs.length; pi++) {
         projHtml += renderProjectEntry(projs[pi], pi);
       }
-      return `<div id="bld-projects-list">${ projHtml }</div>` +
+      return `< div id = "bld-projects-list" > ${ projHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddProject()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Project</button>';
     }
 
@@ -225,7 +226,7 @@
         linkHtml += renderSocialLinkEntry(links[li], li);
       }
       return '<p style="color: var(--bld-gray-400); font-size: 0.85rem; margin-bottom: 1rem;">Add links to your professional profiles.</p>' +
-          `<div id="bld-social-links-list">${ linkHtml }</div>` +
+          `< div id = "bld-social-links-list" > ${ linkHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddSocialLink()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Social Link</button>';
     }
 
@@ -236,7 +237,7 @@
         secHtml += renderCustomSectionEntry(secs[si], si);
       }
       return '<p style="color: var(--bld-gray-400); font-size: 0.85rem; margin-bottom: 1rem;">Add custom sections like Volunteer Work, Publications, Hobbies, etc.</p>' +
-          `<div id="bld-custom-sections-list">${ secHtml }</div>` +
+          `< div id = "bld-custom-sections-list" > ${ secHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddCustomSection()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Custom Section</button>';
     }
 
@@ -247,7 +248,7 @@
         refHtml += renderReferenceEntry(refs[ri], ri);
       }
       return '<p style="color: var(--bld-gray-400); font-size: 0.85rem; margin-bottom: 1rem;">References are optional. You can skip this step.</p>' +
-          `<div id="bld-references-list">${ refHtml }</div>` +
+          `< div id = "bld-references-list" > ${ refHtml }</div > ` +
           '<button class="bld-add-entry" onclick="window.bldAddReference()"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Reference</button>';
     }
 
@@ -277,9 +278,9 @@
         (typeof data === 'object' && !Array.isArray(data) && Object.keys(data).length > 0 && Object.values(data).some(v => v && (typeof v !== 'object' || (Array.isArray(v) && v.length > 0)))) ||
         (Array.isArray(data) && data.length > 0)
       );
-      html += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:${ hasData ? 'var(--bld-primary-subtle)' : 'var(--bld-gray-50)' };border-radius:8px;border:1px solid ${ hasData ? '#c7d2fe' : 'var(--bld-gray-200)' };">`;
-      html += `<i class="lucide lucide-${ step.icon }" style="width:1em;height:1em;color:${ hasData ? 'var(--bld-primary)' : 'var(--bld-gray-400)' };flex-shrink:0;"></i>`;
-      html += `<span style="flex:1;font-size:0.85rem;font-weight:500;color:${ hasData ? 'var(--bld-gray-800)' : 'var(--bld-gray-400)' };">${ step.title }</span>`;
+      html += `< div style = "display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:${ hasData ? 'var(--bld-primary-subtle)' : 'var(--bld-gray-50)' };border-radius:8px;border:1px solid ${ hasData ? '#c7d2fe' : 'var(--bld-gray-200)' };" > `;
+      html += `< i class="lucide lucide-${ step.icon }" style = "width:1em;height:1em;color:${ hasData ? 'var(--bld-primary)' : 'var(--bld-gray-400)' };flex-shrink:0;" ></i > `;
+      html += `< span style = "flex:1;font-size:0.85rem;font-weight:500;color:${ hasData ? 'var(--bld-gray-800)' : 'var(--bld-gray-400)' };" > ${ step.title }</span > `;
       html += hasData ? '<span style="color:var(--bld-success);font-size:0.75rem;">✓ Done</span>' : '<span style="color:var(--bld-gray-400);font-size:0.75rem;">—</span>';
       html += '</div>';
     }
@@ -294,10 +295,10 @@
       const isSelected = STATE.selectedTemplate === tmpl;
       const gradient = tmpl === 'modern' ? '#6366f1,#8b5cf6' : tmpl === 'minimal' ? '#374151,#6b7280' : tmpl === 'ats' ? '#059669,#10b981' : '#1e40af,#3b82f6';
       const icon = tmpl === 'modern' ? 'palette' : tmpl === 'minimal' ? 'minus' : tmpl === 'ats' ? 'bot' : 'briefcase';
-      html += `<div class="bld-template-card${ isSelected ? ' selected' : '' }" data-template="${ tmpl }" onclick="window.bldSelectTemplate('${ tmpl }')" style="cursor:pointer;">`;
-      html += `<div class="bld-template-icon" style="background:linear-gradient(135deg,${ gradient });">`;
-      html += `<i class="lucide lucide-${ icon }" style="width:1em;height:1em;"></i></div>`;
-      html += `<div class="bld-template-name">${ tmpl.charAt(0).toUpperCase() + tmpl.slice(1) }</div></div>`;
+      html += `< div class="bld-template-card${ isSelected ? ' selected' : '' }" data - template="${ tmpl }" onclick = "window.bldSelectTemplate('${ tmpl }')" style = "cursor:pointer;" > `;
+      html += `< div class="bld-template-icon" style = "background:linear-gradient(135deg,${ gradient });" > `;
+      html += `< i class="lucide lucide-${ icon }" style = "width:1em;height:1em;" ></i ></div > `;
+      html += `< div class="bld-template-name" > ${ tmpl.charAt(0).toUpperCase() + tmpl.slice(1) }</div ></div > `;
     }
     html += '</div>';
 
@@ -317,12 +318,12 @@
     let profOptions = '';
     for (let pi = 0; pi < proficiencies.length; pi++) {
       const p = proficiencies[pi];
-      profOptions += `<option value="${ p }"${ l.proficiency === p ? ' selected' : '' }>${ p.charAt(0).toUpperCase() + p.slice(1) }</option>`;
+      profOptions += `< option value = "${ p }"${ l.proficiency === p ? ' selected' : '' }> ${ p.charAt(0).toUpperCase() + p.slice(1) }</option > `;
     }
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('languages',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Language</label><input class="bld-input lang-name" value="${ escHtml(l.name || '') }" placeholder="e.g. English"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Proficiency</label><select class="bld-select lang-proficiency">${ profOptions }</select></div></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('languages',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Language</label><input class="bld-input lang-name" value="${ escHtml(l.name || '') }" placeholder="e.g. English"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Proficiency</label><select class="bld-select lang-proficiency">${ profOptions }</select></div ></div ></div > `;
   }
 
   function renderSocialLinkEntry(link, idx) {
@@ -331,79 +332,80 @@
     let platOptions = '';
     for (let pi = 0; pi < platforms.length; pi++) {
       const p = platforms[pi];
-      platOptions += `<option value="${ p }"${ l.platform === p ? ' selected' : '' }>${ p.charAt(0).toUpperCase() + p.slice(1) }</option>`;
+      platOptions += `< option value = "${ p }"${ l.platform === p ? ' selected' : '' }> ${ p.charAt(0).toUpperCase() + p.slice(1) }</option > `;
     }
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('social_links',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Platform</label><select class="bld-select link-platform">${ platOptions }</select></div>` +
-      `<div class="bld-form-group"><label class="bld-label">URL</label><input class="bld-input link-url" value="${ escHtml(l.url || '') }" placeholder="https://..."></div></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('social_links',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Platform</label><select class="bld-select link-platform">${platOptions}</select></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">URL</label><input class="bld-input link-url" value="${ escHtml(l.url || '') }" placeholder="https://..."></div></div ></div > `;
   }
 
   function renderCustomSectionEntry(sec, idx) {
     const s = sec || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('custom_sections',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-form-group"><label class="bld-label">Section Title</label><input class="bld-input custom-title" value="${ escHtml(s.title || '') }" placeholder="e.g. Volunteer Work"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Content</label><textarea class="bld-textarea custom-content" style="min-height:80px;" placeholder="Describe this section...">${ escHtml(s.content || '') }</textarea></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('custom_sections',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-form-group" ><label class="bld-label">Section Title</label><input class="bld-input custom-title" value="${ escHtml(s.title || '') }" placeholder="e.g. Volunteer Work"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Content</label><textarea class="bld-textarea custom-content" style="min-height:80px;" placeholder="Describe this section...">${ escHtml(s.content || '') }</textarea></div ></div > `;
   }
 
   function renderExperienceEntry(exp, idx) {
     const e = exp || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('experience',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Company</label><input class="bld-input exp-company" value="${ escHtml(e.company || '') }" placeholder="Company name"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Position</label><input class="bld-input exp-position" value="${ escHtml(e.position || '') }" placeholder="Job title"></div></div>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Location</label><input class="bld-input exp-location" value="${ escHtml(e.location || '') }" placeholder="City"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Start Date</label><input class="bld-input exp-start_date" value="${ escHtml(e.start_date || '') }" placeholder="Jan 2020"></div></div>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">End Date</label><input class="bld-input exp-end_date" value="${ escHtml(e.end_date || '') }" placeholder="Present"></div>` +
-      `<div class="bld-form-group"><label class="bld-checkbox"><input type="checkbox" class="exp-current" ${ e.is_current ? 'checked' : '' }> Currently here</label></div></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Responsibilities</label><textarea class="bld-textarea exp-responsibilities" style="min-height:80px;">${ escHtml(e.responsibilities || '') }</textarea></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('experience',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Company</label><input class="bld-input exp-company" value="${ escHtml(e.company || '') }" placeholder="Company name"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Position</label><input class="bld-input exp-position" value="${ escHtml(e.position || '') }" placeholder="Job title"></div></div > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Location</label><input class="bld-input exp-location" value="${ escHtml(e.location || '') }" placeholder="City"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Start Date</label><input class="bld-input exp-start_date" value="${ escHtml(e.start_date || '') }" placeholder="Jan 2020"></div></div > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">End Date</label><input class="bld-input exp-end_date" value="${ escHtml(e.end_date || '') }" placeholder="Present"></div>` +
+      `< div class="bld-form-group" > <label class="bld-checkbox"><input type="checkbox" class="exp-current" ${ e.is_current ? 'checked' : ''}> Currently here</label></div ></div > ` +
+      `< div class="bld-form-group" ><label class="bld-label">Responsibilities</label><textarea class="bld-textarea exp-responsibilities" style="min-height:80px;">${ escHtml(e.responsibilities || '') }</textarea></div ></div > `;
   }
 
   function renderEducationEntry(edu, idx) {
     const e = edu || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('education',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Institution</label><input class="bld-input edu-institution" value="${ escHtml(e.institution || '') }" placeholder="University"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Degree</label><input class="bld-input edu-degree" value="${ escHtml(e.degree || '') }" placeholder="B.Sc."></div></div>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Field</label><input class="bld-input edu-field" value="${ escHtml(e.field || '') }" placeholder="Computer Science"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Year</label><input class="bld-input edu-year" value="${ escHtml(e.year || '') }" placeholder="2024"></div></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('education',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Institution</label><input class="bld-input edu-institution" value="${ escHtml(e.institution || '') }" placeholder="University"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Degree</label><input class="bld-input edu-degree" value="${ escHtml(e.degree || '') }" placeholder="B.Sc."></div></div > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Field</label><input class="bld-input edu-field" value="${ escHtml(e.field || '') }" placeholder="Computer Science"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Year</label><input class="bld-input edu-year" value="${ escHtml(e.year || '') }" placeholder="2024"></div></div ></div > `;
   }
 
   function renderProjectEntry(proj, idx) {
     const p = proj || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('projects',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input proj-name" value="${ escHtml(p.name || '') }" placeholder="Project name"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Technologies</label><input class="bld-input proj-technologies" value="${ escHtml(p.technologies || '') }" placeholder="React, Node.js"></div></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Description</label><textarea class="bld-textarea proj-description" style="min-height:80px;">${ escHtml(p.description || '') }</textarea></div>` +
-      `<div class="bld-form-group"><label class="bld-label">URL</label><input class="bld-input proj-url" value="${ escHtml(p.url || '') }" placeholder="https://github.com/..."></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('projects',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input proj-name" value="${ escHtml(p.name || '') }" placeholder="Project name"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Technologies</label><input class="bld-input proj-technologies" value="${ escHtml(p.technologies || '') }" placeholder="React, Node.js"></div></div > ` +
+      `< div class="bld-form-group" ><label class="bld-label">Description</label><textarea class="bld-textarea proj-description" style="min-height:80px;">${ escHtml(p.description || '') }</textarea></div > ` +
+      `< div class="bld-form-group" ><label class="bld-label">URL</label><input class="bld-input proj-url" value="${ escHtml(p.url || '') }" placeholder="https://github.com/..."></div></div > `;
   }
 
   function renderCertificateEntry(cert, idx) {
     const c = cert || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('certificates',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input cert-name" value="${ escHtml(c.name || '') }" placeholder="Certificate name"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Organization</label><input class="bld-input cert-organization" value="${ escHtml(c.organization || '') }" placeholder="Issuing org"></div></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Date</label><input class="bld-input cert-date" value="${ escHtml(c.date || '') }" placeholder="June 2024"></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('certificates',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input cert-name" value="${ escHtml(c.name || '') }" placeholder="Certificate name"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Organization</label><input class="bld-input cert-organization" value="${ escHtml(c.organization || '') }" placeholder="Issuing org"></div></div > ` +
+      `< div class="bld-form-group" ><label class="bld-label">Date</label><input class="bld-input cert-date" value="${ escHtml(c.date || '') }" placeholder="June 2024"></div></div > `;
   }
 
   function renderReferenceEntry(ref, idx) {
     const r = ref || {};
-    return `<div class="bld-entry-card" data-idx="${ idx }">` +
-      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('references',${ idx })"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input ref-name" value="${ escHtml(r.name || '') }" placeholder="Reference name"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Title</label><input class="bld-input ref-title" value="${ escHtml(r.title || '') }" placeholder="Manager"></div></div>` +
-      `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input ref-email" value="${ escHtml(r.email || '') }" placeholder="email@example.com"></div>` +
-      `<div class="bld-form-group"><label class="bld-label">Phone</label><input class="bld-input ref-phone" value="${ escHtml(r.phone || '') }" placeholder="+1 555-0000"></div></div></div>`;
+    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
+      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('references',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input ref-name" value="${ escHtml(r.name || '') }" placeholder="Reference name"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Title</label><input class="bld-input ref-title" value="${ escHtml(r.title || '') }" placeholder="Manager"></div></div > ` +
+      `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input ref-email" value="${ escHtml(r.email || '') }" placeholder="email@example.com"></div>` +
+      `< div class="bld-form-group" ><label class="bld-label">Phone</label><input class="bld-input ref-phone" value="${ escHtml(r.phone || '') }" placeholder="+1 555-0000"></div></div ></div > `;
   }
 
   function renderSkillTags(skills, category) {
     let html = '';
     for (let i = 0; i < skills.length; i++) {
-      html += `<span class="bld-skill-tag">${ escHtml(skills[i])
-      } <button class="bld-skill-remove" onclick="window.bldRemoveSkill('${ category }',${ i })\"><i class=\"lucide lucide-x\" style=\"width:0.8em;height:0.8em;\"></i></button></span>`;
+      html += `< span class="bld-skill-tag" > ${
+          escHtml(skills[i])
+        } <button class="bld-skill-remove" onclick="window.bldRemoveSkill('${ category }',${ i })\"><i class=\"lucide lucide-x\" style=\"width:0.8em;height:0.8em;\"></i></button ></span > `;
     }
     return html;
   }
@@ -545,10 +547,10 @@
     const stepData = STATE.data[stepId] || {};
     const payload = { step: stepId, data: stepData, all_data: STATE.data, };
     // First save to the standard builder_data JSON
-    fetch(`/api/cv/builder/${ STATE.cvId }/step`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
-      body: JSON.stringify(payload),
+    fetch(`/ api / cv / builder / ${ STATE.cvId }/step`, {
+        method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
+        body: JSON.stringify(payload),
     })
       .then((r) => { return r.json(); })
       .then((res) => {
@@ -560,7 +562,7 @@
           showAutoSaveIndicator();
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => { STATE.isSaving = false; });
   }
 
@@ -574,7 +576,7 @@
       .then(function (res) {
         if (res.success && !silent) showAutoSaveIndicator();
       })
-      .catch(function () {});
+      .catch(function () { });
   }
 
   function completeBuilder() {
@@ -594,14 +596,14 @@
     }
     const nextBtn = document.getElementById('bld-btn-next');
     if (nextBtn) { nextBtn.disabled = true; nextBtn.innerHTML = '<i class="lucide lucide-hourglass" style="width:1em;height:1em;"></i> Finalizing...'; }
-    fetch(`/api/cv/builder/${ STATE.cvId }/complete`, {
+    fetch(`/api/cv/builder/${STATE.cvId}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
       body: JSON.stringify({ all_data: STATE.data, template: STATE.selectedTemplate, }),
     })
       .then((r) => { return r.json(); })
       .then((res) => {
-        if (res.success) { window.location.href = res.redirect || `/cv/${ STATE.cvId}`; }
+        if (res.success) { window.location.href = res.redirect || `/cv/${STATE.cvId}`; }
         else { window.showMessage(res.error || 'Failed to complete', 'danger'); if (nextBtn) { nextBtn.disabled = false; nextBtn.innerHTML = 'Finish and Save'; } }
       })
       .catch(() => { window.showMessage('An error occurred', 'danger'); if (nextBtn) { nextBtn.disabled = false; nextBtn.innerHTML = 'Finish and Save'; } })
@@ -612,7 +614,7 @@
     if (!slug) return;
     if (!STATE.data.summary) STATE.data.summary = {};
     STATE.data.summary.job_title = slug;
-    fetch(`/api/job-positions/slug/${ slug}`)
+    fetch(`/api/job-positions/slug/${slug}`)
       .then((r) => { return r.json(); })
       .then((res) => {
         if (res.success && res.position) {
@@ -630,7 +632,7 @@
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   window.bldAcceptSuggestion = function (idx) {
@@ -687,7 +689,7 @@
     current.push(text);
     STATE.data.skills = STATE.data.skills || {};
     STATE.data.skills[category] = current;
-    const area = document.getElementById(`bld-skills-${ category}`);
+    const area = document.getElementById(`bld-skills-${category}`);
     if (area) area.innerHTML = renderSkillTags(current, category);
     input.value = '';
     input.focus();
@@ -698,7 +700,7 @@
     current.splice(idx, 1);
     STATE.data.skills = STATE.data.skills || {};
     STATE.data.skills[category] = current;
-    const area = document.getElementById(`bld-skills-${ category}`);
+    const area = document.getElementById(`bld-skills-${category}`);
     if (area) area.innerHTML = renderSkillTags(current, category);
   };
 
@@ -706,7 +708,7 @@
     if (STATE.data.skills && Array.isArray(STATE.data.skills[category])) {
       return STATE.data.skills[category].slice();
     }
-    const tags = document.querySelectorAll(`#bld-skills-${ category } .bld-skill-tag`);
+    const tags = document.querySelectorAll(`#bld-skills-${category} .bld-skill-tag`);
     const arr = [];
     for (let i = 0; i < tags.length; i++) {
       const text = tags[i].textContent.replace(/\s*\u00d7\s*/, '').replace(/\s*×\s*/, '').trim();
@@ -730,7 +732,7 @@
     const stepEl = document.getElementById('bld-current-step');
     const dots = document.querySelectorAll('#bld-step-dots .bld-step-dot');
     if (pctEl) pctEl.textContent = String(pct);
-    if (fillEl) fillEl.style.width = `${pct }%`;
+    if (fillEl) fillEl.style.width = `${pct}%`;
     if (stepEl) stepEl.textContent = String(STATE.currentStep + 1);
     dots.forEach((dot) => {
       const step = parseInt(dot.getAttribute('data-step'), 10);

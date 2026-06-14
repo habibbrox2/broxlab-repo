@@ -19,6 +19,7 @@ export default [
       'public_html/assets/js/admin-bulk-article-writer.js',
       'public_html/assets/js/bangla-converter.js',
       'public_html/assets/firebase/v2/**',
+      'public_html/assets/js/test-template.mjs',
       'build/Scripts/**',
       'build/esbuild.config.js',
       'build/esbuild-firebase.mjs',
