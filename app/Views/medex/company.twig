@@ -1,0 +1,272 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+ {{ company.name }} - {{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Company' }} - {{ app_settings.site_name }}
+{% endblock %}
+
+{% block meta_description %}
+ {{ current_lang == 'bn' ? company.name ~ ' - একটি বাংলাদেশি হার্বাল ফার্মাসিউটিক্যাল কোম্পানি। প্রতিষ্ঠাকাল, জেনেরিক ও ব্র্যান্ড সংখ্যা সহ বিস্তারিত তথ্য।' : company.name ~ ' - A Bangladeshi herbal pharmaceutical company. Find establishment year, generics, brands, and contact information.' }}
+{% endblock %}
+
+{% block meta_keywords %}pharmaceutical company, {{ company.name }}, herbal medicine, drug manufacturer, Bangladesh pharma, generic medicine, medicine supplier{% endblock %}
+
+{% block og_image %}{{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png') }}{% endblock %}
+
+{% set breadcrumbs = [
+ { label: 'MedEx', url: '/medex', icon: 'capsule' },
+ { label: company.name|slice(0, 50), icon: 'building' }
+] %}
+
+{% set page_schema = {
+ '@context': 'https://schema.org',
+ '@type': 'Organization',
+ 'name': company.name,
+ 'description': (company.overview|default(company.name ~ ' - Herbal pharmaceutical company'))|striptags|slice(0, 200),
+ 'url': current_url,
+ 'foundingDate': company.established|default(''),
+ 'numberOfEmployees': {
+ '@type': 'QuantitativeValue',
+ 'value': brand_count|default(0),
+ 'unitText': 'Brands'
+ },
+ 'isPartOf': {
+ '@type': 'MedicalWebPage',
+ 'name': app_settings.site_name
+ }
+} %}
+{% if company.headquarter %}
+ {% set page_schema = page_schema|merge({
+ 'address': {
+ '@type': 'PostalAddress',
+ 'addressLocality': company.headquarter,
+ 'addressCountry': 'BD'
+ }
+ }) %}
+{% endif %}
+{% if company.contact %}
+ {% set page_schema = page_schema|merge({
+ 'contactPoint': {
+ '@type': 'ContactPoint',
+ 'telephone': company.contact,
+ 'contactType': 'Customer Service'
+ }
+ }) %}
+{% endif %}
+{% block schema %}
+ <script type="application/ld+json">
+{{ page_schema|schema_json }}
+ </script>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+
+{# Company Header with gradient background #}
+<div class="medex-page-header">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
+ <div class="col-span-12">
+ <div class="flex items-center flex-wrap">
+ <i class="lucide lucide-building-2 medex-page-icon"></i>
+ <div>
+ <h1 class="medex-page-title mb-1" id="medexCompanyName">{{ company.name }}</h1>
+ <p class="medex-page-subtitle mb-0" data-i18n-en="Herbal Pharmaceutical Company" data-i18n-bn="হার্বাল ফার্মাসিউটিক্যাল কোম্পানি">
+ {{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Company' }}
+ {% if company.headquarter %}
+ <span class="ml-2"><i class="lucide lucide-map-pin"></i> {{ company.headquarter }}</span>
+ {% endif %}
+ </p>
+ <span id="medexCompanyStatus" class="text-slate-500 small block mt-2">Fetching live company data…</span>
+ </div>
+ </div>
+ </div>
+ </div>
+</div>
+
+{# Quick Stats Row #}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="lg:col-span-8">
+ <div class="medex-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-border-b border-slate-200 px-4 py-3">
+ <i class="lucide lucide-info"></i> <span data-i18n-en="Company Overview" data-i18n-bn="কোম্পানি ওভারভিউ">{{ current_lang == 'bn' ? 'কোম্পানি ওভারভিউ' : 'Company Overview' }}</span>
+ </div>
+ <div class="medex-p-4">
+ <div id="medexCompanyOverview" class="medex-overview-text">{% if company.overview %}{{ company.overview|nl2br }}{% endif %}</div>
+
+ <div class="medex-details-grid mt-4">
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Established" data-i18n-bn="প্রতিষ্ঠিত">{{ current_lang == 'bn' ? 'প্রতিষ্ঠিত' : 'Established' }}</div>
+ <div id="medexCompanyEstablished" class="medex-detail-value">{{ company.established|default('N/A') }}</div>
+ </div>
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Market Share" data-i18n-bn="বাজারে অংশ">{{ current_lang == 'bn' ? 'বাজারে অংশ' : 'Market Share' }}</div>
+ <div id="medexCompanyMarketShare" class="medex-detail-value">{{ company.market_share|default('N/A') }}</div>
+ </div>
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Growth" data-i18n-bn="বৃদ্ধি">{{ current_lang == 'bn' ? 'বৃদ্ধি' : 'Growth' }}</div>
+ <div id="medexCompanyGrowth" class="medex-detail-value">{{ company.growth|default('N/A') }}</div>
+ </div>
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Total Generics" data-i18n-bn="মোট জেনেরিকস">{{ current_lang == 'bn' ? 'মোট জেনেরিকস' : 'Total Generics' }}</div>
+ <div id="medexCompanyGenerics" class="medex-detail-value">{{ company.total_generics|default(company.generics|default(0))|number_format }}</div>
+ </div>
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
+ <div id="medexCompanyBrands" class="medex-detail-value">{{ company.brands|default(brand_count)|number_format }}</div>
+ </div>
+ <div class="medex-detail-item">
+ <div class="medex-detail-label" data-i18n-en="Headquarter" data-i18n-bn="হেডকোয়াটার">{{ current_lang == 'bn' ? 'হেডকোয়াটার' : 'Headquarter' }}</div>
+ <div id="medexCompanyHeadquarter" class="medex-detail-value small">{{ company.headquarter|default('N/A') }}</div>
+ </div>
+ </div>
+
+ {% if company.contact or company.fax %}
+ <div class="mt-4 pt-3 border-top">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ {% if company.contact %}
+ <div class="sm:col-span-6">
+ <label class="text-slate-500 small font-bold"><i class="lucide lucide-phone mr-1"></i><span data-i18n-en="Contact" data-i18n-bn="যোগাযোগ">{{ current_lang == 'bn' ? 'যোগাযোগ' : 'Contact' }}</span></label>
+ <div id="medexCompanyContact" class="font-semibold small">{{ company.contact }}</div>
+ </div>
+ {% endif %}
+ {% if company.fax %}
+ <div class="sm:col-span-6">
+ <label class="text-slate-500 small font-bold"><i class="lucide lucide-printer mr-1"></i><span data-i18n-en="Fax" data-i18n-bn="ফ্যাক্স">{{ current_lang == 'bn' ? 'ফ্যাক্স' : 'Fax' }}</span></label>
+ <div id="medexCompanyFax" class="font-semibold small">{{ company.fax }}</div>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+
+ <div class="lg:col-span-4">
+ <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stats-number">{{ brand_count }}</div>
+ <div class="medex-stats-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' }}</div>
+ <a href="#brands-section" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-emerald-600 rounded-lg hover:bg-emerald-600-light transition-colors mt-3"> <i class="lucide lucide-pill mr-1"></i> <span data-i18n-en="View Products" data-i18n-bn="প্রোডাক্ট দেখুন">{{ current_lang == 'bn' ? 'প্রোডাক্ট দেখুন' : 'View Products' }}</span></a>
+ </div>
+
+ {% if company.headquarter %}
+ {% set mapsQuery = company.headquarter|url_encode %}
+ {% set mapsUrl = company.headquarter_url ?: 'https://www.google.com/maps/search/' ~ mapsQuery %}
+ <div class="medex-location-card border border-slate-200 bg-white shadow-sm">
+ <a href="{{ mapsUrl }}" target="_blank" rel="noopener" class="no-underline">
+ <div class="medex-location-map flex items-center justify-center bg-slate-100" style="height:200px;">
+ <div class="text-center text-slate-500">
+ <i class="lucide lucide-map-pin" style="font-size:2.5rem;"></i>
+ <p class="mb-0 mt-2 small">{{ company.headquarter }}</p>
+ </div>
+ </div>
+ <div class="medex-location-btn inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-i18n-en="Open in Google Maps" data-i18n-bn="গুগল ম্যাপসে খুলুন">
+ <i class="lucide lucide-map-pin mr-1"></i> {{ current_lang == 'bn' ? 'গুগল ম্যাপসে খুলুন' : 'Open in Google Maps' }}
+ </div>
+ </a>
+ </div>
+ {% endif %}
+ </div>
+</div>
+
+{# Back button #}
+<div class="mb-4">
+ <a href="/medex" class="medex-back-link">
+ <i class="lucide lucide-arrow-left"></i> <span data-i18n-en="Back to all Companies" data-i18n-bn="সকল কোম্পানিতে ফিরে যান">{{ current_lang == 'bn' ? 'সকল কোম্পানিতে ফিরে যান' : 'Back to all Companies' }}</span>
+ </a>
+</div>
+
+{# Brands List Section #}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12" id="brands-section">
+ <div class="col-span-12">
+ <div class="medex-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-border-b border-slate-200 px-4 py-3">
+ <i class="lucide lucide-pill"></i>
+ <span data-i18n-en="Products & Brands" data-i18n-bn="পণ্য ও ব্র্যান্ড">{{ current_lang == 'bn' ? 'পণ্য ও ব্র্যান্ড' : 'Products & Brands' }}</span>
+ <span id="medexCompanyBrandCount" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-600 text-white ml-auto">{{ brand_count }}</span>
+ </div>
+ <div class="medex-p-4 p-0">
+ {% if brands is not empty %}
+ <div class="medex-table-wrapper">
+ <table class="medex-table">
+ <thead>
+ <tr>
+ <th scope="col"><span data-i18n-en="Brand Name" data-i18n-bn="ব্র্যান্ড নাম">{{ current_lang == 'bn' ? 'ব্র্যান্ড নাম' : 'Brand Name' }}</span></th>
+ <th scope="col"><span data-i18n-en="Generic Name" data-i18n-bn="জেনেরিক নাম">{{ current_lang == 'bn' ? 'জেনেরিক নাম' : 'Generic Name' }}</span></th>
+ <th scope="col" class="text-center"><span data-i18n-en="Strength" data-i18n-bn="স্ট্রেন্থ">{{ current_lang == 'bn' ? 'স্ট্রেন্থ' : 'Strength' }}</span></th>
+ <th scope="col" class="text-center"><span data-i18n-en="Details" data-i18n-bn="বিস্তারিত">{{ current_lang == 'bn' ? 'বিস্তারিত' : 'Details' }}</span></th>
+ </tr>
+ </thead>
+ <tbody id="medexCompanyTableBody">
+ {% for brand in brands %}
+ <tr class="medex-hover-lift">
+ <td>
+ <a href="/medex/brand/{{ brand._id }}" class="no-underline font-semibold medex-brand-name">
+ <i class="lucide lucide-pill mr-1 text-emerald-600"></i>
+ {{ brand.name }}
+ </a>
+ </td>
+ <td class="medex-generic-name">
+ {{ brand.generic|striptags|trim|nl2br }}
+ </td>
+ <td class="text-center">
+ {% set genericText = brand.generic|striptags %}
+ {% if genericText matches '/\d+\\s*(mg|g|mcg|ml)/i' %}
+ <span class="medex-chip font-semibold--strength">
+ {{ genericText|regex_find('/(\d+\\s*[a-zA-Z]+)/')[0]|default('Varies') }}
+ </span>
+ {% else %}
+ <span class="text-slate-500">-</span>
+ {% endif %}
+ </td>
+ <td class="text-center">
+ <a href="/medex/brand/{{ brand._id }}" class="medex-btn transition--details">
+ <i class="lucide lucide-file-text"></i> {{ current_lang == 'bn' ? 'দেখুন' : 'View' }}
+ </a>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="medex-empty-state">
+ <i class="lucide lucide-pill"></i>
+ <h4>{{ current_lang == 'bn' ? 'কোন ব্র্যান্ড তালিকাভুক্ত নয়' : 'No Brands Listed' }}</h4>
+ <p>{{ current_lang == 'bn' ? 'এই কোম্পানির জন্য বর্তমানে কোন ব্র্যান্ড উপলব্ধ নেই।' : 'No brands are currently available for this company.' }}</p>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+</div>
+
+{# Bottom back link #}
+<div class="mt-5 mb-4">
+ <a href="/medex" class="medex-back-link">
+ <i class="lucide lucide-arrow-left"></i> <span data-i18n-en="Back to all Companies" data-i18n-bn="সকল কোম্পানিতে ফিরে যান">{{ current_lang == 'bn' ? 'সকল কোম্পানিতে ফিরে যান' : 'Back to all Companies' }}</span>
+ </a>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+
+{% endblock %}
+
+{% block extra_head %}
+ {% set medexLangUrlBase = current_url|replace({'?lang=bn':'?','&lang=bn':'','?lang=en':'?','&lang=en':''})|replace({'?&':'?','&&':'&'})|trim('?&') %}
+ {% set medexLangQuery = medexLangUrlBase matches('/\\?/') ? '&' : '?' %}
+ <link rel="alternate" hreflang="en" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+ <link rel="alternate" hreflang="bn" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=bn">
+ <link rel="alternate" hreflang="x-default" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}"></script>
+{% endblock %}
+
+
+
+
+

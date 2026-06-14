@@ -40,6 +40,65 @@ function aiChatStreamContent(string $content, array $meta = []): void
     ChatResponseService::streamContent($content, $meta);
 }
 
+/**
+ * Save/publish handler for the Live Streaming Article Writer UI.
+ *
+ * Backward compatible: accepts either:
+ * - `{ article: {...}, publish: bool, author_id?: int }`
+ * - `{ title, content, slug?, publish: bool }` (legacy)
+ */
+function aiArticleWriterStreamHandleSave(mysqli $mysqli, bool $forcePublish = false): void
+{
+    header('Content-Type: application/json');
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    if (!is_array($input)) {
+        $input = [];
+    }
+
+    $article = $input['article'] ?? null;
+    if (!is_array($article)) {
+        $article = [];
+    }
+
+    // Back-compat for older clients sending top-level title/content/slug.
+    if (empty($article) && (isset($input['title']) || isset($input['content']))) {
+        $article = [
+            'title' => (string)($input['title'] ?? ''),
+            'content' => (string)($input['content'] ?? ''),
+            'slug' => (string)($input['slug'] ?? ''),
+        ];
+    }
+
+    $publish = $forcePublish ? true : !empty($input['publish']);
+    $authorId = max(0, (int)($input['author_id'] ?? 0));
+
+    if (empty($article['title']) || empty($article['content'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Article title and content are required']);
+        return;
+    }
+
+    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
+    $writer = new ArticleWriterService($mysqli);
+
+    $result = $writer->publishArticle($article, $publish, $authorId);
+
+    if (!$result['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Saving failed']);
+        return;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'post_id' => $result['post_id'] ?? null,
+        'slug' => $result['slug'] ?? null,
+        'published' => $result['published'] ?? false,
+        'url' => $result['url'] ?? null,
+    ]);
+}
+
 
 function aiChatDeriveHttpStatus(array $response, int $default = 502): int
 {
@@ -343,7 +402,8 @@ function aiSystemBuildModelCandidates(
 
         if (strpos($candidate, '/') !== false && $providerName !== 'openrouter') {
             [$prefix] = explode('/', $candidate, 2);
-            if ($prefix !== $providerName) {
+            $kiloAlias = $providerName === 'kilo' && str_starts_with($prefix, 'kilo-auto');
+            if ($prefix !== $providerName && !$kiloAlias) {
                 continue;
             }
         }
@@ -1022,7 +1082,7 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
                 $response = $aiProvider->callAPI($provider, $model, $messages, $providerOptions);
             }
 
-            aiErrorLog('[AI Chat] Response from ' . $provider . ': success=' . ($response['success'] ? 'true' : 'false') . ', error=' . ($response['error'] ?? 'none'));
+            aiErrorLog('[AI Chat] Response from ' . $provider . ': success=' . (($response['success'] ?? false) ? 'true' : 'false') . ', error=' . ($response['error'] ?? 'none'));
 
             if (!empty($response['success'])) {
                 aiErrorLog('[AI Chat] SUCCESS with ' . $provider . '/' . $model);
@@ -1043,7 +1103,16 @@ function aiChatHandleRequest(array $input, mysqli $mysqli, bool $isAdmin, bool $
         }
     }
 
-    aiErrorLog('[AI Chat] After provider loop: success=' . ($response['success'] ?? 'false') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
+    if (!empty($response['success'])) {
+        $content = trim((string)($response['content'] ?? ''));
+        if ($content === '' && empty($response['tool_calls']) && empty($response['auto_tool_calls'])) {
+            $response['success'] = false;
+            $response['error'] = 'AI provider returned an empty response';
+            $response['error_code'] = 'empty_response';
+        }
+    }
+
+    aiErrorLog('[AI Chat] After provider loop: success=' . (($response['success'] ?? false) ? 'true' : 'false') . ', hasAutoTools=' . ($hasAutoTools ? 'true' : 'false'));
 
     if (empty($response['success'])) {
         aiErrorLog('[AI Chat] All providers failed. hasUsableProvider=' . ($hasUsableProvider ? 'true' : 'false') . ', lastError=' . ($lastError ?? 'none'));
@@ -1287,6 +1356,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             'provider' => $frontendProvider,
             'model' => $defaultModel,
             'frontend_model' => $defaultModel,
+            'backend_provider' => $backendProvider,
             'backend_model' => $backendModel,
             'providers' => $providerList,
             'openrouter_key_source' => $openrouterKeySource
@@ -2005,6 +2075,45 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
         echo json_encode(['success' => $ok]);
     });
 
+
+    // DELETE /api/ai/conversations/{id} - Public: delete your own conversation (ownership via visitorToken)
+    $router->delete('/api/ai/conversations/(\d+)', function ($conversationId) use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'ai_public_chat',
+            'limit' => 10,
+            'window' => 60,
+            'is_api' => true
+        ]);
+
+        $conversationId = (int)$conversationId;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Valid conversation id is required']);
+            return;
+        }
+
+        $visitorToken = trim((string)($_SERVER['HTTP_X_VISITOR_TOKEN'] ?? $_GET['visitorToken'] ?? ''));
+        if (empty($visitorToken)) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Visitor token is required']);
+            return;
+        }
+
+        $chatModel = new AIChatModel($mysqli);
+        $result = $chatModel->deleteConversationByToken($conversationId, $visitorToken);
+
+        if (!$result) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation not found or not owned by you']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+    });
     $bootstrapSessionHandler = function (bool $isAdmin) use ($mysqli) {
         $input = json_decode(file_get_contents('php://input'), true);
         if (!is_array($input)) {
@@ -2095,6 +2204,45 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
                 'error_code' => 'fatal_error'
             ], 500);
         }
+    });
+
+    // GET /api/admin/ai/conversations - List all conversations (Admin-only)
+    $router->get('/api/admin/ai/conversations', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $chatModel = new AIChatModel($mysqli);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = (int)($_GET['limit'] ?? 50);
+        if ($limit <= 0) $limit = 50;
+        if ($limit > 200) $limit = 200;
+        $offset = ($page - 1) * $limit;
+
+        $conversations = $chatModel->listConversations($limit, $offset);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'conversations' => $conversations]);
+    });
+
+    // DELETE /api/admin/ai/conversations/{id} - Delete a conversation with all messages (Admin-only)
+    $router->delete('/api/admin/ai/conversations/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($conversationId) use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'admin_api',
+            'limit' => 30,
+            'window' => 60,
+            'is_api' => true
+        ]);
+
+        $conversationId = (int)$conversationId;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Valid conversation id is required']);
+            return;
+        }
+
+        $chatModel = new AIChatModel($mysqli);
+        $result = $chatModel->deleteConversation($conversationId);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
     });
 
     // GET /api/admin/ai/conversations/export (Admin-only, PHP fallback supported)
@@ -2360,7 +2508,8 @@ $router->post('/api/admin/ai-knowledge/delete', ['middleware' => ['auth', 'admin
 // GET /api/admin/ai-knowledge/suggestions - Get improvement suggestions
 $router->get('/api/admin/ai-knowledge/suggestions', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
     $model = new AIKnowledge($mysqli);
-    $suggestions = $model->getImprovementSuggestions(10);
+    $suggestions = $model->getImprovementSuggestions(5, 3, 5, 10);
+
 
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'suggestions' => $suggestions]);
@@ -2475,7 +2624,11 @@ $router->get('/admin/ai-knowledge', ['middleware' => ['auth', 'admin_only']], fu
 // ==================== Autonomous Article Writer ====================
 
 // GET /admin/ai/article-writer - Article Writer UI
-$router->get('/admin/ai/article-writer', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+$router->get('/admin/ai/article-writer', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    require_once dirname(__DIR__, 1) . '/Models/ContentModel.php';
+    $contentModel = new ContentModel($mysqli);
+    $categories = $contentModel->getAllCategories();
+
     $breadcrumbs = [
         ['label' => 'Dashboard', 'url' => '/admin'],
         ['label' => 'AI SYSTEM', 'url' => '/admin/ai-system'],
@@ -2485,7 +2638,8 @@ $router->get('/admin/ai/article-writer', ['middleware' => ['auth', 'admin_only']
     echo $twig->render('admin/ai/article-writer.twig', [
         'title' => 'Autonomous Article Writer',
         'breadcrumbs' => $breadcrumbs,
-        'csrf_token' => generateCsrfToken()
+        'csrf_token' => generateCsrfToken(),
+        'categories' => $categories
     ]);
 });
 
@@ -2791,18 +2945,19 @@ $router->post('/api/admin/ai/article-writer-stream/generate', ['middleware' => [
     }
 
     // Send meta info
+    // NOTE: ArticleWriterService returns SEO/meta fields inside `$article`.
     echo "data: " . json_encode([
         'type' => 'meta',
         'meta' => [
             'title' => $title,
-            'seo_title' => $result['meta']['seo_title'] ?? '',
-            'seo_description' => $result['meta']['seo_description'] ?? '',
-            'slug' => $result['meta']['slug'] ?? '',
-            'tags' => $result['meta']['tags'] ?? [],
-            'reading_time_minutes' => $result['meta']['reading_time_minutes'] ?? 3,
-            'key_points' => $result['meta']['key_points'] ?? [],
+            'seo_title' => $article['seo_title'] ?? '',
+            'seo_description' => $article['seo_description'] ?? '',
+            'slug' => $article['slug'] ?? '',
+            'tags' => $article['tags'] ?? [],
+            'reading_time_minutes' => $article['reading_time_minutes'] ?? 3,
+            'key_points' => $article['key_points'] ?? [],
         ]
-    ]) . "\n\n";
+    ], JSON_UNESCAPED_UNICODE) . "\n\n";
     @ob_flush();
     flush();
 
@@ -2813,37 +2968,13 @@ $router->post('/api/admin/ai/article-writer-stream/generate', ['middleware' => [
 
 // POST /api/admin/ai/article-writer-stream/save - Save streaming generated article
 $router->post('/api/admin/ai/article-writer-stream/save', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
-    header('Content-Type: application/json');
+    aiArticleWriterStreamHandleSave($mysqli, false);
+    return;
+});
 
-    $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-    $article = $input['article'] ?? [];
-    $publish = !empty($input['publish']);
-    $authorId = max(0, (int)($input['author_id'] ?? 0));
-
-    if (empty($article['title']) || empty($article['content'])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Article title and content are required']);
-        return;
-    }
-
-    require_once dirname(__DIR__, 1) . '/Services/AI/ArticleWriterService.php';
-    $writer = new ArticleWriterService($mysqli);
-
-    $result = $writer->publishArticle($article, $publish, $authorId);
-
-    if (!$result['success']) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Saving failed']);
-        return;
-    }
-
-    echo json_encode([
-        'success' => true,
-        'post_id' => $result['post_id'] ?? null,
-        'slug' => $result['slug'] ?? null,
-        'published' => $result['published'] ?? false,
-        'url' => $result['url'] ?? null,
-    ]);
+// POST /api/admin/ai/article-writer-stream/publish - Backward-compatible alias (calls /save with publish=true)
+$router->post('/api/admin/ai/article-writer-stream/publish', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    aiArticleWriterStreamHandleSave($mysqli, true);
     return;
 });
 

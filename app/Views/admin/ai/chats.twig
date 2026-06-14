@@ -3,102 +3,1024 @@
 {% block title %}AI Conversations | BroxBhai{% endblock %}
 
 {% block stylesheets %}
-{# CSS is auto-loaded by ai-chat-manager.js #}
+<style>
+/* ── Chat Layout ── */
+.chat-manager-root {
+  display: grid;
+  grid-template-columns: 320px 1fr 280px;
+  gap: 1px;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #e2e8f0;
+  overflow: hidden;
+  min-height: calc(100vh - 12rem);
+  max-height: calc(100vh - 12rem);
+}
+.chat-manager-root > * {
+  background: #fff;
+  overflow: hidden;
+}
+@media (max-width: 1024px) {
+  .chat-manager-root {
+    grid-template-columns: 1fr;
+  }
+  .chat-list-pane { display: block; }
+  .chat-main-pane { display: none; }
+  .chat-side-pane { display: none; }
+  .chat-manager-root.show-chat .chat-list-pane { display: none; }
+  .chat-manager-root.show-chat .chat-main-pane { display: flex; }
+  .chat-manager-root.show-sidebar .chat-side-pane {
+    position: fixed; inset: 0; z-index: 50; display: block;
+  }
+}
+
+/* ── Scroll Areas ── */
+.chat-list-scroll {
+  overflow-y: auto;
+  height: calc(100% - 60px);
+}
+.chat-transcript-scroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Message Bubbles ── */
+.msg-bubble-user {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+}
+.msg-bubble-assistant {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-radius: 18px 18px 18px 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ── Conversation Item ── */
+.conv-item {
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.conv-item:hover {
+  background: #f8fafc;
+}
+.conv-item.active {
+  background: #eef2ff;
+  border-left-color: #6366f1;
+}
+.conv-item .conv-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.conv-item:hover .conv-actions {
+  opacity: 1;
+}
+
+/* ── Empty State ── */
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+/* ── Side Panel Sections ── */
+.side-panel-section {
+  padding: 1rem;
+}
+
+/* ── Transitions ── */
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Custom Scrollbar ── */
+.chat-list-scroll::-webkit-scrollbar,
+.chat-transcript-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-list-scroll::-webkit-scrollbar-track,
+.chat-transcript-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-list-scroll::-webkit-scrollbar-thumb,
+.chat-transcript-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.chat-list-scroll::-webkit-scrollbar-thumb:hover,
+.chat-transcript-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Toast ── */
+.chat-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  transform: translateY(1rem);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.chat-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Send button loading ── */
+.btn-send-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-1 fw-bold text-gray-800">AI Conversations</h1>
-            <p class="text-muted small">Manage and monitor visitor interactions with BroxBhai AI.</p>
+<div class="px-4 sm:px-6 py-4">
+  <!-- Page Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div>
+      <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
+        <i class="lucide lucide-message-square text-indigo-600"></i>
+        AI Conversations
+      </h1>
+      <p class="mt-1 max-w-2xl text-sm text-slate-500">
+        Manage and monitor visitor interactions with BroxBhai AI.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button id="refreshList"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow active:scale-[0.97]">
+        <i class="lucide lucide-refresh-cw w-4 h-4"></i>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Chat Manager -->
+  <div class="chat-manager-root" id="chatManagerRoot">
+    <!-- ── Left Pane: Conversations List ── -->
+    <div class="chat-list-pane flex flex-col">
+      <!-- Search -->
+      <div class="p-3 border-b border-slate-200">
+        <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white transition-shadow">
+          <span class="shrink-0 flex items-center px-3 py-2.5 text-slate-400">
+            <i class="lucide lucide-search w-4 h-4"></i>
+          </span>
+          <input type="text" id="chatSearch"
+            class="w-full border-0 px-0 py-2.5 pr-3 text-sm focus:outline-none focus:ring-0 bg-transparent"
+            placeholder="Search conversations...">
         </div>
-        <div class="d-flex gap-2">
-            <button id="refreshList" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+      </div>
+      <!-- Conversation List -->
+      <div class="chat-list-scroll flex-1" id="convList">
+        <div class="flex items-center justify-center h-full text-slate-400">
+          <div class="text-center">
+            <i class="lucide lucide-loader-2 w-6 h-6 animate-spin mx-auto mb-2"></i>
+            <p class="text-sm">Loading conversations...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Center Pane: Chat Transcript ── -->
+    <div class="chat-main-pane flex flex-col">
+      <!-- Chat Header -->
+      <div class="hidden flex-shrink-0 border-b border-slate-200 px-4 py-3 bg-white" id="chatHeader">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 min-w-0">
+            <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition lg:hidden flex-shrink-0" id="btnBackToList">
+              <i class="lucide lucide-arrow-left w-4 h-4"></i>
             </button>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm" id="activeAvatar">
+                U
+              </div>
+              <div class="min-w-0">
+                <div class="font-semibold text-slate-900 truncate text-sm" id="activeTitle">Visitor</div>
+                <div class="flex items-center gap-1.5 text-xs text-slate-500" id="activeStatus">
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-500" id="statusDot"></span>
+                  <span id="statusText">Active</span>
+                  <span class="text-slate-300">·</span>
+                  <span id="activeMsgCount">0 msgs</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="btnToggleSidePanel"
+              class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 active:scale-[0.97] lg:hidden"
+              title="Visitor details"
+              aria-label="Toggle visitor details panel">
+              <i class="lucide lucide-sidebar w-4 h-4"></i>
+            </button>
+            <button id="btnExportConversation"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 hover:shadow active:scale-[0.97]"
+              title="Export conversation">
+              <i class="lucide lucide-download w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Export</span>
+            </button>
+            <button id="btnDeleteConversation"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50 hover:shadow active:scale-[0.97]"
+              title="Delete conversation">
+              <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Delete</span>
+            </button>
+            <button id="btnEndSession"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100 active:scale-[0.97]"
+              title="End this session">
+              <i class="lucide lucide-circle-stop w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">End</span>
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Transcript Area -->
+      <div class="chat-transcript-scroll flex-1 p-4 space-y-3" id="chatTranscript">
+        <!-- Empty State -->
+        <div class="flex items-center justify-center h-full">
+          <div class="text-center max-w-xs">
+            <div class="empty-state-icon">
+              <i class="lucide lucide-message-square text-indigo-500 w-7 h-7"></i>
+            </div>
+            <h5 class="text-base font-semibold text-slate-700 mb-1">No conversation selected</h5>
+            <p class="text-sm text-slate-500">Select a conversation from the left panel to view the transcript and details.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="hidden flex-shrink-0 border-t border-slate-200 p-3 bg-white" id="chatInputArea">
+        <div class="flex items-end gap-2">
+          <div class="flex-1 relative">
+            <textarea id="replyField"
+              class="w-full rounded-xl border border-slate-300 px-4 py-2.5 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white resize-none transition-shadow"
+              placeholder="Type a reply... (Enter to send, Shift+Enter for new line)"
+              rows="2"
+              style="min-height: 42px; max-height: 120px;"
+            ></textarea>
+          </div>
+          <button id="btnSend"
+            class="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[0.97] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled>
+            <i class="lucide lucide-send w-4 h-4"></i>
+            <span class="hidden sm:inline">Send</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="chat-manager-root">
-        <!-- Left Pane: Conversations -->
-        <div class="chat-list-pane">
-            <div class="chat-list-header">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-                    <input type="text" id="chatSearch" class="form-control border-start-0" placeholder="Search conversations...">
-                </div>
-            </div>
-            <div class="chat-list-scroll" id="convList">
-                <!-- Items loaded via JS -->
-                <div class="p-4 text-center text-muted">Loading conversations...</div>
-            </div>
+    <!-- ── Right Pane: Visitor Details & AI Drafter ── -->
+    <div class="chat-side-pane flex flex-col">
+      <!-- Visitor Details -->
+      <div class="side-panel-section border-b border-slate-200">
+        <h6 class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          <i class="lucide lucide-user w-3.5 h-3.5"></i>
+          Visitor Details
+        </h6>
+        <div class="space-y-2.5 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">ID</span>
+            <span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded" id="sideUserId">---</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">Status</span>
+            <span id="sideStatus" class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Active
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">Messages</span>
+            <span class="text-slate-700 font-medium" id="sideMsgCount">0</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">Context</span>
+            <span class="text-slate-600" id="sideContext">-</span>
+          </div>
+          <div class="flex justify-between items-start">
+            <span class="text-slate-500">Last Active</span>
+            <span class="text-xs text-slate-500 text-right" id="sideLastActivity">---</span>
+          </div>
+          <div class="flex justify-between items-start">
+            <span class="text-slate-500">Device</span>
+            <span class="text-xs text-slate-500 text-right" id="sideDevice">-</span>
+          </div>
+          <div class="flex justify-between items-start">
+            <span class="text-slate-500">IP</span>
+            <span class="text-xs font-mono text-slate-500 text-right" id="sideIp">-</span>
+          </div>
         </div>
+      </div>
 
-        <!-- Center Pane: Chat Transcript -->
-        <div class="chat-main-pane">
-            <div class="chat-main-header d-none" id="chatHeader">
-                <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-sm btn-outline-secondary d-lg-none" id="btnBackToList">
-                        <i class="bi bi-arrow-left"></i>
-                    </button>
-                    <div class="chat-item-avatar" id="activeAvatar">U</div>
-                    <div>
-                        <div class="fw-bold" id="activeTitle">Visitor #123</div>
-                        <div class="small" id="activeStatus"><i class="bi bi-circle-fill" style="font-size: 6px;"></i> <span id="statusText">Active</span></div>
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button id="btnExportConversation" class="btn btn-sm btn-outline-primary px-3 rounded-pill">Export</button>
-                    <button id="btnEndSession" class="btn btn-sm btn-outline-danger px-3 rounded-pill">End Session</button>
-                </div>
-            </div>
-            
-            <div class="chat-main-body" id="chatTranscript">
-                <div class="empty-state">
-                    <i class="bi bi-chat-left-dots"></i>
-                    <h5>Select a conversation</h5>
-                    <p>Click on a conversation from the left to view the transcript and AI suggestions.</p>
-                </div>
-            </div>
-
-            <div class="p-3 border-top d-none" id="chatInputArea">
-                <div class="input-group">
-                    <textarea class="form-control" id="replyField" placeholder="Type a reply or use AI suggestion..." style="height: 60px;"></textarea>
-                    <button class="btn btn-primary px-4" id="btnSend">Send</button>
-                </div>
-            </div>
+      <!-- AI Drafter -->
+      <div class="side-panel-section flex-1 flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <h6 class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <i class="lucide lucide-wand-2 w-3.5 h-3.5"></i>
+            AI Drafter
+          </h6>
+          <button id="btnDraft"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled>
+            <i class="lucide lucide-sparkles w-3 h-3"></i>
+            Draft
+          </button>
         </div>
-
-        <!-- Right Pane: User Info & AI suggestions -->
-        <div class="chat-side-pane">
-            <div class="side-panel-section border-bottom">
-                <h6 class="fw-bold mb-3">Visitor Details</h6>
-                <div class="small mb-2"><strong>ID:</strong> <span id="sideUserId" class="text-muted">---</span></div>
-                <div class="small mb-2"><strong>Status:</strong> <span id="sideStatus" class="badge bg-success">Active</span></div>
-                <div class="small mb-2"><strong>Messages:</strong> <span id="sideMsgCount" class="text-muted">0</span></div>
-                <div class="small"><strong>Last Activity:</strong> <span id="sideLastActivity" class="text-muted">---</span></div>
+        <div id="suggestionContainer" class="flex-1">
+          <div class="flex items-center justify-center h-full text-center">
+            <div>
+              <i class="lucide lucide-message-square-plus text-slate-300 w-8 h-8 mx-auto mb-2"></i>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Select a conversation to generate AI-powered reply suggestions.
+              </p>
             </div>
-
-            <div class="side-panel-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold m-0">AI Drafter (Beta)</h6>
-                    <button class="btn btn-sm text-primary p-0" id="btnDraft">
-                        <i class="bi bi-magic"></i> Draft
-                    </button>
-                </div>
-                
-                <div id="suggestionContainer">
-                    <div class="text-muted small text-center py-4">
-                        Select a chat to generate AI-powered reply suggestions.
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
+
+<!-- Toast Notification -->
+<div class="chat-toast" id="chatToast"></div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="sidePanelOverlay" class="hidden fixed inset-0 bg-black/30 z-40 lg:hidden"></div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ asset('/ai/dist/ai-chat-manager.js') }}"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ── State ──
+  let conversations = [];
+  let currentConvId = null;
+  let currentMessages = [];
+  let isLoadingList = false;
+  let isLoadingMessages = false;
+  let hasMore = true;
+  let page = 1;
+  const LIMIT = 50;
+
+  // ── DOM refs ──
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  const convList = $('#convList');
+  const chatSearch = $('#chatSearch');
+  const chatTranscript = $('#chatTranscript');
+  const chatHeader = $('#chatHeader');
+  const chatInputArea = $('#chatInputArea');
+  const activeAvatar = $('#activeAvatar');
+  const activeTitle = $('#activeTitle');
+  const statusDot = $('#statusDot');
+  const statusText = $('#statusText');
+  const activeMsgCount = $('#activeMsgCount');
+  const sideUserId = $('#sideUserId');
+  const sideStatus = $('#sideStatus');
+  const sideMsgCount = $('#sideMsgCount');
+  const sideContext = $('#sideContext');
+  const sideLastActivity = $('#sideLastActivity');
+  const sideDevice = $('#sideDevice');
+  const sideIp = $('#sideIp');
+  const suggestionContainer = $('#suggestionContainer');
+  const replyField = $('#replyField');
+  const btnSend = $('#btnSend');
+  const btnDraft = $('#btnDraft');
+  const btnBackToList = $('#btnBackToList');
+  const root = $('#chatManagerRoot');
+  const toast = $('#chatToast');
+
+  // ── Utilities ──
+  function formatTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const diff = now - d;
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins + 'm ago';
+    if (hrs < 24) return hrs + 'h ago';
+    if (days < 7) return days + 'd ago';
+    return d.toLocaleDateString();
+  }
+
+  function truncate(text, max) {
+    if (!text || text.length <= max) return text || '';
+    return text.slice(0, max) + '...';
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.className = 'chat-toast show ' + (
+      type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+      type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+      'bg-sky-50 text-sky-700 border border-sky-200'
+    );
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function getInitials(name) {
+    if (!name || name === 'Visitor') return 'V';
+    const parts = name.split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  // ── API ──
+  async function apiFetch(url, opts) {
+    const res = await fetch(url, {
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      ...opts,
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  // ── Load Conversations ──
+  async function loadConversations(reset) {
+    if (isLoadingList) return;
+    if (reset) { page = 1; hasMore = true; }
+    if (!hasMore && !reset) return;
+
+    isLoadingList = true;
+    if (reset) {
+      convList.innerHTML =
+        '<div class="flex items-center justify-center h-full text-slate-400">' +
+        '<div class="text-center"><i class="lucide lucide-loader-2 w-6 h-6 animate-spin mx-auto mb-2"></i><p class="text-sm">Loading...</p></div></div>';
+    }
+
+    try {
+      const params = new URLSearchParams({ page: page, limit: LIMIT });
+      const data = await apiFetch('/api/admin/ai/conversations?' + params.toString());
+      if (!data.success) throw new Error(data.error || 'Failed');
+
+      const items = data.conversations || [];
+      hasMore = items.length >= LIMIT;
+      if (reset) conversations = items;
+      else conversations = conversations.concat(items);
+      page++;
+
+      renderConversations(reset);
+    } catch (err) {
+      if (reset) {
+        convList.innerHTML =
+          '<div class="flex items-center justify-center h-full p-6"><div class="text-center"><i class="lucide lucide-alert-circle text-red-400 w-8 h-8 mx-auto mb-2"></i><p class="text-sm text-red-500">Failed to load conversations</p><button onclick="loadConversations(true)" class="mt-2 text-xs text-indigo-600 hover:underline">Retry</button></div></div>';
+      }
+      showToast(err.message, 'error');
+    } finally {
+      isLoadingList = false;
+    }
+  }
+
+  // ── Render Conversations ──
+  function renderConversations(reset) {
+    if (reset) convList.innerHTML = '';
+    if (conversations.length === 0) {
+      convList.innerHTML =
+        '<div class="flex items-center justify-center h-full p-6">' +
+        '<div class="text-center"><i class="lucide lucide-inbox text-slate-300 w-10 h-10 mx-auto mb-2"></i>' +
+        '<p class="text-sm text-slate-400">No conversations yet</p></div></div>';
+      return;
+    }
+
+    const search = chatSearch.value.toLowerCase().trim();
+    const filtered = search
+      ? conversations.filter(c =>
+          (c.title || '').toLowerCase().includes(search) ||
+          (c.visitor_name || '').toLowerCase().includes(search) ||
+          (c.guest_token || '').toLowerCase().includes(search))
+      : conversations;
+
+    if (reset) convList.innerHTML = '';
+
+    if (filtered.length === 0) {
+      convList.innerHTML =
+        '<div class="flex items-center justify-center h-full p-6">' +
+        '<div class="text-center"><i class="lucide lucide-search-x text-slate-300 w-8 h-8 mx-auto mb-2"></i>' +
+        '<p class="text-sm text-slate-400">No conversations match your search</p></div></div>';
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    filtered.forEach(c => {
+      const isActive = currentConvId && c.id === currentConvId;
+      const title = c.title || 'Visitor #' + c.id;
+      const preview = c.last_message ? truncate(c.last_message, 80) : 'No messages yet';
+      const time = formatTime(c.last_activity || c.created_at);
+      const initials = getInitials(c.visitor_name || title);
+      const status = c.status || 'open';
+      const msgCount = c.message_count || c.msg_count || 0;
+
+      const div = document.createElement('div');
+      div.className = 'conv-item px-3 py-3 ' + (isActive ? 'active' : '');
+      div.dataset.id = c.id;
+      div.innerHTML =
+        '<div class="flex items-start gap-3">' +
+          '<div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ' +
+            (status === 'open' ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-slate-400') +
+          '">' + initials + '</div>' +
+          '<div class="flex-1 min-w-0">' +
+            '<div class="flex items-center justify-between gap-2">' +
+              '<span class="text-sm font-medium text-slate-900 truncate">' + escapeHtml(title) + '</span>' +
+              '<span class="text-xs text-slate-400 flex-shrink-0">' + time + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-1.5 mt-0.5">' +
+              (status === 'open'
+                ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>'
+                : '<span class="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0"></span>') +
+              '<span class="text-xs ' + (status === 'open' ? 'text-emerald-600' : 'text-slate-400') + '">' +
+                (status === 'open' ? 'Active' : 'Closed') +
+              '</span>' +
+              '<span class="text-xs text-slate-400">·</span>' +
+              '<span class="text-xs text-slate-400">' + msgCount + ' msgs</span>' +
+            '</div>' +
+            '<p class="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">' + escapeHtml(preview) + '</p>' +
+          '</div>' +
+          '<div class="conv-actions flex flex-col gap-1 flex-shrink-0">' +
+            '<button data-delete="' + c.id + '" class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition" title="Delete">' +
+              '<i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+
+      div.addEventListener('click', function (e) {
+        if (e.target.closest('[data-delete]')) return;
+        selectConversation(c.id);
+      });
+
+      // Delete button
+      div.querySelector('[data-delete]').addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteConversation(parseInt(this.dataset.delete));
+      });
+
+      fragment.appendChild(div);
+    });
+
+    if (reset) {
+      convList.innerHTML = '';
+    }
+    convList.appendChild(fragment);
+
+    // Scroll to top if reset
+    if (reset) {
+      document.querySelector('.chat-list-scroll').scrollTop = 0;
+    }
+  }
+
+  // ── Select Conversation ──
+  async function selectConversation(id) {
+    if (isLoadingMessages || currentConvId === id) return;
+    currentConvId = id;
+    isLoadingMessages = true;
+
+    // Update list highlighting
+    $$('.conv-item').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.id) === id);
+    });
+
+    // Show loading in transcript
+    chatTranscript.innerHTML =
+      '<div class="flex items-center justify-center h-full">' +
+      '<div class="text-center"><i class="lucide lucide-loader-2 w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500"></i>' +
+      '<p class="text-sm text-slate-500">Loading conversation...</p></div></div>';
+
+    try {
+      const data = await apiFetch('/api/admin/ai/conversations/export?conversation_id=' + id);
+      if (!data.success) throw new Error(data.error || 'Failed to load');
+
+      currentMessages = data.messages || [];
+      renderTranscript(currentMessages);
+      updateSidePanel(data.conversation || {});
+      showChatUI();
+
+      // Scroll to bottom of transcript
+      const scrollArea = document.querySelector('.chat-transcript-scroll');
+      setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 100);
+    } catch (err) {
+      chatTranscript.innerHTML =
+        '<div class="flex items-center justify-center h-full"><div class="text-center">' +
+        '<i class="lucide lucide-alert-circle text-red-400 w-8 h-8 mx-auto mb-2"></i>' +
+        '<p class="text-sm text-red-500">' + escapeHtml(err.message) + '</p></div></div>';
+    } finally {
+      isLoadingMessages = false;
+    }
+  }
+
+  // ── Render Transcript ──
+  function renderTranscript(messages) {
+    if (!messages || messages.length === 0) {
+      chatTranscript.innerHTML =
+        '<div class="flex items-center justify-center h-full">' +
+        '<div class="text-center"><i class="lucide lucide-message-circle-off text-slate-300 w-10 h-10 mx-auto mb-2"></i>' +
+        '<p class="text-sm text-slate-400">No messages in this conversation</p></div></div>';
+      return;
+    }
+
+    chatTranscript.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    messages.forEach((msg, i) => {
+      const isUser = msg.role === 'user';
+      const content = msg.content || '';
+      const time = msg.created_at ? formatTime(msg.created_at) : '';
+      const showAvatar = i === 0 || (i > 0 && messages[i-1].role !== msg.role);
+
+      const div = document.createElement('div');
+      div.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + ' fade-in';
+      div.style.animationDelay = (i * 20) + 'ms';
+
+      div.innerHTML =
+        '<div class="max-w-[80%] ' + (!isUser ? 'flex items-start gap-2' : '') + '">' +
+          (!isUser && showAvatar
+            ? '<div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1 shadow-sm">AI</div>'
+            : '') +
+          (!isUser && !showAvatar ? '<div class="w-8 flex-shrink-0"></div>' : '') +
+          '<div>' +
+            '<div class="px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ' +
+              (isUser ? 'msg-bubble-user' : 'msg-bubble-assistant') +
+            '">' + escapeHtml(content) + '</div>' +
+            (time ? '<div class="text-[10px] text-slate-400 mt-1 ' + (isUser ? 'text-right mr-1' : 'ml-1') + '">' + time + '</div>' : '') +
+          '</div>' +
+        '</div>';
+
+      fragment.appendChild(div);
+    });
+
+    chatTranscript.appendChild(fragment);
+  }
+
+  // ── Update Side Panel ──
+  function updateSidePanel(conv) {
+    const title = conv.title || 'Visitor #' + (conv.id || '');
+    const initials = getInitials(conv.visitor_name || title);
+    const status = conv.status || 'open';
+    const msgCount = currentMessages.length;
+
+    // Header
+    activeAvatar.textContent = initials;
+    activeTitle.textContent = title;
+    statusDot.className = 'inline-block w-2 h-2 rounded-full ' + (status === 'open' ? 'bg-emerald-500' : 'bg-slate-300');
+    statusText.textContent = status === 'open' ? 'Active' : 'Closed';
+    activeMsgCount.textContent = msgCount + ' msgs';
+
+    // Side panel
+    sideUserId.textContent = '#' + (conv.id || '---');
+    sideStatus.className = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ' +
+      (status === 'open'
+        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+        : 'bg-slate-100 text-slate-600 border border-slate-200');
+    sideStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full ' + (status === 'open' ? 'bg-emerald-500' : 'bg-slate-400') + '"></span> ' +
+      (status === 'open' ? 'Active' : 'Closed');
+    sideMsgCount.textContent = msgCount;
+    sideContext.textContent = conv.context_type || '-';
+    sideLastActivity.textContent = conv.last_activity ? formatTime(conv.last_activity) : (conv.created_at ? formatTime(conv.created_at) : '-');
+    sideDevice.textContent = conv.device || '-';
+    sideIp.textContent = conv.ip_address || '-';
+
+    // Enable/disable buttons
+    btnDraft.disabled = false;
+    replyField.disabled = false;
+    btnSend.disabled = true;
+    replyField.placeholder = 'Type a reply... (Enter to send, Shift+Enter for new line)';
+  }
+
+  // ── Show Chat UI ──
+  function showChatUI() {
+    chatHeader.classList.remove('hidden');
+    chatInputArea.classList.remove('hidden');
+    onMobileShowChat();
+
+    // Update suggestion container
+    suggestionContainer.innerHTML =
+      '<div class="flex items-center justify-center h-full text-center">' +
+      '<div><i class="lucide lucide-sparkles text-slate-300 w-8 h-8 mx-auto mb-2"></i>' +
+      '<p class="text-xs text-slate-400">Click "Draft" to generate an AI-powered reply.</p></div></div>';
+  }
+
+  // ── Mobile Responsiveness ──
+  function onMobileShowChat() {
+    if (window.innerWidth < 1024) {
+      root.classList.add('show-chat');
+    }
+  }
+
+  function closeSidePanel() {
+    root.classList.remove('show-sidebar');
+    document.getElementById('sidePanelOverlay').classList.add('hidden');
+  }
+
+  function openSidePanel() {
+    root.classList.add('show-sidebar');
+    document.getElementById('sidePanelOverlay').classList.remove('hidden');
+  }
+
+  // ── Delete Conversation ──
+  async function deleteConversation(id) {
+    if (!confirm('Delete this conversation and all its messages?')) return;
+
+    try {
+      const data = await apiFetch('/api/admin/ai/conversations/' + id, { method: 'DELETE' });
+      if (!data.success) throw new Error(data.error || 'Delete failed');
+
+      conversations = conversations.filter(c => c.id !== id);
+
+      if (currentConvId === id) {
+        currentConvId = null;
+        currentMessages = [];
+        chatHeader.classList.add('hidden');
+        chatInputArea.classList.add('hidden');
+        chatTranscript.innerHTML =
+          '<div class="flex items-center justify-center h-full">' +
+          '<div class="text-center max-w-xs"><div class="empty-state-icon"><i class="lucide lucide-message-square text-indigo-500 w-7 h-7"></i></div>' +
+          '<h5 class="text-base font-semibold text-slate-700 mb-1">No conversation selected</h5>' +
+          '<p class="text-sm text-slate-500">Select a conversation to view the transcript.</p></div></div>';
+        sideUserId.textContent = '#---';
+      }
+
+      renderConversations(true);
+      showToast('Conversation deleted', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── End Session ──
+  async function endSession() {
+    if (!currentConvId) return;
+    if (!confirm('End this conversation session?')) return;
+
+    try {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      // Use URL-encoded form data so the CSRF middleware can read $_POST['csrf_token']
+      const formData = new URLSearchParams();
+      formData.append('conversation_id', currentConvId);
+      formData.append('csrf_token', csrf);
+      const res = await fetch('/api/admin/ai-chats/end', {
+        method: 'POST',
+        body: formData.toString(),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to end session');
+
+      showToast('Session ended', 'success');
+      loadConversations(true);
+      currentConvId = null;
+      chatHeader.classList.add('hidden');
+      chatInputArea.classList.add('hidden');
+      chatTranscript.innerHTML =
+        '<div class="flex items-center justify-center h-full">' +
+        '<div class="text-center max-w-xs"><div class="empty-state-icon"><i class="lucide lucide-message-square text-indigo-500 w-7 h-7"></i></div>' +
+        '<h5 class="text-base font-semibold text-slate-700 mb-1">No conversation selected</h5>' +
+        '<p class="text-sm text-slate-500">Select a conversation to view the transcript.</p></div></div>';
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Export ──
+  async function exportConversation() {
+    if (!currentConvId) return;
+    try {
+      const data = await apiFetch('/api/admin/ai/conversations/export?conversation_id=' + currentConvId);
+      if (!data.success) throw new Error(data.error || 'Export failed');
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'conversation-' + currentConvId + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Conversation exported', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Send Reply ──
+  async function sendReply() {
+    if (!currentConvId) return;
+    const text = replyField.value.trim();
+    if (!text) return;
+
+    btnSend.disabled = true;
+    btnSend.classList.add('btn-send-loading');
+    btnSend.innerHTML = '<i class="lucide lucide-loader-2 w-4 h-4 animate-spin"></i>';
+
+    try {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const data = await apiFetch('/api/admin/ai-chats/reply', {
+        method: 'POST',
+        body: JSON.stringify({
+          conversation_id: currentConvId,
+          message: text,
+          csrf_token: csrf,
+        }),
+      });
+      if (!data.success) throw new Error(data.error || 'Failed to send');
+
+      replyField.value = '';
+      btnSend.disabled = true;
+
+      // Add the message locally
+      const newMsg = { id: Date.now(), role: 'user', content: text, created_at: new Date().toISOString() };
+      currentMessages.push(newMsg);
+      renderTranscript(currentMessages);
+
+      // Scroll to bottom
+      const scrollArea = document.querySelector('.chat-transcript-scroll');
+      setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 50);
+
+      showToast('Reply sent', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btnSend.classList.remove('btn-send-loading');
+      btnSend.innerHTML = '<i class="lucide lucide-send w-4 h-4"></i><span class="hidden sm:inline">Send</span>';
+    }
+  }
+
+  // ── AI Draft ──
+  async function generateDraft() {
+    if (!currentConvId || currentMessages.length === 0) return;
+
+    btnDraft.disabled = true;
+    btnDraft.innerHTML = '<i class="lucide lucide-loader-2 w-3 h-3 animate-spin"></i> Drafting...';
+
+    suggestionContainer.innerHTML =
+      '<div class="flex items-center justify-center h-full"><div class="text-center">' +
+      '<i class="lucide lucide-loader-2 w-6 h-6 animate-spin text-indigo-500 mx-auto mb-2"></i>' +
+      '<p class="text-xs text-slate-500">Generating suggestion...</p></div></div>';
+
+    try {
+      const lastMessages = currentMessages.slice(-6);
+      const history = lastMessages.map(m => m.role + ': ' + (m.content || '')).join('\n');
+
+      const chatData = await apiFetch('/api/admin/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'You are a helpful admin assistant. Based on the conversation history, suggest a brief, professional reply the admin can send to the visitor. Keep it under 100 words. Start with the reply directly.' },
+            { role: 'user', content: 'Conversation history:\n' + history + '\n\nSuggest a reply:' }
+          ],
+          stream: false,
+        }),
+      });
+
+      if (chatData.success && chatData.content) {
+        const suggestion = chatData.content.trim();
+        suggestionContainer.innerHTML =
+          '<div class="space-y-2">' +
+            '<div class="rounded-xl bg-indigo-50 border border-indigo-100 p-3">' +
+              '<p class="text-xs text-indigo-700 leading-relaxed">' + escapeHtml(suggestion) + '</p>' +
+            '</div>' +
+            '<div class="flex gap-1.5">' +
+              '<button id="useSuggestion" class="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-indigo-700 transition active:scale-[0.97]">' +
+                '<i class="lucide lucide-check w-3 h-3"></i> Use' +
+              '</button>' +
+              '<button id="dismissSuggestion" class="flex-1 inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white text-slate-600 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition active:scale-[0.97]">' +
+                '<i class="lucide lucide-x w-3 h-3"></i> Dismiss' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+
+        document.getElementById('useSuggestion').addEventListener('click', function () {
+          replyField.value = suggestion;
+          replyField.dispatchEvent(new Event('input'));
+          replyField.focus();
+          suggestionContainer.innerHTML =
+            '<div class="flex items-center justify-center h-full text-center"><div>' +
+            '<i class="lucide lucide-sparkles text-slate-300 w-8 h-8 mx-auto mb-2"></i>' +
+            '<p class="text-xs text-slate-400">Click "Draft" to generate a reply.</p></div></div>';
+        });
+
+        document.getElementById('dismissSuggestion').addEventListener('click', function () {
+          suggestionContainer.innerHTML =
+            '<div class="flex items-center justify-center h-full text-center"><div>' +
+            '<i class="lucide lucide-sparkles text-slate-300 w-8 h-8 mx-auto mb-2"></i>' +
+            '<p class="text-xs text-slate-400">Click "Draft" to generate a reply.</p></div></div>';
+        });
+      } else {
+        throw new Error(chatData.error || 'No response');
+      }
+    } catch (err) {
+      suggestionContainer.innerHTML =
+        '<div class="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600">' +
+        '<strong>Failed:</strong> ' + escapeHtml(err.message) + '</div>';
+    } finally {
+      btnDraft.disabled = false;
+      btnDraft.innerHTML = '<i class="lucide lucide-sparkles w-3 h-3"></i> Draft';
+    }
+  }
+
+  // ── Event Listeners ──
+
+  // Refresh
+  $('#refreshList').addEventListener('click', function () {
+    loadConversations(true);
+    showToast('Refreshing conversations...', 'info');
+  });
+
+  // Search
+  chatSearch.addEventListener('input', function () {
+    renderConversations(true);
+  });
+
+  // Back to list (mobile)
+  btnBackToList.addEventListener('click', function () {
+    root.classList.remove('show-chat');
+  });
+
+  // Toggle side panel (mobile)
+  $('#btnToggleSidePanel')?.addEventListener('click', openSidePanel);
+
+  // Delete
+  $('#btnDeleteConversation').addEventListener('click', function () {
+    if (currentConvId) deleteConversation(currentConvId);
+  });
+
+  // End Session
+  $('#btnEndSession').addEventListener('click', endSession);
+
+  // Export
+  $('#btnExportConversation').addEventListener('click', exportConversation);
+
+  // Send
+  btnSend.addEventListener('click', sendReply);
+
+  // Reply field
+  replyField.addEventListener('input', function () {
+    btnSend.disabled = !this.value.trim();
+  });
+
+  replyField.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (this.value.trim()) sendReply();
+    }
+  });
+
+  // Draft
+  btnDraft.addEventListener('click', generateDraft);
+
+  // Load more on scroll
+  document.querySelector('.chat-list-scroll')?.addEventListener('scroll', function () {
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
+      loadConversations(false);
+    }
+  });
+
+  // ── Init ──
+  document.addEventListener('DOMContentLoaded', function () {
+    loadConversations(true);
+    document.getElementById('sidePanelOverlay')?.addEventListener('click', closeSidePanel);
+  });
+
+  window.loadConversations = loadConversations;
+})();
+</script>
 {% endblock %}

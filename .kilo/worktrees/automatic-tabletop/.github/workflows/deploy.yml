@@ -1,0 +1,47 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH key
+        run: |
+          mkdir -p /tmp/ssh
+          if echo "${{ secrets.SSH_KEY_BASE64 }}" | base64 --decode >/tmp/ssh/deploy_key 2>/dev/null; then
+            echo "Decoded SSH key from base64"
+          else
+            echo "${{ secrets.SSH_KEY_BASE64 }}" > /tmp/ssh/deploy_key
+          fi
+          chmod 600 /tmp/ssh/deploy_key
+        shell: bash
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key_path: /tmp/ssh/deploy_key
+          port: 22
+          timeout: 60s
+          command_timeout: 25m
+          script: |
+            cd /home/tdhuedhn/broxlab
+            bash scripts/deploy.sh
+
+      - name: Post-Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production deployment completed successfully"
+          else
+            echo "❌ Production deployment failed - check server logs"
+          fi

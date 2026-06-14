@@ -1,0 +1,228 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title|default('Build Your CV') }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+:root {
+  --bld-primary: #6366f1;
+  --bld-primary-dark: #4f46e5;
+  --bld-primary-light: #a5b4fc;
+  --bld-secondary: #8b5cf6;
+  --bld-success: #10b981;
+  --bld-warning: #f59e0b;
+  --bld-danger: #ef4444;
+  --bld-gray-50: #f9fafb;
+  --bld-gray-100: #f3f4f6;
+  --bld-gray-200: #e5e7eb;
+  --bld-gray-300: #d1d5db;
+  --bld-gray-400: #9ca3af;
+  --bld-gray-500: #6b7280;
+  --bld-gray-600: #4b5563;
+  --bld-gray-700: #374151;
+  --bld-gray-800: #1f2937;
+  --bld-gray-900: #111827;
+}
+
+.bld-page { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem 1rem; }
+.bld-container { max-width: 960px; margin: 0 auto; }
+
+/* Progress Bar */
+.bld-progress { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.2); }
+.bld-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.bld-progress-title { color: white; font-size: 1.1rem; font-weight: 600; }
+.bld-progress-percent { color: rgba(255,255,255,0.8); font-size: 0.9rem; font-weight: 500; }
+.bld-progress-bar { height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin-bottom: 1.25rem; }
+.bld-progress-fill { height: 100%; background: linear-gradient(90deg, var(--bld-primary-light), white); border-radius: 3px; transition: width 0.5s ease; width: 0%; }
+.bld-step-indicators { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem; }
+.bld-step-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: all 0.3s ease; cursor: pointer; position: relative; }
+.bld-step-dot.active { background: white; box-shadow: 0 0 8px rgba(255,255,255,0.5); transform: scale(1.3); }
+.bld-step-dot.completed { background: var(--bld-success); }
+.bld-step-dot:hover::after { content: attr(data-label); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; margin-bottom: 4px; }
+
+/* Step Card */
+.bld-card { background: white; border-radius: 20px; padding: 2.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.2); }
+.bld-step-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--bld-gray-100); }
+.bld-step-number { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--bld-primary); font-weight: 600; margin-bottom: 0.5rem; }
+.bld-step-title { font-size: 1.75rem; font-weight: 700; color: var(--bld-gray-800); margin-bottom: 0.5rem; }
+.bld-step-desc { color: var(--bld-gray-500); font-size: 0.95rem; }
+
+/* Form Elements */
+.bld-form-group { margin-bottom: 1.5rem; }
+.bld-label { display: block; font-weight: 600; color: var(--bld-gray-700); margin-bottom: 0.4rem; font-size: 0.9rem; }
+.bld-input, .bld-select, .bld-textarea { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--bld-gray-200); border-radius: 10px; font-size: 0.95rem; transition: all 0.2s; background: var(--bld-gray-50); font-family: inherit; box-sizing: border-box; }
+.bld-input:focus, .bld-select:focus, .bld-textarea:focus { outline: none; border-color: var(--bld-primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.bld-textarea { min-height: 120px; resize: vertical; }
+.bld-input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.bld-input-group-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+/* Suggest Box */
+.bld-suggest-box { background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+.bld-suggest-box h4 { font-size: 0.85rem; font-weight: 600; color: var(--bld-primary-dark); margin-bottom: 0.5rem; }
+.bld-suggest-text { font-size: 0.9rem; color: var(--bld-gray-700); line-height: 1.5; margin-bottom: 0.75rem; }
+.bld-suggest-actions { display: flex; gap: 0.5rem; }
+.bld-btn-sm { padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
+.bld-btn-accept { background: var(--bld-success); color: white; }
+.bld-btn-accept:hover { background: #059669; }
+.bld-btn-edit { background: var(--bld-warning); color: white; }
+.bld-btn-edit:hover { background: #d97706; }
+.bld-btn-remove { background: var(--bld-danger); color: white; }
+.bld-btn-remove:hover { background: #dc2626; }
+
+/* Entry Cards */
+.bld-entry-card { background: var(--bld-gray-50); border: 1px solid var(--bld-gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; position: relative; }
+.bld-entry-card .bld-entry-remove { position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none; color: var(--bld-gray-400); cursor: pointer; font-size: 1.1rem; transition: color 0.2s; }
+.bld-entry-card .bld-entry-remove:hover { color: var(--bld-danger); }
+.bld-add-entry { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--bld-primary); font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 0.5rem 1rem; border: 2px dashed var(--bld-primary); border-radius: 10px; transition: all 0.2s; background: transparent; width: 100%; justify-content: center; box-sizing: border-box; }
+.bld-add-entry:hover { background: rgba(99,102,241,0.05); border-color: var(--bld-primary-dark); }
+
+/* Checkbox */
+.bld-checkbox { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; color: var(--bld-gray-600); }
+.bld-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--bld-primary); }
+
+/* Navigation */
+.bld-nav { display: flex; justify-content: space-between; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--bld-gray-100); }
+.bld-btn { padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 0.5rem; }
+.bld-btn-prev { background: var(--bld-gray-100); color: var(--bld-gray-600); }
+.bld-btn-prev:hover { background: var(--bld-gray-200); }
+.bld-btn-next { background: linear-gradient(135deg, var(--bld-primary), var(--bld-secondary)); color: white; box-shadow: 0 4px 15px rgba(99,102,241,0.4); }
+.bld-btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99,102,241,0.5); }
+.bld-btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.bld-btn-save { background: var(--bld-success); color: white; }
+.bld-btn-save:hover { background: #059669; }
+.bld-btn-finish { background: linear-gradient(135deg, var(--bld-success), #059669); color: white; box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+.bld-btn-finish:hover { transform: translateY(-2px); }
+
+/* Skills tags */
+.bld-skills-area { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.bld-skill-tag { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; background: #eef2ff; color: var(--bld-primary-dark); border: 1px solid #c7d2fe; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+.bld-skill-tag .bld-skill-remove { cursor: pointer; font-size: 0.8rem; color: var(--bld-gray-400); background: none; border: none; padding: 0; }
+.bld-skill-tag .bld-skill-remove:hover { color: var(--bld-danger); }
+.bld-skill-input { border: 2px dashed var(--bld-gray-300); border-radius: 20px; padding: 0.35rem 0.75rem; font-size: 0.85rem; background: transparent; min-width: 120px; box-sizing: border-box; }
+.bld-skill-input:focus { outline: none; border-color: var(--bld-primary); }
+
+/* Auto-save indicator */
+.bld-save-indicator { position: fixed; bottom: 1.5rem; right: 1.5rem; background: rgba(0,0,0,0.8); color: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; opacity: 0; transition: opacity 0.3s; z-index: 100; }
+.bld-save-indicator.show { opacity: 1; }
+
+/* Job Position Select */
+.bld-job-select { margin-bottom: 2rem; position: sticky; top: 1rem; z-index: 10; }
+.bld-job-select select { width: 100%; padding: 0.75rem 1rem; border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: white; font-size: 1rem; font-weight: 500; cursor: pointer; }
+.bld-job-select select option { color: var(--bld-gray-800); background: white; }
+.bld-job-select select:focus { outline: none; border-color: rgba(255,255,255,0.6); }
+
+/* Template Preview */
+.bld-template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+.bld-template-card { border: 2px solid var(--bld-gray-200); border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.3s; }
+.bld-template-card:hover, .bld-template-card.selected { border-color: var(--bld-primary); background: rgba(99,102,241,0.05); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99,102,241,0.15); }
+.bld-template-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem; color: white; font-size: 1.25rem; }
+.bld-template-name { font-weight: 600; color: var(--bld-gray-800); font-size: 0.9rem; }
+
+/* Photo upload */
+.bld-photo-area { display: flex; align-items: center; gap: 1.5rem; }
+.bld-photo-preview { width: 100px; height: 100px; border-radius: 50%; background: var(--bld-gray-200); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px dashed var(--bld-gray-300); cursor: pointer; transition: all 0.3s; }
+.bld-photo-preview:hover { border-color: var(--bld-primary); }
+.bld-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+.bld-photo-preview i { font-size: 2rem; color: var(--bld-gray-400); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bld-card { padding: 1.5rem; }
+  .bld-input-group, .bld-input-group-3 { grid-template-columns: 1fr; }
+  .bld-step-title { font-size: 1.3rem; }
+  .bld-photo-area { flex-direction: column; text-align: center; }
+  .bld-template-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bld-page" id="bld-app">
+  <div class="bld-container">
+
+    <!-- Job Position Selector -->
+    <div class="bld-job-select">
+      <select id="bld-job-title" onchange="window.bldSelectJob(this.value)">
+        <option value="">Select your job title for personalized suggestions...</option>
+        {% for pos in job_positions %}
+        <option value="{{ pos.slug }}">{{ pos.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="bld-progress">
+      <div class="bld-progress-header">
+        <span class="bld-progress-title">Step <span id="bld-current-step">1</span> of 8</span>
+        <span class="bld-progress-percent"><span id="bld-progress-pct">0</span>% Complete</span>
+      </div>
+      <div class="bld-progress-bar">
+        <div class="bld-progress-fill" id="bld-progress-fill"></div>
+      </div>
+      <div class="bld-step-indicators" id="bld-step-dots">
+        <div class="bld-step-dot active" data-step="1" data-label="Personal Info"></div>
+        <div class="bld-step-dot" data-step="2" data-label="Summary"></div>
+        <div class="bld-step-dot" data-step="3" data-label="Experience"></div>
+        <div class="bld-step-dot" data-step="4" data-label="Education"></div>
+        <div class="bld-step-dot" data-step="5" data-label="Skills"></div>
+        <div class="bld-step-dot" data-step="6" data-label="Projects"></div>
+        <div class="bld-step-dot" data-step="7" data-label="Certificates"></div>
+        <div class="bld-step-dot" data-step="8" data-label="References"></div>
+      </div>
+    </div>
+
+    <!-- Step Content -->
+    <div class="bld-card" id="bld-step-content">
+      <!-- JavaScript populates this -->
+    </div>
+
+    <!-- Template Selector (shown before finish) -->
+    <div id="bld-template-selector" style="display:none;" class="bld-card">
+      <div class="bld-step-header">
+        <div class="bld-step-number"><i class="lucide lucide-palette" style="width:1em;height:1em;"></i> Step 8.5</div>
+        <h2 class="bld-step-title">Choose Your Template</h2>
+        <p class="bld-step-desc">Select a template style for your CV.</p>
+      </div>
+      <div class="bld-template-grid">
+        {% for tmpl in templates %}
+        <div class="bld-template-card {{ tmpl == selected_template ? 'selected' : '' }}" data-template="{{ tmpl }}" onclick="window.bldSelectTemplate('{{ tmpl }}')">
+          <div class="bld-template-icon" style="background: linear-gradient(135deg, {{ tmpl == 'modern' ? '#6366f1,#8b5cf6' : tmpl == 'minimal' ? '#374151,#6b7280' : tmpl == 'ats' ? '#059669,#10b981' : '#1e40af,#3b82f6' }});">
+            <i class="lucide lucide-{{ tmpl == 'modern' ? 'palette' : tmpl == 'minimal' ? 'minus' : tmpl == 'ats' ? 'bot' : 'briefcase' }}" style="width:1em;height:1em;"></i>
+          </div>
+          <div class="bld-template-name">{{ tmpl|capitalize }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="bld-nav">
+      <button class="bld-btn bld-btn-prev" id="bld-btn-prev" onclick="window.bldPrevStep()">
+        <i class="lucide lucide-chevron-left" style="width:1em;height:1em;"></i> Previous
+      </button>
+      <div>
+        <button class="bld-btn bld-btn-save" id="bld-btn-save-draft" onclick="window.bldSaveDraft()" style="margin-right:0.5rem;">
+          <i class="lucide lucide-save" style="width:1em;height:1em;"></i> Save Draft
+        </button>
+        <button class="bld-btn bld-btn-next" id="bld-btn-next" onclick="window.bldNextStep()">
+          Next <i class="lucide lucide-chevron-right" style="width:1em;height:1em;"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Auto-save Indicator -->
+    <div class="bld-save-indicator" id="bld-save-indicator">
+      <i class="lucide lucide-check-circle" style="width:1em;height:1em;"></i> Auto-saved
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/dist/cv-builder.js?v={{ random() }}" defer></script>
+<script>
+window.__bldData = {{ builder_data|json_encode|raw }};
+window.__bldCvId = {{ cv_id|raw }};
+window.__bldCsrf = '{{ csrf_token|default('') }}';
+window.__bldJobPositions = {{ job_positions|json_encode|raw }};
+window.__bldSelectedTemplate = '{{ selected_template }}';
+</script>
+{% endblock %}

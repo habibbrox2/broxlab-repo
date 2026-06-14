@@ -1,77 +1,153 @@
-{% extends "admin/layout.twig" %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% extends"admin/layout.twig" %}
 {% block content %}
-  <div class="container-fluid py-4" data-email-template-list="true">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-envelope-at me-2"></i>
-        Email Templates
-      </div>
-      <div class="admin-page-subtitle">Manage email notification templates</div>
-    </div>
-    {% if templates|length > 0 %}
-      <div class="admin-panel-card">
-        <div class="admin-panel-card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-stacked table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Name</th>
-                  <th>Slug</th>
-                  <th>Description</th>
-                  <th>Status</th>
-                  <th>Last Updated</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for template in templates %}
-                  <tr>
-                    <td data-label="Name">
-                      <strong>{{ template.name }}</strong>
-                    </td>
-                    <td data-label="Slug">
-                      <code class="bg-light">{{ template.slug }}</code>
-                    </td>
-                    <td data-label="Description">
-                      <small class="text-muted">{{ template.description|default("N/A") |truncate(50) }}</small>
-                    </td>
-                    <td data-label="Status">
-                      {% if template.is_active %}
-                        <span class="badge bg-success">Active</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Inactive</span>
-                      {% endif %}
-                    </td>
-                    <td data-label="Last Updated">
-                      <small class="text-muted">{{ template.updated_at|date("M d, Y H:i") }}</small>
-                    </td>
-                    <td data-label="Actions">
-                      <a href="{{ admin_dir }}/email-templates/{{ template.id }}/edit"
-                         class="modern-btn btn-sm btn-primary">
-                        <i class="bi bi-pencil"></i> Edit
-                      </a>
-                      {% if template.slug not in ['welcome_email', 'email_verification', 'password_reset'] %}
-                        <button class="modern-btn btn-sm btn-danger"
-                                onclick="deleteTemplate({{ template.id }}, '{{ template.name }}')">
-                          <i class="bi bi-trash"></i> Delete
-                        </button>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4" data-email-template-list="true">
+
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                        <i class="lucide lucide-mail text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white sm:text-3xl">Email Templates</h1>
+                        <p class="mt-1 text-sm text-indigo-100">Manage email notification templates</p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+    </div>
+
+    {% if templates|length > 0 %}
+        <!-- Templates Table Card -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-white/50 px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">
+                        <i class="lucide lucide-list mr-2 text-indigo-500" style="width:1em;height:1em;"></i>
+                        All Templates
+                    </h2>
+                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                        {{ templates|length }} total
+                    </span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Name</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Slug</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Description</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Last Updated</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in templates %}
+                            <tr class="border-b border-slate-50 transition hover:bg-indigo-50/30">
+                                <td class="px-5 py-4">
+                                    <strong class="text-slate-900">{{ template.name }}</strong>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <code class="rounded bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700">{{ template.slug }}</code>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <span class="text-slate-500 text-sm">{{ template.description|default("N/A")|truncate(50) }}</span>
+                                </td>
+                                <td class="px-5 py-4">
+                                    {% if template.is_active %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-5 py-4 text-slate-500 text-sm">{{ template.updated_at|date("M d, Y H:i") }}</td>
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ admin_dir }}/email-templates/{{ template.id }}/edit"
+                                           class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 hover:shadow-md active:scale-95">
+                                            <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i>
+                                            Edit
+                                        </a>
+                                        {% if template.slug not in ['welcome_email', 'email_verification', 'password_reset'] %}
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:scale-95"
+                                                    onclick="deleteTemplate({{ template.id }}, '{{ template.name }}')">
+                                                <i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i>
+                                                Delete
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i> No email templates found.
-      </div>
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 px-4 py-16 text-center">
+            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-100">
+                <i class="lucide lucide-mail text-3xl text-sky-500"></i>
+            </div>
+            <h3 class="mb-2 text-lg font-semibold text-sky-900">No Email Templates Found</h3>
+            <p class="mb-6 max-w-md text-sm text-sky-600">Email templates haven't been configured yet. They will appear here once set up in the database.</p>
+            <div class="flex items-center gap-2 rounded-lg bg-sky-100 px-4 py-3 text-sm text-sky-700">
+                <i class="lucide lucide-info" style="width:1em;height:1em;"></i>
+                <span>Check the database seed or migration scripts</span>
+            </div>
+        </div>
     {% endif %}
-  </div>
+</div>
 {% endblock %}
 
+{% block scripts %}
+<script>
+function deleteTemplate(id, name) {
+    Swal.fire({
+        title: 'Delete Template?',
+        html: 'Are you sure you want to delete <strong>' + name.replace(/</g, '&lt;') + '</strong>?<br>This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then(result => {
+        if (!result.isConfirmed) return;
 
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        fetch('/admin/email-templates/' + id + '/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrf
+            },
+            body: JSON.stringify({})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire('Deleted!', data.message || 'Template deleted successfully.', 'success')
+                    .then(() => location.reload());
+            } else {
+                Swal.fire('Error', data.error || 'Failed to delete template.', 'error');
+            }
+        })
+        .catch(e => Swal.fire('Error', e.message, 'error'));
+    });
+}
+</script>
+{% endblock %}

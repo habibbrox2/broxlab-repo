@@ -8,7 +8,6 @@
  * 
  * Usage:
  * - Manual: StorageCleanupHelper::cleanupAllDirectories()
- * - Scheduled: Via cron job: php -f /path/to/storage-cleanup-task.php
  */
 
 class StorageCleanupHelper

@@ -37,9 +37,6 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
 
     // Fetch all settings
     $settings = $settingsModel->getAll();
-    $publicNavItems = $settingsModel->getPublicNavItems($settings, false);
-    $publicNavRows = brox_prepare_public_nav_rows($publicNavItems, 8);
-    $publicNavColumnAvailable = array_key_exists('public_nav_json', $settings);
 
     // Generate timezones dynamically
     $timezones = [];
@@ -150,18 +147,11 @@ $router->get('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only'
         'page_title' => 'Application Settings',
         'current_page' => 'app-settings',
         'csrf_token' => generateCsrfToken(),
-        'public_nav_rows' => $publicNavRows,
-        'public_nav_column_available' => $publicNavColumnAvailable,
         'payment_method_list' => $paymentMethodList,
         'manual_payment_methods' => $normalizedManualPaymentMethods,
     ]);
 });
 
-
-/**
- * Update app settings (POST)
- * Validate and save updated settings
- */
 $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only']], function () use ($mysqli) {
     $settingsModel = new AppSettings($mysqli);
     $appSecurityModel = new AppSecuritySettingsModel($mysqli);
@@ -210,7 +200,6 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
         // Handle logo upload (accept either URL in `site_logo` or uploaded file `site_logo_file`)
         $logo_path = brox_normalize_branding_asset_path((string)sanitize_input($_POST['site_logo'] ?? ''));
         $existingSettings = $settingsModel->getAll();
-        $publicNavColumnAvailable = array_key_exists('public_nav_json', $existingSettings);
         $oldLogo = brox_normalize_branding_asset_path((string)($existingSettings['site_logo'] ?? ''));
 
         // Handle explicit remove-site-logo request
@@ -306,25 +295,6 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
         // reCAPTCHA secret - only update if provided
         if (!empty($_POST['recaptcha_secret_key'])) {
             $data['recaptcha_secret_key'] = sanitize_input($_POST['recaptcha_secret_key']);
-        }
-
-        $publicNavSubmission = brox_collect_public_nav_items_from_post($_POST, 8);
-        if ($publicNavSubmission['submitted']) {
-            if (!$publicNavColumnAvailable) {
-                $warnings[] = "Public header menu was not saved because public_nav_json column is missing.";
-            } elseif (!empty($publicNavSubmission['errors'])) {
-                $warnings[] = "Public header menu was not updated. " . implode(' ', $publicNavSubmission['errors']);
-            } else {
-                $encodedNav = json_encode(
-                    $publicNavSubmission['items'],
-                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-                );
-                if ($encodedNav === false) {
-                    $warnings[] = "Public header menu was not updated due to JSON encoding error.";
-                } else {
-                    $data['public_nav_json'] = $encodedNav;
-                }
-            }
         }
 
         if ($settingsModel->update($data)) {
@@ -448,16 +418,17 @@ $router->post('/admin/app-settings', ['middleware' => ['auth', 'super_admin_only
             $currentUserId = (int)(AuthManager::getCurrentUserId() ?? ($_SESSION["user_id"] ?? 0));
             if ($currentUserId > 0) {
                 $notificationModel = new NotificationModel($mysqli);
+                $notificationPayload = [
+                    "user_id" => $currentUserId,
+                    "channels" => ["push", "in_app", "email"],
+                    "action_url" => "/admin/app-settings",
+                ];
                 $notifId = $notificationModel->create(
                     $currentUserId,
                     "Settings Updated",
                     "Application settings were updated successfully.",
                     "update",
-                    [
-                        "user_id" => $currentUserId,
-                        "channels" => ["push", "in_app", "email"],
-                        "action_url" => "/admin/app-settings",
-                    ]
+                    $notificationPayload
                 );
 
                 if ($notifId) {

@@ -42,7 +42,6 @@ This document contains exact cron lines and Task Scheduler commands for BroxLab 
 
 #### Option B: Using PHP (Also cleans storage/ directory files)
 ```bash
-0 2 * * * php -f /home/tdhuedhn/public_html/storage-cleanup-task.php >> /home/tdhuedhn/broxlab/logs/cron.cleanup.log 2>&1
 ```
 
 **Note**: Option B also automatically cleans old files in `storage/logs`, `storage/cache`, `storage/temp` directories based on retention policies.

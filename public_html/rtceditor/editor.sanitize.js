@@ -1,5 +1,5 @@
-﻿// Editor Sanitize Helpers - move heavy sanitization logic out of core
-(function (global) {
+// Editor Sanitize Helpers - move heavy sanitization logic out of core
+(function () {
     function installSanitizeHelpers(RichTextEditor) {
         function isSafeUrl(value, tagName, attrName) {
             const raw = String(value || '').trim();
@@ -86,73 +86,92 @@
             if (window.DOMPurify) return Promise.resolve(window.DOMPurify);
 
             return new Promise((resolve) => {
-                try {
-                    let settled = false;
+                let settled = false;
+                let base = '';
+                let tryIndex = 0;
 
-                    function finish() {
-                        if (settled) return;
-                        settled = true;
-                        resolve(window.DOMPurify || null);
+                function finish() {
+                    if (settled) return;
+                    settled = true;
+                    resolve(window.DOMPurify || null);
+                }
+
+                const scripts = document.getElementsByTagName('script');
+                function getScriptBase(scriptSrc) {
+                    try {
+                        const url = new URL(scriptSrc, window.location.href);
+                        return url.origin + url.pathname.replace(/\/[^/]*$/, '/');
+                    } catch (e) {
+                        return '';
                     }
+                }
 
-                    let base = '';
-                    const scripts = document.getElementsByTagName('script');
+                const currentScript = document.currentScript;
+                if (currentScript && currentScript.src) {
+                    base = getScriptBase(currentScript.src);
+                }
+
+                if (!base) {
                     for (let i = scripts.length - 1; i >= 0; i--) {
                         const src = scripts[i].src || '';
-                        if (src && src.indexOf('editor.sanitize.js') !== -1) {
-                            base = src.replace(/\/[^\/]*$/, '/');
+                        if (!src) continue;
+                        if (
+                            src.indexOf('editor.sanitize.js') !== -1 ||
+                            src.indexOf('editor.bundle.js') !== -1 ||
+                            src.indexOf('/rtceditor/') !== -1
+                        ) {
+                            base = getScriptBase(src);
                             break;
                         }
                     }
-                    if (!base) {
-                        base = (location && location.href) ? location.href.replace(/\/[^\/]*$/, '/') : './';
-                    }
-
-                    const tryPaths = [
-                        base + 'purify.min.js',
-                        base + '../vendor/dompurify/purify.min.js',
-                        '/vendor/dompurify/purify.min.js',
-                        'https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js'
-                    ];
-                    let tryIndex = 0;
-
-                    function tryNextPath() {
-                        if (window.DOMPurify) {
-                            finish();
-                            return;
-                        }
-                        if (tryIndex >= tryPaths.length) {
-                            finish();
-                            return;
-                        }
-
-                        const path = tryPaths[tryIndex++];
-                        const existing = document.querySelector(`script[data-rte-purify-src="${path}"]`);
-                        if (existing) {
-                            existing.addEventListener('load', () => finish(), { once: true });
-                            existing.addEventListener('error', () => tryNextPath(), { once: true });
-                            return;
-                        }
-
-                        try {
-                            const script = document.createElement('script');
-                            script.src = path;
-                            script.async = true;
-                            script.setAttribute('data-purify-loading', '1');
-                            script.setAttribute('data-rte-purify-src', path);
-                            script.onload = () => finish();
-                            script.onerror = () => tryNextPath();
-                            document.head.appendChild(script);
-                        } catch (e) {
-                            tryNextPath();
-                        }
-                    }
-
-                    tryNextPath();
-                    setTimeout(() => finish(), 5000);
-                } catch (err) {
-                    resolve(null);
                 }
+
+                if (!base || base.indexOf('/rtceditor/') === -1) {
+                    base = window.location.origin + '/rtceditor/';
+                }
+
+                const tryPaths = [
+                    base + 'purify.min.js',
+                    base + '../vendor/dompurify/purify.min.js',
+                    '/rtceditor/purify.min.js',
+                    '/vendor/dompurify/purify.min.js',
+                    'https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js'
+                ];
+
+                function tryNextPath() {
+                    if (window.DOMPurify) {
+                        finish();
+                        return;
+                    }
+                    if (tryIndex >= tryPaths.length) {
+                        finish();
+                        return;
+                    }
+
+                    const path = tryPaths[tryIndex++];
+                    const existing = document.querySelector(`script[data-rte-purify-src="${path}"]`);
+                    if (existing) {
+                        existing.addEventListener('load', finish, { once: true });
+                        existing.addEventListener('error', tryNextPath, { once: true });
+                        return;
+                    }
+
+                    try {
+                        const script = document.createElement('script');
+                        script.src = path;
+                        script.async = true;
+                        script.setAttribute('data-purify-loading', '1');
+                        script.setAttribute('data-rte-purify-src', path);
+                        script.onload = finish;
+                        script.onerror = tryNextPath;
+                        document.head.appendChild(script);
+                    } catch (e) {
+                        tryNextPath();
+                    }
+                }
+
+                tryNextPath();
+                setTimeout(finish, 5000);
             });
         }
 

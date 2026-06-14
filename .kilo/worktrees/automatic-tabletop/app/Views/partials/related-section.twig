@@ -1,0 +1,59 @@
+﻿{#
+  Partials: related-section.twig
+  Optimized for prepared related items from model
+#}
+
+{% set items = items|default([]) %}
+{% set variant = variant|default('pro') %}
+
+{# DEBUG #}
+{% if items|length == 0 %}
+  <!-- DEBUG: No items passed to related-section.twig -->
+{% else %}
+  <!-- DEBUG: {{ items|length }} items in related section -->
+{% endif %}
+
+{% if items|length > 0 %}
+
+{% set section_id = id|default('related-' ~ (title|default('items')|lower|replace({' ':'-'}) ) ~ '-title') %}
+
+<section class='mb-5' aria-labelledby='{{ section_id }}'>
+  <div class='related-section {{ variant }} rounded-4 overflow-hidden'>
+
+    
+
+    <header class='related-header p-4 related-header-styled'
+      style='background: {{ gradient|default('linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)') }};'>
+      <div class='d-flex align-items-center justify-content-between w-100'>
+        <h2 id='{{ section_id }}' class='mb-0 h5 fw-bold text-light'>
+          <i class='bi bi-link-45deg mr-2'></i>{{ title|default('Related') }}
+        </h2>
+
+        <div class='d-flex align-items-center gap-3'>
+          <span class='badge bg-light text-primary px-3 py-2 rounded-pill'>
+            {{ items|length }} {{ title|default('Items') }}
+          </span>
+
+          {% if view_all_url is defined and view_all_url %}
+            <a href='{{ view_all_url }}' class='btn btn-sm btn-outline-light related-btn-light'>
+              View all
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class='related-body p-4'>
+      <div class='feed-grid' role='list' aria-label='{{ title|default('Related Items') }}'>
+        {% for it in items %}
+          {% include 'partials/content-card.twig' with {
+            item: it,
+            index: loop.index
+          } %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+

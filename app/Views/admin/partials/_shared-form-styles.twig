@@ -1,0 +1,158 @@
+{#
+ # ── Shared Admin Form Styles ──
+ # Extracted from admin/content/form.twig and admin/services/forms.twig
+ # to avoid duplication. Include via:
+ #   {% include 'admin/partials/_shared-form-styles.twig' %}
+ #}
+<style>
+/* ── Form Inputs ── */
+.form-input {
+ @apply w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
+ bg-white text-slate-900 placeholder:text-slate-400
+ transition-all duration-200 ease-out
+ focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500
+ focus:bg-white focus:shadow-md focus:shadow-indigo-500/10
+ hover:border-slate-400
+ disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
+ read-only:bg-slate-50 read-only:cursor-default
+ selection:bg-indigo-100;
+ caret-color: #4f46e5;
+}
+.form-input.has-error,
+.form-input:user-invalid {
+ @apply border-red-400 bg-red-50/50 ring-2 ring-red-500/20
+ placeholder:text-red-300;
+}
+.form-select {
+ @apply w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
+ bg-white text-slate-900
+ transition-all duration-200 ease-out appearance-none cursor-pointer
+ focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500
+ hover:border-slate-400
+ disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed;
+ background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+ background-repeat: no-repeat;
+ background-position: right 0.75rem center;
+ background-size: 1.25rem;
+ padding-right: 2.75rem;
+}
+.form-select:hover {
+ background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+.form-textarea {
+ @apply w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
+ bg-white text-slate-900 placeholder:text-slate-400
+ transition-all duration-200 ease-out resize-y min-h-[80px]
+ focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500
+ focus:bg-white focus:shadow-md focus:shadow-indigo-500/10
+ hover:border-slate-400
+ disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
+ selection:bg-indigo-100;
+ caret-color: #4f46e5;
+}
+.form-textarea.has-error,
+.form-textarea:user-invalid {
+ @apply border-red-400 bg-red-50/50 ring-2 ring-red-500/20;
+}
+.form-label {
+ @apply block text-sm font-semibold text-slate-700 mb-1.5 tracking-tight;
+}
+.form-label .required {
+ @apply text-rose-500 ml-1 text-base leading-none align-middle;
+}
+.form-hint {
+ @apply text-xs text-slate-400 mt-1.5 block leading-relaxed;
+}
+.form-group {
+ @apply space-y-1.5;
+}
+
+/* ── Card Components ── */
+.card-base {
+ @apply rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden
+ transition-all duration-300 ease-out hover:shadow-md;
+}
+.card-header {
+ @apply px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100;
+}
+.card-title {
+ @apply flex items-center gap-2 text-lg font-semibold text-slate-900 m-0;
+}
+.card-title i { @apply text-indigo-600; }.card-body { @apply p-6 space-y-5; }
+.card-body .form-group:last-child { @apply mb-0; }
+.sticky-sidebar { @apply sticky top-24 space-y-4; }
+
+/* ── Toggle Switch ── */
+.toggle-switch {
+ @apply relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full
+ transition-all duration-200 ease-out;
+ background: #cbd5e1;
+ box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+.toggle-switch[aria-checked="true"] {
+ background: #6366f1;
+ box-shadow: inset 0 1px 3px rgba(99,102,241,0.2);
+}
+.toggle-switch:focus-visible { @apply outline-none ring-2 ring-indigo-500/40 ring-offset-2; }
+.toggle-switch .toggle-thumb {
+ @apply inline-block h-5 w-5 rounded-full bg-white shadow-sm
+ transition-all duration-200 ease-out;
+ transform: translateX(2px);
+}
+.toggle-switch[aria-checked="true"] .toggle-thumb {
+ transform: translateX(22px);
+ box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+}
+.toggle-switch:hover { @apply shadow-sm; }
+.toggle-switch:active .toggle-thumb {
+ @apply scale-90;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+ @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+ bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 hover:shadow-md
+ transition-all duration-200 ease-out active:scale-95;
+}
+.btn-secondary {
+ @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+ bg-slate-200 text-slate-900 hover:bg-slate-300
+ transition-all duration-200 ease-out active:scale-95;
+}
+.btn-outline {
+ @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+ bg-white border border-slate-300 text-slate-900 hover:bg-slate-50 hover:border-slate-400
+ transition-all duration-200 ease-out active:scale-95;
+}
+.btn-sm { @apply px-3 py-1.5 text-xs; }
+
+/* ── Dark Mode Overrides (Shared) ── */
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+ @apply bg-slate-800/80 border-slate-600 text-slate-100 placeholder:text-slate-500;
+}
+[data-theme="dark"] .form-input:hover,
+[data-theme="dark"] .form-textarea:hover { @apply border-slate-500; }
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-textarea:focus {
+ @apply bg-slate-800/95 border-indigo-500 shadow-lg shadow-indigo-500/5;
+}
+[data-theme="dark"] .form-input.has-error,
+[data-theme="dark"] .form-input:user-invalid,
+[data-theme="dark"] .form-textarea.has-error,
+[data-theme="dark"] .form-textarea:user-invalid {
+ @apply border-red-500 bg-red-950/20 ring-red-500/30;
+}
+[data-theme="dark"] .form-label { @apply text-slate-300; }
+[data-theme="dark"] .form-label .required { @apply text-rose-400; }
+[data-theme="dark"] .card-base { @apply bg-slate-900 border-slate-700; }
+[data-theme="dark"] .card-header { @apply bg-gradient-to-r from-slate-800 to-slate-900 border-slate-700; }
+[data-theme="dark"] .card-title { @apply text-slate-100; }
+[data-theme="dark"] .btn-outline { @apply bg-slate-800/80 border-slate-600 text-slate-200 hover:bg-slate-700 hover:border-slate-500; }
+[data-theme="dark"] .btn-secondary { @apply bg-slate-700 text-slate-200 hover:bg-slate-600; }
+[data-theme="dark"] .toggle-switch { background: #475569; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+[data-theme="dark"] .toggle-switch[aria-checked="true"] { background: #6366f1; }
+[data-theme="dark"] .form-hint { @apply text-slate-500; }
+</style>

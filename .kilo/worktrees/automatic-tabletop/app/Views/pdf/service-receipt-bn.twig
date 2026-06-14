@@ -1,0 +1,237 @@
+﻿<!doctype html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>à¦¸à¦¾à¦°à§à¦­à¦¿à¦¸ à¦°à¦¸à¦¿à¦¦ #{{ application.id }}</title>
+    <style>
+        @page {
+            margin: 12mm;
+        }
+        body {
+            font-family: solaimanlipi, nikosh, helvetica, sans-serif;
+            font-size: 12px;
+            color: #1f2937;
+            line-height: 1.45;
+        }
+        .sheet {
+            border: 1px solid #dbe3ee;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .header {
+            border-bottom: 2px solid #1d4ed8;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            color: #0f172a;
+        }
+        .meta {
+            font-size: 11px;
+            color: #475569;
+        }
+        .section {
+            margin-top: 12px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table td,
+        .table th {
+            border: 1px solid #dbe3ee;
+            padding: 7px 8px;
+            vertical-align: top;
+        }
+        .table th {
+            background: #eff6ff;
+            text-align: left;
+            font-weight: 700;
+            width: 30%;
+        }
+        .k {
+            color: #475569;
+            font-weight: 700;
+        }
+        .mono {
+            font-family: helvetica, sans-serif;
+            letter-spacing: 0.2px;
+        }
+        .status {
+            display: inline-block;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .docs {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .docs li {
+            margin-bottom: 3px;
+        }
+        .muted {
+            color: #64748b;
+        }
+        .footer {
+            margin-top: 14px;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 8px;
+            font-size: 10px;
+            color: #64748b;
+        }
+        .break {
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="header">
+            <h1 class="title">à¦¸à¦¾à¦°à§à¦­à¦¿à¦¸ à¦†à¦¬à§‡à¦¦à¦¨ à¦°à¦¸à¦¿à¦¦</h1>
+            <div class="meta">
+                à¦°à¦¸à¦¿à¦¦ à¦¨à¦‚: <span class="mono">SRV-{{ application.id }}-{{ application.created_at|date('Ymd') }}</span>
+                | à¦¤à§ˆà¦°à¦¿ à¦¹à§Ÿà§‡à¦›à§‡: {{ generated_at }}
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">à¦†à¦¬à§‡à¦¦à¦¨à§‡à¦° à¦¤à¦¥à§à¦¯</h3>
+            <table class="table">
+                <tr>
+                    <th>à¦†à¦¬à§‡à¦¦à¦¨ à¦†à¦‡à¦¡à¦¿</th>
+                    <td class="mono">#{{ application.id }}</td>
+                </tr>
+                <tr>
+                    <th>à¦¸à¦¾à¦°à§à¦­à¦¿à¦¸</th>
+                    <td>{{ service.name|default(application.service_name|default('N/A')) }}</td>
+                </tr>
+                <tr>
+                    <th>à¦†à¦¬à§‡à¦¦à¦¨à¦•à¦¾à¦°à§€à¦° à¦¨à¦¾à¦®</th>
+                    <td>{{ applicant.username|default(application.user_name|default('N/A')) }}</td>
+                </tr>
+                <tr>
+                    <th>à¦‡à¦®à§‡à¦‡à¦²</th>
+                    <td class="break">{{ applicant.email|default(application.user_email|default('N/A')) }}</td>
+                </tr>
+                <tr>
+                    <th>à¦¤à¦¾à¦°à¦¿à¦–</th>
+                    <td>{{ application.created_at|date('d M Y, h:i A') }}</td>
+                </tr>
+                <tr>
+                    <th>à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸</th>
+                    <td><span class="status">{{ application.status|default('N/A')|title }}</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3 class="section-title">à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦¤à¦¥à§à¦¯</h3>
+            <table class="table">
+                <tr>
+                    <th>à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸</th>
+                    <td><span class="status">{{ payment.status|default('N/A')|title }}</span></td>
+                </tr>
+                <tr>
+                    <th>à¦Ÿà§à¦°à¦¾à¦¨à¦œà§‡à¦•à¦¶à¦¨ à¦†à¦‡à¦¡à¦¿</th>
+                    <td class="mono">{{ payment.transaction_id|default(payment.paymentID|default('N/A')) }}</td>
+                </tr>
+                <tr>
+                    <th>à¦—à§‡à¦Ÿà¦“à§Ÿà§‡ / à¦®à§‡à¦¥à¦¡</th>
+                    <td>{{ payment.gateway|default(payment.method|default('N/A')) }}</td>
+                </tr>
+                <tr>
+                    <th>à¦à¦®à¦¾à¦‰à¦¨à§à¦Ÿ</th>
+                    <td>
+                        {% if payment.amount is defined and payment.amount is not same as('') and payment.amount is not same as(null) %}
+                            {{ payment.amount }} {{ payment.currency|default('BDT') }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if payment.sender_number|default('') %}
+                <tr>
+                    <th>à¦¸à§‡à¦¨à§à¦¡à¦¾à¦° à¦¨à¦®à§à¦¬à¦°</th>
+                    <td>{{ payment.sender_number }}</td>
+                </tr>
+                {% endif %}
+                {% if payment.receiver_account|default('') %}
+                <tr>
+                    <th>à¦°à¦¿à¦¸à¦¿à¦­à¦¾à¦° à¦à¦•à¦¾à¦‰à¦¨à§à¦Ÿ</th>
+                    <td>{{ payment.receiver_account }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        {% if application.application_data is iterable %}
+        <div class="section">
+            <h3 class="section-title">à¦¸à¦¾à¦¬à¦®à¦¿à¦Ÿ à¦•à¦°à¦¾ à¦¤à¦¥à§à¦¯</h3>
+            <table class="table">
+                {% for key, value in application.application_data %}
+                    {% set normalized_key = key|lower %}
+                    {% if normalized_key != '_payment' %}
+                        {% set field_label = form_field_labels[key]|default(form_field_labels[normalized_key]|default('')) %}
+                        {% if field_label == '' %}
+                            {% set field_label = normalized_key == '_documents' ? 'à¦¡à¦•à§à¦®à§‡à¦¨à§à¦Ÿ' : (key|replace({'_': ' ', '-': ' '})|title) %}
+                        {% endif %}
+                        <tr>
+                            <th class="k">{{ field_label }}</th>
+                            <td class="break">
+                                {% if value is iterable %}
+                                    {% if normalized_key == '_documents' %}
+                                        {% if value|length > 0 %}
+                                            <ul class="docs">
+                                                {% for doc in value %}
+                                                    <li>
+                                                        {{ doc.name|default('Document ' ~ loop.index) }}
+                                                        {% if doc.url|default('') %}<span class="muted"> ({{ doc.url }})</span>{% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    {% else %}
+                                        {{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}
+                                    {% endif %}
+                                {% else %}
+                                    {% if value is same as(null) or value is same as('') %}
+                                        N/A
+                                    {% elseif value is same as(true) %}
+                                        Yes
+                                    {% elseif value is same as(false) %}
+                                        No
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            à¦à¦‡ à¦°à¦¸à¦¿à¦¦à¦Ÿà¦¿ à¦¸à§à¦¬à§Ÿà¦‚à¦•à§à¦°à¦¿à§Ÿà¦­à¦¾à¦¬à§‡ à¦¤à§ˆà¦°à¦¿ à¦¹à§Ÿà§‡à¦›à§‡à¥¤ à¦ªà§à¦°à§Ÿà§‹à¦œà¦¨à§‡ à¦à¦‡ PDF à¦¸à¦‚à¦°à¦•à§à¦·à¦£ à¦•à¦°à§à¦¨à¥¤
+        </div>
+    </div>
+</body>
+</html>
+

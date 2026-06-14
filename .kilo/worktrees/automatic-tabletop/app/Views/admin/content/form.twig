@@ -1,0 +1,935 @@
+﻿{% extends "admin/layout.twig" %}
+{% block title %}
+  {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
+{% endblock %}
+{% block stylesheets %}
+  {% set rte_version = getRTEVersion() %}
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet">
+  <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+  <style>
+    /* Fix: Tailwind overrides Bootstrap .collapse with visibility:collapse, hiding all collapses even when .show is added */
+    .collapse { visibility: visible; }
+    .collapse:not(.show) { display: none; }
+    .collapse.show { display: block; }
+
+    /* AI Generation Overlay */
+    .ai-gen-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .ai-gen-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .ai-gen-card {
+      background: #fff; border-radius: 20px;
+      padding: 2.5rem; max-width: 420px; width: 90%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .ai-gen-overlay.active .ai-gen-card {
+      transform: scale(1) translateY(0);
+    }
+    .ai-gen-spinner {
+      width: 56px; height: 56px; margin: 0 auto 1.25rem;
+      border: 5px solid #e9ecef;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: ai-spin 0.8s linear infinite;
+    }
+    .ai-gen-spinner.done {
+      border-color: #198754;
+      border-top-color: #198754;
+      animation: ai-pop 0.4s ease;
+    }
+    .ai-gen-spinner.error {
+      border-color: #dc3545;
+      border-top-color: #dc3545;
+      animation: none;
+    }
+    @keyframes ai-spin { to { transform: rotate(360deg); } }
+    @keyframes ai-pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .ai-gen-title {
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;
+      color: #1a1a2e;
+    }
+    .ai-gen-text {
+      font-size: 0.9rem; color: #6c757d; margin-bottom: 1.25rem;
+      min-height: 1.4em;
+    }
+    .ai-gen-progress {
+      height: 4px; background: #e9ecef; border-radius: 4px;
+      overflow: hidden; margin-bottom: 1rem;
+    }
+    .ai-gen-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .ai-gen-progress-bar.done {
+      background: linear-gradient(90deg, #28a745, #20c997);
+    }
+    .ai-gen-progress-bar.error {
+      background: linear-gradient(90deg, #dc3545, #e74c3c);
+    }
+    .ai-gen-check {
+      display: none; width: 56px; height: 56px; margin: 0 auto 1.25rem;
+      background: #198754; border-radius: 50%;
+      align-items: center; justify-content: center;
+    }
+    .ai-gen-check.show { display: flex; }
+    .ai-gen-check i { color: #fff; font-size: 1.8rem; }
+    @keyframes ai-check-in {
+      0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .ai-gen-check i { animation: ai-check-in 0.4s ease; }
+
+    /* Preview Modal */
+    .ai-preview-overlay {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .ai-preview-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .ai-preview-modal {
+      background: #fff; border-radius: 20px;
+      max-width: 860px; width: 100%; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+      transform: scale(0.92) translateY(30px);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .ai-preview-overlay.active .ai-preview-modal {
+      transform: scale(1) translateY(0);
+    }
+    .ai-preview-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    .ai-preview-header h3 {
+      margin: 0; font-size: 1.15rem; font-weight: 700;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ai-preview-header h3 i { color: #667eea; }
+    .ai-preview-close {
+      background: none; border: none; font-size: 1.5rem;
+      color: #6c757d; cursor: pointer; padding: 0.25rem;
+      line-height: 1; border-radius: 8px; transition: all 0.2s;
+    }
+    .ai-preview-close:hover { background: #f1f3f5; color: #1a1a2e; }
+    .ai-preview-body {
+      flex: 1; overflow-y: auto; padding: 1.75rem;
+      min-height: 200px;
+    }
+    .ai-preview-title {
+      font-size: 1.5rem; font-weight: 700; color: #1a1a2e;
+      margin-bottom: 1rem; padding-bottom: 0.75rem;
+      border-bottom: 2px solid #f1f3f5;
+    }
+    .ai-preview-content {
+      font-size: 0.95rem; line-height: 1.8; color: #2d2d3f;
+    }
+    .ai-preview-content h1 { font-size: 1.3rem; margin: 1.25rem 0 0.5rem; }
+    .ai-preview-content h2 { font-size: 1.15rem; margin: 1.25rem 0 0.5rem; color: #1a1a2e; }
+    .ai-preview-content h3 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    .ai-preview-content p { margin-bottom: 0.75rem; }
+    .ai-preview-content ul, .ai-preview-content ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .ai-preview-content li { margin-bottom: 0.3rem; }
+    .ai-preview-content blockquote {
+      border-left: 4px solid #667eea; padding-left: 1rem;
+      margin: 1rem 0; color: #6c757d; font-style: italic;
+    }
+    .ai-preview-content pre {
+      background: #f8f9fa; border-radius: 8px; padding: 1rem;
+      overflow-x: auto; font-size: 0.85rem; margin: 1rem 0;
+    }
+    .ai-preview-content code { background: #f1f3f5; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+    .ai-preview-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 0.75rem; padding: 1rem 1.75rem;
+      border-top: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    .ai-preview-stats {
+      margin-right: auto; font-size: 0.85rem; color: #6c757d;
+    }
+    .ai-preview-btn {
+      padding: 0.6rem 1.5rem; border-radius: 10px;
+      font-weight: 600; border: none; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .ai-preview-btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+    .ai-preview-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    }
+    .ai-preview-btn-secondary {
+      background: #f1f3f5; color: #495057;
+    }
+    .ai-preview-btn-secondary:hover {
+      background: #e9ecef;
+    }
+    .ai-preview-btn-outline {
+      background: transparent; color: #667eea;
+      border: 2px solid #667eea;
+    }
+    .ai-preview-btn-outline:hover {
+      background: #667eea; color: #fff;
+    }
+    @keyframes ai-preview-fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .ai-preview-body { animation: ai-preview-fade-in 0.3s ease; }
+  </style>
+{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% block content %}
+  <div class="service-form-wrapper">
+    <div class="container service-form-container">
+      <!-- Header Glass Card -->
+      <div class="header-glass-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="header-icon-badge">
+              <i class="bi {{ not isCreate ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+            </div>
+            <div>
+              <h1 class="page-title">
+                {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
+              </h1>
+              <p class="page-subtitle">
+                {{ not isCreate
+                ? (type == 'posts' ? 'Update post content and settings' : 'Update page content and settings')
+                : (type == 'posts' ? 'Create a new blog post' : 'Create a new page')
+                }}
+              </p>
+            </div>
+          </div>
+          <a href="/admin/{{ type }}" class="modern-btn modern-btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
+          </a>
+        </div>
+      </div>
+      <!-- Main Form -->
+      <form method="post"
+            action="{{ not isCreate ? ('/admin/' ~ type ~ '/edit') : ('/admin/' ~ type ~ '/create') }}"
+            data-autosave="true">
+        {% if not isCreate %}
+          <input type="hidden" name="id" value="{{ item.id }}">
+          {% if type == 'posts' %}
+            <input type="hidden" id="post_id" value="{{ item.id }}">
+          {% else %}
+            <input type="hidden" id="page_id" value="{{ item.id }}">
+          {% endif %}
+          <input type="hidden"
+                 id="item_permalink"
+                 name="permalink"
+                 value="{{ item.slug|default("") }}">
+        {% else %}
+          {% if type == 'posts' %}
+            <input type="hidden" id="post_id" value="">
+          {% else %}
+            <input type="hidden" id="page_id" value="">
+          {% endif %}
+          <input type="hidden" id="item_permalink" name="permalink" value="">
+        {% endif %}
+        <div class="row g-4">
+          <!-- Main Content Column -->
+          <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-info-circle-fill"></i>
+                  {{ type == 'posts' ? 'Post Details' : 'Page Details' }}
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <!-- Title -->
+                <div class="mb-4">
+                  <label for="title" class="modern-form-label">
+                    Title
+                    <span class="required">*</span>
+                  </label>
+                  <input type="text"
+                         class="modern-input form-control-lg"
+                         id="title"
+                         name="title"
+                         placeholder="Enter {{ type == 'posts' ? 'post' : 'page' }} title"
+                         value="{{ item.title|default("") }}">
+                  <div class="form-helper">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</div>
+                </div>
+                <!-- SEO Slug -->
+                <div class="mb-4">
+                  <label for="seo" class="modern-form-label">
+                    URL Slug
+                    <span class="required">*</span>
+                  </label>
+                  <div class="modern-input-group">
+                    <span class="modern-input-group-text">
+                      <i class="bi bi-link-45deg"></i>
+                    </span>
+                    <input type="text"
+                           class="modern-input"
+                           id="seo"
+                           name="slug"
+                           placeholder="example-slug"
+                           value="{{ item.slug|default("") }}">
+                  </div>
+                  <div id="seo-feedback" class="form-helper"></div>
+                </div>
+                <!-- Content -->
+                <div>
+                  <label for="content" class="modern-form-label">
+                    Content
+                    <span class="required">*</span>
+                  </label>
+                  {% include 'partials/editor.twig' with {
+                  'editorId': 'content',
+                  'editorName': 'content',
+                  'editorClass': 'modern-rich-editor',
+                  'initialContent': item.content|default(''),
+                  'darkMode': false,
+                  'rtl': false
+                  } %}
+                  <div class="form-helper">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- Categories & Tags -->
+            <div class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <h5 class="admin-panel-card-header-title">
+                  <i class="bi bi-tags-fill"></i>
+                  Categories & Tags
+                </h5>
+              </div>
+              <div class="admin-panel-card-body">
+                <div class="mb-4">
+                  <label class="modern-form-label">Categories</label>
+                  {% include 'admin/partials/_categories.twig' with {
+                  'categories': categories|default([]),
+                  'selectedCategories': selectedCategories|default([])
+                  } %}
+                </div>
+                <div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Sidebar Column -->
+          <div class="col-lg-4">
+            <div class="sticky-sidebar">
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-sliders"></i>
+                    {{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <!-- tags -->
+                  <div class="mb-4">
+                    <label class="modern-form-label">Tags</label>
+                    {% include 'admin/partials/_tags.twig' with {
+                    'allTags': allTags|default([]),
+                    'selectedTags': selectedTags|default([])
+                    } %}
+                    <div class="form-helper">Select multiple tags or type to add new ones</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Settings Card -->
+              <div class="admin-panel-card">
+                <div class="admin-panel-card-header">
+                  <h5 class="admin-panel-card-header-title">
+                    <i class="bi bi-sliders"></i>
+                    {{ type == 'posts' ? 'Post Settings' : 'Page Settings' }}
+                  </h5>
+                </div>
+                <div class="admin-panel-card-body">
+                  <!-- Status -->
+                  <div class="mb-4">
+                    <label class="modern-form-label">
+                      Status <span class="required">*</span>
+                    </label>
+                    <select class="modern-select form-select-lg" id="status" name="status">
+                      {% set current_status = item.status|default(status|default('draft')) %}
+                      <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Ã°Å¸â€œÂ Draft</option>
+                      <option value="published"
+                              {% if current_status == 'published' %}selected{% endif %}>Ã¢Å“â€œ Published</option>
+                    </select>
+                  </div>
+                  {% if isCreate %}
+                    <div class="mb-4">
+                      <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="send_push_notification"
+                               name="send_push_notification"
+                               value="1">
+                        <label class="form-check-label" for="send_push_notification">Send Push Notification to Subscribers</label>
+                      </div>
+                      <div class="form-helper">Status Published à¦¹à¦²à§‡ à¦ªà¦¾à¦ à¦¾à¦¨à§‹ à¦¹à¦¬à§‡</div>
+                    </div>
+                  {% endif %}
+                  <!-- Reader Indexing (posts only) -->
+                  {% if type == 'posts' %}
+                    <div class="mb-4">
+                      <label class="modern-form-label">
+                        <i class="bi bi-search"></i>
+                        SEO Indexing
+                      </label>
+                      <select class="modern-select" name="reader_indexing">
+                        <option value="">Default (Index & Follow)</option>
+                        <option value="noindex"
+                                {% if item.reader_indexing == 'noindex' %}selected{% endif %}>No Index</option>
+                        <option value="nofollow"
+                                {% if item.reader_indexing == 'nofollow' %}selected{% endif %}>No Follow</option>
+                      </select>
+                      <div class="form-helper">Control how search engines index this content</div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- AI Writer Card -->
+              <div class="admin-panel-card" id="aiWriterCard">
+                <div class="admin-panel-card-header d-flex align-items-center justify-content-between cursor-pointer"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#aiWriterCollapse"
+                     href="#aiWriterCollapse"
+                     role="button"
+                     aria-expanded="false">
+                  <h5 class="admin-panel-card-header-title mb-0">
+                    <i class="bi bi-magic"></i>
+                    AI Article Writer
+                  </h5>
+                  <i class="bi bi-chevron-down"></i>
+                </div>
+                <div class="collapse" id="aiWriterCollapse">
+                  <div class="admin-panel-card-body">
+                    <div class="mb-3">
+                      <label class="modern-form-label">Topic</label>
+                      <input type="text" class="modern-input" id="aiTopic"
+                             placeholder="e.g., Benefits of AI in Healthcare">
+                    </div>
+                    <div class="mb-3">
+                      <label class="modern-form-label">Tone</label>
+                      <select class="modern-select" id="aiTone">
+                        <option value="informative">Informative</option>
+                        <option value="professional">Professional</option>
+                        <option value="conversational">Conversational</option>
+                        <option value="persuasive">Persuasive</option>
+                        <option value="technical">Technical</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="modern-form-label">Length</label>
+                      <select class="modern-select" id="aiLength">
+                        <option value="short">Short</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="long">Long</option>
+                        <option value="detailed">Detailed</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="modern-form-label">Language</label>
+                      <select class="modern-select" id="aiLanguage">
+                        <option value="en">English</option>
+                        <option value="bn">Bengali</option>
+                        <option value="hi">Hindi</option>
+                        <option value="ar">Arabic</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="modern-form-label">Keywords (optional)</label>
+                      <input type="text" class="modern-input" id="aiKeywords"
+                             placeholder="e.g., statistics, research">
+                    </div>
+                    <button class="btn btn-primary w-100" id="aiGenerateBtn">
+                      <i class="bi bi-lightning-fill mr-1"></i>Generate with AI
+                    </button>
+                    <div class="d-flex align-items-center gap-2 mt-3 d-none" id="aiStatus">
+                      <span class="inline-spinner inline-spinner-sm text-primary"></span>
+                      <small class="text-muted" id="aiStatusText">Generating...</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Quick Actions -->
+              <div class="quick-action-card">
+                <h6 class="quick-action-title">Ready to {{ not isCreate ? 'update' : 'publish' }}?</h6>
+                <button type="submit"
+                        class="modern-btn modern-btn-white modern-btn-lg w-100 mb-3">
+                  <i class="bi bi-save"></i>
+                  {{ not isCreate ? (type == 'posts' ? 'Update Post' : 'Update Page') : (type == 'posts' ? 'Save Post' : 'Save Page') }}
+                </button>
+                <a href="/admin/{{ type }}"
+                   class="modern-btn modern-btn-secondary modern-btn-lg w-100">
+                  <i class="bi bi-x-lg"></i> Cancel
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="admin-content-data"
+       data-category-ids='{{ selectedCategories|default([]) |map(c=>c.id)|json_encode|e("html_attr") }}'
+       data-tag-ids='{{ selectedTags|default([]) |map(t=>t.id)|json_encode|e("html_attr") }}'
+       data-content-type="{{ type }}"
+       class="d-none"></div>
+
+  <!-- AI Generation Overlay -->
+  <div class="ai-gen-overlay" id="aiGenOverlay" role="dialog" aria-modal="true" aria-label="Generating article">
+    <div class="ai-gen-card">
+      <div class="ai-gen-spinner" id="aiGenSpinner"></div>
+      <div class="ai-gen-check" id="aiGenCheck"><i class="bi bi-check-lg"></i></div>
+      <div class="ai-gen-title" id="aiGenTitle">Generating Article</div>
+      <div class="ai-gen-text" id="aiGenText">Starting up...</div>
+      <div class="ai-gen-progress">
+        <div class="ai-gen-progress-bar" id="aiGenProgressBar"></div>
+      </div>
+      <small class="text-muted" id="aiGenChars"></small>
+    </div>
+  </div>
+
+  <!-- AI Preview Modal -->
+  <div class="ai-preview-overlay" id="aiPreviewOverlay" role="dialog" aria-modal="true" aria-label="Article preview">
+    <div class="ai-preview-modal">
+      <div class="ai-preview-header">
+        <h3><i class="bi bi-eye-fill"></i> Article Preview</h3>
+        <button type="button" class="ai-preview-close" id="aiPreviewClose" aria-label="Close preview">&times;</button>
+      </div>
+      <div class="ai-preview-body" id="aiPreviewBody">
+        <div class="ai-preview-title" id="aiPreviewTitle"></div>
+        <div class="ai-preview-content" id="aiPreviewContent"></div>
+      </div>
+      <div class="ai-preview-footer">
+        <span class="ai-preview-stats" id="aiPreviewStats"></span>
+        <button type="button" class="ai-preview-btn ai-preview-btn-outline" id="aiPreviewRegen">
+          <i class="bi bi-arrow-repeat mr-1"></i>Regenerate
+        </button>
+        <button type="button" class="ai-preview-btn ai-preview-btn-primary" id="aiPreviewApply">
+          <i class="bi bi-check-lg mr-1"></i>Apply to Form
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+  {% set rte_version = getRTEVersion() %}
+  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
+  <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form[data-autosave="true"]');
+            if (!form) return;
+
+            form.addEventListener('submit', function (event) {
+                const editor = window.editor_content;
+                const html = editor && typeof editor.getContent === 'function'
+                    ? editor.getContent()
+                    : (document.getElementById('content-input')?.value || '');
+                const text = String(html || '').replace(/<[^>]+>/g, '').trim();
+
+                if (!text) {
+                    event.preventDefault();
+                    alert('Content is required.');
+                }
+            });
+        }, { once: true });
+  </script>
+
+  <!-- AI Article Writer Stream -->
+  <script>
+  (function() {
+    'use strict';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    let dismissTimer = null;
+    let lastOptions = null;
+    let lastHtml = '';
+    let lastTitle = '';
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function convertToHtml(title, content) {
+      let html = '';
+      if (title) html += '<h1>' + escapeHtml(title) + '</h1>\n';
+      const paragraphs = content.split(/\n{2,}/);
+      var inList = false;
+      paragraphs.forEach(function(p) {
+        const t = p.trim();
+        if (!t) return;
+        if (t.startsWith('### ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h3>' + escapeHtml(t.slice(4)) + '</h3>\n';
+        } else if (t.startsWith('## ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h2>' + escapeHtml(t.slice(3)) + '</h2>\n';
+        } else if (t.startsWith('# ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<h1>' + escapeHtml(t.slice(2)) + '</h1>\n';
+        } else if (t.startsWith('> ')) {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<blockquote>' + escapeHtml(t.slice(2)) + '</blockquote>\n';
+        } else if (t.startsWith('- ') || t.startsWith('* ')) {
+          if (!inList) { html += '<ul>\n'; inList = true; }
+          html += '<li>' + escapeHtml(t.slice(2)) + '</li>\n';
+        } else {
+          if (inList) { html += '</ul>\n'; inList = false; }
+          html += '<p>' + escapeHtml(t) + '</p>\n';
+        }
+      });
+      if (inList) html += '</ul>\n';
+      return html;
+    }
+
+    const generateBtn = document.getElementById('aiGenerateBtn');
+    const statusEl = document.getElementById('aiStatus');
+    const statusText = document.getElementById('aiStatusText');
+
+    // Generation overlay elements
+    const overlay = document.getElementById('aiGenOverlay');
+    const spinner = document.getElementById('aiGenSpinner');
+    const checkIcon = document.getElementById('aiGenCheck');
+    const overlayTitle = document.getElementById('aiGenTitle');
+    const overlayText = document.getElementById('aiGenText');
+    const progressBar = document.getElementById('aiGenProgressBar');
+    const charsDisplay = document.getElementById('aiGenChars');
+
+    // Preview modal elements
+    const previewOverlay = document.getElementById('aiPreviewOverlay');
+    const previewTitle = document.getElementById('aiPreviewTitle');
+    const previewContent = document.getElementById('aiPreviewContent');
+    const previewStats = document.getElementById('aiPreviewStats');
+    const previewClose = document.getElementById('aiPreviewClose');
+    const previewApply = document.getElementById('aiPreviewApply');
+    const previewRegen = document.getElementById('aiPreviewRegen');
+
+    // Form submit elements
+    const form = document.querySelector('form[data-autosave="true"]');
+    const submitBtn = form?.querySelector('button[type="submit"]');
+
+    if (!generateBtn) return;
+
+    // --- Helper functions ---
+    function showProgress(pct, text, title) {
+      progressBar.style.width = pct + '%';
+      if (text) overlayText.textContent = text;
+      if (title) overlayTitle.textContent = title;
+    }
+
+    function showOverlay() {
+      clearTimeout(dismissTimer);
+      spinner.className = 'ai-gen-spinner';
+      checkIcon.classList.remove('show');
+      progressBar.className = 'ai-gen-progress-bar';
+      overlayTitle.textContent = 'Generating Article';
+      overlayText.textContent = 'Starting up...';
+      progressBar.style.width = '5%';
+      charsDisplay.textContent = '';
+      overlay.classList.add('active');
+      previewOverlay.classList.remove('active');
+      if (submitBtn) submitBtn.disabled = true;
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove('active');
+      if (submitBtn) submitBtn.disabled = false;
+    }
+
+    function showCompletion(success, message) {
+      if (success) {
+        spinner.className = 'ai-gen-spinner done';
+        checkIcon.classList.add('show');
+        progressBar.className = 'ai-gen-progress-bar done';
+        progressBar.style.width = '100%';
+        overlayTitle.textContent = 'Complete!';
+        overlayText.textContent = message || 'Article generated successfully';
+        dismissTimer = setTimeout(function() {
+          hideOverlay();
+          showPreview();
+        }, 800);
+      } else {
+        spinner.className = 'ai-gen-spinner error';
+        progressBar.className = 'ai-gen-progress-bar error';
+        overlayTitle.textContent = 'Generation Failed';
+        overlayText.textContent = message || 'An error occurred';
+        dismissTimer = setTimeout(function() {
+          hideOverlay();
+        }, 3000);
+      }
+    }
+
+    function showPreview() {
+      if (!lastTitle && !lastHtml) return;
+      previewTitle.textContent = lastTitle || 'Untitled';
+      previewContent.innerHTML = lastHtml;
+      const wordCount = lastHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length;
+      const charCount = lastHtml.replace(/<[^>]+>/g, '').length;
+      previewStats.textContent = wordCount + ' words \u00b7 ' + charCount + ' characters';
+      previewOverlay.classList.add('active');
+    }
+
+    function hidePreview() {
+      previewOverlay.classList.remove('active');
+    }
+
+    function applyToForm() {
+      // Fill title
+      if (lastTitle) {
+        document.getElementById('title').value = lastTitle;
+      }
+      // Fill editor
+      if (lastHtml) {
+        const editor = window.editor_content;
+        if (editor && typeof editor.setContent === 'function') {
+          editor.setContent(lastHtml);
+        } else {
+          const ci = document.getElementById('content-input');
+          if (ci) ci.value = lastHtml;
+        }
+      }
+      hidePreview();
+    }
+
+    // --- Preview modal event handlers ---
+    previewClose.addEventListener('click', hidePreview);
+    previewApply.addEventListener('click', function() {
+      applyToForm();
+    });
+    previewRegen.addEventListener('click', function() {
+      hidePreview();
+      if (lastOptions) {
+        startGeneration(lastOptions)["catch"](function(err) {
+          console.error('Regeneration failed:', err);
+        });
+      }
+    });
+
+    // Close preview on overlay click (click outside modal)
+    previewOverlay.addEventListener('click', function(e) {
+      if (e.target === previewOverlay) hidePreview();
+    });
+
+    // Keyboard: Escape to close preview
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && previewOverlay.classList.contains('active')) {
+        hidePreview();
+      }
+    });
+
+    // --- Prompt building ---
+    function buildUserPrompt(options) {
+      var prompt = 'Write an article';
+      if (options.tone && options.tone !== 'informative') {
+        prompt += ' in a ' + options.tone + ' tone';
+      }
+      if (options.length && options.length !== 'medium') {
+        prompt += '. Make it ' + options.length + ' in length';
+      }
+      prompt += ' on the following topic: ' + options.topic + '.';
+      if (options.keywords) {
+        prompt += ' Include and emphasize these keywords: ' + options.keywords + '.';
+      }
+      prompt += '\n\nIMPORTANT: First provide a compelling article title on a line starting with "TITLE:", then provide the full article body with proper sections, paragraphs, and headings (using markdown ## for subsections).';
+      return prompt;
+    }
+
+    function parseArticleResponse(text) {
+      var title = '';
+      var content = '';
+      var lines = text.split('\n');
+      var titleFound = false;
+      var contentLines = [];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (line.toUpperCase().startsWith('TITLE:')) {
+          title = line.substring(6).trim();
+          titleFound = true;
+        } else if (titleFound) {
+          contentLines.push(line);
+        } else {
+          contentLines.push(line);
+        }
+      }
+      if (!title && contentLines.length > 0) {
+        title = contentLines[0].replace(/^#+\s*/, '').trim();
+        if (contentLines.length > 1) {
+          contentLines = contentLines.slice(1);
+        }
+      }
+      content = contentLines.join('\n').trim();
+      return { title: title, content: content };
+    }
+
+    // --- Generation ---
+    async function startGeneration(options) {
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Generating...';
+      statusEl.classList.remove('d-none');
+      statusText.textContent = 'Starting generation...';
+
+      var fullTitle = '';
+      var fullContent = '';
+      var fetchError = null;
+
+      try {
+        showProgress(15, 'Sending request to AI...', 'Generating Article');
+
+        var messages = [
+          {
+            role: 'system',
+            content: 'You are a professional article writer. Generate a well-structured, SEO-optimized article. First provide a compelling title on a line starting with "TITLE:", then the full article body with proper headings and paragraphs. Use markdown formatting.'
+          },
+          {
+            role: 'user',
+            content: buildUserPrompt(options)
+          }
+        ];
+
+        var resp = await fetch('/api/admin/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+          body: JSON.stringify({
+            messages: messages,
+            stream: false
+          })
+        });
+
+        var data = await resp.json();
+
+        if (data.success && data.content) {
+          showProgress(70, 'Processing AI response...', 'Generating Article');
+          statusText.textContent = 'Processing response...';
+
+          var parsed = parseArticleResponse(data.content);
+          fullTitle = parsed.title;
+          fullContent = parsed.content;
+
+          showProgress(85, 'Article received (' + fullContent.length + ' chars)', 'Generating Article');
+          if (charsDisplay) charsDisplay.textContent = fullContent.length + ' characters generated';
+        } else {
+          fetchError = data.error || (data.message ? data.message : 'The AI returned an empty response. Please try again or check your AI provider settings.');
+        }
+      } catch(err) {
+        fetchError = err.message || 'Network error. Please try again.';
+      }
+
+      // Handle error state
+      if (fetchError) {
+        statusText.textContent = 'Error: ' + fetchError;
+        statusEl.classList.remove('d-none');
+        statusEl.classList.add('d-flex', 'align-items-center', 'gap-2', 'mt-3');
+        showCompletion(false, fetchError);
+        resetBtn();
+        return;
+      }
+
+      // Store results for preview
+      lastTitle = fullTitle;
+      lastHtml = convertToHtml(fullTitle, fullContent);
+
+      // Auto-save draft in background
+      try {
+        overlayText.textContent = 'Saving draft...';
+        var postIdInput = document.getElementById('post_id');
+        var slugInput = document.getElementById('seo');
+
+        var formData = new FormData();
+        formData.append('id', postIdInput?.value || '');
+        formData.append('title', fullTitle);
+        formData.append('content', lastHtml);
+        formData.append('slug', slugInput?.value || '');
+        formData.append('status', 'draft');
+
+        var saveResp = await fetch('/api/posts/autosave', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': csrfToken },
+          body: formData
+        });
+        var saveData = await saveResp.json();
+
+        if (saveData.success && saveData.id) {
+          if (postIdInput) postIdInput.value = saveData.id;
+          var idInput = document.querySelector('form input[name="id"]');
+          if (saveData.is_new && !idInput) {
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'id';
+            hidden.value = saveData.id;
+            document.querySelector('form[data-autosave="true"]')?.appendChild(hidden);
+          }
+          overlayText.textContent = 'Draft saved (ID: ' + saveData.id + ')';
+        } else {
+          overlayText.textContent = 'Draft auto-save completed';
+        }
+      } catch(saveErr) {
+        overlayText.textContent = 'Generation ready for preview';
+      }
+
+      resetBtn();
+      showCompletion(true, 'Article generated \u2014 reviewing preview...');
+
+      function resetBtn() {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="bi bi-lightning-fill mr-1"></i>Generate with AI';
+      }
+    }
+
+    // --- Entry point ---
+    generateBtn.addEventListener('click', function() {
+      const topic = document.getElementById('aiTopic')?.value.trim();
+      if (!topic) {
+        document.getElementById('aiTopic')?.focus();
+        return;
+      }
+
+      const options = {
+        topic: topic,
+        tone: document.getElementById('aiTone')?.value || 'informative',
+        length: document.getElementById('aiLength')?.value || 'medium',
+        language: document.getElementById('aiLanguage')?.value || 'en',
+        keywords: document.getElementById('aiKeywords')?.value || ''
+      };
+      lastOptions = options;
+
+      showOverlay();
+      startGeneration(options)["catch"](function(err) {
+        console.error('Generation failed:', err);
+      });
+    });
+  })();
+  </script>
+{% endblock %}
+

@@ -21,10 +21,8 @@ const CONFIG = {
 
   // Critical scripts that must be loaded
   criticalScripts: [
-    '/assets/js/bootstrap-lite.js',
     '/assets/js/dist/script.js',
-    '/assets/css/dist/public-bundle.css',
-    '/assets/css/tailwind.css',
+    '/assets/css/dist/tailwind-public.css',
   ],
 
   // Script loading patterns to check

@@ -1,886 +1,610 @@
 <!DOCTYPE html>
-<html lang="{{ current_lang }}" data-lang="{{ current_lang }}" data-theme="light">
+<html lang="{{ current_lang }}" data-lang="{{ current_lang }}" data-theme="light" id="app-html">
+<script>
+// Apply saved theme immediately to prevent flash (runs before rendering)
+(function(){try{var t=localStorage.getItem('broxbhai-theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t}catch(e){}})();
+</script>
+
 {% import '_macros/flash.twig' as flash_macros %}
 
-{# ===== HEAD SECTION (SEO & Metadata) ===== #}
+{# ─────────────────────────────────────────────
+   HEAD
+   ───────────────────────────────────────────── #}
 <head>
-    {# ===== CRITICAL: Page Encoding & Viewport ===== #}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    {# ===== PRIMARY SEO: Page Title ===== #}
-    <title>
-        {%- block title -%}
-            {{ app_settings.meta_title|default(app_settings.site_name ~ ' | Official Website') }}
-        {%- endblock -%}
-    </title>
+  {# == Encoding & Viewport == #}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    {# ===== PRIMARY SEO: Meta Description & Keywords ===== #}
-    <meta name="description" content="{% block meta_description %}{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}{% endblock %}">
-    <meta name="keywords" content="{{ app_settings.meta_keywords|default(app_settings.site_name ~ ', mobile, tech, news') }}">
-    
-    {# ===== AUTHORSHIP & ATTRIBUTION ===== #}
-    <meta name="author" content="{{ app_settings.site_name }}">
-    <meta name="creator" content="{{ app_settings.site_name }}">
-    <meta name="publisher" content="{{ app_settings.site_name }}">
+  {# == Page Title == #}
+  <title>{% block title %}{{ app_settings.meta_title|default(app_settings.site_name ~ ' | Official Website') }}{% endblock %}</title>
 
-    {# ===== SEARCH ENGINE CRAWLING DIRECTIVES ===== #}
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  {# == Primary SEO == #}
+  <meta name="description"  content="{% block meta_description %}{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}{% endblock %}">
+  <meta name="keywords"     content="{{ app_settings.meta_keywords|default(app_settings.site_name ~ ', mobile, tech, news') }}">
+  <meta name="author"       content="{{ app_settings.site_name }}">
+  <meta name="creator"      content="{{ app_settings.site_name }}">
+  <meta name="publisher"    content="{{ app_settings.site_name }}">
 
-    {# ===== CANONICAL URL (Prevent Duplicate Content Issues) ===== #}
-    <link rel="canonical" href="{{ canonical_url|default(current_url) }}">
+  {# == Crawling Directives == #}
+  <meta name="robots"    content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot"   content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 
-    {# ===== PAGINATION LINKS (next/prev for series of pages) ===== #}
-    {% if pagination_next_url is defined and pagination_next_url %}
-        <link rel="next" href="{{ pagination_next_url }}">
-    {% endif %}
-    {% if pagination_prev_url is defined and pagination_prev_url %}
-        <link rel="prev" href="{{ pagination_prev_url }}">
-    {% endif %}
+  {# == Canonical & Pagination == #}
+  <link rel="canonical" href="{{ canonical_url|default(current_url) }}">
+  {% if pagination_next_url is defined and pagination_next_url %}
+    <link rel="next" href="{{ pagination_next_url }}">
+  {% endif %}
+  {% if pagination_prev_url is defined and pagination_prev_url %}
+    <link rel="prev" href="{{ pagination_prev_url }}">
+  {% endif %}
 
-    {# ===== FAVICON & BRANDING ===== #}
-    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|absolute_url }}">
-    <link rel="apple-touch-icon" href="{{ app_settings.site_logo|absolute_url }}">
-    <link rel="shortcut icon" href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
-    <meta name="theme-color" content="#0d6efd">
-    <meta name="msapplication-TileColor" content="#0d6efd">
+  {# == Favicon & PWA == #}
+  <link rel="icon"             type="image/x-icon" href="{{ app_settings.favicon|absolute_url }}">
+  <link rel="shortcut icon"                         href="{{ app_settings.favicon|default('/assets/favicon.ico')|absolute_url }}">
+  <link rel="apple-touch-icon"                      href="{{ app_settings.site_logo|absolute_url }}">
+  <meta name="theme-color"           content="#0d6efd">
+  <meta name="msapplication-TileColor" content="#0d6efd">
+  <meta name="mobile-web-app-capable"        content="yes">
+  <meta name="apple-mobile-web-app-title"    content="{{ app_settings.site_name }}">
+  <meta name="application-name"              content="{{ app_settings.site_name }}">
 
-    {# ===== GOOGLE FONTS (Preconnect for faster loading) ===== #}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {# == Open Graph == #}
+  <meta property="og:type"         content="{% block og_type %}website{% endblock %}">
+  <meta property="og:url"          content="{{ canonical_url|default(current_url) }}">
+  <meta property="og:site_name"    content="{{ app_settings.site_name }}">
+  <meta property="og:title"        content="{{ block('title')|striptags|default(app_settings.site_name) }}">
+  <meta property="og:description"  content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
+  <meta property="og:image"        content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}{% endblock %}">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type"   content="image/png">
+  <meta property="og:locale"           content="{{ current_lang == 'bn' ? 'bn_BD' : 'en_US' }}">
+  <meta property="og:locale:alternate" content="bn_BD">
+  {% if app_settings.facebook_app_id %}
+    <meta property="fb:app_id" content="{{ app_settings.facebook_app_id }}">
+  {% endif %}
 
+  {# Article-specific OG tags #}
+  {% if og_article_author    is defined %}<meta property="article:author"           content="{{ og_article_author }}">{% endif %}
+  {% if og_article_publisher is defined %}<meta property="article:publisher"         content="{{ og_article_publisher }}">{% endif %}
+  {% if og_published_time    is defined %}<meta property="article:published_time"    content="{{ og_published_time }}">{% endif %}
+  {% if og_modified_time     is defined %}<meta property="article:modified_time"     content="{{ og_modified_time }}">{% endif %}
+  {% if og_section           is defined %}<meta property="article:section"           content="{{ og_section }}">{% endif %}
+  {% if og_tags is defined and og_tags is iterable %}
+    {% for tag in og_tags %}
+      <meta property="article:tag" content="{{ tag }}">
+    {% endfor %}
+  {% endif %}
 
-    {# ===== OPEN GRAPH META TAGS (Facebook, LinkedIn, Pinterest) ===== #}
-    <meta property="og:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
-    <meta property="og:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
-    <meta property="og:site_name" content="{{ app_settings.site_name }}">
-    <meta property="og:image" content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}{% endblock %}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:url" content="{{ canonical_url|default(current_url) }}">
-    <meta property="og:locale" content="en_US">
-    <meta property="og:locale:alternate" content="bn_BD">
+  {# == Twitter Card == #}
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ block('title')|striptags|default(app_settings.site_name) }}">
+  <meta name="twitter:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
+  <meta name="twitter:image"       content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}">
+  {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
+  {% if app_settings.twitter_site  %}<meta name="twitter:site"    content="@{{ app_settings.twitter_site }}">{% endif %}
 
-    {# ===== ORGANIZATION SCHEMA (Site-wide) ===== #}
-    <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": {{ app_settings.site_name|json_encode }},
-  "url": {{ url|json_encode }},
-  "logo": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|absolute_url|json_encode }},
-  "description": {{ (app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights'))|json_encode }},
-  "sameAs": [
-    "https://www.facebook.com/{{ app_settings.facebook_handle|default('') }}",
-    "https://twitter.com/{{ app_settings.twitter_handle|default('') }}",
-    "https://www.linkedin.com/company/{{ app_settings.company_name|default('') }}"
-  ],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "{{ app_settings.phone|default('') }}",
-    "contactType": "Customer Service"
+  {# == Language & Localisation == #}
+  <meta name="language" content="{{ current_lang == 'bn' ? 'Bengali' : 'English' }}">
+  <link rel="alternate" hreflang="en"        href="{{ canonical_url|default(current_url) }}">
+  <link rel="alternate" hreflang="bn"        href="{{ current_url }}" lang="bn">
+  <link rel="alternate" hreflang="x-default" href="{{ canonical_url|default(current_url) }}">
+
+  {# == Page Timestamps == #}
+  {% if page_date_published is defined %}<meta name="date"     content="{{ page_date_published }}">{% endif %}
+  {% if page_date_modified  is defined %}<meta name="modified" content="{{ page_date_modified }}">{% endif %}
+
+  {# == CSRF & Auth == #}
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
+
+  {# ── Performance: DNS-prefetch & Preconnect ── #}
+  <link rel="preconnect"    href="https://fonts.googleapis.com">
+  <link rel="preconnect"    href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link rel="preconnect"    href="https://cdn.jsdelivr.net">
+  <link rel="preconnect"    href="https://www.googletagmanager.com">
+  <link rel="preconnect"    href="https://www.gstatic.com" crossorigin="anonymous">
+  <link rel="dns-prefetch"  href="https://fcm.googleapis.com">
+  <link rel="dns-prefetch"  href="https://firebaseinstallations.googleapis.com">
+
+  {# ── Google Fonts (preload + swap → no FOIT) ── #}
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'"
+        fetchpriority="low">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </noscript>
+
+  {# ── CSS: Critical (render-blocking) ── #}
+  {% set assets_version = app_settings.asset_version is defined and app_settings.asset_version
+      ? app_settings.asset_version
+      : ('b' ~ 'now'|date('U')) %}
+
+  <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-public.css') }}?v={{ assets_version }}">
+
+  {# ── CSS: Deferred (non-critical, loaded async via print trick) ── #}
+  {% set deferred_stylesheets = [
+    asset('/cdn/css/lucide/lucide.css'),
+    asset('/assets/css/brox-polish.css'),
+    asset('/assets/ai/css/assistant.css'),
+    asset('/assets/datepicker/datepicker.css'),
+    'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css'
+  ] %}
+  {% for href in deferred_stylesheets %}
+    <link rel="stylesheet" href="{{ href }}{% if not 'sweetalert2' in href %}?v={{ assets_version }}{% endif %}"
+          media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ href }}{% if not 'sweetalert2' in href %}?v={{ assets_version }}{% endif %}"></noscript>
+  {% endfor %}
+
+  {% block extra_styles %}{% endblock %}
+  {% block extra_head %}{% endblock %}
+
+  {# ── JSON-LD: Organization (site-wide) ── #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": {{ (url ~ '#organization')|json_encode|raw }},
+    "name": {{ app_settings.site_name|json_encode|raw }},
+    "url": {{ url|json_encode|raw }},
+    "logo": {
+      "@type": "ImageObject",
+      "url": {{ app_settings.site_logo|default(url ~ 'assets/images/default-logo.png')|absolute_url|json_encode|raw }},
+      "width": 250,
+      "height": 100
+    },
+    "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode|raw }},
+    "sameAs": [
+      "https://www.facebook.com/{{ app_settings.social_facebook|default('') }}",
+      "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
+      "https://www.instagram.com/{{ app_settings.social_instagram|default('') }}",
+      "https://www.linkedin.com/company/{{ app_settings.company_name|default('') }}"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Support",
+      {% if app_settings.contact_phone %}"telephone": {{ app_settings.contact_phone|json_encode|raw }},{% endif %}
+      "email": {{ app_settings.contact_email|default('support@example.com')|json_encode|raw }}
+    }
   }
-}
-    </script>
+  </script>
 
-    {# ===== TWITTER CARD META TAGS (Twitter/X) ===== #}
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ block('title')|striptags|default(app_settings.site_name) }}">
-    <meta name="twitter:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
-    <meta name="twitter:image" content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}">
-    {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
-    {% if app_settings.twitter_site %}<meta name="twitter:site" content="@{{ app_settings.twitter_site }}">{% endif %}
+  {# ── JSON-LD: WebPage (site-wide) ── #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": {{ canonical_url|default(current_url)|json_encode|raw }},
+    "url": {{ canonical_url|default(current_url)|json_encode|raw }},
+    "name": {{ block('title')|striptags|json_encode|raw }},
+    "description": {{ app_settings.meta_description|json_encode|raw }},
+    "image": {
+      "@type": "ImageObject",
+      "url": {{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url|json_encode|raw }},
+      "width": 1200,
+      "height": 630
+    },
+    "datePublished": "{{ page_date_published|default('now')|date('c') }}",
+    "dateModified": "{{ page_date_modified|default('now')|date('c') }}",
+    "inLanguage": "{{ current_lang == 'bn' ? 'bn-BD' : 'en-US' }}",
+    "isPartOf": {
+      "@type": "WebSite",
+      "@id": {{ url|json_encode|raw }},
+      "name": {{ app_settings.site_name|json_encode|raw }},
+      "url": {{ url|json_encode|raw }},
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": {{ (url ~ 'search?q={search_term_string}')|json_encode|raw }}
+        },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    "publisher": {
+      "@type": "Organization",
+      "@id": {{ (url ~ '#organization')|json_encode|raw }}
+    },
+    "potentialAction": {
+      "@type": "ReadAction",
+      "target": "{{ canonical_url|default(current_url) }}"
+    }
+  }
+  </script>
 
-    {# ===== LANGUAGE & LOCALIZATION ===== #}
-    <meta name="language" content="English">
-    <link rel="alternate" hreflang="en-US" href="{{ canonical_url|default(current_url) }}">
-    <link rel="alternate" hreflang="bn-BD" href="{{ current_url }}" lang="bn">
-
-    {# ===== FIREBASE & NOTIFICATION SYSTEM META TAGS ===== #}
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
-
-    {# ===== PERFORMANCE: DNS-Prefetch & Preconnect ===== #}
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://www.googletagmanager.com">
-    {# Firebase CDN Preconnect #}
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fcm.googleapis.com">
-    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
-
-
-    {# ===== CRITICAL CSS PRELOAD ===== #}
-    <link rel="preload" href="{{ asset('/cdn/css/bootstrap.min.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/assets/css/dist/public-bundle.css') }}" as="style">
-    <link rel="preload" href="{{ asset('/assets/css/tailwind.css') }}" as="style">
-
-    {# ===== BOOTSTRAP CSS (Critical Path) - CDN Subdomain ===== #}
-    <link href="{{ asset('/cdn/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
-
-    {# ===== GOOGLE FONTS (Deferred Loading) ===== #}
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" async>
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
-
-    {# ===== BOOTSTRAP ICONS (Deferred Loading) ===== #}
-    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
-
-    {# ===== APPLICATION STYLESHEETS (Bundled for Performance) ===== #}
-    <link rel="stylesheet" href="{{ asset('/assets/css/dist/public-bundle.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
-    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
-    {% block extra_styles %}
-    {% endblock %}
-    {% block extra_head %}
-    {% endblock %}
+  {# ── JSON-LD: LocalBusiness (site-wide) ── #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": {{ app_settings.site_name|json_encode|raw }},
+    "url": {{ url|json_encode|raw }},
+    "logo": {{ app_settings.site_logo|absolute_url|json_encode|raw }},
+    "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode|raw }},
+    "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url|json_encode|raw }},
+    {% if app_settings.business_address %}
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": {{ app_settings.business_address|json_encode|raw }},
+      "addressCountry": {{ app_settings.business_country|default('BD')|json_encode|raw }}
+    },
+    {% endif %}
+    {% if app_settings.contact_phone  %}"telephone": {{ app_settings.contact_phone|json_encode|raw }},{% endif %}
+    {% if app_settings.contact_email  %}"email": {{ app_settings.contact_email|json_encode|raw }},{% endif %}
+    "sameAs": [
+      "https://www.facebook.com/{{ app_settings.social_facebook|default('') }}",
+      "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
+      "https://www.instagram.com/{{ app_settings.social_instagram|default('') }}"
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": 4.8,
+      "ratingCount": {{ app_settings.rating_count|default(1000)|json_encode|raw }}
+    }
+  }
+  </script>
 
 </head>
 
-{# ===== BODY SECTION ===== #}
-<body role="application">
+{# ─────────────────────────────────────────────
+   BODY
+   ───────────────────────────────────────────── #}
+<body role="application" class="min-h-screen flex flex-col">
 
-    {# ===== JSON-LD SCHEMAS (Keep in head for SEO) ===== #}
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": {{ canonical_url|default(current_url)|json_encode }},
-        "url": {{ canonical_url|default(current_url)|json_encode }},
-        "name": {{ block('title')|striptags|json_encode }},
-        "description": {{ app_settings.meta_description|json_encode }},
-        "image": {
-            "@type": "ImageObject",
-            "url": {{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url|json_encode }},
-            "width": 1200,
-            "height": 630
-        },
-        "datePublished": "{{ page_date_published|default('now')|date('c') }}",
-        "dateModified": "{{ page_date_modified|default('now')|date('c') }}",
-        "isPartOf": {
-            "@type": "WebSite",
-            "@id": {{ url|json_encode }},
-            "name": {{ app_settings.site_name|json_encode }},
-            "url": {{ url|json_encode }}
-        },
-        "publisher": {
-            "@type": "Organization",
-            "@id": {{ (url ~ '#organization')|json_encode }},
-            "name": {{ app_settings.site_name|json_encode }},
-            "logo": {
-                "@type": "ImageObject",
-                 "url": {{ app_settings.site_logo|absolute_url|json_encode }}
-            }
-        },
-        "mainEntity": {
-            "@type": "Article",
-            "headline": {{ block('title')|striptags|json_encode }}
-        },
-        "inLanguage": "en-US",
-        "potentialAction": {
-            "@type": "ReadAction",
-            "target": "{{ canonical_url|default(current_url) }}"
-        }
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": {{ (url ~ '#organization')|json_encode }},
-        "name": {{ app_settings.site_name|json_encode }},
-        "url": {{ url|json_encode }},
-        "sameAs": [
-            "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
-            "https://www.instagram.com/{{ app_settings.social_instagram ?: '' }}",
-            "https://www.facebook.com/{{ app_settings.social_facebook ?: '' }}"
-        ],
-        "logo": {
-            "@type": "ImageObject",
-            "url": {{ (app_settings.site_logo ?: '/assets/images/default-logo.png')|absolute_url|json_encode }},
-            "width": 250,
-            "height": 100
-        },
-        "description": {{ app_settings.meta_description|json_encode }},
-        "contactPoint": {
-            "@type": "ContactPoint",
-            "contactType": "Customer Support",
-            {% if app_settings.contact_phone %}"telephone": {{ app_settings.contact_phone|json_encode }},{% endif %}
-            "email": {{ app_settings.contact_email|default('support@example.com')|json_encode }}
-        }
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": {{ app_settings.site_name|json_encode }},
-        "url": {{ url|json_encode }},
-        "description": {{ app_settings.meta_description|json_encode }},
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": {{ (url ~ 'search?q={search_term_string}')|json_encode }}
-            },
-            "query-input": "required name=search_term_string"
-        }
-    }
-    </script>
-
-    {# ===== LOCAL BUSINESS SCHEMA (if business details available) ===== #}
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": {{ app_settings.site_name|json_encode }},
-        "url": {{ url|json_encode }},
-        "logo": {{ app_settings.site_logo|absolute_url|json_encode }},
-        "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode }},
-        "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url|json_encode }},
-
-        {% if app_settings.business_address %}"address": {
-            "@type": "PostalAddress",
-            "streetAddress": {{ app_settings.business_address|json_encode }},
-            "addressCountry": {{ app_settings.business_country|default('BD')|json_encode }}
-        },{% endif %}
-        {% if app_settings.contact_phone %}"telephone": {{ app_settings.contact_phone|json_encode }},{% endif %}
-        {% if app_settings.contact_email %}"email": {{ app_settings.contact_email|json_encode }},{% endif %}
-        "sameAs": [
-            "https://www.facebook.com/{{ app_settings.social_facebook|default('') }}",
-            "https://twitter.com/{{ app_settings.social_twitter|default('') }}",
-            "https://www.instagram.com/{{ app_settings.social_instagram|default('') }}"
-        ],
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": 4.8,
-            "ratingCount": {{ app_settings.rating_count|default(1000)|json_encode }}
-        }
-    }
-    </script>
-
-    {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+  {# ── JSON-LD: BreadcrumbList ── #}
+  {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
     {% set sanitized_breadcrumbs = breadcrumbs|sanitize_breadcrumbs %}
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "{{ url }}"
-            }
-            {% for crumb in sanitized_breadcrumbs %}
-            ,{
-                "@type": "ListItem",
-                "position": {{ loop.index + 1 }},
-                "name": {{ crumb.label|json_encode }},
-                "item": {{ (loop.last ? canonical_url : crumb.url)|json_encode }}
-            }
-            {% endfor %}
-        ]
-    }
-    </script>
-    {% endif %}
-
-    {# ===== ACCESSIBILITY: Skip to Main Content ===== #}
-    <a href="#main-content" class="visually-hidden-focusable" tabindex="0">Skip to main content</a>
-
-    {# ===== BROXBHAI HEADER - RESPONSIVE FIXED ===== #}
-    <header class="brox-navbar-container sticky-top shadow-sm" role="banner">
-        <div class="container">
-            <nav class="navbar navbar-expand-lg" role="navigation">
-                
-                {# Brand / Logo #}
-                <a class="navbar-brand brox-brand-link" href="{{ studio_header_url|default('/studio') }}" title="Studio">
-                    {% if app_settings.site_logo is defined and app_settings.site_logo %}
-                        <img src="{{ app_settings.site_logo|absolute_url }}" alt="{{ app_settings.site_name }}" class="brox-brand-logo me-2" loading="lazy" decoding="async">
-                    {% else %}
-                        <div class="bg-primary rounded-3 p-2 me-2 shadow-sm brox-brand-icon">
-                            <i class="bi bi-phone-fill text-white"></i> <span class="brox-brand-text">{{ app_settings.site_name }}</span>
-                        </div>
-                    {% endif %}
-                </a>
-
-                {# Mobile Toggle #}
-                <button class="navbar-toggler brox-mobile-toggle" type="button" 
-                        data-bs-toggle="collapse" data-bs-target="#broxMainNav" 
-                        aria-controls="broxMainNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon brox-toggle-icon"></span>
-                </button>
-
-                {# Navigation Menu #}
-                <div class="collapse navbar-collapse brox-navbar-collapse" id="broxMainNav">
-                    {% set navCurrentPath = request.path|default(current_path|default('/')) %}
-                    {% set nav_items = (public_nav_items is iterable) ? public_nav_items : [] %}
-                    {% if nav_items is empty %}
-                        {% set nav_items = [
-                            {'label': 'Home', 'url': '/', 'icon': 'bi-house-door-fill', 'match': '/'},
-                            {'label': 'Mobiles', 'url': '/mobiles', 'icon': 'bi-phone-fill', 'match': '/mobiles'},
-                            {'label': 'Articles', 'url': '/posts', 'icon': 'bi-newspaper', 'match': '/posts'},
-                            {'label': 'Services', 'url': '/services', 'icon': 'bi-award-fill', 'match': '/services'},
-                            {'label': 'Calculators', 'url': '/calculators', 'icon': 'bi-calculator', 'match': '/calculators'},
-                            {'label': 'Support Us', 'url': '/donate', 'icon': 'bi-heart-fill', 'match': '/donate'},
-                            {'label': 'Studio', 'url': '/studio', 'icon': 'bi-palette-fill', 'match': '/studio'},
-                            {'label': 'Bangla Converter', 'url': '/bangla-converter', 'icon': 'bi-translate', 'match': '/bangla-converter'},
-                        ] %}
-                        {# Add Dashboard link for authenticated users #}
-                        {% if auth_user is defined and auth_user.is_authenticated %}
-                            {% set dashboard_url = (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') ? '/admin/dashboard' : '/user/dashboard' %}
-                            {% set nav_items = nav_items|merge([{'label': 'Dashboard', 'url': dashboard_url, 'icon': 'bi-speedometer2', 'match': dashboard_url}]) %}
-                        {% endif %}
-                    {% endif %}
-
-                    <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
-                        {% for item in nav_items %}
-                            {% if item.enabled|default(true) %}
-                                {% set navUrl = item.url|default('/') %}
-                                {% set navMatch = item.match|default(navUrl) %}
-                                {% set isActive = navMatch == '/' ? (navCurrentPath == '/') : (navCurrentPath == navMatch or navCurrentPath starts with (navMatch ~ '/')) %}
-                                <li class="nav-item brox-nav-item">
-                                    <a class="nav-link brox-nav-link {% if isActive %}brox-active{% endif %}" href="{{ navUrl }}">
-                                        {% if item.icon|default('') %}
-                                            <i class="bi {{ item.icon }} me-2"></i>
-                                        {% endif %}
-                                        <span data-i18n="{{ item.label|default('Link') }}">{{ item.label|default('Link')|trans }}</span>
-                                    </a>
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-{# Authenticated User Section #}
-
-                        {% if auth_user is defined and auth_user.is_authenticated %}
-                            
-                            {# Notification Bell #}
-                            <li class="nav-item dropdown brox-nav-item ms-lg-2 brox-notification-wrapper" data-notification-menu>
-                                {% set nav_unread_count = unread_count|default(0) %}
-                            <a class="nav-link brox-nav-link brox-notification-bell position-relative"
-                               href="#" id="broxNotificationBell" role="button" data-bs-toggle="dropdown" data-notification-bell
-                               aria-expanded="false">
-                                <i class="bi bi-bell-fill"></i>
-                                <span id="broxNotificationBadge" data-notification-badge class="brox-notification-badge badge rounded-pill bg-danger {% if nav_unread_count <= 0 %}d-none{% endif %}">
-                                    <span id="broxNotificationCount" data-notification-count>{{ nav_unread_count }}</span>
-                                </span>
-                            </a>
-                            <div class="dropdown-menu brox-notification-dropdown" data-notification-dropdown aria-labelledby="broxNotificationBell">
-                                <div class="brox-notification-dropdown-header">
-                                    <h6 class="mb-0">
-                                        <i class="bi bi-bell-fill me-2"></i>Notifications
-                                    </h6>
-                                </div>
-                                <div>
-                                    <div id="broxNotificationsList" data-notification-list class="brox-notification-list" data-user-id="{{ auth_user.id }}">
-                                            {% if notifications is defined and notifications is iterable and notifications|length > 0 %}
-                                                {% for notif in notifications|slice(0, 10) %}
-                                                    <div class="notification-entry p-2 mb-2 rounded {% if notif.is_read is defined and notif.is_read == 0 %}bg-light border-start border-primary border-2{% endif %}"
-                                                         data-notification-id="{{ notif.id }}"
-                                                         {% if notif.action_url is defined and notif.action_url %}data-action-url="{{ notif.action_url }}"{% endif %}>
-                                                        <div class="d-flex align-items-start gap-2">
-                                                            <div class="flex-grow-1">
-                                                                <div class="fw-semibold small mb-1">{{ notif.title }}</div>
-                                                                <div class="small text-muted mb-1">{{ notif.message }}</div>
-                                                                <div class="small text-secondary">{{ notif.created_at|date("n/j/Y, g:i:s A") }}</div>
-                                                            </div>
-                                                            {% if notif.is_read is defined and notif.is_read == 0 %}
-                                                                <button type="button"
-                                                                        class="btn btn-sm btn-outline-primary"
-                                                                        data-action="mark-read"
-                                                                        data-notification-id="{{ notif.id }}"><span data-i18n="Read">{{ 'Read'|trans }}</span></button>
-                                                            {% endif %}
-                                                        </div>
-                                                    </div>
-                                                {% endfor %}
-                                            {% else %}
-                                                <div class="text-center py-4 text-muted">
-                                                    <i class="bi bi-inbox fs-4"></i>
-                                                    <p class="mb-0 mt-2 small"><span data-i18n="No new notifications">{{ 'No new notifications'|trans }}</span></p>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                </div>
-                                <div class="dropdown-divider brox-dropdown-divider"></div>
-                                <div>
-                                    <a class="brox-dropdown-item brox-dropdown-item text-center" href="/user/notifications">
-                                        <i class="bi bi-arrow-right me-1"></i><span data-i18n="View all">{{ 'View all'|trans }}</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </li>
-
-                            {# User Dropdown #}
-                            <li class="nav-item dropdown brox-nav-item ms-lg-2">
-                                <a class="nav-link dropdown-toggle brox-nav-link brox-user-dropdown-toggle" 
-                                   href="#" id="broxNavbarUser" role="button" 
-                                   data-bs-toggle="dropdown" aria-expanded="false">
-                                    {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
-                                        <img src="{{ auth_user.profile_pic|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="{{ auth_user.username }}" loading="lazy" decoding="async">
-                                    {% else %}
-                                        <img src="{{ '/assets/images/default-avatar.png'|absolute_url }}" class="rounded-circle me-2 brox-user-avatar" alt="User avatar" loading="lazy" decoding="async">
-                                    {% endif %}
-                                    <span class="brox-user-dropdown-username d-none d-lg-inline">{{ auth_user.username }}</span>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end brox-dropdown-menu" aria-labelledby="broxNavbarUser">
-                                    <li class="brox-dropdown-header">
-                                        <p class="brox-dropdown-user-name mb-1 fw-bold">{{ auth_user.username }}</p>
-                                        <span class="badge bg-primary-subtle text-primary rounded-pill">
-                                            {% if auth_user.roles is defined and auth_user.roles is not empty %}
-                                                {{ auth_user.roles|join(', ')|title }}
-                                            {% else %}
-                                                <span data-i18n="User">{{ 'User'|trans }}</span>
-                                            {% endif %}
-                                        </span>
-                                    </li>
-                                    <li><hr class="dropdown-divider brox-dropdown-divider"></li>
-                                    
-                                    {# Admin Menu #}
-                                    {% if (auth_user.is_super_admin is defined and auth_user.is_super_admin) or (auth_user.role is defined and auth_user.role == 'admin') %}
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-2"></i><span data-i18n="Profile">{{ 'Profile'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i><span data-i18n="Dashboard">{{ 'Dashboard'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-2"></i><span data-i18n="Notifications">{{ 'Notifications'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-2"></i><span data-i18n="Settings">{{ 'Settings'|trans }}</span></a></li>
-                                        
-                                        {% if auth_user.is_super_admin is defined and auth_user.is_super_admin %}
-                                            <li><hr class="dropdown-divider brox-dropdown-divider"></li>
-                                            <li><a class="dropdown-item brox-dropdown-item" href="/admin/roles"><i class="bi bi-shield-lock me-2"></i>Roles</a></li>
-                                            <li><a class="dropdown-item brox-dropdown-item" href="/admin/permissions"><i class="bi bi-key me-2"></i>Permissions</a></li>
-                                        {% endif %}
-                                    
-                                    {# User Menu #}
-                                    {% else %}
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i><span data-i18n="Profile">{{ 'Profile'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/dashboard"><i class="bi bi-speedometer2 me-2"></i><span data-i18n="Dashboard">{{ 'Dashboard'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/notifications"><i class="bi bi-bell me-2"></i><span data-i18n="Notifications">{{ 'Notifications'|trans }}</span></a></li>
-                                        <li><a class="dropdown-item brox-dropdown-item" href="/user/settings"><i class="bi bi-gear me-2"></i><span data-i18n="Settings">{{ 'Settings'|trans }}</span></a></li>
-                                    {% endif %}
-                                    
-                                    <li><hr class="dropdown-divider brox-dropdown-divider"></li>
-                                    <li><a class="dropdown-item brox-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="Logout">{{ 'Logout'|trans }}</span></a></li>
-                                </ul>
-                            </li>
-
-                        {# Guest Links #}
-                        {% else %}
-                            <li class="nav-item brox-nav-item ms-lg-1">
-                                <a class="nav-link brox-nav-link" href="/login">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>
-                                    <span data-i18n="Login">{{ 'Login'|trans }}</span>
-                                </a>
-                            </li>
-                            <li class="nav-item brox-nav-item">
-                                <a class="btn btn-primary btn-sm rounded-pill px-3 px-md-4 ms-lg-2" href="/register">
-                                    <i class="bi bi-person-plus-fill me-2"></i>
-                                    <span data-i18n="Join Now">{{ 'Join Now'|trans }}</span>
-                                </a>
-                            </li>
-                        {% endif %}
-
-                        {# Theme Toggle #}
-                        <li class="nav-item brox-nav-item ms-lg-2">
-                            <button class="brox-theme-toggle" id="broxThemeToggle" type="button" title="{{ 'Toggle theme'|trans }}" aria-label="{{ 'Toggle theme'|trans }}" data-i18n-title="Toggle theme" data-i18n-aria-label="Toggle theme">
-                                <i class="bi bi-moon-fill"></i>
-                                <i class="bi bi-sun-fill"></i>
-                            </button>
-                        </li>
-
-                        {# Language Toggle #}
-                        {% if available_languages is defined and available_languages|length > 1 %}
-                        <li class="nav-item dropdown brox-nav-item ms-lg-2">
-                            <a class="nav-link dropdown-toggle brox-nav-link brox-language-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span data-i18n="{{ current_lang == 'bn' ? 'Bangla' : 'English' }}">{{ current_lang == 'bn' ? 'বাংলা'|trans : 'EN'|trans }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                                {% for langCode, langName in available_languages %}
-                                    <li>
-                                        <a class="dropdown-item {% if current_lang == langCode %}active{% endif %}" href="?lang={{ langCode }}">
-                                            <span data-i18n="{{ langCode == 'bn' ? 'Bangla' : 'English' }}">{{ langName|trans }}</span>
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </nav>
-        </div>
-    </header>
-
-    {# ===== MAIN CONTENT AREA ===== #}
-    <main id="main-content" role="main">
-
-        {# Flash Messages: SweetAlert2 queue via shared macro #}
-        {% if suppress_layout_flash is not defined or not suppress_layout_flash %}
-            {% set flash_data = flash_message|default(flash|default(null)) %}
-            {{ flash_macros.render_flash(flash_data) }}
-        {% endif %}
-
-        {# Breadcrumb Navigation #}
-        {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
-        <nav aria-label="Breadcrumb" class="brox-breadcrumb-nav bg-light border-bottom py-3">
-            <div class="container">
-                <ol class="breadcrumb mb-0 small" itemscope itemtype="https://schema.org/BreadcrumbList">
-                    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                        <a href="/" itemprop="item" title="Home">
-                            <i class="bi bi-house-door-fill me-1" aria-hidden="true"></i><span itemprop="name">{{ 'Home'|trans }}</span>
-                        </a>
-                        <meta itemprop="position" content="1">
-                    </li>
-                    {% for crumb in breadcrumbs %}
-                        {% set position = loop.index + 1 %}
-                        {% if not loop.last %}
-                        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                            <a href="{{ crumb.url }}" itemprop="item">
-                                {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
-                                <span itemprop="name">{{ crumb.label }}</span>
-                            </a>
-                            <meta itemprop="position" content="{{ position }}">
-                        </li>
-                        {% endif %}
-                        {% if loop.last %}
-                        <li class="breadcrumb-item active" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                            <span itemprop="item">
-                                {% if crumb.icon %}<i class="bi bi-{{ crumb.icon }} me-1" aria-hidden="true"></i>{% endif %}
-                                <span itemprop="name">{{ crumb.label }}</span>
-                            </span>
-                            <meta itemprop="url" content="{{ canonical_url }}">
-                            <meta itemprop="position" content="{{ position }}">
-                        </li>
-                        {% endif %}
-                    {% endfor %}
-                </ol>
-            </div>
-        </nav>
-        {% endif %}
-
-        {# Page Content Block #}
-        {% block content %}
-        <div class="container py-5">
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1>Welcome to {{ app_settings.site_name }}</h1>
-                    <p>This is the main content area. Extend this template in your pages.</p>
-                </div>
-            </div>
-        </div>
-        {% endblock %}
-
-    </main>
-
-    {# ===== FOOTER SECTION ===== #}
-    {% include 'partials/footer.twig' %}
-
-    {# ===== SCROLL TO TOP BUTTON ===== #}
-    <button id="scrollTopBtn" type="button" title="{{ 'Scroll to top of page'|trans }}" aria-label="{{ 'Scroll to top of page'|trans }}" data-i18n-title="Scroll to top of page" data-i18n-aria-label="Scroll to top of page" style="position: fixed; bottom: 140px; right: 20px; z-index: 1998; width: 48px; height: 48px; border: none; border-radius: 50%; background: var(--bs-primary); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-        <i class="bi bi-arrow-up-short" aria-hidden="true" style="font-size: 1.4rem;"></i>
-    </button>
-
-
-    {# ===== NOTIFICATION PERMISSION BUTTON (For All Users) ===== #}
-    <button id="enableNotificationsBtn" title="{{ 'Enable push notifications'|trans }}" aria-label="{{ 'Enable notifications'|trans }}" data-i18n-title="Enable push notifications" data-i18n-aria-label="Enable notifications" style="position: fixed; bottom: 20px; right: 70px; z-index: 998; padding: 10px 12px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s ease; font-size: 14px; display: none; animation: pulse 2s infinite;">
-        🔔
-    </button>
-
-    <script>
-        (function () {
-            const initScrollTopButton = function () {
-                const scrollTopBtn = document.getElementById('scrollTopBtn');
-                if (!scrollTopBtn) return;
-
-                const toggleVisibility = function () {
-                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
-                    const shouldShow = currentScroll > 180;
-                    scrollTopBtn.style.display = shouldShow ? 'flex' : 'none';
-                    scrollTopBtn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-                };
-
-                scrollTopBtn.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-
-                window.addEventListener('scroll', toggleVisibility, { passive: true });
-                toggleVisibility();
-            };
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initScrollTopButton, { once: true });
-            } else {
-                initScrollTopButton();
-            }
-        })();
-    </script>
-
-    {# ===== STEP 1: Load Bootstrap Lite (no CDN bundle) ===== #}
-    <script src="{{ asset('/assets/js/bootstrap-lite.js') }}" defer></script>
-
-    {# ===== STEP 1.5: SweetAlert2 + Global Message Handler ===== #}
-    <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
-    <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
-{# ===== FIREBASE v2 INITIALIZATION (PRODUCTION SAFE) ===== #}
-
-    {# Firebase config is fetched from /api/firebase-config (no inline script) #}
-
-    {# Firebase v2 init is handled in /assets/js/script.js #}
-
-    
-     {# ===== STEP 2: Load Application Core Scripts ===== #}
-    <script>
-        // Ensure notifications WS is disabled by default (force AJAX polling) unless explicitly configured
-        window.__APP_JS_CONFIG = window.__APP_JS_CONFIG || {};
-        window.__APP_JS_CONFIG.notifications = window.__APP_JS_CONFIG.notifications || {};
-        window.__APP_JS_CONFIG.notifications.websocketUrl = '';
-        // Silence Puter App Store prompt
-        window.puter = window.puter || {};
-        window.puter.quiet = true;
-
-        window.__broxSiteLang = '{{ current_lang }}';
-         window.__broxSiteTranslations = window.__broxSiteTranslations || {};
-         window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
-             window.__broxSiteTranslations['{{ current_lang }}'] || {},
-             {
-                 'Enable Push Notifications': {{ 'Enable Push Notifications'|trans|json_encode|raw }},
-                 'Enable push notifications': {{ 'Enable push notifications'|trans|json_encode|raw }},
-                 'Enable notifications': {{ 'Enable notifications'|trans|json_encode|raw }},
-                 'Enable': {{ 'Enable'|trans|json_encode|raw }},
-                 'Later': {{ 'Later'|trans|json_encode|raw }},
-                 'Stay updated with instant alerts and important updates.': {{ 'Stay updated with instant alerts and important updates.'|trans|json_encode|raw }},
-                 'Notification': {{ 'Notification'|trans|json_encode|raw }},
-                 'Scroll to top of page': {{ 'Scroll to top of page'|trans|json_encode|raw }},
-                 'Switch to light mode': {{ 'Switch to light mode'|trans|json_encode|raw }},
-                 'Switch to dark mode': {{ 'Switch to dark mode'|trans|json_encode|raw }},
-                 'Toggle theme': {{ 'Toggle theme'|trans|json_encode|raw }},
-                 'Login': {{ 'Login'|trans|json_encode|raw }},
-                 'Join Now': {{ 'Join Now'|trans|json_encode|raw }},
-                 'Logout': {{ 'Logout'|trans|json_encode|raw }},
-                 'Profile': {{ 'Profile'|trans|json_encode|raw }},
-                 'Dashboard': {{ 'Dashboard'|trans|json_encode|raw }},
-                 'Notifications': {{ 'Notifications'|trans|json_encode|raw }},
-                 'Settings': {{ 'Settings'|trans|json_encode|raw }},
-                 'Home': {{ 'Home'|trans|json_encode|raw }}
-             }
-         );
-         // Site branding for JavaScript usage
-         window.__broxSiteLogo = '{{ app_settings.site_logo|default('') }}';
-     </script>
-    <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
-    <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
-
-    {# ===== STEP 3: Load Feature Scripts (Non-critical) ===== #}
-    {# Datepicker Library #}
-    <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
-    <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
-    <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
-
-
-
-    {# ===== Page-Specific Scripts Block ===== #}
-    {% block extra_scripts %}{% endblock %}
-
-    {# ===== PUBLIC / ADMIN ASSISTANT UI ===== #}
-    {% set is_authenticated_user = auth_user is defined and auth_user.is_authenticated is defined and auth_user.is_authenticated %}
-    {% set auth_primary_role = (auth_user.role|default(''))|lower|trim %}
-    {% set auth_role_list = [] %}
-    {% if auth_user is defined and auth_user.roles is defined and auth_user.roles is iterable %}
-        {% for role_entry in auth_user.roles %}
-            {% set role_name = (role_entry.name is defined ? role_entry.name : role_entry)|default('')|lower|trim %}
-            {% if role_name %}
-                {% set auth_role_list = auth_role_list|merge([role_name]) %}
-            {% endif %}
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url }}" }
+        {% for crumb in sanitized_breadcrumbs %}
+        ,{
+          "@type": "ListItem",
+          "position": {{ loop.index + 1 }},
+          "name": {{ crumb.label|json_encode|raw }},
+          "item": {{ (loop.last ? canonical_url : crumb.url)|json_encode|raw }}
+        }
         {% endfor %}
+      ]
+    }
+    </script>
+  {% endif %}
+
+  {% block schema %}{% endblock %}
+
+  {# ── Accessibility: Skip link ── #}
+  <a href="#main-content"
+     class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-3 focus:bg-white focus:text-indigo-600 focus:outline-none focus:rounded-br-lg"
+     tabindex="0">
+    <span data-i18n="Skip to main content">Skip to main content</span>
+  </a>
+
+  {# ── Header ── #}
+  {% include 'partials/header-v2.twig' %}
+
+  {# ── Main content ── #}
+  <main id="main-content" role="main" class="relative isolate flex-1">
+
+    {# Flash messages #}
+    {% if suppress_layout_flash is not defined or not suppress_layout_flash %}
+      {{ flash_macros.render_flash(flash_message|default(flash|default(null))) }}
     {% endif %}
-    {% set is_super_admin_user = auth_user is defined and auth_user.is_super_admin is defined and auth_user.is_super_admin %}
-    {% set is_admin_user = is_super_admin_user
-        or auth_primary_role in ['admin', 'superadmin']
-        or 'admin' in auth_role_list
-        or 'superadmin' in auth_role_list %}
-    {% set is_guest_user = not is_authenticated_user %}
-    {% set is_regular_user = is_authenticated_user
-        and (
-            auth_primary_role == 'user'
-            or 'user' in auth_role_list
-            or (auth_primary_role is empty and auth_role_list is empty)
-        ) %}
-    {% set show_public_assistant = is_guest_user or is_regular_user %}
 
-        {% if show_public_assistant %}
-        {% set assistant_variant = 'public' %}
-{% include 'partials/ai-assistant/public.twig' %}
-{% include 'partials/ai-assistant/script.twig' %}
-    {% elseif is_admin_user %}
-        {% set assistant_variant = 'admin' %}
-{% include 'partials/ai-assistant/admin.twig' %}
-{% include 'partials/ai-assistant/script.twig' %}
-{% include 'partials/ai-assistant/admin-button.twig' %}
+    {# Breadcrumb navigation #}
+    {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
+      <nav aria-label="Breadcrumb" class="py-3">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <ol class="flex flex-wrap items-center gap-1.5 rounded-3xl border border-slate-200/80 bg-white/85 px-4 py-3 text-sm text-slate-500 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+              itemscope itemtype="https://schema.org/BreadcrumbList">
+
+            {# Home crumb #}
+            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+              <a href="/" itemprop="item" title="Home"
+                 class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors">
+                <i class="lucide lucide-house" aria-hidden="true"></i>
+                <span itemprop="name">{{ 'Home'|trans }}</span>
+              </a>
+              <meta itemprop="position" content="1">
+            </li>
+
+            {# Dynamic crumbs #}
+            {% for crumb in breadcrumbs %}
+              {% set position = loop.index + 1 %}
+              <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"
+                  class="flex items-center {% if loop.last %}text-slate-700 font-medium{% endif %}"
+                  {% if loop.last %}aria-current="page"{% endif %}>
+
+                <span class="mx-1.5 text-slate-300" aria-hidden="true">/</span>
+
+                {% if loop.last %}
+                  <span itemprop="item" class="inline-flex items-center gap-1">
+                    {% if crumb.icon %}<i class="lucide lucide-{{ crumb.icon }}" aria-hidden="true"></i>{% endif %}
+                    <span itemprop="name">{{ crumb.label }}</span>
+                  </span>
+                  <meta itemprop="url"      content="{{ canonical_url }}">
+                {% else %}
+                  <a href="{{ crumb.url }}" itemprop="item"
+                     class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors">
+                    {% if crumb.icon %}<i class="lucide lucide-{{ crumb.icon }}" aria-hidden="true"></i>{% endif %}
+                    <span itemprop="name">{{ crumb.label }}</span>
+                  </a>
+                {% endif %}
+                <meta itemprop="position" content="{{ position }}">
+              </li>
+            {% endfor %}
+
+          </ol>
+        </div>
+      </nav>
     {% endif %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle language toggle clicks
-    const languageLinks = document.querySelectorAll('a[href*=\"?lang=\"]');
-    languageLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = new URL(this.href, window.location.origin);
-            const newLang = url.searchParams.get('lang');
-            if (!newLang) return;
+    {# Page content #}
+    {% block content %}
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div class="lg:w-2/3 mx-auto">
+          <h1>Welcome to {{ app_settings.site_name }}</h1>
+          <p>This is the main content area. Extend this template in your pages.</p>
+        </div>
+      </div>
+    {% endblock %}
 
-            // Perform dynamic translation instead of page reload
-            translatePageToLanguage(newLang).then(() => {
-                // Update URL without reload
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('lang', newLang);
-                window.history.pushState({}, '', currentUrl.toString());
+  </main>
 
-                // Sync site and chat language if available
-                if (window.broxI18n?.setLanguage) {
-                    window.broxI18n.setLanguage(newLang);
-                }
-                if (window.syncChatLanguage) {
-                    window.syncChatLanguage(newLang);
-                }
+  {# ── Footer ── #}
+  {% include 'partials/footer.twig' %}
 
-                // Update language display
-                updateLanguageDisplay(newLang);
-            }).catch(error => {
-                console.error('Translation failed:', error);
-                // Fallback to page reload
-                window.location.href = this.href;
-            });
-        });
-    });
+  {# ── UI Widgets ── #}
 
-    // Function to dynamically translate the page
-    async function translatePageToLanguage(targetLang) {
-        const translationCache = window.__broxClientTranslationCache = window.__broxClientTranslationCache || {};
+  {# Scroll-to-top button #}
+  <button id="scrollTopBtn"
+          type="button"
+          title="{{ 'Scroll to top of page'|trans }}"
+          aria-label="{{ 'Scroll to top of page'|trans }}"
+          data-i18n-title="Scroll to top of page"
+          data-i18n-aria-label="Scroll to top of page"
+          class="scroll-top-btn fixed bottom-20 right-5 z-40 hidden items-center justify-center w-11 h-11 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none">
+    <i class="lucide lucide-arrow-up w-5 h-5" aria-hidden="true"></i>
+  </button>
 
-        // Collect all translatable elements
-        const translatableElements = document.querySelectorAll('[data-i18n], [data-i18n-title], [data-i18n-aria-label]');
-        if (translatableElements.length === 0) {
-            return; // No elements to translate
-        }
+  {# Push notification button #}
+  <button id="enableNotificationsBtn"
+          type="button"
+          title="{{ 'Enable push notifications'|trans }}"
+          aria-label="{{ 'Enable notifications'|trans }}"
+          data-i18n-title="Enable push notifications"
+          data-i18n-aria-label="Enable notifications"
+          class="notif-permission-btn fixed bottom-[140px] right-5 z-40 hidden items-center justify-center w-11 h-11 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none">
+    <i class="lucide lucide-bell w-5 h-5" aria-hidden="true"></i>
+  </button>
 
-        const itemsByText = {};
-        const originalItems = [];
+  {# Reading progress bar #}
+  <div id="scrollProgress"
+       role="progressbar"
+       aria-label="Page scroll progress"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       class="scroll-progress fixed top-0 left-0 z-[9999] h-[3px] w-0 bg-indigo-500 transition-none">
+  </div>
 
-        const applyTranslation = (item, translated) => {
-            if (item.attribute === 'textContent') {
-                item.element.textContent = translated;
-            } else if (item.attribute === 'title') {
-                item.element.setAttribute('title', translated);
-            } else if (item.attribute === 'ariaLabel') {
-                item.element.setAttribute('aria-label', translated);
-            }
-        };
+  {# Page transition overlay #}
+  <div id="pageTransitionOverlay"
+       aria-hidden="true"
+       class="page-transition-overlay fixed inset-0 z-[9998] pointer-events-none opacity-0">
+  </div>
 
-        const buildCacheKey = (text) => `${targetLang}::${text}`;
+  {# ─────────────────────────────────────────────
+     SCRIPTS
+     ───────────────────────────────────────────── #}
 
-        translatableElements.forEach(el => {
-            if (el.hasAttribute('data-i18n')) {
-                const originalText = el.getAttribute('data-i18n');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'textContent' });
-                }
-            }
-            if (el.hasAttribute('data-i18n-title')) {
-                const originalText = el.getAttribute('data-i18n-title');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'title' });
-                }
-            }
-            if (el.hasAttribute('data-i18n-aria-label')) {
-                const originalText = el.getAttribute('data-i18n-aria-label');
-                if (originalText && originalText.trim()) {
-                    originalItems.push({ element: el, text: originalText.trim(), attribute: 'ariaLabel' });
-                }
-            }
-        });
+  {# ── Inline: core UI behaviours (no deps, runs immediately) ── #}
+  <script>
+  (function () {
+    'use strict';
 
-        if (originalItems.length === 0) {
-            return;
-        }
-
-        originalItems.forEach(item => {
-            const cacheKey = buildCacheKey(item.text);
-            if (translationCache[cacheKey]) {
-                applyTranslation(item, translationCache[cacheKey]);
-            } else {
-                itemsByText[item.text] = itemsByText[item.text] || [];
-                itemsByText[item.text].push(item);
-            }
-        });
-
-        const textsToTranslate = Object.keys(itemsByText);
-        if (textsToTranslate.length === 0) {
-            return;
-        }
-
-        const batchSize = 10;
-        for (let i = 0; i < textsToTranslate.length; i += batchSize) {
-            const batch = textsToTranslate.slice(i, i + batchSize);
-
-            try {
-                const response = await fetch('/api/translate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        texts: batch,
-                        from: 'en',
-                        to: targetLang
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-                if (result.success && result.translations) {
-                    batch.forEach(original => {
-                        const translated = result.translations[original] || original;
-                        const cacheKey = buildCacheKey(original);
-                        translationCache[cacheKey] = translated;
-                        const items = itemsByText[original] || [];
-                        items.forEach(item => applyTranslation(item, translated));
-                    });
-                }
-            } catch (error) {
-                console.warn('Failed to translate batch:', batch, error);
-            }
-        }
+    /* ── Helpers ── */
+    function debounce(fn, ms) {
+      var t;
+      return function () { var a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(this, a); }, ms); };
     }
 
-    // Function to update language display in the dropdown
-    function updateLanguageDisplay(lang) {
-        const langDisplay = document.querySelector('.brox-language-toggle .dropdown-toggle');
-        if (langDisplay) {
-            langDisplay.innerHTML = lang === 'bn' ? 'বাংলা' : 'EN';
-        }
+    function throttle(fn, ms) {
+      var last = 0;
+      return function () { var now = Date.now(); if (now - last >= ms) { last = now; fn.apply(this, arguments); } };
     }
-});
-</script>
+
+    function scrollTop() {
+      return window.pageYOffset || document.documentElement.scrollTop || 0;
+    }
+
+    /* ── 1. Scroll-to-top button ── */
+    function initScrollTopBtn() {
+      var btn = document.getElementById('scrollTopBtn');
+      if (!btn) return;
+
+      function sync() {
+        var visible = scrollTop() > 180;
+        btn.classList.toggle('flex',   visible);
+        btn.classList.toggle('hidden', !visible);
+        btn.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      }
+
+      btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      window.addEventListener('scroll', sync, { passive: true });
+      sync();
+    }
+
+    /* ── 2. Reading progress bar ── */
+    function initProgressBar() {
+      var bar = document.getElementById('scrollProgress');
+      if (!bar) return;
+
+      function update() {
+        var scrolled  = scrollTop();
+        var docH      = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        var winH      = window.innerHeight;
+        var maxScroll = docH - winH;
+        var pct       = maxScroll > 0 ? Math.min((scrolled / maxScroll) * 100, 100) : 0;
+        bar.style.width = pct + '%';
+        bar.setAttribute('aria-valuenow', Math.round(pct));
+      }
+
+      window.addEventListener('scroll', throttle(update, 50), { passive: true });
+      window.addEventListener('resize', debounce(update, 100), { passive: true });
+      update();
+    }
+
+    /* ── 3. Scroll-triggered animations (IntersectionObserver) ── */
+    function initScrollAnimations() {
+      var els = document.querySelectorAll('.scroll-fade-in, .scroll-slide-up, .scroll-scale-in');
+      if (!els.length) return;
+
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+        });
+      }, { rootMargin: '0px 0px -60px 0px', threshold: 0.08 });
+
+      els.forEach(function (el) { observer.observe(el); });
+    }
+
+    /* ── 4. Smooth anchor scrolling (offset for sticky header) ── */
+    function initSmoothAnchors() {
+      var header = document.querySelector('header[role="banner"]');
+
+      document.addEventListener('click', function (e) {
+        var link = e.target.closest('a[href^="#"]');
+        if (!link) return;
+        var id = link.getAttribute('href');
+        if (!id || id === '#') return;
+        var target = document.querySelector(id);
+        if (!target) return;
+
+        e.preventDefault();
+        var offset  = (header ? header.offsetHeight : 0) + 12;
+        var top     = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      });
+    }
+
+    /* ── 5. Page transition overlay ── */
+    function initPageTransitions() {
+      var overlay = document.getElementById('pageTransitionOverlay');
+      if (!overlay) return;
+
+      document.addEventListener('click', function (e) {
+        var link = e.target.closest('a:not([href^="#"]):not([href^="javascript"]):not([target="_blank"]):not([download])');
+        if (!link) return;
+        var href = link.getAttribute('href');
+        if (!href || href.startsWith('mailto:') || href.startsWith('tel:') || href.indexOf('://') > -1 || href.startsWith('//')) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
+        try {
+          if (new URL(href, window.location.origin).origin !== window.location.origin) return;
+        } catch (_) { return; }
+
+        overlay.classList.add('is-active');
+      });
+
+      window.addEventListener('pageshow', function () { overlay.classList.remove('is-active'); });
+    }
+
+    /* ── Init ── */
+    function init() {
+      initScrollTopBtn();
+      initProgressBar();
+      initScrollAnimations();
+      initSmoothAnchors();
+      initPageTransitions();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+  })();
+  </script>
+
+  {# ── App config (must come before module scripts) ── #}
+  <script>
+  window.__APP_JS_CONFIG = window.__APP_JS_CONFIG || {};
+  window.__APP_JS_CONFIG.notifications = window.__APP_JS_CONFIG.notifications || {};
+  window.__APP_JS_CONFIG.notifications.websocketUrl = '';
+
+  window.puter = window.puter || {};
+  window.puter.quiet = true;
+
+  window.__broxSiteLang  = '{{ current_lang }}';
+  window.__broxSiteLogo  = '{{ app_settings.site_logo|default('') }}';
+
+  window.__broxSiteTranslations = window.__broxSiteTranslations || {};
+  // Load full translations for all supported languages from server (JSON files)
+  window.__broxSiteTranslations['en'] = Object.assign(
+    window.__broxSiteTranslations['en'] || {},
+    {{ site_translations.en|default({})|json|raw }}
+  );
+  window.__broxSiteTranslations['bn'] = Object.assign(
+    window.__broxSiteTranslations['bn'] || {},
+    {{ site_translations.bn|default({})|json|raw }}
+  );
+  // Ensure current language translations are also available under the current lang key
+  window.__broxSiteTranslations['{{ current_lang }}'] = Object.assign(
+    window.__broxSiteTranslations['{{ current_lang }}'] || {},
+    {{ site_translations[current_lang]|default({})|json|raw }}
+  );
+  </script>
+
+  {# ── Module scripts ── #}
+  <script type="module" src="{{ asset('/assets/js/dist/brox-ui.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js" defer></script>
+  <script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/script.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/assistant-shell.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/brox-i18n.js') }}"></script>
+  <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
+
+  {# ── AI Assistant ── #}
+  {% set is_authenticated_user = auth_user is defined and auth_user.is_authenticated is defined and auth_user.is_authenticated %}
+  {% set auth_primary_role     = (auth_user.role|default(''))|lower|trim %}
+  {% set auth_role_list        = [] %}
+  {% if auth_user is defined and auth_user.roles is defined and auth_user.roles is iterable %}
+    {% for role_entry in auth_user.roles %}
+      {% set role_name = (role_entry.name is defined ? role_entry.name : role_entry)|default('')|lower|trim %}
+      {% if role_name %}{% set auth_role_list = auth_role_list|merge([role_name]) %}{% endif %}
+    {% endfor %}
+  {% endif %}
+  {% set is_super_admin_user = auth_user is defined and auth_user.is_super_admin is defined and auth_user.is_super_admin %}
+  {% set is_admin_user       = is_super_admin_user
+      or auth_primary_role in ['admin', 'superadmin']
+      or 'admin'      in auth_role_list
+      or 'superadmin' in auth_role_list %}
+  {% set is_guest_user       = not is_authenticated_user %}
+  {% set is_regular_user     = is_authenticated_user and (
+      auth_primary_role == 'user'
+      or 'user' in auth_role_list
+      or (auth_primary_role is empty and auth_role_list is empty)
+  ) %}
+
+  {% set assistant_variant = 'public' %}
+  {% include 'partials/ai-assistant/assistant.twig' %}
+
+  {# ── Page-specific scripts ── #}
+  {% block extra_scripts %}{% endblock %}
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

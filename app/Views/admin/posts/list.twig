@@ -1,127 +1,155 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}All Posts{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-journal-text"></i>
-        Posts Management
-      </div>
-      <div class="admin-page-subtitle">Manage all blog posts and content</div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4">
 
-    <div class="d-flex justify-content-end mb-4">
-      <a href="/admin/posts/create" class="modern-btn modern-btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> Add New Post
-      </a>
-    </div>
-
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">
-        <form class="row g-2" method="get" action="">
-          <div class="col-md-3">
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-              <input type="text"
-                     name="search"
-                     value="{{ search|default('') }}"
-                     class="form-control"
-                     placeholder="Search by title...">
-            </div>
-          </div>
-          <div class="col-md-3">
-            <select name="sort" class="form-select">
-              <option value="created_at" {{ sort|default('created_at') == 'created_at' ? 'selected' : '' }}>Latest</option>
-              <option value="title" {{ sort|default('created_at') == 'title' ? 'selected' : '' }}>Title</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <select name="order" class="form-select">
-              <option value="DESC" {{ order|default('DESC') == 'DESC' ? 'selected' : '' }}>Desc</option>
-              <option value="ASC" {{ order|default('DESC') == 'ASC' ? 'selected' : '' }}>Asc</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <select name="limit" class="form-select">
-              <option value="10" {{ limit|default(20) == 10 ? 'selected' : '' }}>10</option>
-              <option value="20" {{ limit|default(20) == 20 ? 'selected' : '' }}>20</option>
-              <option value="50" {{ limit|default(20) == 50 ? 'selected' : '' }}>50</option>
-              <option value="100" {{ limit|default(20) == 100 ? 'selected' : '' }}>100</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <button type="submit" class="modern-btn modern-btn-primary w-100">
-              <i class="bi bi-funnel-fill me-1"></i> Filter
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    {% if posts is not empty %}
-      <div class="admin-panel-card">
-        <div class="admin-panel-card-body">
-          <div class="table-responsive">
-            <table class="table table-stacked">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th><i class="bi bi-type"></i> Title</th>
-                  <th><i class="bi bi-person"></i> Author</th>
-                  <th><i class="bi bi-link-45deg"></i> Permalink</th>
-                  <th><i class="bi bi-calendar-check"></i> Status</th>
-                  <th class="text-center"><i class="bi bi-gear"></i> Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for post in posts %}
-                  <tr>
-                    <td class="fw-bold" data-label="#">{{ post.id }}</td>
-                    <td data-label="Title">{{ post.title }}</td>
-                    <td data-label="Author">
-                      <i class="bi bi-person-circle text-secondary"></i> {{ post.author ?? 'N/A' }}
-                    </td>
-                    <td data-label="Permalink">
-                      <code class="text-muted">{{ post.slug }}</code>
-                    </td>
-                    <td data-label="Status">
-                      <span class="badge {{ post.published ? 'bg-success' : 'bg-warning text-surface-dark' }} rounded-pill">
-                        <i class="bi {{ post.published ? 'bi-check2' : 'bi-pencil' }}"></i>
-                        {{ post.published ? 'Published' : 'Draft' }}
-                      </span>
-                    </td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/posts/view?id={{ post.id }}"
-                         class="modern-btn btn-sm btn-info me-1"
-                         title="View">
-                        <i class="bi bi-eye-fill"></i>
-                      </a>
-                      <a href="/admin/posts/edit?id={{ post.id }}"
-                         class="modern-btn btn-sm btn-warning me-1"
-                         title="Edit">
-                        <i class="bi bi-pencil-square"></i>
-                      </a>
-                      <a href="/admin/posts/delete?id={{ post.id }}"
-                         class="modern-btn btn-sm btn-danger"
-                         title="Delete"
-                         onclick="return confirm('Are you sure you want to delete this post?');">
-                        <i class="bi bi-trash3-fill"></i>
-                      </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {% include "admin/partials/pagination.twig" %}
-    {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-1"></i> No posts found.
-      </div>
-    {% endif %}
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-file-text" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Posts Management</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Search, sort, and maintain the editorial catalog.</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/posts/create" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-plus-circle" style="width:0.875em;height:0.875em;"></i> Add New Post
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Filter Section ── #}
+ <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">   <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+     <i class="lucide lucide-filter" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Filter Posts</h2>
+     <p class="text-xs text-slate-500">Search by title, sort, and adjust page size</p>
+    </div>
+  </div>
+  <form class="p-5" method="get" action="">
+   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div>
+     <label for="post-search" class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+     <div class="relative">
+      <i class="lucide lucide-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style="width:0.875em;height:0.875em;"></i>
+      <input id="post-search" type="text" name="search" value="{{ search|default('') }}" placeholder="Search by title…" class="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+     </div>
+    </div>
+    <div>
+     <label for="post-sort" class="block text-xs font-medium text-slate-500 mb-1">Sort</label>
+     <select id="post-sort" name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="created_at" {{ sort|default('created_at') == 'created_at' ? 'selected' : '' }}>Latest</option>
+      <option value="title" {{ sort|default('created_at') == 'title' ? 'selected' : '' }}>Title</option>
+     </select>
+    </div>
+    <div>
+     <label for="post-order" class="block text-xs font-medium text-slate-500 mb-1">Order</label>
+     <select id="post-order" name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="DESC" {{ order|default('DESC') == 'DESC' ? 'selected' : '' }}>Desc</option>
+      <option value="ASC" {{ order|default('DESC') == 'ASC' ? 'selected' : '' }}>Asc</option>
+     </select>
+    </div>
+    <div>
+     <label for="post-limit" class="block text-xs font-medium text-slate-500 mb-1">Per Page</label>
+     <select id="post-limit" name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="10" {{ limit|default(20) == 10 ? 'selected' : '' }}>10</option>
+      <option value="20" {{ limit|default(20) == 20 ? 'selected' : '' }}>20</option>
+      <option value="50" {{ limit|default(20) == 50 ? 'selected' : '' }}>50</option>
+      <option value="100" {{ limit|default(20) == 100 ? 'selected' : '' }}>100</option>
+     </select>
+    </div>
+    <div class="flex items-end">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97] w-full">
+      <i class="lucide lucide-filter" style="width:1em;height:1em;"></i> Apply
+     </button>
+    </div>
+   </div>
+  </form>
+ </section>
+
+ {# ── Posts List Table ── #}
+ {% if posts is not empty %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+     <i class="lucide lucide-file-text" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Posts</h2>
+     <p class="text-xs text-slate-500">Editorial overview with status and quick actions</p>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table class="w-full text-left text-sm">
+    <thead>
+     <tr class="border-b border-slate-100 bg-slate-50/50">
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Title</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Author</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Slug</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+      <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+     </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+     {% for post in posts %}
+     <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+      <td class="px-5 py-3.5"><span class="font-semibold text-slate-900">{{ post.id }}</span></td>
+      <td class="px-5 py-3.5 font-medium text-slate-900">{{ post.title }}</td>
+      <td class="px-5 py-3.5 text-sm text-slate-600">{{ post.author ?? 'N/A' }}</td>
+      <td class="px-5 py-3.5"><code class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ post.slug }}</code></td>
+      <td class="px-5 py-3.5">
+       {% if post.published %}
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Published</span>
+       {% else %}
+        <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Draft</span>
+       {% endif %}
+      </td>
+      <td class="px-5 py-3.5 text-right">
+       <div class="inline-flex items-center gap-1.5">
+        <a href="/admin/posts/view?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5" title="View">
+         <i class="lucide lucide-eye" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/posts/edit?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5" title="Edit">
+         <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/posts/delete?id={{ post.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return confirm('Delete this post?')">
+         <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
+        </a>
+       </div>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  <div class="border-t border-slate-100 px-5 py-4">
+   {% include "admin/partials/pagination.twig" %}
+  </div>
+ </section>
+ {% else %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white p-8 shadow-sm">
+  <div class="flex flex-col items-center justify-center gap-3 text-center">
+   <i class="lucide lucide-file-text text-3xl text-slate-300"></i>
+   <div class="text-sm font-semibold text-slate-700">No posts found</div>
+   <div class="text-xs text-slate-500">Create your first blog post to get started.</div>
+   <a href="/admin/posts/create" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 mt-1">
+    Create Post
+   </a>
+  </div>
+ </section>
+ {% endif %}
+</div>
 {% endblock %}

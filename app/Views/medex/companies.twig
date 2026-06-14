@@ -1,0 +1,225 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+ {{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানির তালিকা - মেডএক্স' : 'Herbal Pharmaceutical Companies in Bangladesh - MedEx' }} - {{ app_settings.site_name }}
+{% endblock %}
+
+{% block meta_description %}
+ {{ current_lang == 'bn' ?"বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির সম্পূর্ণ তালিকা। কোম্পানির নাম, প্রতিষ্ঠাকাল, জেনেরিক ও ব্র্যান্ড সংখ্যা সহ বিস্তারিত তথ্য।" :"Browse comprehensive list of herbal pharmaceutical companies in Bangladesh. Find company names, establishment years, generics count, and brand portfolio." }}
+{% endblock %}
+
+{% block meta_keywords %}pharmaceutical companies, herbal medicine, Bangladesh pharma, drug information, medicine database, healthcare Bangladesh{% endblock %}
+
+{% block og_image %}{{ url ~ 'assets/images/medex-og.jpg'|default(app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')) }}{% endblock %}
+
+{% block extra_styles %}
+
+{% endblock %}
+
+{% block extra_head %}
+ {% set medexLangUrlBase = current_url|replace({'?lang=bn':'?','&lang=bn':'','?lang=en':'?','&lang=en':''})|replace({'?&':'?','&&':'&'})|trim('?&') %}
+ {% set medexLangQuery = medexLangUrlBase matches('/\\?/') ? '&' : '?' %}
+ <link rel="alternate" hreflang="en" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+ <link rel="alternate" hreflang="bn" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=bn">
+ <link rel="alternate" hreflang="x-default" href="{{ medexLangUrlBase }}{{ medexLangQuery }}lang=en">
+{% endblock %}
+
+{% set breadcrumbs = [
+ { label: 'MedEx', icon: 'capsule' }
+] %}
+
+{% set page_schema = {
+ '@context': 'https://schema.org',
+ '@type': 'CollectionPage',
+ 'name': (current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানির তালিকা' : 'Herbal Pharmaceutical Companies'),
+ 'description': (current_lang == 'bn' ? 'বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির সম্পূর্ণ তালিকা।' : 'Comprehensive list of herbal pharmaceutical companies in Bangladesh.'),
+ 'url': current_url,
+ 'isPartOf': {
+ '@type': 'WebSite',
+ 'name': app_settings.site_name,
+ 'url': url
+ },
+ 'about': {
+ '@type': 'Thing',
+ 'name': 'Herbal Pharmaceutical Companies'
+ }
+} %}
+{% block schema %}
+ <script type="application/ld+json">
+{{ page_schema|schema_json }}
+ </script>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="col-span-12">
+ {% set medexHeading = current_lang == 'bn' ? 'মেডএক্স ডেটাবেস' : 'MedEx Database' %}
+ {% set medexSubheader = current_lang == 'bn' ? 'বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির ডেটাবেস' : 'Herbal Pharmaceutical Companies in Bangladesh' %}
+ <h1 class="h2 mb-0">
+ <i class="lucide lucide-pill mr-2 text-indigo-600"></i>
+ <span data-i18n-en="MedEx Database" data-i18n-bn="মেডএক্স ডেটাবেস">{{ medexHeading }}</span>
+ </h1>
+ <p class="text-neutral-500 mt-2 mb-0" data-i18n-en="Herbal Pharmaceutical Companies in Bangladesh" data-i18n-bn="বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির ডেটাবেস">
+ {{ medexSubheader }}
+ </p>
+ </div>
+</div>
+
+{% set labelTotalCompanies = current_lang == 'bn' ? 'মোট কোম্পানি' : 'Total Companies' %}
+{% set labelTotalBrands = current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' %}
+{% set labelLastUpdated = current_lang == 'bn' ? 'শেষ আপডেট' : 'Last Updated' %}
+{% set labelDatabaseStatus = current_lang == 'bn' ? 'ডেটাবেসের অবস্থা:' : 'Database Status:' %}
+{% set labelSearchPlaceholder = current_lang == 'bn' ? 'কোম্পানি খুঁজুন...' : 'Search companies...' %}
+{% set labelFilter = current_lang == 'bn' ? 'ফিল্টার' : 'Filter' %}
+{% set labelExport = current_lang == 'bn' ? 'এক্সপোর্ট' : 'Export' %}
+{% set labelDetailsPage = current_lang == 'bn' ? 'বিস্তারিত' : 'Details' %}
+
+{# Stats Summary #}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-4">
+ <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stats-number">{{ total_companies }}</div>
+ <div class="medex-stats-label" data-i18n-en="Total Companies" data-i18n-bn="মোট কোম্পানি">{{ labelTotalCompanies }}</div>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stats-number" id="medexTotalBrands">{{ total_brands|number_format }}</div>
+ <div class="medex-stats-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ labelTotalBrands }}</div>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stats-number">{{ last_updated ? last_updated|date('M d, Y') : 'N/A' }}</div>
+ <div class="medex-stats-label" data-i18n-en="Last Updated" data-i18n-bn="শেষ আপডেট">{{ labelLastUpdated }}</div>
+ </div>
+ </div>
+</div>
+
+{# Info Banner #}
+<div class="medex-info-banner" role="alert">
+ <div class="flex items-center">
+ <i class="lucide lucide-info-circle mr-3 text-xl"></i>
+ <div>
+ <strong>{{ labelDatabaseStatus }}</strong>
+ <span data-i18n-en="{{ total_companies }} herbal pharmaceutical companies indexed." data-i18n-bn="{{ total_companies|number_format }} টি হার্বাল ফার্মাসিউটিক্যাল কোম্পানি সূচিপত্রভুক্ত">{{ current_lang == 'bn' ? total_companies|number_format ~ ' টি হার্বাল ফার্মাসিউটিক্যাল কোম্পানি সূচিপত্রভুক্ত' : total_companies ~ ' herbal pharmaceutical companies indexed.' }}</span>
+ {% if last_updated %}
+ <br><small class="text-slate-500">{{ current_lang == 'bn' ? 'শেষ আপডেট:' : 'Last updated:' }} {{ last_updated|date('M d, Y H:i') }}</small>
+ {% endif %}
+ </div>
+ </div>
+</div>
+
+{# Filter Bar (for future search) #}
+<div class="medex-filter-bar">
+ <div class="flex items-center" style="flex: 1; min-width: 250px;">
+ <span class="inline-flex items-center px-3 py-2 bg-white border border-r-0 border-neutral-300 rounded-l-lg"><i class="lucide lucide-search"></i></span>
+ <input id="medexSearchInput" type="text" class="w-full px-3 py-2 border border-neutral-300 rounded-r-lg outline-none medex-filter-input" placeholder="{{ labelSearchPlaceholder }}" aria-label="{{ labelSearchPlaceholder }}">
+ </div>
+ <button id="medexFilterBtn" class="inline-flex items-center px-4 py-2 text-neutral-700 rounded-lg font-medium hover:bg-neutral-100 transition-colors" type="button" data-i18n-en="Filter" data-i18n-bn="ফিল্টার">
+ <i class="lucide lucide-filter mr-1"></i> <span data-i18n-en="Filter" data-i18n-bn="ফিল্টার">{{ labelFilter }}</span>
+ </button>
+ <button id="medexExportBtn" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-600-dark transition-colors medex-btn gap-2 text-sm font-semibold transition--primary" type="button" data-i18n-en="Export" data-i18n-bn="এক্সপোর্ট">
+ <i class="lucide lucide-download mr-1"></i> <span data-i18n-en="Export" data-i18n-bn="এক্সপোর্ট">{{ labelExport }}</span>
+ </button>
+ <a href="/medex/details" class="inline-flex items-center px-4 py-2 text-sky-600 rounded-lg font-medium hover:bg-sky-50 transition-colors ml-2" data-i18n-en="Details" data-i18n-bn="বিস্তারিত">
+ <i class="lucide lucide-info mr-1"></i> <span data-i18n-en="Details" data-i18n-bn="বিস্তারিত">{{ labelDetailsPage }}</span>
+ </a>
+</div>
+<div class="mt-3 mb-3">
+ <div id="medexFetchStatus" class="text-neutral-500">
+ Loading latest MedEx data…
+ </div>
+</div>
+
+{# Companies Card with Table #}
+<div class="medex-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-border-b border-slate-200 px-4 py-3">
+ <i class="lucide lucide-building-2"></i>
+ <span data-i18n-en="Herbal Pharmaceutical Companies" data-i18n-bn="হার্বাল ফার্মাসিউটিক্যাল কোম্পানি">{{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Companies' }}</span>
+ <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-600 text-white ml-auto">{{ total_companies }}</span>
+ </div>
+ <div class="medex-p-4 p-0">
+ <div class="medex-table-wrapper">
+ <table class="medex-table">
+ <thead>
+ <tr>
+ <th scope="col" class="text-center" style="width: 60px;">#</th>
+ <th scope="col"><span data-i18n-en="Company Name" data-i18n-bn="কোম্পানির নাম">Company Name</span></th>
+ <th scope="col" class="text-center" style="width: 100px;"><span data-i18n-en="Est." data-i18n-bn="প্রতিষ্ঠা">Est.</span></th>
+ <th scope="col" class="text-right" style="width: 120px;"><span data-i18n-en="Generics" data-i18n-bn="জেনেরিকস">Generics</span></th>
+ <th scope="col" class="text-right" style="width: 120px;"><span data-i18n-en="Brands" data-i18n-bn="ব্র্যান্ড">Brands</span></th>
+ <th scope="col" class="text-center" style="width: 120px;"><span data-i18n-en="Actions" data-i18n-bn="অ্যাকশন">Actions</span></th>
+ </tr>
+ </thead>
+ <tbody id="medexCompaniesTableBody">
+ {% if companies is not empty %}
+ {% for company in companies %}
+ <tr class="medex-hover-lift">
+ <td class="text-center font-semibold text-slate-500">
+ {{ (pagination.current_page - 1) * pagination.per_page + loop.index }}
+ </td>
+ <td>
+ <a href="/medex/company/{{ company._id }}" class="company-name no-underline">
+ <strong>{{ company.name }}</strong>
+ {% if company.headquarter %}
+ <br><small class="text-slate-500"><i class="lucide lucide-map-pin mr-1"></i>{{ company.headquarter|slice(0, 50) }}{% if company.headquarter|length > 50 %}...{% endif %}</small>
+ {% endif %}
+ </a>
+ </td>
+ <td class="text-center">
+ <span class="medex-chip font-semibold--established">
+ {{ company.established|default('N/A') }}
+ </span>
+ </td>
+ <td class="text-right">
+ <span class="medex-chip font-semibold--generics">
+ {{ company.generics|default(company.total_generics|default(0))|number_format }}
+ </span>
+ </td>
+ <td class="text-right">
+ <span class="medex-chip font-semibold--brands">
+ {{ company.brands|default(0)|number_format }}
+ </span>
+ </td>
+ <td class="text-center">
+ <a href="/medex/company/{{ company._id }}" class="medex-btn transition--view">
+ <i class="lucide lucide-eye"></i> View
+ </a>
+ </td>
+ </tr>
+ {% endfor %}
+ {% else %}
+ <tr>
+ <td colspan="6" class="text-center py-5 text-slate-500">
+ Loading latest MedEx data…
+ </td>
+ </tr>
+ {% endif %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+</div>
+
+{# Pagination #}
+<div class="medex-pagination-wrap">
+ {% include 'medex/partials/_pagination.twig' with { pagination: pagination } only %}
+</div>
+
+{# Back to top spacing #}
+<div class="mb-5"></div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}"></script>
+{% endblock %}
+
+
+
+
+

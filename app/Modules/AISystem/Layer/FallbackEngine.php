@@ -45,7 +45,7 @@ class FallbackEngine
         $this->loadConfig();
 
         // Setup logging
-        $this->enableLogging = getenv('FALLBACK_LOGGING') ?? false;
+        $this->enableLogging = getenv('FALLBACK_LOGGING') !== false;
         if ($this->enableLogging) {
             $this->logFile = dirname(__DIR__, 3) . '/storage/logs/fallback_engine.log';
             $logDir = dirname($this->logFile);

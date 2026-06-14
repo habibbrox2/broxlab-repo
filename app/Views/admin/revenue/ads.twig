@@ -1,169 +1,209 @@
 {% extends 'admin/layout.twig' %}
 
 {% block title %}Ad Placements – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
-<li class="breadcrumb-item"><a href="/admin/revenue">Revenue</a></li>
-<li class="breadcrumb-item active" aria-current="page">Ad Placements</li>
-{% endblock %}
+{% block content %}
+<div class="w-full px-4 sm:px-6 py-4">
 
-{% block page_content %}
-<div class="dashboard-page">
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+  </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-megaphone" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Ad Placements</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Manage advertisement slots across the site</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/revenue" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Revenue Dashboard
+    </a>
+   </div>
+  </div>
+ </div>
 
-  {# ── Stats ── #}
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Active Slots</small>
-            <div class="h3 mb-0 fw-bold text-success">
-              {{ placements|filter(p=>p.status=='active')|length }}
-            </div>
-          </div>
-          <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3"><i class="bi bi-broadcast-pin text-success"></i></div>
-        </div>
-      </div></div>
+ {# ── Stats Cards ── #}
+ <section class="scroll-fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 mb-6">
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Slots</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+      <i class="lucide lucide-podcast" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Total Impressions</small>
-            <div class="h3 mb-0 fw-bold text-primary">
-              {{ placements|reduce((carry,p)=>carry+(p.impressions|default(0)),0)|number_format }}
-            </div>
-          </div>
-          <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3"><i class="bi bi-eye-fill text-primary"></i></div>
-        </div>
-      </div></div>
-    </div>
-    <div class="col-md-4">
-      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small class="text-muted text-uppercase">Total Clicks</small>
-            <div class="h3 mb-0 fw-bold text-warning">
-              {{ placements|reduce((carry,p)=>carry+(p.clicks|default(0)),0)|number_format }}
-            </div>
-          </div>
-          <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3"><i class="bi bi-cursor-fill text-warning"></i></div>
-        </div>
-      </div></div>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ placements|filter(p=>p.status=='active')|length }}</div>
+    <div class="mt-1 text-xs text-slate-500">Currently active placements</div>
+   </div>
   </div>
 
-  {# ── Add New ── #}
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold"><i class="bi bi-plus-circle-dotted me-2 text-primary"></i>Add New Ad Placement</h5>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Impressions</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+      <i class="lucide lucide-eye" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="card-body p-4">
-      <form method="POST" action="/admin/revenue/ads/save" class="row g-3">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <div class="col-md-4">
-          <label class="form-label">Display Name *</label>
-          <input type="text" name="name" class="form-control" placeholder="e.g. Homepage Top Banner" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Slot Key *</label>
-          <input type="text" name="slot_key" class="form-control font-monospace"
-                 placeholder="e.g. home_banner" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Placement *</label>
-          <select name="placement" class="form-select" required>
-            {% for p in all_placements %}
-            <option value="{{ p }}">{{ p|replace({'_':' '})|capitalize }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12">
-          <label class="form-label">Ad Code (HTML / JS snippet)</label>
-          <textarea name="ad_code" class="form-control font-monospace" rows="3"
-                    placeholder='<script src="…"></script> or <ins class="adsbygoogle">…</ins>'></textarea>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Publisher Name</label>
-          <input type="text" name="publisher_name" class="form-control">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Publisher Email</label>
-          <input type="email" name="publisher_email" class="form-control">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-select">
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="expired">Expired</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-grid align-items-end">
-          <button type="submit" class="btn btn-primary rounded-pill fw-bold">
-            <i class="bi bi-check-lg me-1"></i>Save
-          </button>
-        </div>
-      </form>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ placements|reduce((carry,p)=>carry+(p.impressions|default(0)),0)|number_format }}</div>
+    <div class="mt-1 text-xs text-slate-500">Total ad impressions</div>
+   </div>
   </div>
 
-  {# ── List ── #}
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold"><i class="bi bi-layout-sidebar me-2 text-info"></i>Existing Slots</h5>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Clicks</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+      <i class="lucide lucide-mouse-pointer" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="card-body p-0 table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead class="table-light"><tr>
-          <th class="px-4">ID</th>
-          <th>Name</th>
-          <th>Slot Key</th>
-          <th>Placement</th>
-          <th>Publisher</th>
-          <th>Impressions</th>
-          <th>Clicks</th>
-          <th>Status</th>
-          <th class="text-end px-4">Actions</th>
-        </tr></thead>
-        <tbody>
-        {% for p in placements %}
-          {% set s = p.status %}
-          {% set sc = s == 'active' ? 'bg-success-subtle text-success'
-                   : s == 'paused' ? 'bg-warning-subtle text-warning'
-                   : 'bg-secondary-subtle text-secondary' %}
-          <tr>
-            <td class="px-4"><span class="badge bg-secondary">#{{ p.id }}</span></td>
-            <td class="fw-semibold">{{ p.name }}</td>
-            <td><code class="small bg-light px-2 py-1 rounded">{{ p.slot_key }}</code></td>
-            <td>{{ p.placement|replace({'_':' '})|capitalize }}</td>
-            <td>{{ p.publisher_name|default('—') }}</td>
-            <td class="font-monospace small">{{ p.impressions|default(0)|number_format }}</td>
-            <td class="font-monospace small">{{ p.clicks|default(0)|number_format }}</td>
-            <td><span class="badge {{ sc }}">{{ s }}</span></td>
-            <td class="text-end px-4">
-              <div class="btn-group btn-group-sm">
-                <form method="POST" action="/admin/revenue/ads/toggle/{{ p.id }}" style="display:inline">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-sm {% if s == 'active' %}btn-outline-warning{% else %}btn-outline-success{% endif %} rounded-pill">
-                    {{ s == 'active' ? 'Pause' : 'Activate' }}
-                  </button>
-                </form>
-                <form method="GET" action="/admin/revenue/ads/delete/{{ p.id }}" style="display:inline"
-                      onsubmit="return confirm('Delete this ad placement?')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-sm btn-outline-danger rounded-pill">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No ad placements yet. Create one above.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ placements|reduce((carry,p)=>carry+(p.clicks|default(0)),0)|number_format }}</div>
+    <div class="mt-1 text-xs text-slate-500">Total ad clicks</div>
+   </div>
   </div>
+ </section>
+
+ {# ── Add New Ad Placement ── #}
+ <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-plus-circle" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Add New Ad Placement</h2>
+    <p class="text-xs text-slate-500">Create a new advertisement slot</p>
+   </div>
+  </div>
+  <div class="p-5">
+   <form method="POST" action="/admin/revenue/ads/save" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Display Name *</label>
+     <input type="text" name="name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="e.g. Homepage Top Banner" required>
+    </div>
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Slot Key *</label>
+     <input type="text" name="slot_key" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="e.g. home_banner" required>
+    </div>
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Placement *</label>
+     <select name="placement" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" required>
+      {% for p in all_placements %}
+      <option value="{{ p }}">{{ p|replace({'_':' '})|capitalize }}</option>
+      {% endfor %}
+     </select>
+    </div>
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
+     <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="active">Active</option>
+      <option value="paused">Paused</option>
+      <option value="expired">Expired</option>
+     </select>
+    </div>
+    <div class="xl:col-span-4">
+     <label class="block text-xs font-medium text-slate-500 mb-1">Ad Code (HTML / JS snippet)</label>
+     <textarea name="ad_code" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" rows="3"
+      placeholder='<script src="…"></script> or <ins class="adsbygoogle">…</ins>'></textarea>
+    </div>
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Publisher Name</label>
+     <input type="text" name="publisher_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+    </div>
+    <div>
+     <label class="block text-xs font-medium text-slate-500 mb-1">Publisher Email</label>
+     <input type="email" name="publisher_email" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+    </div>
+    <div class="flex items-end">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97] w-full">
+      <i class="lucide lucide-check" style="width:1em;height:1em;"></i> Save Placement
+     </button>
+    </div>
+   </form>
+  </div>
+ </section>
+
+ {# ── Existing Slots Table ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600">
+    <i class="lucide lucide-layout" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Existing Ad Slots</h2>
+    <p class="text-xs text-slate-500">All configured advertisement placements</p>
+   </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table class="w-full text-left text-sm">
+    <thead>
+     <tr class="border-b border-slate-100 bg-slate-50/50">
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Name</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Slot Key</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Placement</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Publisher</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Impressions</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Clicks</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+      <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+     </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+     {% for p in placements %}
+     {% set s = p.status %}
+     <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+      <td class="px-5 py-3.5"><span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">#{{ p.id }}</span></td>
+      <td class="px-5 py-3.5 font-semibold text-slate-900">{{ p.name }}</td>
+      <td class="px-5 py-3.5"><code class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">{{ p.slot_key }}</code></td>
+      <td class="px-5 py-3.5 text-sm text-slate-600">{{ p.placement|replace({'_':' '})|capitalize }}</td>
+      <td class="px-5 py-3.5 text-sm text-slate-600">{{ p.publisher_name|default('—') }}</td>
+      <td class="px-5 py-3.5 text-sm font-mono text-slate-600">{{ p.impressions|default(0)|number_format }}</td>
+      <td class="px-5 py-3.5 text-sm font-mono text-slate-600">{{ p.clicks|default(0)|number_format }}</td>
+      <td class="px-5 py-3.5">
+       {% set sc = s == 'active' ? 'bg-emerald-50 text-emerald-700'
+        : s == 'paused' ? 'bg-amber-50 text-amber-700'
+        : 'bg-slate-100 text-slate-600' %}
+       <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ sc }}">{{ s|capitalize }}</span>
+      </td>
+      <td class="px-5 py-3.5 text-right">
+       <div class="inline-flex items-center gap-1.5">
+        <form method="POST" action="/admin/revenue/ads/toggle/{{ p.id }}" style="display:inline">
+         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+         <button class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">
+          {{ s == 'active' ? 'Pause' : 'Activate' }}
+         </button>
+        </form>
+        <form method="GET" action="/admin/revenue/ads/delete/{{ p.id }}" style="display:inline" onsubmit="return confirm('Delete this ad placement?')">
+         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+         <button class="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm transition-all hover:bg-red-50 hover:-translate-y-0.5">Delete</button>
+        </form>
+       </div>
+      </td>
+     </tr>
+     {% else %}
+     <tr>
+      <td colspan="9" class="px-5 py-8 text-center text-slate-500">
+       <i class="lucide lucide-inbox mx-auto text-slate-300" style="width:2em;height:2em;"></i>
+       <p class="mt-2 text-sm">No ad placements yet. Create one above.</p>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+ </section>
 </div>
 {% endblock %}

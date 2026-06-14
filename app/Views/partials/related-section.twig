@@ -1,58 +1,46 @@
-﻿{#
-  Partials: related-section.twig
-  Optimized for prepared related items from model
-#}
-
 {% set items = items|default([]) %}
 {% set variant = variant|default('pro') %}
-
-{# DEBUG #}
-{% if items|length == 0 %}
-  <!-- DEBUG: No items passed to related-section.twig -->
-{% else %}
-  <!-- DEBUG: {{ items|length }} items in related section -->
-{% endif %}
+{% set items = items|slice(0, 3) %}
 
 {% if items|length > 0 %}
-
 {% set section_id = id|default('related-' ~ (title|default('items')|lower|replace({' ':'-'}) ) ~ '-title') %}
+{% set section_title = title|default('Related Content') %}
+{% set section_subject = section_title|replace({'Related ':''})|trim %}
+{% set section_headline = 'More ' ~ section_subject ~ ' to Explore' %}
 
-<section class='mb-5' aria-labelledby='{{ section_id }}'>
-  <div class='related-section {{ variant }} rounded-4 overflow-hidden'>
-
-    
-
-    <header class='related-header p-4 related-header-styled'
-      style='background: {{ gradient|default('linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)') }};'>
-      <div class='d-flex align-items-center justify-content-between w-100'>
-        <h2 id='{{ section_id }}' class='mb-0 h5 fw-bold text-light'>
-          <i class='bi bi-link-45deg me-2'></i>{{ title|default('Related') }}
-        </h2>
-
-        <div class='d-flex align-items-center gap-3'>
-          <span class='badge bg-light text-primary px-3 py-2 rounded-pill'>
-            {{ items|length }} {{ title|default('Items') }}
-          </span>
-
-          {% if view_all_url is defined and view_all_url %}
-            <a href='{{ view_all_url }}' class='btn btn-sm btn-outline-light related-btn-light'>
-              View all
-            </a>
-          {% endif %}
-        </div>
-      </div>
-    </header>
-
-    <div class='related-body p-4'>
-      <div class='feed-grid' role='list' aria-label='{{ title|default('Related Items') }}'>
-        {% for it in items %}
-          {% include 'partials/content-card.twig' with {
-            item: it,
-            index: loop.index
-          } %}
-        {% endfor %}
-      </div>
-    </div>
+<section class="discovery-feed-section py-5 mt-8 sm:mt-10" aria-labelledby="{{ section_id }}">
+ <div class="mx-auto max-w-7xl px-0">
+  <div class="mb-5">
+   <h2 id="{{ section_id }}" class="text-3xl font-bold md:text-5xl">
+    <span class="border-b-4 border-primary pb-2 text-primary">{{ section_headline }}</span>
+   </h2>
+   <p class="mt-2 text-slate-500">
+    Discover more {{ section_subject|lower }} picked to match what you are viewing.
+   </p>
   </div>
+
+  <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+   <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+    <i class="lucide lucide-layout-grid h-3.5 w-3.5 text-indigo-500"></i>
+    {{ items|length }} {{ title|default('Items') }}
+   </span>
+
+   {% if view_all_url is defined and view_all_url %}
+    <a href="{{ view_all_url }}" class="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-indigo-700">
+     View all
+     <i class="lucide lucide-arrow-right h-4 w-4"></i>
+    </a>
+   {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" role="list" aria-label="{{ title|default('Related Items') }}">
+   {% for it in items %}
+    {% include 'partials/discovery-card.twig' with {
+     item: it,
+     index: loop.index
+    } %}
+   {% endfor %}
+  </div>
+ </div>
 </section>
 {% endif %}

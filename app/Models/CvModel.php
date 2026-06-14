@@ -14,12 +14,12 @@ class CvModel
     /**
      * Create a new CV for a user.
      */
-    public function create(int $userId, string $title = 'My CV', string $template = 'modern'): ?int
+    public function create(int $userId, string $title = 'My CV', string $template = 'modern', ?string $professionalStatus = null): ?int
     {
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cvs (user_id, title, is_active) VALUES (?, ?, TRUE)"
+            "INSERT INTO cvs (user_id, title, is_active, professional_status) VALUES (?, ?, TRUE, ?)"
         );
-        $stmt->bind_param('is', $userId, $title);
+        $stmt->bind_param('iss', $userId, $title, $professionalStatus);
 
         if ($stmt->execute()) {
             return (int)$stmt->insert_id;
@@ -186,6 +186,34 @@ class CvModel
     }
 
     /**
+     * Get CV statistics for a specific user.
+     * Returns total count, view count, download count, active count, and draft count.
+     */
+    public function getUserCvStats(int $userId): array
+    {
+        $cvs = $this->getByUserId($userId);
+        $stats = [
+            'total_cvs' => count($cvs),
+            'total_downloads' => 0,
+            'total_views' => 0,
+            'active_count' => 0,
+            'draft_count' => 0,
+        ];
+
+        foreach ($cvs as $cv) {
+            $stats['total_downloads'] += (int)($cv['download_count'] ?? 0);
+            $stats['total_views'] += (int)($cv['view_count'] ?? 0);
+            if (!empty($cv['is_active'])) {
+                $stats['active_count']++;
+            } else {
+                $stats['draft_count']++;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
      * Get a CV by ID.
      */
     public function getById(int $id): ?array
@@ -221,12 +249,22 @@ class CvModel
             $types .= 'i';
         }
 
-        // Template update (commented out until column is added)
-        // if (isset($data['template'])) {
-        //     $fields[] = 'template = ?';
-        //     $params[] = $data['template'];
-        //     $types .= 's';
-        // }
+        if (array_key_exists('professional_status', $data)) {
+            $fields[] = 'professional_status = ?';
+            $params[] = $data['professional_status'];
+            $types .= 's';
+        }
+
+        if (array_key_exists('builder_data', $data)) {
+            if ($data['builder_data'] === null) {
+                $fields[] = 'builder_data = NULL';
+            } else {
+                $fields[] = 'builder_data = ?';
+                $jsonData = is_array($data['builder_data']) ? json_encode($data['builder_data']) : $data['builder_data'];
+                $params[] = $jsonData;
+                $types .= 's';
+            }
+        }
 
         if (empty($fields)) {
             return false;
@@ -240,6 +278,49 @@ class CvModel
         $stmt->bind_param($types, ...$params);
 
         return $stmt->execute();
+    }
+
+    /**
+     * Get builder data for a CV (decoded from JSON).
+     */
+    public function getBuilderData(int $cvId): array
+    {
+        $cv = $this->getById($cvId);
+        if (!$cv || empty($cv['builder_data'])) {
+            return [];
+        }
+
+        $data = json_decode($cv['builder_data'], true);
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Save builder step data (merges into existing builder_data).
+     */
+    public function saveBuilderStep(int $cvId, string $step, array $data): bool
+    {
+        $existing = $this->getBuilderData($cvId);
+        $existing[$step] = $data;
+        return $this->update($cvId, ['builder_data' => $existing]);
+    }
+
+    /**
+     * Complete the builder: map builder_data into sections and items.
+     * Returns true on success.
+     */
+    public function completeBuilder(int $cvId, int $userId): bool
+    {
+        $data = $this->getBuilderData($cvId);
+        if (empty($data)) {
+            return false;
+        }
+
+        // Update CV title from step 1
+        if (!empty($data['personal']['full_name'])) {
+            $this->update($cvId, ['title' => $data['personal']['full_name'] . "'s CV"]);
+        }
+
+        return true;
     }
 
     /**

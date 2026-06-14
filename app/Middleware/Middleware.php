@@ -400,13 +400,15 @@ register_middleware('admin_only', function (array $ctx = []) {
         redirectToLoginWithReturn();
     }
 
-    if (!$userModel->isSuperAdmin($userId)) {
+    // Allow both super_admin AND admin role users
+    if (!$userModel->isSuperAdmin($userId) && !$userModel->hasRole($userId, 'admin')) {
 
         logMiddlewareReject(
             'admin_only',
-            'NOT_SUPER_ADMIN',
+            'ROLE_DENIED',
             [
-                'user_id' => $userId
+                'user_id' => $userId,
+                'required_roles' => 'admin, super_admin'
             ]
         );
 
@@ -421,7 +423,7 @@ register_middleware('admin_only', function (array $ctx = []) {
             json_response(['success' => false, 'error' => 'Admin access required'], 403);
         }
 
-        showMessage('Super admin only.', 'danger');
+        showMessage('Admin access required.', 'danger');
         redirect('/');
     }
 

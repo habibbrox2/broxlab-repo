@@ -140,12 +140,60 @@ $router->get('/admin/dashboard', ['middleware' => ['auth', 'admin_or_super_only'
             "ERROR",
             ['file' => $e->getFile(), 'line' => $e->getLine()]
         );
-        echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+        echo "<div class='rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
         exit;
     }
 });
 
+/**
+ * API: Sidebar badge counts (pending, drafts, unread)
+ * GET /api/admin/sidebar-counts
+ */
+$router->get('/api/admin/sidebar-counts', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+    try {
+        $serviceAppModel = new ServiceApplicationModel($mysqli);
+        $contentModel = new ContentModel($mysqli);
+        $commentModel = new CommentModel($mysqli);
 
+        $serviceStats = $serviceAppModel->getStatistics();
+        $draftCount = $contentModel->getDraftCount();
+        $pendingComments = $commentModel->getPendingComments();
+
+        // Contact unread count
+        $contactUnread = 0;
+        try {
+            $contactModel = new ContactModel($mysqli);
+            $contactUnread = (int) $contactModel->countUnread();
+        } catch (Throwable $e) {
+            // Table may not exist; silently return 0
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'counts' => [
+                'applications' => (int)($serviceStats['pending'] ?? 0),
+                'posts'        => $draftCount,
+                'comments'     => $pendingComments,
+                'contact'      => $contactUnread,
+            ]
+        ]);
+    } catch (Throwable $e) {
+        logError('Sidebar counts API error: ' . $e->getMessage());
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch counts']);
+    }
+});
+
+/**
+ * Admin Dashboard Alias Route
+ * GET /admin -> redirects to /admin/dashboard
+ */
+$router->get('/admin', ['middleware' => ['auth', 'admin_or_super_only']], function () {
+    header('Location: /admin/dashboard');
+    exit;
+});
 
 // ========= CONTACT MESSAGES MANAGEMENT ==========
 
@@ -906,9 +954,157 @@ $router->post('/admin/cv-templates/{slug}/toggle', ['middleware' => ['auth', 'ad
     }
 });
 
+/**
+ * Upload CV Template via ZIP
+ * POST /admin/cv-templates/upload-zip
+ */
+$router->post('/admin/cv-templates/upload-zip', ['middleware' => ['auth', 'admin_only', 'csrf']], function () {
+    $file = $_FILES['template_zip'] ?? null;
 
+    if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+        $errorCode = $file['error'] ?? -1;
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit (upload_max_filesize).',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds form size limit.',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Server temporary directory is missing.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+        ];
+        $message = $errorMessages[$errorCode] ?? 'Unknown upload error (code: ' . $errorCode . ').';
+        json_response(['success' => false, 'error' => $message], 400);
+        return;
+    }
 
+    // Validate file type
+    $mimeType = $file['type'] ?? '';
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($extension !== 'zip' || ($mimeType !== 'application/zip' && $mimeType !== 'application/x-zip-compressed')) {
+        json_response(['success' => false, 'error' => 'Only .zip files are allowed.'], 400);
+        return;
+    }
 
+    // Size limit: 10MB
+    $maxSize = 10 * 1024 * 1024;
+    if ($file['size'] > $maxSize) {
+        json_response(['success' => false, 'error' => 'ZIP file exceeds 10MB limit.'], 400);
+        return;
+    }
+
+    // Move to temp location
+    $tmpDir = defined('TEMP_DIR') ? TEMP_DIR : (sys_get_temp_dir() . '/broxlab-cv-templates');
+    if (!is_dir($tmpDir)) {
+        @mkdir($tmpDir, 0755, true);
+    }
+
+    $tmpPath = rtrim($tmpDir, '\\/') . '/template-upload-' . uniqid() . '.zip';
+    if (!move_uploaded_file($file['tmp_name'], $tmpPath)) {
+        json_response(['success' => false, 'error' => 'Failed to save uploaded file.'], 500);
+        return;
+    }
+
+    // Validate ZIP package
+    $validation = cvTemplateValidateZipPackage($tmpPath);
+
+    if (!$validation['success']) {
+        // Cleanup temp file on failure
+        @unlink($tmpPath);
+        json_response([
+            'success' => false,
+            'error' => 'Template validation failed.',
+            'errors' => $validation['errors'],
+            'warnings' => $validation['warnings']
+        ], 422);
+        return;
+    }
+
+    // Extract and install
+    $result = cvTemplateExtractZipPackage($tmpPath, $validation);
+
+    // Cleanup temp file
+    @unlink($tmpPath);
+
+    if ($result['success']) {
+        logActivity("CV Template Installed via ZIP", "cv-templates", 0, [
+            'slug' => $result['slug'] ?? '',
+            'name' => $validation['config']['name'] ?? ''
+        ], 'success');
+
+        json_response([
+            'success' => true,
+            'message' => $result['message'],
+            'slug' => $result['slug'] ?? null,
+            'warnings' => $validation['warnings']
+        ]);
+    } else {
+        json_response(['success' => false, 'error' => $result['message']], 500);
+    }
+});
+
+/**
+ * Delete CV Template
+ * POST /admin/cv-templates/{slug}/delete
+ */
+$router->post('/admin/cv-templates/{slug}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) {
+    $result = cvTemplateDelete($slug);
+    if ($result['success']) {
+        logActivity("CV Template Deleted", "cv-templates", 0, ['slug' => $slug], 'success');
+        json_response($result);
+    } else {
+        json_response($result, 400);
+    }
+});
+
+/**
+ * Bulk Delete CV Templates
+ * POST /admin/cv-templates/bulk-delete
+ */
+$router->post('/admin/cv-templates/bulk-delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function () {
+    $payload = json_decode(file_get_contents('php://input'), true);
+    $slugs = $payload['slugs'] ?? [];
+
+    if (!is_array($slugs) || empty($slugs)) {
+        json_response(['success' => false, 'error' => 'No template slugs provided.'], 400);
+        return;
+    }
+
+    if (count($slugs) > 50) {
+        json_response(['success' => false, 'error' => 'Bulk delete limited to 50 templates at a time.'], 422);
+        return;
+    }
+
+    $results = [
+        'success' => [],
+        'failures' => []
+    ];
+
+    foreach ($slugs as $slug) {
+        $result = cvTemplateDelete(trim((string)$slug));
+        if ($result['success']) {
+            $results['success'][] = $slug;
+            logActivity("CV Template Bulk Deleted", "cv-templates", 0, ['slug' => $slug], 'success');
+        } else {
+            $results['failures'][] = [
+                'slug' => $slug,
+                'message' => $result['message'] ?? 'Unknown error'
+            ];
+        }
+    }
+
+    $deletedCount = count($results['success']);
+    $failedCount = count($results['failures']);
+
+    $message = "$deletedCount template(s) deleted.";
+    if ($failedCount > 0) {
+        $message .= " $failedCount failed.";
+    }
+
+    json_response([
+        'success' => $failedCount === 0,
+        'message' => $message,
+        'results' => $results
+    ]);
+});
 
 
 // ========= USER DASHBOARD ==========
@@ -976,10 +1172,92 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
 
         // Get notices/announcements
         $notices = [];
-        // TODO: Fetch from announcements table if exists
+        // Fetch announcements from notifications table (type = 'announcement', status = 'sent')
+        try {
+            $notifStmt = $mysqli->prepare("
+                SELECT id, title, message, action_url, created_at
+                FROM notifications
+                WHERE type = 'announcement'
+                  AND status = 'sent'
+                  AND (user_id IS NULL OR user_id = 0 OR user_id = ?)
+                ORDER BY created_at DESC
+                LIMIT 5
+            ");
+            $notifUserId = (int)($currentUser['id'] ?? 0);
+            $notifStmt->bind_param('i', $notifUserId);
+            $notifStmt->execute();
+            $notices = $notifStmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+            $notifStmt->close();
+        } catch (Throwable $e) {
+            logError('Dashboard: Failed to fetch announcements: ' . $e->getMessage());
+            $notices = [];
+        }
 
         // Get user roles
         $userRoles = $userModel->getRoles($userId);
+
+        // ── Recent Activity Feed ──
+        $recent_activity = [];
+        try {
+            // Fetch user-specific notifications (in-app notifications sent TO this user)
+            $notificationModel = new NotificationModel($mysqli);
+            $userNotifications = $notificationModel->getUserNotifications($userId, 15);
+
+            foreach ($userNotifications as $n) {
+                $typeIcon = 'bell';
+                $typeColor = 'indigo';
+                switch ($n['type'] ?? '') {
+                    case 'announcement':
+                        $typeIcon = 'megaphone';
+                        $typeColor = 'sky';
+                        break;
+                    case 'application':
+                        $typeIcon = 'file-check';
+                        $typeColor = 'amber';
+                        break;
+                    case 'cv':
+                        $typeIcon = 'file-text';
+                        $typeColor = 'violet';
+                        break;
+                    case 'account':
+                        $typeIcon = 'shield-check';
+                        $typeColor = 'emerald';
+                        break;
+                }
+                $recent_activity[] = [
+                    'type' => 'notification',
+                    'title' => $n['title'] ?? '',
+                    'description' => $n['message'] ?? '',
+                    'time' => $n['created_at'] ?? '',
+                    'icon' => $typeIcon,
+                    'color' => $typeColor,
+                    'url' => $n['action_url'] ?? '',
+                ];
+            }
+
+            // Fetch user's CVs as activity items
+            $userCvs = $cvModel->getByUserId($userId);
+            foreach ($userCvs as $cv) {
+                $recent_activity[] = [
+                    'type' => 'cv',
+                    'title' => 'CV Updated: ' . ($cv['title'] ?? 'My CV'),
+                    'description' => $cv['is_active'] ? 'Active CV - ready for sharing' : 'Draft CV - still in progress',
+                    'time' => $cv['updated_at'] ?? $cv['created_at'] ?? '',
+                    'icon' => 'file-text',
+                    'color' => 'violet',
+                    'url' => '/cv/' . ($cv['id'] ?? 0),
+                ];
+            }
+
+            // Sort by time descending, limit to 12 items
+            usort($recent_activity, function ($a, $b) {
+                return strtotime($b['time'] ?? '1970-01-01') - strtotime($a['time'] ?? '1970-01-01');
+            });
+            $recent_activity = array_slice($recent_activity, 0, 12);
+        } catch (Throwable $e) {
+            logError('Dashboard: Failed to build activity feed: ' . $e->getMessage());
+            $recent_activity = [];
+        }
 
         echo $twig->render('user/dashboard_user.twig', [
             'title'        => 'My Dashboard',
@@ -991,6 +1269,7 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
             'profile'      => $profile,
             'user_profile' => $userProfile,
             'notices'      => $notices,
+            'recent_activity' => $recent_activity,
         ]);
     } catch (Throwable $e) {
         logError(

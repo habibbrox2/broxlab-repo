@@ -2,38 +2,9 @@
 // এই ফাইল rich text editor এর জন্য সকল selection related functionality প্রদান করে
 (function(global) {
     'use strict';
-    const nativeConsole = (global && global.console) || (typeof globalThis !== 'undefined' ? globalThis.console : null);
-    const fallbackConsole = nativeConsole || {
-        log: function () { },
-        warn: function () { },
-        error: function () { },
-        trace: function () { }
-    };
-    const console = fallbackConsole;
     function debugLog(...args) {
         if (global && typeof global.RTE_debugLog === 'function') {
             global.RTE_debugLog('selection', ...args);
-            return;
-        }
-        if (global && global.RTE_DEBUG && typeof console.log === 'function') {
-            console['log'](...args);
-        }
-    }
-    function debugGroup(label) {
-        if (global && typeof global.RTE_debugLog === 'function') {
-            global.RTE_debugLog('selection', label);
-            return;
-        }
-        if (global && global.RTE_DEBUG && typeof console.group === 'function') {
-            console.group(label);
-        }
-    }
-    function debugGroupEnd() {
-        if (global && global.RTE_debugLog) {
-            return;
-        }
-        if (global && global.RTE_DEBUG && typeof console.groupEnd === 'function') {
-            console.groupEnd();
         }
     }
 
@@ -54,35 +25,19 @@
         RichTextEditor.prototype.saveSelection = function () {
             try {
                 const sel = window.getSelection();
-                debugLog('📌 saveSelection called');
-                debugLog('🔍 Selection object:', sel);
-                debugLog('📊 rangeCount:', sel.rangeCount);
+                debugLog('saveSelection called, rangeCount:', sel?.rangeCount);
                 
                 if (sel.rangeCount > 0) {
                     const range = sel.getRangeAt(0);
-                    debugLog('✅ Range found:', {
-                        startContainer: range.startContainer,
-                        startOffset: range.startOffset,
-                        endContainer: range.endContainer,
-                        endOffset: range.endOffset,
-                        collapsed: range.collapsed,
-                        commonAncestorContainer: range.commonAncestorContainer
-                    });
-                    
-                    const selectedText = range.toString();
-                    debugLog('📝 Selected Text:', `"${selectedText}"`);
-                    debugLog('📏 Selected Text Length:', selectedText.length);
-                    
                     this._savedRange = range.cloneRange();
-                    debugLog('💾 Saved Range stored');
+                    debugLog('Saved range stored, collapsed:', range.collapsed);
                     return true;
                 } else {
-                    console.warn('⚠️ No ranges found in selection');
+                    console.warn('No ranges found in selection');
                     return false;
                 }
             } catch (e) {
-                console.error('❌ saveSelection error:', e);
-                console.trace('Stack trace:', e);
+                console.warn('saveSelection error:', e);
                 return false;
             }
         };
@@ -92,36 +47,26 @@
          * @returns {boolean} - সফল হলে true, ব্যর্থ হলে false
          */
         RichTextEditor.prototype.restoreSelection = function () {
-            debugLog('🔄 restoreSelection called');
+            debugLog('restoreSelection called');
             
             if (!this._savedRange) {
-                console.warn('⚠️ No saved range available');
+                console.warn('No saved range available');
                 return false;
             }
             
             try {
                 const sel = window.getSelection();
-                debugLog('📌 Clearing existing ranges. Current rangeCount:', sel.rangeCount);
-                
                 sel.removeAllRanges();
-                debugLog('✅ Ranges cleared');
-                
-                debugLog('📍 Adding saved range back:', this._savedRange);
                 sel.addRange(this._savedRange);
-                
-                const restoredText = this._savedRange.toString();
-                debugLog('📝 Restored text:', `"${restoredText}"`);
                 
                 if (this.editor) {
                     this.editor.focus();
-                    debugLog('✅ Editor focused');
                 }
                 
-                debugLog('✅ Selection restored successfully');
+                debugLog('Selection restored successfully');
                 return true;
             } catch (e) {
-                console.error('❌ restoreSelection error:', e);
-                console.trace('Stack trace:', e);
+                console.warn('restoreSelection error:', e);
                 return false;
             }
         };
@@ -131,42 +76,24 @@
          * @returns {boolean} - সফল হলে true, ব্যর্থ হলে false
          */
         RichTextEditor.prototype.selectAll = function () {
-            debugLog('🎯 selectAll called');
+            debugLog('selectAll called');
             
             try {
-                debugLog('📍 Creating range for editor:', this.editor);
                 const range = document.createRange();
                 range.selectNodeContents(this.editor);
                 
-                debugLog('📊 Range created:', {
-                    startOffset: range.startOffset,
-                    endOffset: range.endOffset,
-                    collapsed: range.collapsed
-                });
-                
                 const sel = window.getSelection();
-                debugLog('🔍 Current selection rangeCount:', sel.rangeCount);
-                
                 sel.removeAllRanges();
-                debugLog('✅ Old ranges removed');
-                
                 sel.addRange(range);
-                debugLog('✅ New range added');
-                
-                const selectedText = range.toString();
-                debugLog('📝 All selected text:', `"${selectedText}"`);
-                debugLog('📏 Total length:', selectedText.length);
                 
                 if (this.editor) {
                     this.editor.focus();
-                    debugLog('✅ Editor focused');
                 }
                 
-                debugLog('✅ selectAll completed successfully');
+                debugLog('selectAll completed successfully');
                 return true;
             } catch (e) {
-                console.error('❌ selectAll error:', e);
-                console.trace('Stack trace:', e);
+                console.warn('selectAll error:', e);
                 return false;
             }
         };
@@ -189,40 +116,23 @@
          * @returns {Element|null} - Selection এর element অথবা null
          */
         RichTextEditor.prototype._getSelectionElement = function () {
-            debugLog('🔎 _getSelectionElement called');
+            debugLog('_getSelectionElement called');
             
             try {
                 const sel = window.getSelection();
-                debugLog('📌 Selection:', sel);
                 
                 if (!sel || !sel.rangeCount) {
-                    console.warn('⚠️ No selection or rangeCount is 0');
                     return null;
                 }
                 
                 const range = sel.getRangeAt(0);
                 const node = range.startContainer;
                 
-                debugLog('📍 Start container node:', {
-                    nodeType: node.nodeType,
-                    nodeName: node.nodeName,
-                    nodeValue: node.nodeValue?.substring(0, 50),
-                    node: node
-                });
-                
                 // Text node হলে তার parent element নিবো
                 const element = (node.nodeType === 3) ? node.parentElement : node;
-                
-                debugLog('✅ Selection element found:', {
-                    tagName: element?.tagName,
-                    className: element?.className,
-                    id: element?.id,
-                    element: element
-                });
-                
                 return element;
             } catch (e) {
-                console.error('❌ _getSelectionElement error:', e);
+                console.warn('_getSelectionElement error:', e);
                 return null;
             }
         };
@@ -283,15 +193,15 @@
                         }
                     }
                     
-                    if (!matched) return null; // Unknown font
+                    if (!matched) return null;
                     matches.add(matched);
                     
-                    if (matches.size > 1) return null; // Multiple fonts
+                    if (matches.size > 1) return null;
                 }
 
                 return matches.size === 1 ? Array.from(matches)[0] : null;
             } catch (e) {
-                console.warn('❌ _getSelectionCommonFont error:', e);
+                console.warn('_getSelectionCommonFont error:', e);
                 return null;
             }
         };
@@ -326,7 +236,7 @@
                 return null;
             }
 
-            debugLog('📐 [Selection] font size control type:', control.tagName, 'options count:', options.length);
+            debugLog('font size control type:', control.tagName, 'options count:', options.length);
 
             try {
                 const sel = window.getSelection();
@@ -361,7 +271,7 @@
 
                 return matches.size === 1 ? Array.from(matches)[0] : null;
             } catch (e) {
-                console.warn('❌ _getSelectionCommonFontSize error:', e);
+                console.warn('_getSelectionCommonFontSize error:', e);
                 return null;
             }
         };
@@ -375,66 +285,22 @@
          * @returns {Object|null} - বিস্তারিত analysis অথবা null
          */
         RichTextEditor.prototype.analyzeSelection = function () {
-            debugGroup('📊 === SELECTION ANALYSIS ===');
             const sel = window.getSelection();
-            
-            debugLog('🔍 Window Selection:', sel);
-            debugLog('📌 rangeCount:', sel ? sel.rangeCount : 'No selection');
+            debugLog('analyzeSelection called, rangeCount:', sel ? sel.rangeCount : 0);
             
             if (!sel || sel.rangeCount === 0) {
-                console.warn('⚠️ No selection available');
-                debugGroupEnd();
                 return null;
             }
 
             const range = sel.getRangeAt(0);
-            const {
-                startContainer,
-                endContainer,
-                startOffset,
-                endOffset,
-                collapsed
-            } = range;
+            const { startContainer, endContainer, startOffset, endOffset, collapsed } = range;
 
-            debugLog('📍 START CONTAINER:', {
-                nodeName: startContainer.nodeName,
-                nodeType: startContainer.nodeType,
-                offset: startOffset,
-                content: startContainer.nodeValue ? startContainer.nodeValue.substring(0, 100) : null
-            });
-            
-            debugLog('📍 END CONTAINER:', {
-                nodeName: endContainer.nodeName,
-                nodeType: endContainer.nodeType,
-                offset: endOffset,
-                content: endContainer.nodeValue ? endContainer.nodeValue.substring(0, 100) : null
-            });
-
-            // Selection এর মধ্যে থাকা text nodes খুঁজে বের করা
             const textNodes = this._getSelectedTextNodes(range);
-            debugLog('📝 Text Nodes Selected:', textNodes.length);
-            textNodes.forEach((nodeInfo, i) => {
-                debugLog(`  [${i}]: "${nodeInfo.text}"`);
-            });
-            
-            // Selection এর মধ্যে থাকা element nodes
             const elements = this._getSelectedElements(range);
-            debugLog('🏷️ Elements Selected:', elements.length);
-            elements.forEach((el, i) => {
-                debugLog(`  [${i}]: <${el.tagName.toLowerCase()}> - ${el.className || 'no class'}`);
-            });
-            
-            // Block elements
             const blockElements = elements.filter(el => this._isBlockElement(el));
-            debugLog('📦 Block Elements:', blockElements.length);
-            blockElements.forEach((el, i) => {
-                debugLog(`  [${i}]: <${el.tagName.toLowerCase()}>`);
-            });
-
-            // বর্তমান formatting detect করা
             const formatting = this._detectCurrentFormatting(range);
 
-            const result = {
+            return {
                 collapsed,
                 text: range.toString(),
                 textLength: range.toString().length,
@@ -457,13 +323,6 @@
                 commonAncestor: range.commonAncestorContainer.nodeName,
                 inEditor: this.editor.contains(range.commonAncestorContainer)
             };
-            
-            debugLog('✅ ANALYSIS RESULT:', result);
-            debugLog(`📊 Summary: "${result.text}" (${result.textLength} chars, collapsed: ${result.collapsed})`);
-            debugLog('✅ === END SELECTION ANALYSIS ===');
-            debugGroupEnd();
-            
-            return result;
         };
 
         /**
@@ -666,7 +525,7 @@
                 div.appendChild(range.cloneContents());
                 return div.innerHTML;
             } catch (e) {
-                console.error('❌ getSelectedHTML error:', e);
+                console.warn('getSelectedHTML error:', e);
                 return '';
             }
         };
@@ -690,7 +549,7 @@
                 
                 return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
             } catch (e) {
-                console.warn('❌ _rgbToHex error:', e);
+                console.warn('_rgbToHex error:', e);
                 return rgb;
             }
         };
@@ -712,7 +571,7 @@
                 debugLog('✅ Element selected:', element);
                 return true;
             } catch (e) {
-                console.error('❌ selectElement error:', e);
+                console.warn('selectElement error:', e);
                 return false;
             }
         };
@@ -733,7 +592,7 @@
                 debugLog(`✅ Selection collapsed to ${toStart ? 'start' : 'end'}`);
                 return true;
             } catch (e) {
-                console.error('❌ collapseSelection error:', e);
+                console.warn('collapseSelection error:', e);
                 return false;
             }
         };
@@ -748,7 +607,7 @@
                 if (!sel || sel.rangeCount === 0) return null;
                 return sel.getRangeAt(0);
             } catch (e) {
-                console.error('❌ getSelectionRange error:', e);
+                console.warn('getSelectionRange error:', e);
                 return null;
             }
         };

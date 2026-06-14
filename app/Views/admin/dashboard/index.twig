@@ -1,256 +1,368 @@
-{% extends "admin/layout.twig" %}
-{# ============================
-FILE: templates/blog_dashboard.twig
-============================ #}
-{% import "_macros/dashboard_macros.twig" as ui %}
+{% extends"admin/layout.twig" %}
+{% import"_macros/dashboard_macros.twig" as ui %}
 {% block title %}Admin Dashboard{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid">
-    {# =========================
-      Dashboard Header
-      ========================= #}
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-speedometer2"></i> Welcome back, {{ admin_user.full_name|default(admin_user.username|title) }}
+
+{# ── Gradient Page Header ── #}
+<div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+    <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+  </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+        <i class="lucide lucide-gauge" style="width:1.5em;height:1.5em;"></i>
       </div>
-      <p class="admin-page-subtitle">Content overview &middot; {{ "now"|date("F j, Y") }}</p>
-    </div>
-    {# =========================
-      User Roles & Permissions
-      ========================= #}
-    {% if user_roles and user_roles|length > 0 %}
-      <div class="alert alert-info alert-dismissible fade show rounded-4 mb-4"
-           role="alert">
-        <div class="d-flex align-items-start justify-content-between">
-          <div>
-            <h6 class="alert-heading mb-2">
-              <i class="bi bi-shield-check me-2"></i>Your Access Level
-            </h6>
-            <div class="d-flex flex-wrap gap-2 mb-2">
-              {% for role in user_roles %}
-                <span class="badge bg-{{ role.name|replace({"_": " "}) |title }} text-white">
-                  <i class="bi bi-shield-check me-1"></i>{{ role.name|replace({"_": " "}) |title }}
-                </span>
-              {% endfor %}
-            </div>
-            {% if user_permissions and user_permissions|length > 0 %}
-              {% set module_names = [] %}
-              {% for permission in user_permissions %}
-                {% if permission.module is not null %}
-                  {% set module_names = module_names | merge([permission.module]) %}
-                {% endif %}
-              {% endfor %}
-              <small class="text-muted d-block">You have <strong>{{ user_permissions|length }}</strong> permissions across {{ module_names|unique|length }} modules</small>
-            {% endif %}
-          </div>
-          <button type="button"
-                  class="modern-btn-close"
-                  data-bs-dismiss="alert"
-                  aria-label="Close"></button>
-        </div>
-      </div>
-    {% endif %}
-    {# =========================
-      Stat Cards
-      ========================= #}
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card success h-100">
-          <div class="stat-label">Total Posts</div>
-          <h3 class="stat-value">{{ stats.total_posts|default(0) }}</h3>
-          <div class="stat-change">+{{ stats.new_posts_today|default(0) }} today</div>
-          <i class="bi bi-journal-text stat-icon"></i>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card info h-100">
-          <div class="stat-label">Comments Today</div>
-          <h3 class="stat-value">{{ stats.today_comments|default(0) }}</h3>
-          <div class="stat-change">Last sync {{ last_sync_at|default("now") |date("H:i") }}</div>
-          <i class="bi bi-chat-dots stat-icon"></i>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card warning h-100">
-          <div class="stat-label">Pending Reviews</div>
-          <h3 class="stat-value">{{ stats.pending_reviews|default(0) }}</h3>
-          <div class="stat-change">Drafts: {{ stats.draft_count|default(0) }}</div>
-          <i class="bi bi-hourglass-split stat-icon"></i>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card primary h-100">
-          <div class="stat-label">Subscribers</div>
-          <h3 class="stat-value">{{ stats.subscribers|default(0) }}</h3>
-          <div class="stat-change">New: {{ stats.new_subscribers|default(0) }}</div>
-          <i class="bi bi-people stat-icon"></i>
-        </div>
+      <div>
+        <h1 class="text-xl font-black tracking-tight sm:text-2xl">Welcome back, {{ admin_user.full_name|default(admin_user.username|title) }}</h1>
+        <p class="mt-1 text-sm text-indigo-200/80">Content overview for {{ "now"|date("F j, Y") }}</p>
       </div>
     </div>
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">Service Application & Payment Stats</h6>
-        <div class="d-flex align-items-center gap-2">
-          <a href="/admin/applications" class="modern-btn modern-btn-white btn-sm">Applications</a>
-          <a href="/admin/applications/receipts"
-             class="modern-btn modern-btn-white btn-sm">Receipts</a>
-        </div>
-      </div>
-      <div class="admin-panel-card-body">
-        <div class="row g-3">
-          <div class="col-12 col-sm-6 col-xl-3">
-            <a href="/admin/applications"
-               class="d-block h-100 text-decoration-none text-reset">
-              <div class="stat-card primary h-100">
-                <div class="stat-label">Service Applications</div>
-                <h3 class="stat-value">{{ stats.service_applications_total|default(0) }}</h3>
-                <div class="stat-change">
-                  Pending {{ stats.service_applications_pending|default(0) }} · Processing {{ stats.service_applications_processing|default(0) }}
-                </div>
-                <i class="bi bi-file-earmark-text stat-icon"></i>
-              </div>
-            </a>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <a href="/admin/applications?status=approved"
-               class="d-block h-100 text-decoration-none text-reset">
-              <div class="stat-card success h-100">
-                <div class="stat-label">Approved</div>
-                <h3 class="stat-value">{{ stats.service_applications_approved|default(0) }}</h3>
-                <div class="stat-change">Rejected {{ stats.service_applications_rejected|default(0) }}</div>
-                <i class="bi bi-check2-circle stat-icon"></i>
-              </div>
-            </a>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <a href="/admin/applications/receipts"
-               class="d-block h-100 text-decoration-none text-reset">
-              <div class="stat-card info h-100">
-                <div class="stat-label">Payment Records</div>
-                <h3 class="stat-value">{{ stats.service_payments_total|default(0) }}</h3>
-                <div class="stat-change">
-                  Paid {{ stats.service_payments_paid|default(0) }} · Pending {{ stats.service_payments_pending|default(0) }}
-                </div>
-                <i class="bi bi-credit-card stat-icon"></i>
-              </div>
-            </a>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-3">
-            <a href="/admin/applications/receipts"
-               class="d-block h-100 text-decoration-none text-reset">
-              <div class="stat-card warning h-100">
-                <div class="stat-label">Payment Revenue</div>
-                <h3 class="stat-value">{{ stats.service_payments_revenue|default(0) |number_format(2) }}</h3>
-                <div class="stat-change">Failed {{ stats.service_payments_failed|default(0) }}</div>
-                <i class="bi bi-cash-coin stat-icon"></i>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-    {# =========================
-      Recent Posts
-      ========================= #}
-    <div class="row g-4">
-      <div class="col-12 col-xxl-8">
-        <div class="admin-panel-card border-0 shadow-sm rounded-4">
-          <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Recent Posts</h5>
-            <a href="/admin/posts" class="modern-btn btn-sm btn-outline-primary">View all</a>
-          </div>
-          <div class="admin-panel-card-body p-0">
-            {% if recent_posts is not empty %}
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th>ID</th>
-                      <th>Title</th>
-                      <th>Author</th>
-                      <th>Status</th>
-                      <th>Published</th>
-                      <th class="text-end">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for post in recent_posts %}
-                      <tr>
-                        <td>#{{ post.id }}</td>
-                        <td class="fw-semibold">{{ post.title }}</td>
-                        <td>{{ post.author_name }}</td>
-                        <td>{{ ui.status_badge(post.status) }}</td>
-                        <td class="text-muted small">{{ post.published_at|date("d M, Y h:i A") }}</td>
-                        <td class="text-end">
-                          <a href="/admin/posts/view?id={{ post.id }}"
-                             class="modern-btn btn-sm btn-outline-secondary">View</a>
-                          <a href="/admin/posts/edit?id={{ post.id }}"
-                             class="modern-btn btn-sm btn-primary">Edit</a>
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="p-4">{{ ui.empty_state('No recent posts', 'New blog posts will appear here.') }}</div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      {# Quick Actions & Recent Comments #}
-      <div class="col-12 col-xxl-4">
-        <div class="admin-panel-card mb-4">
-          <div class="admin-panel-card-header">
-            <h6 class="mb-0">Quick Actions</h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="d-grid gap-2">
-              <a class="modern-btn modern-btn-white" href="/admin/posts/create"><i class="bi bi-pencil-square me-2"></i>New Post</a>
-              <a class="modern-btn modern-btn-white" href="/admin/categories"><i class="bi bi-folder me-2"></i>Categories</a>
-              <a class="modern-btn modern-btn-white" href="/admin/tags"><i class="bi bi-hash me-2"></i>Tags</a>
-              <a class="modern-btn modern-btn-white" href="/admin/comments"><i class="bi bi-chat-dots me-2"></i>Comments</a>
-            </div>
-          </div>
-        </div>
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header">
-            <h6 class="mb-0">Recent Comments</h6>
-          </div>
-          <div class="admin-panel-card-body">
-            {% if recent_comments is not empty %}
-              <ul class="list-unstyled mb-0">
-                {% for comment in recent_comments %}
-                  <li class="mb-3">
-                    <div class="fw-semibold">{{ comment.author }}</div>
-                    <div class="small text-muted">On: {{ comment.post_title }}</div>
-                    <div class="text-muted small">{{ comment.created_at|date("d M, Y h:i A") }}</div>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              {{ ui.empty_state('No comments yet', "Readers' comments will appear here.") }}
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-    {# Posts Trend Chart Placeholder #}
-    <div class="admin-panel-card mt-4">
-      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">Posts & Comments Trend</h6>
-        <div class="text-muted small">Last 30 days</div>
-      </div>
-      <div class="admin-panel-card-body">
-        <div id="chart-posts" class="chart-container w-100"></div>
-        <div class="small text-muted mt-2">Hook your JS chart here (e.g., ApexCharts / Chart.js)</div>
-      </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="/admin/posts/create" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i> New Post
+      </a>
+      <a href="/admin/applications" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-briefcase" style="width:0.875em;height:0.875em;"></i> Applications
+      </a>
+      <a href="/admin/applications/receipts" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-receipt" style="width:0.875em;height:0.875em;"></i> Receipts
+      </a>
     </div>
   </div>
-  <div id="admin-dashboard-data"
-       data-trend-labels="{{ trend.labels|default([]) |json_encode|e('html_attr') }}"
-       data-trend-series="{{ trend.series|default([]) |json_encode|e('html_attr') }}"
-       class="inl-a-0006"></div>
+</div>
+
+ {% if user_roles and user_roles|length > 0 %}
+ <div class="scroll-fade-in flex items-start gap-4 rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-sky-50/80 p-4 shadow-sm dark:border-sky-800/60 dark:from-sky-900/20 dark:to-blue-900/15" role="alert">
+  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-shield-check" style="width:1.125em;height:1.125em;"></i>
+  </div>
+  <div class="min-w-0 flex-1">
+   <div class="mb-2 font-semibold text-slate-900 dark:text-sky-200">Your Access Level</div>
+   <div class="flex flex-wrap gap-2">
+    {% for role in user_roles %}
+    <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200/60 bg-white px-2.5 py-0.5 text-xs font-medium text-indigo-700 shadow-sm dark:bg-slate-800 dark:border-slate-600">
+     <i class="lucide lucide-shield-check" style="width:0.75em;height:0.75em;"></i>{{ role.name|replace({"_":""}) |title }}
+    </span>
+    {% endfor %}
+   </div>
+   {% if user_permissions and user_permissions|length > 0 %}
+    {% set module_names = [] %}
+    {% for permission in user_permissions %}
+     {% if permission.module is not null %}
+      {% set module_names = module_names | merge([permission.module]) %}
+     {% endif %}
+    {% endfor %}
+    <p class="mt-2 text-sm text-slate-600/80 dark:text-sky-300/80">
+     You have <strong>{{ user_permissions|length }}</strong> permissions across {{ module_names|unique|length }} modules.
+    </p>
+   {% endif %}
+  </div>
+  <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-indigo-400 transition-all duration-150 hover:bg-indigo-100 hover:text-indigo-700" data-brox-dismiss="alert" aria-label="Close">
+   <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+  </button>
+ </div>
+ {% endif %}
+
+ <section class="scroll-fade-in grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Posts</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+      <i class="lucide lucide-file-text" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.total_posts|default(0) }}</div>
+    {% if stats.new_posts_today|default(0) > 0 %}
+     <div class="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-600">
+      <i class="lucide lucide-trending-up" style="width:0.75em;height:0.75em;"></i>
+      +{{ stats.new_posts_today }} today
+     </div>
+    {% endif %}
+   </div>
+  </div>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Comments Today</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+      <i class="lucide lucide-message-circle" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.today_comments|default(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Last sync {{ last_sync_at|default("now")|date("H:i") }}</div>
+   </div>
+  </div>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Reviews</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+      <i class="lucide lucide-hourglass" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.pending_reviews|default(0) }}</div>
+    {% if stats.draft_count|default(0) > 0 %}
+     <div class="mt-1 text-xs text-slate-500">{{ stats.draft_count }} drafts</div>
+    {% endif %}
+   </div>
+  </div>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Subscribers</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+      <i class="lucide lucide-users" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.subscribers|default(0) }}</div>
+    {% if stats.new_subscribers|default(0) > 0 %}
+     <div class="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-600">
+      <i class="lucide lucide-trending-up" style="width:0.75em;height:0.75em;"></i>
+      +{{ stats.new_subscribers }} new
+     </div>
+    {% endif %}
+   </div>
+  </div>
+ </section>
+
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-layers" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div class="flex-1">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Service Application & Payment Stats</h2>
+    <p class="text-xs text-slate-500">Quick view of service operations and payment activity.</p>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/applications" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">Applications</a>
+    <a href="/admin/applications/receipts" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">Receipts</a>
+   </div>
+  </div>
+  <div class="p-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Service Applications</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+       <i class="lucide lucide-file-text" style="width:1em;height:1em;"></i>
+      </div>
+     </div>
+     <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.service_applications_total|default(0) }}</div>
+     <div class="mt-1 text-xs text-slate-500">Pending {{ stats.service_applications_pending|default(0) }}</div>
+    </div>
+   </div>
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+       <i class="lucide lucide-check-circle" style="width:1em;height:1em;"></i>
+      </div>
+     </div>
+     <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.service_applications_approved|default(0) }}</div>
+     <div class="mt-1 flex items-center gap-1 text-xs font-medium text-rose-600">
+      <i class="lucide lucide-trending-down" style="width:0.75em;height:0.75em;"></i>
+      {{ stats.service_applications_rejected|default(0) }} rejected
+     </div>
+    </div>
+   </div>
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payment Records</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+       <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i>
+      </div>
+     </div>
+     <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.service_payments_total|default(0) }}</div>
+     <div class="mt-1 text-xs text-slate-500">Paid {{ stats.service_payments_paid|default(0) }}</div>
+    </div>
+   </div>
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Payment Revenue</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+       <i class="lucide lucide-circle-dollar-sign" style="width:1em;height:1em;"></i>
+      </div>
+     </div>
+     <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.service_payments_revenue|default(0)|number_format(2) }}</div>
+     <div class="mt-1 flex items-center gap-1 text-xs font-medium text-rose-600">
+      <i class="lucide lucide-trending-down" style="width:0.75em;height:0.75em;"></i>
+      {{ stats.service_payments_failed|default(0) }} failed
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <div class="grid gap-6 xl:grid-cols-12">
+  <div class="xl:col-span-8">
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center justify-between gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+     <div class="flex items-center gap-2.5">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+       <i class="lucide lucide-file-text" style="width:0.875em;height:0.875em;"></i>
+      </div>
+      <div>
+       <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Recent Posts</h2>
+       <p class="text-xs text-slate-500">Latest content activity</p>
+      </div>
+     </div>
+     <a href="/admin/posts" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-indigo-50 hover:-translate-y-0.5">
+      View all
+      <i class="lucide lucide-arrow-right" style="width:0.75rem;height:0.75rem"></i>
+     </a>
+    </div>
+
+    {% if recent_posts is not empty %}
+     <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+       <thead>
+        <tr class="border-b border-slate-100 bg-slate-50/50">
+         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
+         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Title</th>
+         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Author</th>
+         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+         <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Published</th>
+         <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
+        </tr>
+       </thead>
+       <tbody class="divide-y divide-slate-100">
+        {% for post in recent_posts %}
+        <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+         <td class="px-5 py-3.5"><span class="font-mono text-xs font-semibold text-slate-900">#{{ post.id }}</span></td>
+         <td class="px-5 py-3.5 text-sm font-medium text-slate-700">{{ post.title }}</td>
+         <td class="px-5 py-3.5 text-sm text-slate-500">{{ post.author_name }}</td>
+         <td class="px-5 py-3.5">{{ ui.status_badge(post.status) }}</td>
+         <td class="px-5 py-3.5 text-xs text-slate-500">{{ post.published_at|date("d M, Y") }}</td>
+         <td class="px-5 py-3.5 text-right">
+          <div class="inline-flex items-center gap-1.5">
+           <a href="/admin/posts/view?id={{ post.id }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">View</a>
+           <a href="/admin/posts/edit?id={{ post.id }}" class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5">Edit</a>
+          </div>
+         </td>
+        </tr>
+        {% endfor %}
+       </tbody>
+      </table>
+     </div>
+    {% else %}
+     <div class="p-5">
+      <div class="flex flex-col items-center justify-center gap-3 text-center">
+       <i class="lucide lucide-inbox text-3xl text-slate-300"></i>
+       <div class="text-sm font-semibold text-slate-700">No recent posts</div>
+       <div class="text-xs text-slate-500">New blog posts will appear here.</div>
+      </div>
+     </div>
+    {% endif %}
+   </section>
+  </div>
+
+  <div class="xl:col-span-4 space-y-6">
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+      <i class="lucide lucide-zap" style="width:0.875em;height:0.875em;"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Quick Actions</h2>
+      <p class="text-xs text-slate-500">Common editorial shortcuts.</p>
+     </div>
+    </div>
+    <div class="p-5 grid gap-2">
+     <a class="group inline-flex items-center gap-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-2.5 text-xs font-semibold text-indigo-700 transition-all hover:bg-indigo-100 hover:-translate-y-0.5" href="/admin/posts/create">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600 transition-transform group-hover:scale-110"><i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i></div>
+      New Post
+      <i class="lucide lucide-arrow-right ml-auto" style="width:0.875em;height:0.875em;color:rgb(165 180 252);transition:transform 0.2s;"></i>
+     </a>
+     <a class="group inline-flex items-center gap-2.5 rounded-lg border border-amber-100 bg-amber-50/50 px-4 py-2.5 text-xs font-semibold text-amber-700 transition-all hover:bg-amber-100 hover:-translate-y-0.5" href="/admin/categories">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600 transition-transform group-hover:scale-110"><i class="lucide lucide-folder" style="width:0.875em;height:0.875em;"></i></div>
+      Categories
+      <i class="lucide lucide-arrow-right ml-auto" style="width:0.875em;height:0.875em;color:rgb(252 211 77);transition:transform 0.2s;"></i>
+     </a>
+     <a class="group inline-flex items-center gap-2.5 rounded-lg border border-cyan-100 bg-cyan-50/50 px-4 py-2.5 text-xs font-semibold text-cyan-700 transition-all hover:bg-cyan-100 hover:-translate-y-0.5" href="/admin/tags">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-100 text-cyan-600 transition-transform group-hover:scale-110"><i class="lucide lucide-hash" style="width:0.875em;height:0.875em;"></i></div>
+      Tags
+      <i class="lucide lucide-arrow-right ml-auto" style="width:0.875em;height:0.875em;color:rgb(165 243 252);transition:transform 0.2s;"></i>
+     </a>
+     <a class="group inline-flex items-center gap-2.5 rounded-lg border border-sky-100 bg-sky-50/50 px-4 py-2.5 text-xs font-semibold text-sky-700 transition-all hover:bg-sky-100 hover:-translate-y-0.5" href="/admin/comments">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600 transition-transform group-hover:scale-110"><i class="lucide lucide-message-circle" style="width:0.875em;height:0.875em;"></i></div>
+      Comments
+      <i class="lucide lucide-arrow-right ml-auto" style="width:0.875em;height:0.875em;color:rgb(125 211 252);transition:transform 0.2s;"></i>
+     </a>
+    </div>
+   </section>
+
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+      <i class="lucide lucide-message-circle" style="width:0.875em;height:0.875em;"></i>
+     </div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Recent Comments</h2>
+    </div>
+    <div class="p-5">
+     {% if recent_comments is not empty %}
+      <ul class="space-y-3">
+       {% for comment in recent_comments %}
+        <li class="group rounded-lg border border-transparent p-3 transition-all hover:border-slate-100 hover:bg-slate-50">
+         <div class="flex items-start gap-2.5">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">{{ comment.author|first|default('?')|upper }}</div>
+          <div class="min-w-0 flex-1">
+           <div class="text-sm font-semibold text-slate-900">{{ comment.author }}</div>
+           <div class="mt-0.5 text-xs text-slate-500">On: {{ comment.post_title }}</div>
+           <div class="mt-0.5 text-xs text-slate-400">{{ comment.created_at|date("d M, Y h:i A") }}</div>
+          </div>
+         </div>
+        </li>
+       {% endfor %}
+      </ul>
+     {% else %}
+      <div class="flex flex-col items-center justify-center gap-3 py-8 text-center">
+       <i class="lucide lucide-inbox text-3xl text-slate-300"></i>
+       <div class="text-sm font-semibold text-slate-700">No comments yet</div>
+       <div class="text-xs text-slate-500">Readers' comments will appear here.</div>
+      </div>
+     {% endif %}
+    </div>
+   </section>
+  </div>
+ </div>
+
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center justify-between gap-2.5 border-b border-slate-100 bg-gradient-to-r from-cyan-50/50 to-sky-50/50 px-5 py-4">
+   <div class="flex items-center gap-2.5">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-100 text-cyan-600">
+     <i class="lucide lucide-bar-chart-3" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Posts & Comments Trend</h2>
+     <p class="text-xs text-slate-500">Last 30 days trend placeholder for the chart widget.</p>
+    </div>
+   </div>
+   <div class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">Last 30 days</div>
+  </div>
+  <div class="p-5">
+   <div id="chart-posts" class="chart-container w-full" style="min-height:200px;"></div>
+  </div>
+ </section>
+
+ <div id="admin-dashboard-data"
+  data-trend-labels="{{ trend.labels|default([]) |json_encode|e('html_attr') }}"
+  data-trend-series="{{ trend.series|default([]) |json_encode|e('html_attr') }}"></div>
+</div>
 {% endblock %}
 {% block scripts %}{{ parent() }}{% endblock %}

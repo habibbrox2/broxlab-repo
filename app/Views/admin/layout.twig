@@ -5,547 +5,531 @@
 {# ===== Imports ===== #}
 {% import '_macros/flash.twig' as flash_macros %}
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
-    {% if auth_user.id %}
-    <script>
-      // expose the list of permissions the current admin has for client-side checks
-      window.ADMIN_PERMISSIONS = {{ getUserPermissions(auth_user.id)|json_encode|raw }};
-      // super-admins bypass every permission check
-      window.IS_SUPER_ADMIN = {{ auth_user.is_super_admin ? 'true' : 'false' }};
-      // expose current user id for RBAC API lookups
-      window.AUTH_USER_ID = {{ auth_user.id|default('null') }};
-    </script>
-    {% endif %}
+ <meta charset="UTF-8">
+ <meta http-equiv="X-UA-Compatible" content="IE=edge">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+ <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
+ <meta name="robots" content="noindex, nofollow">
+ <meta name="csrf-token" content="{{ csrf_token }}">
+ {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
 
-    <script>
-      (function () {
-        try {
-          var root = document.documentElement;
-          var savedTheme = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
-          var isValidSavedTheme = savedTheme === 'dark' || savedTheme === 'light';
-          var resolvedTheme = isValidSavedTheme
-            ? savedTheme
-            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+ <script>
+ (function () {
+ try {
+ var root = document.documentElement;
+ var savedTheme = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
+ var isValidSavedTheme = savedTheme === 'dark' || savedTheme === 'light';
+ var resolvedTheme = isValidSavedTheme
+ ? savedTheme
+ : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
-          root.setAttribute('data-theme', resolvedTheme);
-          root.style.colorScheme = resolvedTheme;
-        } catch (error) {
-          // Ignore storage/media-query failures and keep default light theme.
-        }
-      })();
-    </script>
+ root.setAttribute('data-theme', resolvedTheme);
+ root.style.colorScheme = resolvedTheme;
+ } catch (error) {
+ // Ignore storage/media-query failures and keep the default theme.
+ }
+ })();
+ </script>
 
-    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">
-
-    {# Fonts #}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">  {# Fonts — preload + swap (non render-blocking) #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap" rel="stylesheet">
+  </noscript>
 
-    {# Core styles - Bundled for Performance - CDN Subdomain #}
-    <link rel="stylesheet" href="{{ asset('/cdn/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/dist/admin-bundle.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
-    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
-    <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
+ {# Core styles - Tailwind single source of truth #}
+ <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-admin.css') }}">
+ <link rel="stylesheet" href="{{ asset('/assets/css/admin-sidebar-polish.css') }}">
+ <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"
+        media="print" onload="this.media='all'">
+ <noscript><link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"></noscript>
 
-    {# Icons - CDN #}
-    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
+ {# AI Assistant styles #}
+ <link rel="stylesheet" href="{{ asset('/assets/ai/css/assistant.css') }}">
 
-    {# Third-party styles - CDN #}
-    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
-    
-    {# Page-specific styles #}
-    {% block stylesheets %}{% endblock %}
+ {# Third-party styles #}
+ <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
+ <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
 
+ {% block stylesheets %}{% endblock %}
 </head>
-<body data-admin-dir="{{ admin_dir|default('/admin') }}">
+<body data-admin-dir="{{ admin_dir|default('/admin') }}" class="bg-white dark:bg-slate-950">
+ <div class="min-h-screen flex flex-col">
+  {# ===== TOP HEADER/NAVBAR ===== #}
+  <header class="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
+   <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2.5 gap-3">
+    {# Mobile menu toggle #}
+    <button id="sidebarToggle" class="lg:hidden topbar-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="adminSidebar">
+     <i class="lucide lucide-menu w-5 h-5"></i>
+    </button>
 
-  <!-- Header -->
-  <header class="navbar navbar-dark bg-dark shadow-sm sticky-top">
-    <div class="container-fluid">
-      <button class="sidebar-toggle btn btn-dark d-lg-none me-2" type="button" aria-label="Toggle sidebar">
-        <i class="bi bi-list"></i>
-      </button>
-      <a class="navbar-brand d-flex align-items-center" href="/admin/dashboard">
-        <i class="bi bi-speedometer2 me-2"></i> Admin Panel
-      </a>
-      <div class="d-flex align-items-center ms-auto gap-3 admin-topbar-actions">
-        <!-- Admin Notification Bell -->
-        <div class="admin-notification-dropdown-wrap brox-notification-wrapper" data-notification-menu>
-          {% set admin_unread_count = unread_count|default(0) %}
-          <a class="admin-notification-bell"
-             href="#"
-             id="adminNotificationBell"
-             data-notification-bell
-             aria-expanded="false"
-             title="Notifications">
-            <i class="bi bi-bell-fill admin-notification-bell-icon"></i>
-            <span id="adminNotificationBadge"
-                  data-notification-badge
-                  class="admin-notification-badge {% if admin_unread_count <= 0 %}d-none{% endif %}">
-              <span id="adminNotificationCount" data-notification-count>{{ admin_unread_count }}</span>
-            </span>
-          </a>
-          <div class="admin-notification-dropdown" data-notification-dropdown aria-labelledby="adminNotificationBell">
-            <div class="admin-notification-dropdown-header">
-              <h6 class="admin-notification-dropdown-title">
-                <i class="bi bi-bell-fill me-2"></i>Notifications
-              </h6>
-            </div>
-            <div id="adminNotificationsList"
-                 data-notification-list
-                 class="admin-notification-list"
-                 data-user-id="{{ auth_user.id|default('') }}">
-              {% if notifications is defined and notifications is iterable and notifications|length > 0 %}
-                {% for notif in notifications|slice(0, 10) %}
-                  <div class="notification-entry admin-notification-entry {% if notif.is_read is defined and notif.is_read == 0 %}bg-light border-start border-primary border-2{% endif %}"
-                       data-notification-id="{{ notif.id }}"
-                       {% if notif.action_url is defined and notif.action_url %}data-action-url="{{ notif.action_url }}"{% endif %}>
-                    <div class="d-flex align-items-start gap-2">
-                      <div class="flex-grow-1">
-                        <div class="fw-semibold small mb-1 admin-notification-entry-title">{{ notif.title }}</div>
-                        <div class="small text-muted mb-1 admin-notification-entry-message">{{ notif.message }}</div>
-                        <div class="small text-secondary">{{ notif.created_at|date("n/j/Y, g:i:s A") }}</div>
-                      </div>
-                      {% if notif.is_read is defined and notif.is_read == 0 %}
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary admin-notification-read-btn"
-                                data-action="mark-read"
-                                data-notification-id="{{ notif.id }}">Read</button>
-                      {% endif %}
-                    </div>
-                  </div>
-                {% endfor %}
-              {% else %}
-                <div class="admin-notification-empty text-muted">
-                  <i class="bi bi-inbox admin-notification-empty-icon"></i>
-                  <p class="admin-notification-empty-text">No notifications yet</p>
-                </div>
-              {% endif %}
-            </div>
-            <div class="dropdown-divider admin-notification-divider"></div>
-            <a href="/admin/my/notifications" class="dropdown-item admin-notification-view-all">
-              <i class="bi bi-arrow-right me-1"></i>View all notifications
-            </a>
-          </div>
-        </div>
+    {# Brand #}
+    <a class="flex items-center gap-2 flex-shrink-0" href="/admin/dashboard" aria-label="Go to dashboard">
+     <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white">
+      <i class="lucide lucide-gauge w-4 h-4"></i>
+     </div>
+     <div class="hidden sm:block">
+      <div class="text-sm font-bold text-slate-900 dark:text-white leading-none">BroxLab</div>
+      <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Admin</div>
+     </div>
+    </a>
 
-        <button
-          class="btn btn-dark btn-sm"
-          id="broxThemeToggle"
-          type="button"
-          title="Toggle theme"
-          aria-label="Toggle dark mode"
-          aria-pressed="false">
-          <i class="bi bi-circle-half"></i>
-        </button>
-
-        <!-- Server Status Indicator -->
-        <div class="server-status-indicator dropdown" id="serverStatusIndicator" data-bs-toggle="dropdown" aria-expanded="false" title="Checking server status..." aria-label="Server status">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-server" id="serverStatusIcon"></i>
-            <span class="server-status-text d-none d-md-inline ms-1" id="serverStatusText">Checking</span>
-            <i class="bi bi-chevron-down ms-1" style="font-size: 0.7rem;"></i>
-          </div>
-          <ul class="dropdown-menu server-status-dropdown" aria-labelledby="serverStatusIndicator">
-            <li class="dropdown-header">Server Status</li>
-            <li><div class="server-status-item" data-service="database">
-                <i class="bi bi-database"></i>
-                <span>Database</span>
-                <span class="status-badge" data-status="checking">Checking</span>
-              </div></li>
-            <li><div class="server-status-item" data-service="cache">
-                <i class="bi bi-hdd-stack"></i>
-                <span>Cache</span>
-                <span class="status-badge" data-status="checking">Checking</span>
-              </div></li>
-            <li><div class="server-status-item" data-service="api">
-                <i class="bi bi-gear"></i>
-                <span>API</span>
-                <span class="status-badge" data-status="checking">Checking</span>
-              </div></li>
-            <li><div class="server-status-item" data-service="nodejs">
-                <i class="bi bi-code-slash"></i>
-                <span>Node.js</span>
-                <span class="status-badge" data-status="checking">Checking</span>
-              </div></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><div class="server-status-item">
-                <small class="text-muted" id="serverStatusLastCheck">Last checked: Never</small>
-              </div></li>
-          </ul>
-        </div>
-        {% if auth_user.is_authenticated %}
-        <div class="dropdown admin-user-menu" data-admin-user-menu>
-          <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle admin-user-toggle"
-            href="#"
-            id="adminUserMenu"
-            data-bs-toggle="dropdown"
-            data-admin-user-toggle
-            aria-expanded="false"
-            aria-haspopup="true">
-            <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile"
-                class="rounded-circle me-2 admin-user-avatar" style="width:32px; height:32px; object-fit:cover;">
-            <div class="d-none d-sm-block text-start admin-user-meta">
-              <div class="small">{{ auth_user.username }}</div>
-              {% if auth_user.roles is not empty %}
-                <div class="small text-info">{{ auth_user.roles|join(', ')|upper }}</div>
-              {% endif %}
-            </div>
-          </a>
-          <ul class="dropdown-menu text-small admin-user-dropdown" data-admin-user-dropdown aria-labelledby="adminUserMenu">
-            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-1"></i> Profile</a></li>
-            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
-            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-1"></i> My Notifications</a></li>
-            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-1"></i> Account Settings</a></li>
-
-            {% if auth_user.is_super_admin %}
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/roles"><i class="bi bi-shield-lock me-1"></i> Manage Roles</a></li>
-              <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/permissions"><i class="bi bi-key me-1"></i> Manage Permissions</a></li>
-            {% endif %}
-
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item admin-user-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
-          </ul>
-        </div>
-        {% endif %}
-
-      </div>
+    {# Search bar with Cmd+K hint #}
+    <div class="hidden lg:block admin-search-wrapper flex-1 max-w-md">
+     <i class="lucide lucide-search search-icon"></i>
+     <input
+      id="adminGlobalSearch"
+      type="search"
+      class="search-input"
+      placeholder="Search admin records…"
+      value="{{ search|default(pagination.search|default('')) }}">
+     <span class="kbd-hint" aria-hidden="true">Ctrl+K</span>
     </div>
+
+    {# Right section - icons and user menu #}
+    <div class="ml-auto flex items-center gap-0.5 sm:gap-1.5">
+     {% set admin_unread_count = unread_count|default(0) %}
+
+     {# Notification Bell #}
+     <div class="relative">
+      <button
+       id="adminNotificationBell"
+       type="button"
+       aria-expanded="false"
+       title="Notifications"
+       class="topbar-btn relative"
+       aria-label="Notifications">
+       <i class="lucide lucide-bell w-[1.125rem] h-[1.125rem]"></i>
+       {% if admin_unread_count > 0 %}
+        <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[1.125rem] h-[1.125rem] text-[0.625rem] font-bold text-white bg-red-500 rounded-full px-1">
+         <span id="adminNotificationCount">{{ admin_unread_count }}</span>
+        </span>
+       {% endif %}
+      </button>
+     </div>
+
+     {# Theme Toggle #}
+     <button
+      id="broxThemeToggle"
+      type="button"
+      title="Toggle theme"
+      aria-label="Toggle dark mode"
+      aria-pressed="false"
+      class="topbar-btn">
+      <i class="lucide lucide-circle-half w-[1.125rem] h-[1.125rem]"></i>
+     </button>
+
+     {# Server Status Indicator #}
+     <div class="relative">
+      <button
+       id="serverStatusIndicator"
+       type="button"
+       aria-expanded="false"
+       title="Checking server status..."
+       aria-label="Server status"
+       class="topbar-btn gap-1.5 px-2.5 w-auto">
+       <i class="lucide lucide-server w-[1.125rem] h-[1.125rem]" id="serverStatusIcon"></i>
+       <span class="hidden md:inline text-xs" id="serverStatusText">Checking</span>
+       <i class="lucide lucide-chevron-down w-3 h-3 opacity-50"></i>
+      </button>
+     </div>
+
+     {# User Menu #}
+     {% if auth_user.is_authenticated %}
+      <div class="relative" data-admin-user-menu>
+       <button
+        id="adminUserMenu"
+        type="button"
+        aria-expanded="false"
+        aria-haspopup="true"
+        class="inline-flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
+        <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile" class="w-7 h-7 rounded-full object-cover ring-2 ring-transparent group-hover:ring-indigo-300 dark:group-hover:ring-indigo-600 transition-all">
+        <div class="hidden sm:block text-left">
+         <div class="text-xs font-semibold text-slate-900 dark:text-white leading-tight">{{ auth_user.username }}</div>
+         {% if auth_user.roles is not empty %}
+          <div class="text-[0.625rem] font-medium text-indigo-600 dark:text-indigo-400 leading-tight">{{ auth_user.roles|join(', ')|upper }}</div>
+         {% endif %}
+        </div>
+        <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors"></i>
+       </button>
+
+       {# User dropdown menu #}
+       <div
+        data-admin-user-dropdown
+        class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 origin-top-right scale-95 opacity-0 invisible transition-all duration-150 ease-out pointer-events-none z-50"
+        style="transform-origin: top right;">
+
+        {# User info header #}
+        <div class="px-4 py-3">
+         <div class="flex items-center gap-3">
+          <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile" class="w-10 h-10 rounded-full object-cover" loading="lazy" width="40" height="40">
+          <div class="flex-1 min-w-0">
+           <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ auth_user.username }}</div>
+           <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ auth_user.email|default('') }}</div>
+          </div>
+         </div>
+        </div>
+
+        {# Menu items #}
+        <div class="py-2">
+         <a href="/admin/account-settings" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <i class="lucide lucide-user w-4 h-4"></i>
+          <span>Account Settings</span>
+         </a>
+         <a href="/admin/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <i class="lucide lucide-user-circle w-4 h-4"></i>
+          <span>View Profile</span>
+         </a>
+        </div>
+
+        {# Logout #}
+        <div class="py-2">
+         <form method="POST" action="/logout" class="px-4 py-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="w-full flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 px-0 py-2 rounded transition-colors -mx-0">
+           <i class="lucide lucide-log-out w-4 h-4"></i>
+           <span>Logout</span>
+          </button>
+         </form>
+        </div>
+       </div>
+      </div>
+     {% endif %}
+
+     {# Sidebar close button for mobile #}
+     <button id="sidebarClose" type="button" class="lg:hidden topbar-btn" aria-label="Close navigation">
+      <i class="lucide lucide-x w-4 h-4"></i>
+     </button>
+    </div>
+   </div>
   </header>
 
-  <div class="container-fluid">
-    <div class="row admin-shell-row">
+  {# Sidebar overlay for mobile #}
+  <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
 
-    {% set settings_children = [
-        {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
-    ] %}
+  {# Main container #}
+  <div class="flex flex-1 overflow-hidden">
 
-    {% if auth_user.is_super_admin %}
-        {% set settings_children = settings_children|merge([
-            {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
-            {'name': 'AI SYSTEM', 'url': '/admin/ai-system', 'key': 'ai-settings'},
-            {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'}
-        ]) %}
-    {% endif %}
-
-    {% set menu_items = [
-      {'name': 'Dashboard', 'icon': 'bi-speedometer2', 'url': '/admin/dashboard', 'key': 'dashboard'},
-      {'name': 'Analytics', 'icon': 'bi-bar-chart', 'url': '/admin/analytics', 'key': 'analytics'},
-      {'name': 'Activity', 'icon': 'bi-activity', 'url': '/admin/log-activity', 'key': 'log-activity'},
-      {'name': 'Mobiles', 'icon': 'bi-phone', 'url': '/admin/mobiles/all', 'key': 'mobiles', 'children': [
-          {'name': 'All Mobiles', 'url': '/admin/mobiles/all', 'key': 'mobiles-list'},
-          {'name': 'Add Mobile', 'url': '/admin/mobiles/insert', 'key': 'add-mobile'}
-      ]},
-      {'name': 'Posts', 'icon': 'bi-journal-text', 'url': '/admin/posts', 'key': 'posts', 'children': [
-          {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
-          {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
-      ]},
-
-      {'name': 'AI Conversations', 'icon': 'bi-chat-dots', 'url': '/admin/ai-chats', 'key': 'ai-chats'},
-      {'name': 'Services', 'icon': 'bi-award-fill', 'url': '/admin/services', 'key': 'services', 'children': [
-          {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
-          {'name': 'Create Service', 'url': '/admin/services/create', 'key': 'create-service'}
-      ]},
-      {'name': 'Service Applications', 'icon': 'bi-briefcase', 'url': '/admin/applications', 'key': 'applications', 'children': [
-          {'name': 'All Applications', 'url': '/admin/applications', 'key': 'all-applications'},
-          {'name': 'Pending', 'url': '/admin/applications?status=pending', 'key': 'pending-applications'},
-          {'name': 'Approved', 'url': '/admin/applications?status=approved', 'key': 'approved-applications'},
-          {'name': 'Rejected', 'url': '/admin/applications?status=rejected', 'key': 'rejected-applications'},
-          {'name': 'Receipts', 'url': '/admin/applications/receipts', 'key': 'applications-receipts'}
-      ]},
-      {'name': 'Pages', 'icon': 'bi-file-earmark-text', 'url': '/admin/pages', 'key': 'pages'},
-      {'name': 'Categories', 'icon': 'bi-tags', 'url': '/admin/categories', 'key': 'categories'},
-      {'name': 'Tags', 'icon': 'bi-hash', 'url': '/admin/tags', 'key': 'tags'},
-      {'name': 'Media Manager', 'icon': 'bi-image', 'url': '/admin/media', 'key': 'media'},
-      {'name': 'CV Management', 'icon': 'bi-file-earmark-person', 'url': '/admin/cvs', 'key': 'cv-management', 'children': [
-          {'name': 'CVs', 'url': '/admin/cvs', 'key': 'cvs'},
-          {'name': 'Templates', 'url': '/admin/cv-templates', 'key': 'cv-templates'}
-      ]},
-      {'name': 'Notifications', 'icon': 'bi-bell-fill', 'url': '/admin/notifications', 'key': 'notifications', 'children': [
-          {'name': 'My Notifications', 'url': '/admin/my/notifications', 'key': 'my-notifications'},
-          {'name': 'Dashboard', 'url': '/admin/notifications', 'key': 'notif-dashboard'},
-          {'name': 'Send Notification', 'url': '/admin/notifications/send', 'key': 'send-notif'},
-          {'name': 'All Notifications', 'url': '/admin/notifications/list', 'key': 'all-notif'},
-          {'name': 'Subscribers', 'url': '/admin/notification-subscribers', 'key': 'notif-subscribers'},
-          {'name': 'Templates', 'url': '/admin/notification-templates', 'key': 'notification-templates'}
-      ]},
-      {'name': 'Scrap Control Center', 'icon': 'bi-cloud-arrow-down', 'url': '/admin/scrap-control-center', 'key': 'scrap-control-center'},
-      {'name': 'Comments', 'icon': 'bi-chat-left-text', 'url': '/admin/comments', 'key': 'comments'},
-      {'name': 'SMS Logs', 'icon': 'bi-chat-square-text', 'url': '/admin/sms-logs', 'key': 'sms-logs'},
-
-      {'name': 'Users', 'icon': 'bi-people', 'url': '/admin/users', 'key': 'users'},
-      {'name': 'Roles', 'icon': 'bi-diagram-3', 'url': '/admin/roles', 'key': 'roles'},
-      {'name': 'Permissions', 'icon': 'bi-shield-lock', 'url': '/admin/permissions', 'key': 'permissions'},
-      {'name': 'Contact Messages', 'icon': 'bi-envelope', 'url': '/admin/contact', 'key': 'contact', 'children': [
-          {'name': 'All Messages', 'url': '/admin/contact', 'key': 'all-messages'}
-      ]},
-      {'name': 'Email Templates', 'icon': 'bi-file-earmark-text', 'url': '/admin/email-templates', 'key': 'email-templates'},
-      {'name': 'Settings', 'icon': 'bi-gear', 'url': '/admin/account-settings', 'key': 'settings', 'children': settings_children}
-  ] %}
-
-  {% if auth_user.is_super_admin %}
-    {% set menu_items = menu_items|merge([
-      {'name': 'AI Knowledge Base', 'icon': 'bi-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'},
-      {'name': 'AI Article Writer', 'icon': 'bi-pencil-square', 'url': '/admin/ai/article-writer', 'key': 'ai-article-writer'},
-      {'name': 'Live Article Writer', 'icon': 'bi-sync', 'url': '/admin/ai/article-writer-stream', 'key': 'ai-article-writer-stream'},
-      {'name': 'Bulk Article Gen', 'icon': 'bi-boxes', 'url': '/admin/ai/bulk-article-writer', 'key': 'ai-bulk-article-writer'}
-    ]) %}
-  {% endif %}
-
-  {% macro render_menu(menu_items, current_page, prefix) %}
-    <div class="list-group list-group-flush rounded-0">
-      {% for item in menu_items %}
-        {% if item.children is defined %}
-          {% set is_child_active = false %}
-          {% for child in item.children %}
-            {% if current_page == child.key %}
-              {% set is_child_active = true %}
-            {% endif %}
-          {% endfor %}
-
-          <a class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-toggle {{ is_child_active ? 'active' }}"
-            data-bs-toggle="collapse"
-            href="#{{ prefix }}-submenu-{{ item.key }}"
-            role="button"
-            aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
-            aria-controls="{{ prefix }}-submenu-{{ item.key }}"
-            title="{{ item.name }}">
-            <i class="bi {{ item.icon }} me-2"></i>
-            <span class="sidebar-label">{{ item.name }}</span>
-            <i class="bi bi-chevron-down ms-auto"></i>
-          </a>
-          <div class="sidebar-submenu collapse {{ is_child_active ? 'show' }}" id="{{ prefix }}-submenu-{{ item.key }}">
-            <div class="list-group list-group-flush sidebar-submenu-list ms-3">
-              {% for child in item.children %}
-                <a href="{{ child.url }}"
-                  class="list-group-item list-group-item-action sidebar-submenu-item {{ current_page == child.key ? 'active' }}"
-                  aria-current="{{ current_page == child.key ? 'page' }}"
-                  title="{{ child.name }}">
-                  <span class="sidebar-label">{{ child.name }}</span>
-                </a>
-              {% endfor %}
-            </div>
-          </div>
-        {% else %}
-          <a href="{{ item.url }}"
-            class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-link {{ current_page == item.key ? 'active' }}"
-            aria-current="{{ current_page == item.key ? 'page' }}"
-            title="{{ item.name }}">
-            <i class="bi {{ item.icon }} me-2"></i>
-            <span class="sidebar-label">{{ item.name }}</span>
-          </a>
-        {% endif %}
-      {% endfor %}
+   {# ===== SIDEBAR ===== #}
+   <aside id="adminSidebar" class="w-[220px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto transition-transform duration-300 ease-out fixed lg:sticky left-0 top-0 h-full z-40 -translate-x-full lg:translate-x-0" aria-label="Primary navigation">
+    {# Sidebar header with compact toggle #}
+    <div class="flex items-center justify-end px-3 py-2.5 border-b border-slate-200 dark:border-slate-800">
+     <button
+      id="sidebarMiniToggle"
+      type="button"
+      class="hidden lg:inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 dark:text-slate-500"
+      aria-label="Toggle compact sidebar"
+      title="Toggle compact sidebar"
+      aria-pressed="false">
+      <i class="lucide lucide-panel-left w-3.5 h-3.5"></i>
+     </button>
     </div>
-  {% endmacro %}
 
-  {% import _self as menus %}
+    {# Menu items with groups #}
+    <nav class="px-2 py-2 space-y-0.5">
+     {% set settings_children = [
+      {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
+     ] %}
+     {% if auth_user.is_super_admin %}
+      {% set settings_children = settings_children|merge([
+       {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
+       {'name': 'AI System', 'url': '/admin/ai-system', 'key': 'ai-settings'},
+       {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'}
+      ]) %}
+     {% endif %}
 
-  {# Unified Responsive Sidebar #}
-  <div class="sidebar col-lg-3 col-xl-2 bg-white shadow-sm">
-    <div class="sidebar-header d-lg-none p-3 border-bottom d-flex justify-content-between align-items-center">
-      <h5 class="m-0 fw-bold">Menu</h5>
-      <button type="button" class="modern-btn-close sidebar-close"></button>
-    </div>
-    <div class="p-3">
-      <div class="d-none d-lg-flex align-items-center justify-content-end mb-2">
-        <button
-          type="button"
-          class="sidebar-mini-toggle btn btn-sm btn-outline-secondary"
-          aria-label="Toggle compact sidebar"
-          title="Toggle compact sidebar"
-          aria-pressed="false"
-          aria-expanded="false">
-          <i class="bi bi-layout-sidebar-inset-reverse"></i>
-        </button>
-      </div>
-      {{ menus.render_menu(menu_items, current_page, 'main') }}
-    </div>
-  </div>
-  
-  {# Sidebar overlay for mobile - toggles with sidebar #}
-  <div class="sidebar-overlay"></div>
-  
-  <div class="admin-column-resizer d-none d-lg-flex"
-       id="adminColumnResizer"
-       role="separator"
-       aria-label="Resize sidebar"
-       title="↔ Drag to resize • ⟲ Double-click to reset"
-       data-tooltip="↔ Drag to resize • ⟲ Double-click to reset"
-       aria-orientation="vertical"
-       tabindex="0"></div>
+     {# Define AI items separately before the main groups array to avoid inline {% if %} in array literal #}
+     {% set ai_items = [
+      {'name': 'AI Conversations', 'icon': 'lucide-message-square', 'url': '/admin/ai-chats', 'key': 'ai-chats'}
+     ] %}
+     {% if auth_user.is_super_admin %}
+      {% set ai_items = ai_items|merge([
+       {'name': 'AI Knowledge', 'icon': 'lucide-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'},
+       {'name': 'AI Article Writer', 'icon': 'lucide-pencil', 'url': '/admin/ai/article-writer', 'key': 'ai-article-writer'},
+       {'name': 'Live Writer', 'icon': 'lucide-refresh-cw', 'url': '/admin/ai/article-writer-stream', 'key': 'ai-article-writer-stream'},
+       {'name': 'Bulk Article Gen', 'icon': 'lucide-boxes', 'url': '/admin/ai/bulk-article-writer', 'key': 'ai-bulk-article-writer'}
+      ]) %}
+     {% endif %}
 
-      <!-- Main content -->
-      <main class="col-12 col-lg-9 col-xl-10 py-4 admin-main">
-        {% if skip_auto_breadcrumb is not defined or skip_auto_breadcrumb == false %}
-            {% if breadcrumbs is not defined %}
-                {% set breadcrumbs = auto_admin_breadcrumbs() %}
-            {% endif %}
-            {% include 'admin/partials/breadcrumb.twig' %}
-        {% endif %}
-
-        {% set flash_data = flash_message|default(flash|default(null)) %}
-        {{ flash_macros.render_flash(flash_data) }}
-        {% include 'admin/partials/_offline_draft_recover.twig' %}
-        
-        {% block content %}
-        {% endblock %}
-      </main>
-
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer class="bg-dark text-white text-center py-3 mt-auto">
-    &copy; {{ "now"|date("Y") }} Admin Panel. All rights reserved.
-  </footer>
-
-  {# Footer scripts #}
-  {# jQuery for legacy code compatibility - load before other scripts #}
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-
-  <script>
-    window.__APP_JS_CONFIG_OVERRIDES = {
-      notifications: {
-        websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
+     {% set sidebar_groups = [
+      {
+       'label': 'Main',
+       'items': [
+        {'name': 'Dashboard', 'icon': 'lucide-gauge', 'url': '/admin/dashboard', 'key': 'dashboard'},
+        {'name': 'Analytics', 'icon': 'lucide-bar-chart-3', 'url': '/admin/analytics', 'key': 'analytics'},
+        {'name': 'Activity', 'icon': 'lucide-activity', 'url': '/admin/log-activity', 'key': 'log-activity'}
+       ]
+      },
+      {
+       'label': 'Content',
+       'items': [
+        {'name': 'Posts', 'icon': 'lucide-file-text', 'key': 'posts', 'children': [
+         {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
+         {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
+        ]},
+        {'name': 'Pages', 'icon': 'lucide-file-text', 'url': '/admin/pages', 'key': 'pages'},
+        {'name': 'Categories', 'icon': 'lucide-tags', 'url': '/admin/categories', 'key': 'categories'},
+        {'name': 'Tags', 'icon': 'lucide-hash', 'url': '/admin/tags', 'key': 'tags'},
+        {'name': 'Media Manager', 'icon': 'lucide-image', 'url': '/admin/media', 'key': 'media'}
+       ]
+      },
+      {
+       'label': 'Services',
+       'items': [
+        {'name': 'Services', 'icon': 'lucide-award', 'key': 'services', 'children': [
+         {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
+         {'name': 'Create Service', 'url': '/admin/services/create', 'key': 'create-service'}
+        ]},
+        {'name': 'Applications', 'icon': 'lucide-briefcase', 'key': 'applications', 'children': [
+         {'name': 'All Applications', 'url': '/admin/applications', 'key': 'all-applications'},
+         {'name': 'Pending', 'url': '/admin/applications?status=pending', 'key': 'pending-applications'},
+         {'name': 'Approved', 'url': '/admin/applications?status=approved', 'key': 'approved-applications'},
+         {'name': 'Rejected', 'url': '/admin/applications?status=rejected', 'key': 'rejected-applications'},
+         {'name': 'Receipts', 'url': '/admin/applications/receipts', 'key': 'applications-receipts'}
+        ]}
+       ]
+      },
+      {
+       'label': 'AI',
+       'items': ai_items
+      },
+      {
+       'label': 'System',
+       'items': [
+        {'name': 'Settings', 'icon': 'lucide-settings', 'key': 'settings','url': '/admin/account-settings', 'children': settings_children },
+        {'name': 'Users', 'icon': 'lucide-users', 'url': '/admin/users', 'key': 'users'},
+        {'name': 'Roles', 'icon': 'lucide-share-2', 'url': '/admin/roles', 'key': 'roles'},
+        {'name': 'Permissions', 'icon': 'lucide-shield', 'url': '/admin/permissions', 'key': 'permissions'}
+       ]
+      },
+      {
+       'label': 'Extras',
+       'items': [
+        {'name': 'Mobiles', 'icon': 'lucide-smartphone', 'key': 'mobiles', 'children': [
+         {'name': 'All Mobiles', 'url': '/admin/mobiles/all', 'key': 'mobiles-list'},
+         {'name': 'Add Mobile', 'url': '/admin/mobiles/insert', 'key': 'add-mobile'}
+        ]},
+        {'name': 'CV Management', 'icon': 'lucide-user', 'key': 'cv-management', 'children': [
+         {'name': 'CVs', 'url': '/admin/cvs', 'key': 'cvs'},
+         {'name': 'Templates', 'url': '/admin/cv-templates', 'key': 'cv-templates'},
+         {'name': 'Job Positions', 'url': '/admin/job-positions', 'key': 'job-positions'}
+        ]},
+        {'name': 'Notifications', 'icon': 'lucide-bell', 'key': 'notifications', 'children': [
+         {'name': 'My Notifications', 'url': '/admin/my/notifications', 'key': 'my-notifications'},
+         {'name': 'Dashboard', 'url': '/admin/notifications', 'key': 'notif-dashboard'},
+         {'name': 'Send', 'url': '/admin/notifications/send', 'key': 'send-notif'},
+         {'name': 'All', 'url': '/admin/notifications/list', 'key': 'all-notif'},
+         {'name': 'Subscribers', 'url': '/admin/notification-subscribers', 'key': 'notif-subscribers'},
+         {'name': 'Templates', 'url': '/admin/notification-templates', 'key': 'notification-templates'}
+        ]},
+        {'name': 'Scrap Control', 'icon': 'lucide-cloud-download', 'url': '/admin/scrap-control-center', 'key': 'scrap-control-center'},
+        {'name': 'Comments', 'icon': 'lucide-message-circle', 'url': '/admin/comments', 'key': 'comments'},
+        {'name': 'Contact', 'icon': 'lucide-mail', 'url': '/admin/contact', 'key': 'contact'},
+        {'name': 'Email Templates', 'icon': 'lucide-file-text', 'url': '/admin/email-templates', 'key': 'email-templates'}
+       ]
       }
-    };
-  </script>
-  <script src="{{ asset('/assets/js/dist/app-config.js') }}" defer></script>
-  <script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
+     ] %}
 
-  <script src="{{ asset('/assets/js/dist/bootstrap-lite.js') }}" defer></script>
+     {% for group in sidebar_groups %}
+      <div class="sidebar-group-label">{{ group.label }}</div>
+      {% for item in group.items %}
+       {% if item.children is defined %}
+        {% set is_child_active = false %}
+        {% for child in item.children %}
+         {% if current_page == child.key %}
+          {% set is_child_active = true %}
+         {% endif %}
+        {% endfor %}
+        <div>
+         <button type="button"
+          data-menu-toggle="submenu-{{ item.key }}"
+          aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
+          aria-controls="submenu-{{ item.key }}"
+          class="sidebar-link-modern w-full {{ is_child_active ? 'active' : '' }}">
+          <i class="lucide {{ item.icon }} sidebar-icon"></i>
+          <span class="truncate">{{ item.name }}</span>
+          <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
+          <i class="lucide lucide-chevron-down sidebar-chevron"></i>
+         </button>
+         <div id="submenu-{{ item.key }}" class="sidebar-submenu {{ is_child_active ? 'open' : '' }}">
+          {% for child in item.children %}
+           <a href="{{ child.url }}" class="sidebar-sublink {{ current_page == child.key ? 'active' : '' }}" {{ current_page == child.key ? 'aria-current="page"' : '' }}>{{ child.name }}</a>
+          {% endfor %}
+         </div>
+        </div>
+       {% else %}
+        <a href="{{ item.url }}" class="sidebar-link-modern {{ current_page == item.key ? 'active' : '' }}" {{ current_page == item.key ? 'aria-current="page"' : '' }}>
+         <i class="lucide {{ item.icon }} sidebar-icon"></i>
+         <span class="truncate">{{ item.name }}</span>
+         <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
+        </a>
+       {% endif %}
+      {% endfor %}
+     {% endfor %}
+    </nav>
+   </aside>
 
-  {# SweetAlert2 + global flash handler #}
-  <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
-  <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
+   {# Sidebar divider/resizer #}
+   <div id="adminColumnResizer" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" tabindex="0" class="hidden lg:block w-px bg-slate-200 dark:bg-slate-700 hover:bg-indigo-500 dark:hover:bg-indigo-500 cursor-col-resize transition-colors flex-shrink-0"></div>
 
-  {# Feature scripts #}
-  {# Datepicker Library #}
-  <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
-  <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
-  <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
+   {# ===== MAIN CONTENT AREA ===== #}
+   <main class="flex-1 overflow-auto" role="main">
+    <div class="admin-content-inner">
+     {% if skip_auto_breadcrumb is not defined or skip_auto_breadcrumb == false %}
+      {% if breadcrumbs is not defined %}
+       {% set breadcrumbs = auto_admin_breadcrumbs() %}
+      {% endif %}
+      {% include 'admin/partials/breadcrumb.twig' %}
+     {% endif %}
 
-  <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}" defer></script>
+     {% set flash_data = flash_message|default(flash|default(null)) %}
+     {{ flash_macros.render_flash(flash_data) }}
+     {% include 'admin/partials/_offline_draft_recover.twig' %}
 
-   {# Admin scripts #}
-   <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
-   <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
+     {% block content %}{% endblock %}
+    </div>
+   </main>
+  </div>
 
-  {# Listing tables: select-all checkbox + row selection wiring #}
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const adminMain = document.querySelector('main.admin-main');
-      if (!adminMain) return;
+  {# ===== FOOTER ===== #}
+  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+   &copy; {{"now"|date("Y") }} Admin Panel. All rights reserved.
+  </footer>
+ </div>
 
-      const ensureSelectAllHeader = function (table) {
-        if (!table || !(table instanceof HTMLElement)) return null;
+ <script>
+ window.__APP_JS_CONFIG_OVERRIDES = {
+ notifications: {
+ websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
+ }
+ };
+ </script>
+ <script type="module" src="{{ asset('/assets/js/dist/app-config.js') }}"></script>
+ <script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
+ <script type="module" src="{{ asset('/assets/js/dist/brox-ui.js') }}"></script>
 
-        const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
-        const existingSelectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+ <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
+ <script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
 
-        // If table already has selection column, keep as-is.
-        if (existingSelectAll || hasRowCheckbox) {
-          return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
-        }
 
-        const theadRow = table.querySelector('thead tr');
-        if (!theadRow) return null;
+ <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
+ <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}"></script>
+ <script type="module" src="{{ asset('/assets/js/admin-sidebar-polish.js') }}"></script>
+ <script type="module" src="{{ asset('/assets/js/dist/activity.js') }}"></script>
 
-        // Only auto-inject for "listing-like" tables.
-        const thTexts = Array.from(theadRow.querySelectorAll('th')).map(th => (th.textContent || '').trim().toLowerCase());
-        const isListing = thTexts.includes('actions') || thTexts.includes('action') || table.classList.contains('table-hover');
-        if (!isListing) return null;
-
-        const th = document.createElement('th');
-        th.style.width = '40px';
-        th.className = 'text-center';
-        th.innerHTML = '<input type="checkbox" id="select-all-checkbox" class="form-check-input table-select-checkbox">';
-        theadRow.insertBefore(th, theadRow.firstChild);
-
-        // Add disabled row checkboxes (no reliable id/value on generic tables).
-        table.querySelectorAll('tbody tr').forEach(function (tr) {
-          const cells = tr.querySelectorAll('td');
-          if (cells.length === 1 && cells[0] && cells[0].hasAttribute('colspan')) {
-            return;
-          }
-
-          let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-row-id') || '').trim();
-          if (!rowId) {
-            const firstCell = tr.querySelector('td');
-            const txt = firstCell ? (firstCell.textContent || '').trim() : '';
-            const m = txt.match(/(\d{1,12})/);
-            rowId = m ? m[1] : '';
-          }
-
-          const td = document.createElement('td');
-          td.className = 'text-center';
-          if (rowId) {
-            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '"') + '">';
-          } else {
-            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" disabled>';
-          }
-          tr.insertBefore(td, tr.firstChild);
-        });
-
-        return th.querySelector('input#select-all-checkbox');
-      };
-
-      const wireTableSelection = function (table) {
-        const selectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
-        const items = Array.from(table.querySelectorAll('tbody input[type=\"checkbox\"].item-checkbox'));
-        if (!selectAll || items.length === 0) return;
-
-        if (selectAll.dataset.skipGlobalSelectAll === '1') return;
-        if (selectAll.dataset.selectAllWired === '1') return;
-        selectAll.dataset.selectAllWired = '1';
-
-        const updateHeader = function () {
-          const enabledItems = items.filter(cb => !cb.disabled);
-          const total = enabledItems.length;
-          const checked = enabledItems.filter(cb => cb.checked).length;
-
-          selectAll.indeterminate = total > 0 && checked > 0 && checked < total;
-          selectAll.checked = total > 0 && checked === total;
-        };
-
-        selectAll.addEventListener('change', function () {
-          const enabledItems = items.filter(cb => !cb.disabled);
-          enabledItems.forEach(function (cb) {
-            cb.checked = !!selectAll.checked;
-          });
-          updateHeader();
-        });
-
-        items.forEach(function (cb) {
-          cb.addEventListener('change', updateHeader);
-        });
-
-        updateHeader();
-      };
-
-      adminMain.querySelectorAll('table').forEach(function (table) {
-        ensureSelectAllHeader(table);
-        wireTableSelection(table);
+ {# ── Admin: scroll animations, sidebar, table select-all, badge counts ── #}
+ <script>
+ document.addEventListener('DOMContentLoaded', function () {
+  // ── IntersectionObserver scroll animations ──
+  (function() {
+    var els = document.querySelectorAll('.scroll-fade-in, .scroll-slide-up, .scroll-scale-in');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('visible'); });
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
       });
+    }, { rootMargin: '0px 0px -60px 0px', threshold: 0.08 });
+    els.forEach(function (el) { observer.observe(el); });
+  })();
+
+  // ── Table select-all checkbox wiring ──
+  const adminMain = document.querySelector('main[role="main"]');
+  if (adminMain) {
+    const ensureSelectAllHeader = function (table) {
+      if (!table || !(table instanceof HTMLElement)) return null;
+      const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
+      const existingSelectAll = table.querySelector('thead [data-select-all-checkbox], thead #select-all-checkbox');
+      if (existingSelectAll || hasRowCheckbox) return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
+      const theadRow = table.querySelector('thead tr');
+      if (!theadRow) return null;
+      const thTexts = Array.from(theadRow.querySelectorAll('th')).map(th => (th.textContent || '').trim().toLowerCase());
+      const isListing = thTexts.includes('actions') || thTexts.includes('action') || table.hasAttribute('data-listing');
+      if (!isListing) return null;
+      const th = document.createElement('th');
+      th.style.width = '40px';
+      th.className = 'text-center';
+      th.innerHTML = '<input type="checkbox" data-select-all-checkbox="true" class="w-4 h-4 border border-slate-300 rounded bg-white checked:bg-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer table-select-checkbox">';
+      theadRow.insertBefore(th, theadRow.firstChild);
+      table.querySelectorAll('tbody tr').forEach(function (tr) {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length === 1 && cells[0] && cells[0].hasAttribute('colspan')) return;
+        let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-row-id') || tr.getAttribute('data-item-id') || '').trim();
+        if (!rowId) {
+          const firstCell = tr.querySelector('td');
+          const txt = firstCell ? (firstCell.textContent || '').trim() : '';
+          const m = txt.match(/(\d{1,12})/);
+          rowId = m ? m[1] : '';
+        }
+        const td = document.createElement('td');
+        td.className = 'text-center';
+        td.innerHTML = rowId
+          ? '<input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 table-select-checkbox item-checkbox" value="' + rowId.replace(/"/g, '&quot;') + '">'
+          : '<input type="checkbox" class="w-4 h-4 border border-slate-300 rounded bg-white opacity-50 cursor-not-allowed table-select-checkbox item-checkbox" disabled>';
+        tr.insertBefore(td, tr.firstChild);
+      });
+      return th.querySelector('[data-select-all-checkbox], #select-all-checkbox');
+    };
+    const wireTableSelection = function (table) {
+      const selectAll = table.querySelector('thead [data-select-all-checkbox].table-select-checkbox, thead #select-all-checkbox.table-select-checkbox');
+      const items = Array.from(table.querySelectorAll('tbody input[type="checkbox"].item-checkbox'));
+      if (!selectAll || items.length === 0) return;
+      if (selectAll.dataset.skipGlobalSelectAll === '1' || selectAll.dataset.selectAllWired === '1') return;
+      selectAll.dataset.selectAllWired = '1';
+      const updateHeader = function () {
+        const enabledItems = items.filter(function(cb) { return !cb.disabled; });
+        const total = enabledItems.length;
+        const checked = enabledItems.filter(function(cb) { return cb.checked; }).length;
+        selectAll.indeterminate = total > 0 && checked > 0 && checked < total;
+        selectAll.checked = total > 0 && checked === total;
+      };
+      selectAll.addEventListener('change', function () {
+        items.forEach(function (cb) { if (!cb.disabled) cb.checked = !!selectAll.checked; });
+        updateHeader();
+      });
+      items.forEach(function (cb) { cb.addEventListener('change', updateHeader); });
+      updateHeader();
+    };
+    adminMain.querySelectorAll('table').forEach(function (table) {
+      ensureSelectAllHeader(table);
+      wireTableSelection(table);
     });
-  </script>
+  }
 
-  {% block scripts %}{% endblock %}
+  // ── Sidebar badge counts fetch ──
+  fetch('/api/admin/sidebar-counts').then(function (res) { return res.json(); }).then(function (data) {
+    if (!data.success || !data.counts) return;
+    var counts = data.counts;
+    var badges = document.querySelectorAll('.sidebar-badge[data-badge-key]');
+    badges.forEach(function (badge) {
+      var key = badge.getAttribute('data-badge-key');
+      var count = counts[key];
+      if (typeof count === 'number' && count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'inline-flex';
+      }
+    });
+  }).catch(function () { /* non-critical */ });
+ });
+ </script>
 
-  {# Admin Assistant UI #}
-  {% set assistant_variant = 'admin' %}
-{% include 'partials/ai-assistant/admin.twig' %}
-{% include 'partials/ai-assistant/script.twig' %}
-{% include 'partials/ai-assistant/admin-button.twig' %}
+ {% block scripts %}{% endblock %}
+
+ <script type="module" src="{{ asset('/assets/js/dist/assistant-shell.js') }}"></script>
+ <script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
+
+
+
+ {# Admin Assistant UI #}
+ {% set assistant_variant = 'admin' %}
+{% include 'partials/ai-assistant/assistant.twig' %}
 </body>
 </html>

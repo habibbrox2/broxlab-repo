@@ -17,7 +17,8 @@
     "spekulatius/phpscraper": "^3.0",
     "roach-php/core": "^3.0",
     "vdb/php-spider": "^0.7",
-    "symfony/panther": "^2.1"
+    "symfony/panther": "^2.1",
+    "phpoffice/phpword": "^1.4"
   },
   "autoload": {
     "psr-4": {

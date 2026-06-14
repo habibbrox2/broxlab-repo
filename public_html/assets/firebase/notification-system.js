@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
         notificationList.innerHTML = '';
 
         if (notifications.length === 0) {
-            notificationList.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-inbox fs-4"></i><p class="mb-0 mt-2 small">No new notifications</p></div>';
+            notificationList.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi lucide lucide-inbox fs-4"></i><p class="mb-0 mt-2 small">No new notifications</p></div>';
             return;
         }
 
@@ -77,13 +77,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const entry = document.createElement('div');
             entry.className = `notification-entry p-2 mb-2 rounded ${notif.is_read == 0 ? 'bg-light border-start border-primary border-2' : ''}`;
             entry.innerHTML = `
-                <div class="d-flex align-items-start gap-2">
+                <div class="flex items-start gap-2">
                     <div class="flex-grow-1">
-                        <div class="fw-semibold small mb-1">${notif.title}</div>
-                        <div class="small text-muted mb-1">${notif.message}</div>
+                        <div class="font-semibold text-sm mb-1">${notif.title}</div>
+                        <div class="text-sm text-slate-500 mb-1">${notif.message}</div>
                         <div class="small text-secondary">${new Date(notif.created_at).toLocaleString()}</div>
                     </div>
-                    ${notif.is_read == 0 ? '<button type="button" class="btn btn-sm btn-outline-primary" data-action="mark-read" data-notification-id="' + notif.id + '">Read</button>' : ''}
+                    ${notif.is_read == 0 ? '<button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="mark-read" data-notification-id="' + notif.id + '">Read</button>' : ''}
                 </div>
             `;
             notificationList.appendChild(entry);
@@ -133,9 +133,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (badge && count) {
                     if (data.count > 0) {
                         count.textContent = data.count;
-                        badge.classList.remove('d-none');
+                        badge.classList.remove('hidden');
                     } else {
-                        badge.classList.add('d-none');
+                        badge.classList.add('hidden');
                     }
                 }
             })

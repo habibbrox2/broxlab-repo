@@ -1,0 +1,510 @@
+{# ═══════════════════════════════════════════════════════════════════
+   HEADER v2.0 — Sticky responsive navigation
+   Stack: Tailwind CSS · Lucide Icons · Vanilla JS (brox-ui.js)
+   ═══════════════════════════════════════════════════════════════════ #}
+
+{# ── Resolve current path for active-state detection ── #}
+{% set navCurrentPath = request.path|default(current_path|default('/')) %}
+
+{# ── Nav items: prefer dynamic from controller, fall back to defaults ── #}
+{% set nav_items = (public_nav_items is iterable and public_nav_items is not empty)
+    ? public_nav_items
+    : [
+        { 'label': 'Home',       'label_bn': 'হোম',          'url': '/',           'icon': 'home',        'match': '/' },
+        { 'label': 'Mobiles',    'label_bn': 'মোবাইল',       'url': '/mobiles',    'icon': 'smartphone',  'match': '/mobiles',
+          'submenu': [
+            { 'label': 'Browse All',  'label_bn': 'সব মোবাইল',   'url': '/mobiles',              'icon': 'list' },
+            { 'label': 'Top Phones',  'label_bn': 'জনপ্রিয় ফোন', 'url': '/mobiles?sort=popular', 'icon': 'star' },
+            { 'label': 'Brands',      'label_bn': 'ব্র্যান্ড',    'url': '/mobiles/brands',       'icon': 'tag' }
+          ]
+        },
+        { 'label': 'Articles',   'label_bn': 'আর্টিকেল',     'url': '/posts',      'icon': 'file-text',   'match': '/posts',
+          'submenu': [
+            { 'label': 'All Posts',   'label_bn': 'সব পোস্ট',     'url': '/posts',              'icon': 'list' },
+            { 'label': 'Categories',  'label_bn': 'ক্যাটাগরি',    'url': '/categories',         'icon': 'folder' },
+            { 'label': 'Latest',      'label_bn': 'সর্বশেষ',      'url': '/posts?sort=latest',  'icon': 'clock' }
+          ]
+        },
+        { 'label': 'Categories', 'label_bn': 'বিভাগ',         'url': '/categories', 'icon': 'grid',        'match': '/categories' },
+        { 'label': 'Blog',       'label_bn': 'ব্লগ',           'url': '/blog',       'icon': 'book',        'match': '/blog' },
+        { 'label': 'Services',   'label_bn': 'সেবাসমূহ',      'url': '/services',   'icon': 'briefcase',   'match': '/services',
+          'submenu': [
+            { 'label': 'All Services', 'label_bn': 'সব সেবা',     'url': '/services',    'icon': 'list' },
+            { 'label': 'Tools',        'label_bn': 'টুলস',         'url': '/tools',       'icon': 'wrench' },
+            { 'label': 'Calculators',  'label_bn': 'ক্যালকুলেটর', 'url': '/calculators', 'icon': 'calculator' }
+          ]
+        },
+        { 'label': 'Portfolio',  'label_bn': 'পোর্টফোলিও',   'url': '/portfolio',  'icon': 'image',   'match': '/portfolio' },
+        { 'label': 'Contact',    'label_bn': 'যোগাযোগ',       'url': '/contact',    'icon': 'mail',        'match': '/contact' },
+        { 'label': 'CV Builder',  'label_bn': 'সিভি বিল্ডার',   'url': '/cv/templates', 'icon': 'file-text', 'match': '/cv',
+          'submenu': [
+            { 'label': 'Templates',    'label_bn': 'টেমপ্লেট',      'url': '/cv/templates',    'icon': 'layout' },
+            { 'label': 'My CVs',       'label_bn': 'আমার সিভি',    'url': '/cv',              'icon': 'file' }
+          ]
+        },
+        { 'label': 'Jobs',       'label_bn': 'চাকরি',          'url': '/category/chakribd', 'icon': 'briefcase',  'match': '/category/chakribd' },
+        { 'label': 'Weather',    'label_bn': 'আবহাওয়া',        'url': '/weather',   'icon': 'cloud-sun',   'match': '/weather' },
+        { 'label': 'MedEx',      'label_bn': 'মেডএক্স',         'url': '/medex',     'icon': 'pill',        'match': '/medex',
+          'submenu': [
+            { 'label': 'Drug Info',    'label_bn': 'ঔষধের তথ্য',   'url': '/medex',             'icon': 'search' },
+            { 'label': 'Companies',    'label_bn': 'কোম্পানি',     'url': '/medex/companies',   'icon': 'building' },
+            { 'label': 'Brands',       'label_bn': 'ব্র্যান্ড',    'url': '/medex/brands',      'icon': 'tag' }
+          ]
+        },
+        { 'label': 'Learning',   'label_bn': 'শিক্ষা',         'url': '/learning',  'icon': 'book-open',   'match': '/learning',
+          'submenu': [
+            { 'label': 'Courses',      'label_bn': 'কোর্স',       'url': '/learning/courses',      'icon': 'video' },
+            { 'label': 'Tutorials',    'label_bn': 'টিউটোরিয়াল', 'url': '/learning/tutorials',    'icon': 'play-circle' },
+            { 'label': 'Resources',    'label_bn': 'সম্পদ',       'url': '/learning/resources',    'icon': 'folder' }
+          ]
+        },
+        { 'label': 'Community',  'label_bn': 'কমিউনিটি',      'url': '/community', 'icon': 'users',       'match': '/community',
+          'submenu': [
+            { 'label': 'Forum',        'label_bn': 'ফোরাম',      'url': '/community/forum',       'icon': 'message-square' },
+            { 'label': 'Discussions',  'label_bn': 'আলোচনা',     'url': '/community/discussions', 'icon': 'chat-bubbles' },
+            { 'label': 'Members',      'label_bn': 'সদস্যরা',     'url': '/community/members',     'icon': 'users' }
+          ]
+        },
+        { 'label': 'Marketplace', 'label_bn': 'মার্কেটপ্লেস',   'url': '/marketplace', 'icon': 'shopping-cart', 'match': '/marketplace',
+          'submenu': [
+            { 'label': 'Featured',     'label_bn': 'ফিচার্ড',     'url': '/marketplace/featured',  'icon': 'star' },
+            { 'label': 'Deals',        'label_bn': 'অফার',       'url': '/marketplace/deals',     'icon': 'tag' },
+            { 'label': 'Sellers',      'label_bn': 'বিক্রেতা',    'url': '/marketplace/sellers',   'icon': 'store' }
+          ]
+        },
+        { 'label': 'Reviews',    'label_bn': 'রিভিউ',         'url': '/reviews',   'icon': 'star',        'match': '/reviews' },
+        { 'label': 'News',       'label_bn': 'খবর',           'url': '/news',      'icon': 'newspaper',   'match': '/news' }
+      ]
+%}
+
+{# ── Append Dashboard link for authenticated users ── #}
+{% if auth_user is defined and auth_user.is_authenticated %}
+  {% set _dashboard_url = (auth_user.is_super_admin is defined and auth_user.is_super_admin)
+      or (auth_user.role is defined and auth_user.role == 'admin')
+      ? '/admin/dashboard'
+      : '/user/dashboard' %}
+  {% set nav_items = nav_items|merge([{
+    'label': 'Dashboard', 'label_bn': 'ড্যাশবোর্ড',
+    'url': _dashboard_url, 'icon': 'gauge', 'match': _dashboard_url
+  }]) %}
+{% endif %}
+
+{# ── Auth shortcuts ── #}
+{% set _is_admin = (auth_user is defined)
+    and (
+      (auth_user.is_super_admin is defined and auth_user.is_super_admin)
+      or (auth_user.role is defined and auth_user.role == 'admin')
+    )
+%}
+{% set _unread = unread_count|default(0) %}
+
+{# ══════════════════════════════════════════════════════════════════
+   HEADER ELEMENT — Glass morphism design with theme colors
+   ══════════════════════════════════════════════════════════════════ #}
+<header role="banner"
+        class="sticky top-0 z-50 w-full
+               bg-[rgb(var(--surface))] text-[rgb(var(--text))]
+               dark:bg-slate-950/95 border-b border-[rgb(var(--border))]
+               shadow-lg shadow-slate-900/20 backdrop-blur-xl
+               transition-all duration-300">
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <nav role="navigation"
+         aria-label="Primary navigation"
+         class="flex items-center h-16 gap-2 lg:gap-4">
+
+      {# ── LOGO ── #}
+      <a href="{{ studio_header_url|default('/') }}"
+         title="{{ app_settings.site_name }}"
+         class="flex items-center gap-2.5 flex-shrink-0 group">
+
+        {% if app_settings.site_logo is defined and app_settings.site_logo %}
+          <img src="{{ app_settings.site_logo|absolute_url }}"
+               alt="{{ app_settings.site_name }}"
+               width="120" height="40"
+               fetchpriority="high"
+               decoding="async"
+               class="h-9 sm:h-10 w-auto rounded-lg object-contain shadow-md group-hover:shadow-lg group-hover:-translate-y-0.5 transition-all duration-300">
+          <div class="hidden sm:flex flex-col">
+            <span class="text-sm font-bold text-[rgb(var(--text))] leading-tight">{{ app_settings.site_name }}</span>
+            <span class="text-[10px] text-indigo-500/80 leading-tight">Tech Platform</span>
+          </div>
+        {% else %}
+          <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30 group-hover:shadow-xl group-hover:shadow-indigo-500/40 group-hover:scale-105 transition-all duration-300">
+            <i class="lucide lucide-smartphone text-white text-lg" aria-hidden="true"></i>
+          </div>
+          <div class="hidden sm:flex flex-col">
+            <span class="text-sm font-bold text-[rgb(var(--text))] leading-tight">{{ app_settings.site_name }}</span>
+            <span class="text-[10px] text-indigo-500/80 leading-tight">Platform</span>
+          </div>
+        {% endif %}
+      </a>
+
+      {# ── MOBILE HAMBURGER ── #}
+      <button type="button"
+              id="mobileMenuToggle"
+              data-brox-toggle="collapse"
+              data-brox-target="#broxMainNav"
+              aria-controls="broxMainNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation menu"
+              class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-indigo-500/30 bg-[rgb(var(--surface-soft))] text-indigo-600 hover:bg-[rgb(var(--surface))] hover:text-indigo-500 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
+        <svg data-icon-hamburger class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg data-icon-close class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      {# ── MAIN NAV MENU ── #}
+      <div id="broxMainNav"
+           data-mobile-menu
+           data-expanded="false"
+           role="menubar"
+           class="flex absolute lg:static top-16 lg:top-auto left-0 lg:left-auto right-0 lg:right-auto w-full lg:w-auto lg:flex-1 flex-col lg:flex-row bg-[rgb(var(--surface))] dark:bg-slate-900/95 lg:bg-transparent dark:lg:bg-transparent border-b lg:border-0 border-[rgb(var(--border))] shadow-lg lg:shadow-none lg:gap-1 max-h-0 lg:max-h-none overflow-hidden lg:overflow-visible transition-[max-height] duration-300 ease-in-out data-[expanded=true]:max-h-screen data-[expanded=true]:overflow-y-auto data-[expanded=true]:py-2 z-40 lg:z-auto lg:justify-center">
+
+        <ul class="flex flex-col lg:flex-row items-stretch lg:items-center gap-0 lg:gap-0.5 w-full lg:w-auto py-2 lg:py-0 lg:flex-wrap lg:justify-center">
+
+          {% for item in nav_items %}
+            {% if item.enabled|default(true) %}
+
+              {% set _url      = item.url|default('/') %}
+              {% set _match    = item.match|default(_url) %}
+              {% set _isActive = (_match == '/')
+                  ? (navCurrentPath == '/')
+                  : (navCurrentPath == _match or navCurrentPath starts with (_match ~ '/')) %}
+              {% set _hasSub   = item.submenu is defined
+                  and item.submenu is iterable
+                  and item.submenu|length > 0 %}
+
+              <li class="w-full lg:w-auto group relative" role="none">
+
+                <a href="{{ _url }}"
+                   role="menuitem"
+                   {% if _isActive %}aria-current="page"{% endif %}
+                   class="flex lg:inline-flex items-center gap-2 px-4 lg:px-3.5 py-3 lg:py-2 rounded-none lg:rounded-lg font-semibold text-sm transition-all duration-200 w-full lg:w-auto focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:no-underline
+                   {% if _isActive %}
+                     bg-indigo-600 lg:bg-indigo-600 text-white lg:shadow-lg lg:shadow-indigo-500/40 hover:bg-indigo-500
+                   {% else %}
+                     text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-soft))] hover:text-indigo-600 lg:hover:bg-transparent lg:hover:text-indigo-600
+                   {% endif %}">
+
+                  {% if item.icon|default('') %}
+                    <i class="lucide lucide-{{ item.icon }} w-4 h-4 flex-shrink-0" aria-hidden="true"></i>
+                  {% endif %}
+
+                  <span class="flex-1 lg:flex-initial" data-i18n="{{ item.label }}">{{ item.label|trans }}</span>
+
+                  {% if _hasSub %}
+                    <i class="lucide lucide-chevron-down w-3.5 h-3.5 flex-shrink-0 lg:group-hover:rotate-180 transition-transform duration-300" aria-hidden="true"></i>
+                  {% endif %}
+                </a>
+
+                {% if _hasSub %}
+                  <ul class="hidden lg:group-hover:flex absolute top-full left-0 mt-1 w-48 flex-col bg-[rgb(var(--surface))] backdrop-blur-md border border-[rgb(var(--border))] rounded-xl shadow-xl shadow-slate-900/30 overflow-hidden z-50">
+
+                    {% for sub in item.submenu %}
+                      <li role="none">
+                        <a href="{{ sub.url|default('#') }}"
+                           role="menuitem"
+                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-soft))] hover:text-indigo-600 focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none transition-colors duration-150">
+
+                          {% if sub.icon|default('') %}
+                            <i class="lucide lucide-{{ sub.icon }} w-4 h-4 flex-shrink-0" aria-hidden="true"></i>
+                          {% endif %}
+
+                          <span data-i18n="{{ sub.label }}">{{ sub.label|trans }}</span>
+                        </a>
+                      </li>
+                    {% endfor %}
+
+                  </ul>
+                {% endif %}
+
+              </li>
+            {% endif %}
+          {% endfor %}
+
+        </ul>
+      </div>
+
+      {# ── RIGHT-SIDE ACTIONS ── #}
+      <div class="flex items-center gap-1 lg:gap-2 ml-auto flex-shrink-0" data-header-actions>
+
+        {# ── Notifications (authenticated only) ── #}
+        {% if auth_user is defined and auth_user.is_authenticated %}
+          <div class="relative" data-notification-menu>
+
+            <button type="button"
+                    id="broxNotificationBell"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    aria-label="View notifications"
+                    title="Notifications"
+                    class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
+
+              <i class="lucide lucide-bell w-5 h-5 group-hover:scale-110 transition-transform duration-300" aria-hidden="true"></i>
+
+              {% if _unread > 0 %}
+                <span class="absolute -top-1 -right-1 flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[10px] font-bold text-white bg-indigo-600 rounded-full shadow-lg animate-pulse" aria-label="{{ _unread }} unread notifications">
+                  {{ _unread > 9 ? '9+' : _unread }}
+                </span>
+              {% endif %}
+            </button>
+
+            {# Notifications dropdown #}
+            <div id="notificationDropdown"
+                 data-notification-dropdown
+                 data-user-id="{{ auth_user.id }}"
+                 aria-labelledby="broxNotificationBell"
+                 class="hidden fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-96 max-h-[85vh] sm:max-h-96 rounded-t-3xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200 flex flex-col">
+
+              {# Header #}
+              <div class="sticky top-0 flex items-center justify-between px-4 py-3.5 border-b border-[rgb(var(--border))] bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/60 dark:to-slate-800/40 backdrop-blur-sm rounded-t-3xl sm:rounded-t-xl">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600/10 dark:bg-indigo-600/20">
+                    <i class="lucide lucide-bell w-4 h-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>
+                  </div>
+                  <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Notifications
+                  </h2>
+                </div>
+                {% if _unread > 0 %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-lg shadow-indigo-500/30">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    {{ _unread }} new
+                  </span>
+                {% endif %}
+              </div>
+
+              {# List #}
+              <div id="broxNotificationsList"
+                   data-notification-list
+                   class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50">
+
+                {% if notifications is defined and notifications is iterable and notifications|length > 0 %}
+                  {% for notif in notifications|slice(0, 8) %}
+                    <div class="flex items-start gap-3 px-4 py-3.5 hover:bg-indigo-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all duration-150 border-l-4 border-transparent hover:border-indigo-500"
+                         data-notification-id="{{ notif.id }}"
+                         role="button"
+                         tabindex="0"
+                         {% if notif.action_url is defined and notif.action_url %}
+                           data-action-url="{{ notif.action_url }}"
+                         {% endif %}>
+
+                      {# Icon based on notification type #}
+                      <div class="mt-0.5 flex-shrink-0">
+                        {% set notif_icon = 'info' %}
+                        {% if notif.type is defined %}
+                          {% if notif.type == 'error' or notif.type == 'warning' %}
+                            {% set notif_icon = 'alert-circle' %}
+                          {% elseif notif.type == 'success' %}
+                            {% set notif_icon = 'check-circle-2' %}
+                          {% elseif notif.type == 'announcement' %}
+                            {% set notif_icon = 'megaphone' %}
+                          {% elseif notif.type == 'message' %}
+                            {% set notif_icon = 'message-circle' %}
+                          {% elseif notif.type == 'update' %}
+                            {% set notif_icon = 'zap' %}
+                          {% endif %}
+                        {% endif %}
+                        <i class="lucide lucide-{{ notif_icon }} w-5 h-5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>
+                      </div>
+
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {{ notif.title }}
+                        </p>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">
+                          {{ notif.message }}
+                        </p>
+                        <time class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+                          <i class="lucide lucide-clock w-3 h-3" aria-hidden="true"></i>
+                          {{ notif.created_at|date('M j, H:i') }}
+                        </time>
+                      </div>
+
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="flex flex-col items-center justify-center py-12 px-4 text-slate-400 dark:text-slate-500">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-3">
+                      <i class="lucide lucide-inbox w-6 h-6 opacity-50" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-sm font-medium">No notifications yet</p>
+                    <p class="text-xs mt-1 text-center">We'll notify you about important updates and messages</p>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Footer #}
+              <div class="border-t border-[rgb(var(--border))] px-3 py-2 bg-slate-50 dark:bg-slate-800/30 flex-shrink-0">
+                <a href="/user/notifications"
+                   class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-lg text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all duration-150 group">
+                  <span>View all notifications</span>
+                  <i class="lucide lucide-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+                </a>
+              </div>
+
+            </div>
+          </div>
+        {% endif %}
+
+        {# ── User menu (authenticated) / Auth links (guest) ── #}
+        {% if auth_user is defined and auth_user.is_authenticated %}
+
+          <div class="relative" data-user-menu>
+
+            <button type="button"
+                    id="broxNavbarUser"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                    aria-label="Account menu"
+                    title="Account menu"
+                    class="inline-flex items-center justify-center gap-1.5 w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
+
+              {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
+                <img src="{{ auth_user.profile_pic|absolute_url }}"
+                     alt="{{ auth_user.username }}"
+                     width="32" height="32"
+                     loading="lazy" decoding="async"
+                     class="w-8 h-8 rounded-lg object-cover ring-2 ring-[rgb(var(--border))] dark:ring-slate-700 group-hover:ring-indigo-500 group-hover:scale-105 transition-all duration-300">
+              {% else %}
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  {{ auth_user.username|first|upper }}
+                </div>
+              {% endif %}
+
+              <i class="lucide lucide-chevron-down hidden sm:block w-3 h-3 opacity-60 group-hover:opacity-100 transition-all duration-300" aria-hidden="true"></i>
+            </button>
+
+            {# User dropdown #}
+            <div id="userDropdown"
+                 aria-labelledby="broxNavbarUser"
+                 class="hidden fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-72 rounded-t-2xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200">
+
+              {# User info header #}
+              <div class="px-4 py-4 border-b border-[rgb(var(--border))] bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/60 dark:to-slate-800/30 rounded-t-2xl sm:rounded-t-xl">
+                <div class="flex items-center gap-3">
+
+                  {% if auth_user.profile_pic is defined and auth_user.profile_pic %}
+                    <img src="{{ auth_user.profile_pic|absolute_url }}"
+                         alt="{{ auth_user.username }}"
+                         width="48" height="48"
+                         loading="lazy" decoding="async"
+                         class="w-12 h-12 rounded-xl object-cover ring-2 ring-indigo-300 dark:ring-indigo-700">
+                  {% else %}
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                      {{ auth_user.username|first|upper }}
+                    </div>
+                  {% endif %}
+
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      {{ auth_user.username }}
+                    </p>
+                    <span class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0"></span>
+                      {% if auth_user.roles is defined and auth_user.roles is not empty %}
+                        {{ auth_user.roles|first|title }}
+                      {% else %}
+                        User
+                      {% endif %}
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+
+              {# Menu links #}
+              {% set _profile_url    = _is_admin ? '/admin/profile'           : '/profile' %}
+              {% set _dashboard_link = _is_admin ? '/admin/dashboard'         : '/user/dashboard' %}
+              {% set _notif_url      = _is_admin ? '/admin/my/notifications'  : '/user/notifications' %}
+              {% set _settings_url   = _is_admin ? '/admin/account-settings'  : '/user/settings' %}
+
+              {% set _user_links = [
+                { 'href': _profile_url,    'icon': 'user',             'label': 'Profile' },
+                { 'href': _dashboard_link, 'icon': 'layout-dashboard', 'label': 'Dashboard' },
+                { 'href': _notif_url,      'icon': 'bell',             'label': 'Notifications' },
+                { 'href': _settings_url,   'icon': 'settings',         'label': 'Settings' }
+              ] %}
+
+              <nav class="py-2">
+                {% for link in _user_links %}
+                  <a href="{{ link.href }}"
+                     class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none transition-colors duration-150">
+
+                    <i class="lucide lucide-{{ link.icon }} w-4 h-4 flex-shrink-0" aria-hidden="true"></i>
+
+                    <span data-i18n="{{ link.label }}">{{ link.label|trans }}</span>
+                  </a>
+                {% endfor %}
+              </nav>
+
+              {# Logout #}
+              <div class="border-t border-[rgb(var(--border))] p-2 bg-slate-50 dark:bg-slate-800/30">
+                <a href="/logout"
+                   data-unified-logout
+                   class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none transition-colors duration-150">
+
+                  <i class="lucide lucide-log-out w-4 h-4" aria-hidden="true"></i>
+                  <span data-i18n="Logout">{{ 'Logout'|trans }}</span>
+                </a>
+              </div>
+
+            </div>
+          </div>
+        {% else %}
+          {# Guest: Login + Register #}
+          <a href="/login"
+             title="{{ 'Login'|trans }}"
+             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-[rgb(var(--muted))] border border-[rgb(var(--border))] hover:bg-[rgb(var(--surface-soft))] hover:text-indigo-600 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
+
+            <i class="lucide lucide-log-in w-4 h-4" aria-hidden="true"></i>
+
+            {{ 'Login'|trans }}
+          </a>
+
+          <a href="/register"
+             title="{{ 'Join Now'|trans }}"
+             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/60 active:scale-95 transition-all duration-300">
+
+            <i class="lucide lucide-user-plus w-4 h-4" aria-hidden="true"></i>
+
+            <span class="hidden sm:inline">{{ 'Join Now'|trans }}</span>
+          </a>
+        {% endif %}
+
+        {# ── Divider ── #}
+        <div class="hidden lg:block h-6 w-px bg-[rgb(var(--border))] mx-1" aria-hidden="true"></div>
+
+        {# ── Theme toggle ── #}
+        <button type="button"
+                id="broxThemeToggle"
+                aria-pressed="false"
+                aria-label="{{ 'Toggle dark/light theme'|trans }}"
+                title="{{ 'Toggle theme'|trans }}"
+                class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-amber-500 hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-amber-500/20 group">
+
+          <i class="lucide lucide-sun dark:hidden block w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>
+
+          <i class="lucide lucide-moon hidden dark:block w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>
+        </button>
+
+        {# ── Language toggle ── #}
+        {% if available_languages is defined and available_languages|length > 1 %}
+          <button type="button"
+                  data-lang-btn="{{ current_lang == 'bn' ? 'en' : 'bn' }}"
+                  aria-label="{{ current_lang == 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন' }}"
+                  title="{{ current_lang == 'bn' ? 'English' : 'বাংলা' }}"
+                  class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
+
+            <i class="lucide lucide-globe w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>
+          </button>
+        {% endif %}
+
+      </div>
+    </nav>
+  </div>
+</header>

@@ -179,6 +179,9 @@ document.addEventListener('DOMContentLoaded', () => {
       themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
       themeToggleBtn.setAttribute('title', themeToggleText);
       themeToggleBtn.setAttribute('aria-label', themeToggleText);
+      themeToggleBtn.dataset.theme = currentTheme;
+      themeToggleBtn.classList.toggle('dark', isDark);
+      themeToggleBtn.classList.toggle('light', !isDark);
     };
 
     themeToggleBtn.addEventListener('click', () => {

@@ -321,7 +321,7 @@ class OfflineDraftManager {
     const placeholder = byId('offline-draft-recover-placeholder');
     if (!placeholder) return;
 
-    placeholder.classList.remove('d-none');
+    placeholder.classList.remove('hidden');
     const stampEl = placeholder.querySelector('.draft-saved-at');
     if (stampEl) stampEl.textContent = local.updatedAt || '';
 
@@ -329,7 +329,7 @@ class OfflineDraftManager {
     if (restoreBtn) {
       restoreBtn.onclick = async () => {
         await this.restoreLocalToForm(local.payload);
-        placeholder.classList.add('d-none');
+        placeholder.classList.add('hidden');
       };
     }
 
@@ -338,7 +338,7 @@ class OfflineDraftManager {
       dismissBtn.onclick = async () => {
         await DraftStore.del(this.localKey);
         await this._removeFromQueue(this.localKey);
-        placeholder.classList.add('d-none');
+        placeholder.classList.add('hidden');
       };
     }
   }
@@ -360,7 +360,7 @@ class OfflineDraftManager {
     clearTimeout(this._debounceTimer);
     try {
       await this.saveLocal();
-    } catch (error) {
+    } catch {
       // noop
     }
   }
@@ -416,7 +416,7 @@ export function initOfflineDraftForContentForms() {
     if (window.draftMgr && typeof window.draftMgr.clearLocal === 'function') {
       window.draftMgr.clearLocal().catch(() => { });
     }
-    byId('offline-draft-recover-placeholder')?.classList.add('d-none');
+    byId('offline-draft-recover-placeholder')?.classList.add('hidden');
     document.querySelector('.offline-draft-banner')?.remove();
   });
 

@@ -1,115 +1,159 @@
-﻿{% extends 'layout.twig' %}
+{% extends 'layout.twig' %}
 
 {% block title %}Sitemap - Site Map | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Sitemap', url: '/sitemap', icon: 'file' }
+ { label: 'Sitemap', url: '/sitemap', icon: 'file' }
 ] %}
 
 {% block content %}
 <div class="page-sitemap public-static-page">
-  <section class="public-page-head container py-4 py-lg-5">
-    <div class="row align-items-center g-3">
-      <div class="col-lg-8">
-        <h1 class="h2 fw-bold mb-2">Sitemap</h1>
-        <p class="lead text-muted mb-0">Browse all pages and major content areas in one place.</p>
-      </div>
-      <div class="col-lg-4 text-lg-end">
-        <a href="/sitemap.xml" class="btn btn-outline-primary rounded-pill">
-          <i class="bi bi-code-slash me-2"></i>Open XML Sitemap
-        </a>
-      </div>
-    </div>
-  </section>
+ <section class="public-page-head mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 py-lg-5">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center gap-3">
+ <div class="lg:col-span-8">
+ <h1 class="h2 font-bold mb-2">Sitemap</h1>
+ <p class="lead text-slate-500 mb-0">Browse all pages and major content areas in one place.</p>
+ </div>
+ <div class="lg:col-span-4 lg:text-right">
+ <a href="/sitemap.xml" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 rounded-full">
+ <i class="lucide lucide-code-xml mr-2"></i>Open XML Sitemap
+ </a>
+ </div>
+ </div>
+ </section>
 
-  <div class="container pb-4 pb-lg-5">
-    <div class="row g-4">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4 pb-lg-5">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
 
-      <div class="col-lg-3 col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-house-door me-2"></i>Main Pages</h2>
-            <ul class="list-unstyled mb-0">
-              <li><a href="/" class="sitemap-link">Home</a></li>
-              {% for page in staticPages %}
-                {% if page.group == 'main' %}
-                  <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
-                {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
+ <div class="lg:col-span-3 md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 h-full">
+ <div class="p-4">
+ <h2 class="h5  font-bold mb-3"><i class="lucide lucide-house mr-2"></i>Main Pages</h2>
+ <ul class="list-none pl-0 mb-0">
+ <li><a href="/" class="sitemap-link">Home</a></li>
+ {% for page in staticPages %}
+ {% if page.group == 'main' %}
+ <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
+ {% endif %}
+ {% endfor %}
+ </ul>
+ </div>
+ </div>
+ </div>
 
-      <div class="col-lg-3 col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Legal</h2>
-            <ul class="list-unstyled mb-0">
-              {% for page in staticPages %}
-                {% if page.group == 'legal' %}
-                  <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
-                {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
+ <div class="lg:col-span-3 md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 h-full">
+ <div class="p-4">
+ <h2 class="h5  font-bold mb-3"><i class="lucide lucide-file-text mr-2"></i>Legal</h2>
+ <ul class="list-none pl-0 mb-0">
+ {% for page in staticPages %}
+ {% if page.group == 'legal' %}
+ <li><a href="/{{ page.slug }}" class="sitemap-link">{{ page.title }}</a></li>
+ {% endif %}
+ {% endfor %}
+ </ul>
+ </div>
+ </div>
+ </div>
 
-      <div class="col-lg-3 col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-phone me-2"></i>Services</h2>
-            <ul class="list-unstyled mb-0 sitemap-scroll">
-              {% for category in services %}
-                <li><a href="/category/{{ category.slug }}" class="sitemap-link">{{ category.name }}</a></li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
+ <div class="lg:col-span-3 md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 h-full">
+ <div class="p-4">
+ <h2 class="h5  font-bold mb-3"><i class="lucide lucide-smartphone mr-2"></i>Services</h2>
+ <ul class="list-none pl-0 mb-0 sitemap-scroll">
+ {% for service in services %}
+ <li><a href="/services/view/{{ service.slug }}" class="sitemap-link">{{ service.name }}</a></li>
+ {% endfor %}
+ </ul>
+ </div>
+ </div>
+ </div>
 
-      <div class="col-lg-3 col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h2 class="h5 card-title fw-bold mb-3"><i class="bi bi-tags me-2"></i>Popular Tags</h2>
-            <div class="sitemap-scroll">
-              {% for tag in tags %}
-                <a href="/tag/{{ tag.slug }}" class="badge bg-primary text-decoration-none me-2 mb-2">
-                  {{ tag.name }}
-                </a>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      </div>
+ <div class="lg:col-span-3 md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 h-full">
+ <div class="p-4">
+ <h2 class="h5  font-bold mb-3"><i class="lucide lucide-tags mr-2"></i>Popular Tags</h2>
+ <div class="sitemap-scroll">
+ {% for tag in tags %}
+ <a href="/tag/{{ tag.slug }}" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600 no-underline mr-2 mb-2">
+ {{ tag.name }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ </div>
+ </div>
 
-    </div>
+ </div>
 
-    <div class="card public-surface-card border-0 mt-4 mt-lg-5 p-4">
-      <h2 class="h5 fw-bold mb-3"><i class="bi bi-newspaper me-2"></i>Pages</h2>
-      <div class="list-group list-group-flush">
-        {% for content in contents %}
-          <a href="/posts/{{ content.id }}/{{ (content.slug|default(content.url|default(content.id)))|url_encode }}" class="list-group-item list-group-item-action border-0 py-2">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <h3 class="h6 mb-1">{{ content.title }}</h3>
-                <small class="text-muted">{{ content.updated_at|date('F d, Y') }}</small>
-              </div>
-            </div>
-          </a>
-        {% endfor %}
-      </div>
-    </div>
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 mt-4 lg:mt-5 p-4">
+ <h2 class="h5 font-bold mb-3"><i class="lucide lucide-book-open mr-2"></i>Pages</h2>
+ <div class="flex flex-col">
+ {% for content in contents %}
+ <a href="/posts/{{ content.id }}/{{ (content.slug|default(content.url|default(content.id)))|url_encode }}" class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900">
+ <div class="flex justify-between items-start">
+ <div>
+ <h3 class="h6 mb-1">{{ content.title }}</h3>
+ <small class="text-slate-500">{{ content.updated_at|date('F d, Y') }}</small>
+ </div>
+ </div>
+ </a>
+ {% endfor %}
+ </div>
+ </div>
 
-    <div class="row mt-4">
-      <div class="col-12 text-center">
-        <p class="text-muted mb-0">
-          For a machine-readable version, visit <a href="/sitemap.xml" class="text-primary">/sitemap.xml</a>
-        </p>
-      </div>
-    </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mt-4">
+ <div class="col-span-12 text-center">
+ <p class="text-slate-500 mb-0">
+ For a machine-readable version, visit <a href="/sitemap.xml" class="text-indigo-600">/sitemap.xml</a>
+ </p>
+ </div>
+ </div>
 
-  </div>
+ {# New split sitemap system for search engines #}
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0 mt-4 p-4">
+ <h2 class="h5 font-bold mb-3"><i class="lucide lucide-file-code mr-2"></i>XML Sitemaps (for Search Engines)</h2>
+ <p class="text-slate-500 text-xs mb-3">
+ We provide a modern split sitemap system. The main index is at
+ <a href="/sitemap.xml" class="text-indigo-600">/sitemap.xml</a>.
+ </p>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 text-xs">
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-posts.xml" class="sitemap-link block">Posts</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-pages.xml" class="sitemap-link block">Pages</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-categories.xml" class="sitemap-link block">Categories</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-tags.xml" class="sitemap-link block">Tags</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-services.xml" class="sitemap-link block">Services</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-static.xml" class="sitemap-link block">Static &amp; Public</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap-mobiles.xml" class="sitemap-link block">Mobiles</a>
+ </div>
+ <div class="col-span-6 md:col-span-4 lg:col-span-2">
+ <a href="/sitemap.xml" class="sitemap-link block font-bold">Sitemap Index</a>
+ </div>
+ </div>
+ <p class="text-slate-500 mt-3 mb-0 text-xs">
+ <strong>Note:</strong> <code>/sitemap-products.xml</code> redirects to services. 
+ <code>/sitemap-static.xml</code> contains Home, MedEx, Calculators, Contact, Advertise, Donate and other public pages.
+ </p>
+ </div>
+
+ </div>
 </div>
 {% endblock %}
+
+
+
+
+

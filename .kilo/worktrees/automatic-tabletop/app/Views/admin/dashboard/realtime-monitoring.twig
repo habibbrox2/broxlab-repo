@@ -1,0 +1,666 @@
+﻿{% extends "admin/layout.twig" %}
+
+{% block title %}Real-time Monitoring - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+  .monitoring-shell {
+    --monitor-ink: #0f172a;
+    --monitor-muted: #64748b;
+    --monitor-line: #e2e8f0;
+    --monitor-soft: #f8fafc;
+    --monitor-success: #16a34a;
+    --monitor-warning: #d97706;
+    --monitor-danger: #dc2626;
+  }
+
+  .monitoring-shell .hero {
+    border: 1px solid var(--monitor-line);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .monitoring-shell .hero h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--monitor-ink);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .monitoring-shell .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--monitor-soft);
+    border: 1px solid var(--monitor-line);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--monitor-success);
+  }
+
+  .monitoring-shell .live-indicator::before {
+    content: '';
+    width: 0.6rem;
+    height: 0.6rem;
+    background: var(--monitor-success);
+    border-radius: 999px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .monitoring-shell .grid-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .monitoring-shell .metric-card {
+    border: 1px solid var(--monitor-line);
+    border-radius: 0.9rem;
+    background: #fff;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .monitoring-shell .metric-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+  }
+
+  .monitoring-shell .metric-icon.success {
+    background: #dcfce7;
+    color: var(--monitor-success);
+  }
+
+  .monitoring-shell .metric-icon.warning {
+    background: #fef3c7;
+    color: var(--monitor-warning);
+  }
+
+  .monitoring-shell .metric-icon.danger {
+    background: #fee2e2;
+    color: var(--monitor-danger);
+  }
+
+  .monitoring-shell .metric-label {
+    color: var(--monitor-muted);
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .monitoring-shell .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--monitor-ink);
+    line-height: 1.1;
+  }
+
+  .monitoring-shell .metric-change {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .monitoring-shell .metric-change.up {
+    color: var(--monitor-success);
+  }
+
+  .monitoring-shell .metric-change.down {
+    color: var(--monitor-danger);
+  }
+
+  .monitoring-shell .section {
+    border: 1px solid var(--monitor-line);
+    border-radius: 1rem;
+    background: #fff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .monitoring-shell .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--monitor-ink);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .monitoring-shell .section-title i {
+    color: var(--monitor-muted);
+  }
+
+  .monitoring-shell .activity-feed {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .monitoring-shell .activity-item {
+    padding: 0.875rem;
+    border-bottom: 1px solid var(--monitor-line);
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .monitoring-shell .activity-item:last-child {
+    border-bottom: none;
+  }
+
+  .monitoring-shell .activity-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+  }
+
+  .monitoring-shell .activity-icon.login {
+    background: #dbeafe;
+    color: #0284c7;
+  }
+
+  .monitoring-shell .activity-icon.success {
+    background: #dcfce7;
+    color: var(--monitor-success);
+  }
+
+  .monitoring-shell .activity-icon.failed {
+    background: #fee2e2;
+    color: var(--monitor-danger);
+  }
+
+  .monitoring-shell .activity-content {
+    flex: 1;
+  }
+
+  .monitoring-shell .activity-title {
+    color: var(--monitor-ink);
+    font-weight: 600;
+  }
+
+  .monitoring-shell .activity-meta {
+    color: var(--monitor-muted);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+
+  .monitoring-shell .alert-item {
+    padding: 1rem;
+    border-left: 4px solid var(--monitor-line);
+    background: var(--monitor-soft);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .monitoring-shell .alert-item.critical {
+    border-left-color: var(--monitor-danger);
+    background: #fee2e2;
+  }
+
+  .monitoring-shell .alert-item.warning {
+    border-left-color: var(--monitor-warning);
+    background: #fef3c7;
+  }
+
+  .monitoring-shell .alert-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .monitoring-shell .alert-time {
+    font-size: 0.8rem;
+    color: var(--monitor-muted);
+  }
+
+  .monitoring-shell .user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    background: var(--monitor-soft);
+    border: 1px solid var(--monitor-line);
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    margin: 0.25rem;
+  }
+
+  .monitoring-shell .user-avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #0284c7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .monitoring-shell .health-bar {
+    height: 0.4rem;
+    background: var(--monitor-line);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .monitoring-shell .health-bar-fill {
+    height: 100%;
+    background: var(--monitor-success);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+
+  .monitoring-shell .refresh-btn {
+    padding: 0.6rem 1.2rem;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s ease;
+  }
+
+  .monitoring-shell .refresh-btn:hover {
+    background: #2563eb;
+  }
+
+  .monitoring-shell .refresh-btn.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .monitoring-shell .spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="monitoring-shell container-fluid py-4">
+  <!-- Hero Section -->
+  <div class="hero">
+    <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
+      <div>
+        <h1>
+          <i class="bi bi-activity"></i>
+          Real-time Monitoring
+          <span class="live-indicator">
+            <span class="spinner" style="width: 0.5rem; height: 0.5rem; border-width: 1px; animation: pulse 1s infinite;"></span>
+            LIVE
+          </span>
+        </h1>
+        <p style="color: var(--monitor-muted); margin-top: 0.5rem; margin-bottom: 0;">System activity and health monitoring dashboard</p>
+      </div>
+      <button class="refresh-btn" onclick="refreshAllData()" id="refreshMainBtn">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="grid-section">
+    <div class="metric-card">
+      <div class="metric-icon success">
+        <i class="bi bi-people"></i>
+      </div>
+      <div class="metric-label">Active Users (15 min)</div>
+      <div class="metric-value" id="activeUsersCount">-</div>
+      <div class="metric-change up" id="activeUsersChange">Loading...</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon success">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="metric-label">Successful Logins (24h)</div>
+      <div class="metric-value" id="successfulLoginsCount">-</div>
+      <div class="metric-change" id="successfulLoginsPercent">-</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon danger">
+        <i class="bi bi-exclamation-circle"></i>
+      </div>
+      <div class="metric-label">Failed Logins (24h)</div>
+      <div class="metric-value" id="failedLoginsCount">-</div>
+      <div class="metric-change down" id="failedLoginsPercent">-</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon warning">
+        <i class="bi bi-shield-exclamation"></i>
+      </div>
+      <div class="metric-label">Active Alerts</div>
+      <div class="metric-value" id="activeAlertsCount">-</div>
+      <div class="metric-change" id="alertsStatus">Checking...</div>
+    </div>
+  </div>
+
+  <!-- System Health -->
+  <div class="section">
+    <div class="section-title">
+      <i class="bi bi-cpu"></i>
+      System Health
+    </div>
+    <div id="systemHealthContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+      <div style="padding: 1rem; background: var(--monitor-soft); border-radius: 0.7rem;">
+        <div style="color: var(--monitor-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Database Status</div>
+        <div style="font-weight: 700; color: var(--monitor-ink);" id="dbStatus">Checking...</div>
+        <div style="font-size: 0.8rem; color: var(--monitor-muted); margin-top: 0.3rem;" id="dbInfo">-</div>
+      </div>
+      <div style="padding: 1rem; background: var(--monitor-soft); border-radius: 0.7rem;">
+        <div style="color: var(--monitor-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Disk Usage</div>
+        <div style="font-weight: 700; color: var(--monitor-ink);" id="diskUsage">Checking...</div>
+        <div class="health-bar">
+          <div class="health-bar-fill" id="diskBar" style="width: 0%;"></div>
+        </div>
+      </div>
+      <div style="padding: 1rem; background: var(--monitor-soft); border-radius: 0.7rem;">
+        <div style="color: var(--monitor-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">PHP Version</div>
+        <div style="font-weight: 700; color: var(--monitor-ink);" id="phpVersion">Checking...</div>
+        <div style="font-size: 0.8rem; color: var(--monitor-muted); margin-top: 0.3rem;" id="phpMemory">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Real-time Activity Feed -->
+    <div class="col-lg-6 mb-4">
+      <div class="section">
+        <div class="section-title">
+          <i class="bi bi-clock-history"></i>
+          Recent Activity (Last Hour)
+        </div>
+        <div class="activity-feed" id="activityFeed">
+          <div style="text-align: center; color: var(--monitor-muted); padding: 2rem;">
+            Loading activity feed...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Users -->
+    <div class="col-lg-6 mb-4">
+      <div class="section">
+        <div class="section-title">
+          <i class="bi bi-person-check"></i>
+          Currently Active Users
+        </div>
+        <div id="activeUsersList" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="text-align: center; color: var(--monitor-muted); padding: 2rem; width: 100%;">
+            Loading active users...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts Section -->
+  <div class="section">
+    <div class="section-title">
+      <i class="bi bi-exclamation-triangle"></i>
+      Active Alerts & Warnings
+    </div>
+    <div id="alertsList" style="display: grid; gap: 0.75rem;">
+      <div style="text-align: center; color: var(--monitor-muted); padding: 2rem;">
+        Scanning for alerts...
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-refresh Settings -->
+  <div class="section" style="background: var(--monitor-soft); border-color: var(--monitor-line);">
+    <div class="section-title">
+      <i class="bi bi-gear"></i>
+      Auto-Refresh Settings
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" checked>
+        <span>Enable auto-refresh every <input type="number" id="refreshInterval" value="10" min="5" max="60" style="width: 3rem; padding: 0.3rem; border: 1px solid var(--monitor-line); border-radius: 0.3rem;"> seconds</span>
+      </label>
+      <span id="nextRefreshTime" style="font-size: 0.85rem; color: var(--monitor-muted);"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let autoRefreshTimer = null;
+  let nextRefreshCountdown = 0;
+
+  async function refreshAllData() {
+    const btn = document.getElementById('refreshMainBtn');
+    btn.classList.add('loading');
+
+    try {
+      await Promise.all([
+        loadActivityFeed(),
+        loadActiveUsers(),
+        loadSystemHealth(),
+        loadAlerts(),
+        loadActivitySummary(),
+      ]);
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  async function loadActivityFeed() {
+    try {
+      const response = await fetch('/api/admin/analytics/realtime-feed?limit=20');
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const html = data.data.map(activity => `
+          <div class="activity-item">
+            <div class="activity-icon ${activity.activity_type === 'login' ? (activity.status === 'success' ? 'success' : 'failed') : 'login'}">
+              <i class="bi bi-${activity.activity_type === 'login' ? 'box-arrow-in-right' : 'plug'}"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">
+                ${activity.activity_type === 'login' ? 'User Login' : 'API Call'}
+                <span style="color: var(--monitor-muted);">(${activity.status})</span>
+              </div>
+              <div class="activity-meta">
+                ${activity.ip_address} â€¢ ${new Date(activity.timestamp).toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('activityFeed').innerHTML = html || '<div style="text-align: center; color: var(--monitor-muted); padding: 2rem;">No recent activity</div>';
+      }
+    } catch (e) {
+      console.error('Activity feed error:', e);
+    }
+  }
+
+  async function loadActiveUsers() {
+    try {
+      const response = await fetch('/api/admin/analytics/active-users?minutes=15');
+      const data = await response.json();
+
+      document.getElementById('activeUsersCount').textContent = data.count || '0';
+
+      if (data.success && data.data && data.data.length > 0) {
+        const html = data.data.map(user => `
+          <div class="user-badge">
+            <div class="user-avatar">${user.username.charAt(0).toUpperCase()}</div>
+            <strong>${user.username}</strong>
+          </div>
+        `).join('');
+        document.getElementById('activeUsersList').innerHTML = html;
+      } else {
+        document.getElementById('activeUsersList').innerHTML = '<div style="text-align: center; color: var(--monitor-muted); padding: 1rem; width: 100%;">No active users</div>';
+      }
+    } catch (e) {
+      console.error('Active users error:', e);
+    }
+  }
+
+  async function loadSystemHealth() {
+    try {
+      const response = await fetch('/api/admin/analytics/system-health');
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const health = data.data;
+
+        // Database
+        document.getElementById('dbStatus').textContent = health.database?.status === 'healthy' ? 'âœ“ Healthy' : 'âœ— Issue';
+        document.getElementById('dbInfo').textContent = `${health.database?.connected_threads || 0} threads`;
+
+        // Disk
+        const diskUsage = health.disk_usage?.usage_percent || 0;
+        document.getElementById('diskUsage').textContent = diskUsage.toFixed(1) + '%';
+        document.getElementById('diskBar').style.width = diskUsage + '%';
+        document.getElementById('diskBar').style.background = diskUsage > 80 ? '#dc2626' : (diskUsage > 60 ? '#d97706' : '#16a34a');
+
+        // PHP
+        document.getElementById('phpVersion').textContent = health.php_info?.version || '-';
+        document.getElementById('phpMemory').textContent = health.php_info?.memory_limit || '-';
+      }
+    } catch (e) {
+      console.error('System health error:', e);
+    }
+  }
+
+  async function loadAlerts() {
+    try {
+      const response = await fetch('/api/admin/analytics/alerts?minutes=60&limit=10');
+      const data = await response.json();
+
+      document.getElementById('activeAlertsCount').textContent = data.count || '0';
+      document.getElementById('alertsStatus').textContent = data.count > 0 ? 'âš  ' + data.count + ' alerts' : 'âœ“ All clear';
+
+      if (data.success && data.data && data.data.length > 0) {
+        const html = data.data.map(alert => `
+          <div class="alert-item ${alert.severity || 'warning'}">
+            <div class="alert-title">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              ${alert.message}
+            </div>
+            <div class="alert-time">${alert.count ? alert.count + ' occurrences' : ''} â€¢ Last: ${new Date(alert.last_occurrence).toLocaleTimeString()}</div>
+          </div>
+        `).join('');
+        document.getElementById('alertsList').innerHTML = html;
+      } else {
+        document.getElementById('alertsList').innerHTML = '<div style="text-align: center; color: var(--monitor-muted); padding: 2rem;">âœ“ No active alerts</div>';
+      }
+    } catch (e) {
+      console.error('Alerts error:', e);
+    }
+  }
+
+  async function loadActivitySummary() {
+    try {
+      const response = await fetch('/api/admin/analytics/activity-summary?hours=24');
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const summary = data.data;
+        document.getElementById('successfulLoginsCount').textContent = summary.successful_logins || '0';
+        document.getElementById('failedLoginsCount').textContent = summary.failed_logins || '0';
+        
+        const total = (summary.successful_logins || 0) + (summary.failed_logins || 0);
+        const successPercent = total > 0 ? ((summary.successful_logins / total) * 100).toFixed(1) : 0;
+        document.getElementById('successfulLoginsPercent').textContent = 'â†‘ ' + successPercent + '% success rate';
+        document.getElementById('failedLoginsPercent').textContent = 'â†“ ' + (100 - successPercent).toFixed(1) + '% failed';
+      }
+    } catch (e) {
+      console.error('Activity summary error:', e);
+    }
+  }
+
+  function toggleAutoRefresh() {
+    if (document.getElementById('autoRefreshToggle').checked) {
+      startAutoRefresh();
+    } else {
+      stopAutoRefresh();
+    }
+  }
+
+  function startAutoRefresh() {
+    const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
+    autoRefreshTimer = setInterval(() => {
+      refreshAllData();
+    }, interval);
+
+    updateRefreshCountdown();
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+    document.getElementById('nextRefreshTime').textContent = '';
+  }
+
+  function updateRefreshCountdown() {
+    const interval = parseInt(document.getElementById('refreshInterval').value);
+    let countdown = interval;
+
+    const countdownTimer = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        document.getElementById('nextRefreshTime').textContent = `Next refresh in ${countdown}s`;
+      } else {
+        clearInterval(countdownTimer);
+        countdown = interval;
+      }
+    }, 1000);
+  }
+
+  // Initial load
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshAllData();
+    startAutoRefresh();
+  });
+</script>
+
+{% endblock %}
+

@@ -8,13 +8,22 @@ function setAlertHtml(container, type, message, strongLabel = '') {
   const safeType = escapeHtml(type || 'info');
   const safeMessage = escapeHtml(message || '');
   const strong = strongLabel ? `<strong>${escapeHtml(strongLabel)}</strong> ` : '';
-  const icon = safeType === 'success' ? 'check-circle' : 'exclamation-circle';
+  const icon = safeType === 'success' ? 'check-circle' : 'alert-circle';
 
+  const alertColors = {
+    success: 'bg-emerald-50 border border-emerald-200 text-emerald-800',
+    danger: 'bg-red-50 border border-red-200 text-red-800',
+    info: 'bg-sky-50 border border-sky-200 text-sky-800',
+    warning: 'bg-amber-50 border border-amber-200 text-amber-800',
+  };
+  const alertClass = alertColors[safeType] || alertColors.info;
   container.innerHTML = `
-        <div class="alert alert-${safeType} alert-dismissible fade show" role="alert">
-            <i class="bi bi-${icon} me-2"></i>
-            ${strong}${safeMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="${alertClass} rounded-xl p-4 flex items-start gap-3" role="alert">
+            <i class="lucide lucide-${icon} mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm">${strong}${safeMessage}</div>
+            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0" data-brox-dismiss="alert">
+              <i class="lucide lucide-x"></i>
+            </button>
         </div>
     `;
 }
@@ -67,7 +76,7 @@ export function initSecurity2FASetup(options = {}) {
     const btn = buttonEl || document.querySelector('button[onclick*="copySecret"]');
     if (!btn) return;
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-check me-1"></i> Copied!';
+    btn.innerHTML = '<i class="lucide lucide-check mr-1"></i> Copied!';
     setTimeout(() => {
       btn.innerHTML = originalText;
     }, 2000);
@@ -101,7 +110,7 @@ export function initSecurity2FABackup(options = {}) {
       const btn = buttonEl || document.querySelector('button[onclick*="copyAllBackupCodes"]');
       if (!btn) return;
       const originalText = btn.innerHTML;
-      btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+      btn.innerHTML = '<i class="lucide lucide-check"></i> Copied!';
       btn.classList.add('disabled');
 
       setTimeout(() => {
@@ -123,7 +132,7 @@ export function initSecurity2FABackup(options = {}) {
     const btn = buttonEl || document.querySelector('button[onclick*="regenerateBackupCodes"]');
     if (!btn) return;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Generating...';
 
     fetch('/admin/security/2fa/backup-codes/regenerate', {
       method: 'POST',
@@ -142,12 +151,12 @@ export function initSecurity2FABackup(options = {}) {
         }
         alert(`Error: ${ data?.error || 'Failed to generate codes'}`);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Generate New Codes';
+        btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
       })
       .catch(() => {
         alert('An error occurred. Please try again.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Generate New Codes';
+        btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
       });
   };
 
@@ -193,7 +202,7 @@ export function initSecurity2FA(options = {}) {
     const button = event?.currentTarget || byId('confirmDisableTwoFABtn');
     if (!button) return;
     button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Disabling...';
+    button.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Disabling...';
 
     fetch('/admin/security/2fa/disable', {
       method: 'POST',
@@ -209,12 +218,12 @@ export function initSecurity2FA(options = {}) {
         }
         showAlertInModal(alertBox, data?.error || 'Failed to disable 2FA', 'danger');
         button.disabled = false;
-        button.innerHTML = '<i class="bi bi-trash me-1"></i> Disable 2FA';
+        button.innerHTML = '<i class="lucide lucide-trash-2 mr-1"></i> Disable 2FA';
       })
       .catch(() => {
         showAlertInModal(alertBox, 'An error occurred. Please try again.', 'danger');
         button.disabled = false;
-        button.innerHTML = '<i class="bi bi-trash me-1"></i> Disable 2FA';
+        button.innerHTML = '<i class="lucide lucide-trash-2 mr-1"></i> Disable 2FA';
       });
   }
 

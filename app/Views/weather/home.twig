@@ -1,179 +1,178 @@
-﻿{% extends "layout.twig" %}
+{% extends"layout.twig" %}
 
 {% block title %}{{ 'Weather Winget - Home'|trans }}{% endblock %}
 
 {% block meta_description %}{{ 'Get current weather conditions and forecasts for cities worldwide. Check temperature, humidity, wind speed, and more.'|trans }}{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}">
-{% endblock %}
+
 
 {% block content %}
-<div class="container py-5">
-    {# Breadcrumb #}
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url }}">{{ 'Home'|trans }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ 'Weather'|trans }}</li>
-        </ol>
-    </nav>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+ {# Breadcrumb #}
+ <nav class="flex flex-wrap items-center gap-1 text-sm text-neutral-500 mb-4">
+ <a href="{{ url }}" class="hover:text-neutral-700 transition-colors">{{ 'Home'|trans }}</a>
+ <span class="text-neutral-300 mx-1">/</span>
+ <span class="text-neutral-900 font-medium" aria-current="page">{{ 'Weather'|trans }}</span>
+ </nav>
 
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-primary">
-            <i class="bi bi-cloud-sun-fill me-2"></i>Weather Winget
-        </h1>
-        <p class="lead text-muted">
-            {{ 'Real-time weather data and forecasts for any location worldwide.'|trans }}
-        </p>
-    </div>
+ <div class="text-center mb-5">
+ <h1 class="text-4xl font-bold text-indigo-600">
+ <i class="lucide lucide-cloud-sun mr-2" style="width:1.25em;height:1.25em;"></i>Weather Winget
+ </h1>
+ <p class="text-lg text-neutral-500">
+ {{ 'Real-time weather data and forecasts for any location worldwide.'|trans }}
+ </p>
+ </div>
 
-    {# Search Form #}
-    <div class="row justify-content-center mb-5">
-        <div class="col-lg-8">
-            <form action="{{ path('weather.details') }}" method="get" class="search-form">
-                <div class="input-group input-group-lg shadow-sm">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search text-primary"></i>
-                    </span>
-                    <input type="text"
-                           name="location"
-                           class="form-control border-0 py-3"
-                           placeholder="City name or coordinates (lat,lon)"
-                           value="{{ weather_data.search_city|e }}"
-                           aria-label="Search location"
-                           required>
-                    <button class="btn btn-primary px-4" type="submit">
-                        {{ 'Get Weather'|trans }}
-                    </button>
-                    <button class="btn btn-outline-secondary px-4 ms-2" type="button" id="useCurrentLocationBtn">
-                        <i class="bi bi-geo-alt-fill me-1"></i>{{ 'Use My Location'|trans }}
-                    </button>
-                </div>
-                <div class="form-text text-center mt-2">
-                    Popular: 
-                    <a href="{{ path('weather.details') }}?location=London">London</a> | 
-                    <a href="{{ path('weather.details') }}?location=New%20York">New York</a> | 
-                    <a href="{{ path('weather.details') }}?location=Tokyo">Tokyo</a>
-                </div>
-            </form>
-        </div>
-    </div>
+ {# Search Form #}
+ <div class="flex justify-center mb-5">
+ <div class="w-full max-w-3xl">
+ <form action="{{ path('weather.details') }}" method="get" class="search-form">
+ <div class="flex items-center shadow-sm rounded-lg overflow-hidden">
+ <span class="inline-flex items-center px-3 py-3 bg-white border-r border-neutral-200">
+ <i class="lucide lucide-search text-indigo-600" style="width:1em;height:1em;"></i>
+ </span>
+ <input type="text"
+ name="location"
+ class="w-full px-4 py-3 border-0 outline-none text-base"
+ placeholder="City name or coordinates (lat,lon)"
+ value="{{ weather_data.search_city|e }}"
+ aria-label="Search location"
+ required>
+ <button class="inline-flex items-center px-4 py-3 bg-indigo-600 text-white font-medium hover:bg-indigo-600-dark transition-colors" type="submit">
+ {{ 'Get Weather'|trans }}
+ </button>
+ <button class="inline-flex items-center px-4 py-3 text-neutral-700 font-medium hover:bg-neutral-100 transition-colors ml-0.5" type="button" id="useCurrentLocationBtn">
+ <i class="lucide lucide-map-pin mr-1" style="width:1em;height:1em;"></i>{{ 'Use My Location'|trans }}
+ </button>
+ </div>
+ <div class="text-xs text-neutral-400 text-center mt-2">
+ Popular: 
+ <a href="{{ path('weather.details') }}?location=London">London</a> | 
+ <a href="{{ path('weather.details') }}?location=New%20York">New York</a> | 
+ <a href="{{ path('weather.details') }}?location=Tokyo">Tokyo</a>
+ </div>
+ </form>
+ </div>
+ </div>
 
-    {# Featured Weather #}
-    {% if weather_data.featured_weather is not empty %}
-        <div class="row mb-5">
-            <div class="col-12">
-                <h2 class="h3 fw-semibold mb-4">
-                    <i class="bi bi-star-fill text-warning me-2"></i>Current Weather
-                </h2>
-                {% include 'weather/partials/current-conditions.twig' with {weather: weather_data.featured_weather.current, location_name: weather_data.featured_weather.current.location_name, units: weather_data.featured_weather.units} %}
-            </div>
-        </div>
-    {% endif %}
+ {# Featured Weather #}
+ {% if weather_data.featured_weather is not empty %}
+ <div class="mb-5">
+ <div>
+ <h2 class="text-xl font-semibold mb-4">
+ <i class="lucide lucide-star text-amber-600 mr-2" style="width:1.25em;height:1.25em;"></i>Current Weather
+ </h2>
+ {% include 'weather/partials/current-conditions.twig' with {weather: weather_data.featured_weather.current, location_name: weather_data.featured_weather.current.location_name, units: weather_data.featured_weather.units} %}
+ </div>
+ </div>
+ {% endif %}
 
-    {# Popular Locations #}
-    <div class="row mb-5">
-        <div class="col-12">
-            <h2 class="h3 fw-semibold mb-4">
-                <i class="bi bi-globe text-info me-2"></i>Popular Locations
-            </h2>
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-                {% for loc in weather_data.popular_locations %}
-                    <div class="col">
-                        <a href="{{ path('weather.details') }}?location={{ loc.search|url_encode }}" class="text-decoration-none">
-                            <div class="card h-100 border-0 shadow-sm hover-lift">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">{{ loc.name }}</h5>
-                                    <p class="text-muted small mb-0">{{ loc.country }}</p>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+ {# Popular Locations #}
+ <div class="mb-5">
+ <div>
+ <h2 class="text-xl font-semibold mb-4">
+ <i class="lucide lucide-globe text-sky-600 mr-2" style="width:1.25em;height:1.25em;"></i>Popular Locations
+ </h2>
+ <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+ {% for loc in weather_data.popular_locations %}
+ <div>
+ <a href="{{ path('weather.details') }}?location={{ loc.search|url_encode }}" class="no-underline">
+ <div class="bg-white rounded-xl shadow-sm h-full hover:shadow-md-md transition-shadow-md">
+ <div class="p-5 text-center">
+ <h5 class="text-lg font-semibold text-neutral-900">{{ loc.name }}</h5>
+ <p class="text-neutral-500 text-sm mb-0">{{ loc.country }}</p>
+ </div>
+ </div>
+ </a>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ </div>
 
-    {# Info Cards #}
-    <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-info-circle me-2 text-primary"></i>{{ 'About This Service'|trans }}</h5>
-                    <p class="text-muted">
-                        {{ 'Weather Winget provides accurate, real-time weather data from trusted meteorological sources.'|trans }}
-                        {{ 'Get temperature, humidity, wind speed, pressure, UV index, and multi-day forecasts.'|trans }}
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-lightning me-2 text-warning"></i>Features</h5>
-                    <ul class="list-unstyled mb-0 text-muted">
-                        <li><i class="bi bi-check text-success me-2"></i>Current conditions & forecasts</li>
-                        <li><i class="bi bi-check text-success me-2"></i>Hourly breakdown available</li>
-                        <li><i class="bi bi-check text-success me-2"></i>Multiple unit systems</li>
-                        <li><i class="bi bi-check text-success me-2"></i>Weather alerts & warnings</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+ {# Info Cards #}
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div class="md:col-span-1">
+ <div class="bg-white rounded-xl shadow-sm h-full">
+ <div class="p-5">
+ <h5 class="text-lg font-semibold text-neutral-900"><i class="lucide lucide-info mr-2 text-indigo-600" style="width:1.25em;height:1.25em;"></i>{{ 'About This Service'|trans }}</h5>
+ <p class="text-neutral-500">
+ {{ 'Weather Winget provides accurate, real-time weather data from trusted meteorological sources.'|trans }}
+ {{ 'Get temperature, humidity, wind speed, pressure, UV index, and multi-day forecasts.'|trans }}
+ </p>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-1">
+ <div class="bg-white rounded-xl shadow-sm h-full">
+ <div class="p-5">
+ <h5 class="text-lg font-semibold text-neutral-900"><i class="lucide lucide-zap mr-2 text-amber-600" style="width:1.25em;height:1.25em;"></i>Features</h5>
+ <ul class="list-none mb-0 text-neutral-500">
+ <li><i class="lucide lucide-check text-emerald-600 mr-2" style="width:1em;height:1em;"></i>Current conditions & forecasts</li>
+ <li><i class="lucide lucide-check text-emerald-600 mr-2" style="width:1em;height:1em;"></i>Hourly breakdown available</li>
+ <li><i class="lucide lucide-check text-emerald-600 mr-2" style="width:1em;height:1em;"></i>Multiple unit systems</li>
+ <li><i class="lucide lucide-check text-emerald-600 mr-2" style="width:1em;height:1em;"></i>Weather alerts & warnings</li>
+ </ul>
+ </div>
+ </div>
+ </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const locationInput = document.querySelector('input[name="location"]');
-    const currentBtn = document.getElementById('useCurrentLocationBtn');
-    const redirectToCurrentLocation = function(latitude, longitude) {
-        const lat = latitude.toFixed(6);
-        const lon = longitude.toFixed(6);
-        window.location.href = '{{ path('weather.home') }}?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon);
-    };
+ const locationInput = document.querySelector('input[name="location"]');
+ const currentBtn = document.getElementById('useCurrentLocationBtn');
+ const redirectToCurrentLocation = function(latitude, longitude) {
+ const lat = latitude.toFixed(6);
+ const lon = longitude.toFixed(6);
+ window.location.href = '{{ path('weather.home') }}?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon);
+ };
 
-    const fetchCurrentLocationWeather = function() {
-        if (!navigator.geolocation) {
-            return;
-        }
+ const fetchCurrentLocationWeather = function() {
+ if (!navigator.geolocation) {
+ return;
+ }
 
-        navigator.geolocation.getCurrentPosition(function(position) {
-            redirectToCurrentLocation(position.coords.latitude, position.coords.longitude);
-        }, function() {
-            // User denied or unavailable; keep the page visible
-        }, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-        });
-    };
+ navigator.geolocation.getCurrentPosition(function(position) {
+ redirectToCurrentLocation(position.coords.latitude, position.coords.longitude);
+ }, function() {
+ // User denied or unavailable; keep the page visible
+ }, {
+ enableHighAccuracy: true,
+ timeout: 10000,
+ maximumAge: 60000
+ });
+ };
 
-    if (currentBtn) {
-        currentBtn.addEventListener('click', function(event) {
-            event.preventDefault();
-            fetchCurrentLocationWeather();
-        });
-    }
+ if (currentBtn) {
+ currentBtn.addEventListener('click', function(event) {
+ event.preventDefault();
+ fetchCurrentLocationWeather();
+ });
+ }
 
-    const hasLocationQuery = new URLSearchParams(window.location.search).has('lat') || new URLSearchParams(window.location.search).has('lon') || new URLSearchParams(window.location.search).has('location');
-    if (locationInput && !locationInput.value.trim() && !hasLocationQuery) {
-        fetchCurrentLocationWeather();
-    }
+ const hasLocationQuery = new URLSearchParams(window.location.search).has('lat') || new URLSearchParams(window.location.search).has('lon') || new URLSearchParams(window.location.search).has('location');
+ if (locationInput && !locationInput.value.trim() && !hasLocationQuery) {
+ fetchCurrentLocationWeather();
+ }
 
-    if (locationInput) {
-        locationInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const location = encodeURIComponent(this.value.trim());
-                if (location) {
-                    window.location.href = '{{ path('weather.details') }}?location=' + location;
-                }
-            }
-        });
-    }
+ if (locationInput) {
+ locationInput.addEventListener('keydown', function(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ const location = encodeURIComponent(this.value.trim());
+ if (location) {
+ window.location.href = '{{ path('weather.details') }}?location=' + location;
+ }
+ }
+ });
+ }
 });
 </script>
 {% endblock %}
+
+
+

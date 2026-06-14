@@ -1,0 +1,170 @@
+﻿{% extends 'admin/layout.twig' %}
+
+{% block title %}Ad Placements â€“ Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
+<li class="breadcrumb-item"><a href="/admin/revenue">Revenue</a></li>
+<li class="breadcrumb-item active" aria-current="page">Ad Placements</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="dashboard-page">
+
+  {# â”€â”€ Stats â”€â”€ #}
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted text-uppercase">Active Slots</small>
+            <div class="h3 mb-0 fw-bold text-success">
+              {{ placements|filter(p=>p.status=='active')|length }}
+            </div>
+          </div>
+          <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3"><i class="bi bi-broadcast-pin text-success"></i></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted text-uppercase">Total Impressions</small>
+            <div class="h3 mb-0 fw-bold text-primary">
+              {{ placements|reduce((carry,p)=>carry+(p.impressions|default(0)),0)|number_format }}
+            </div>
+          </div>
+          <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3"><i class="bi bi-eye-fill text-primary"></i></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted text-uppercase">Total Clicks</small>
+            <div class="h3 mb-0 fw-bold text-warning">
+              {{ placements|reduce((carry,p)=>carry+(p.clicks|default(0)),0)|number_format }}
+            </div>
+          </div>
+          <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3"><i class="bi bi-cursor-fill text-warning"></i></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  {# â”€â”€ Add New â”€â”€ #}
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-0 py-3">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-plus-circle-dotted mr-2 text-primary"></i>Add New Ad Placement</h5>
+    </div>
+    <div class="card-body p-4">
+      <form method="POST" action="/admin/revenue/ads/save" class="row g-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="col-md-4">
+          <label class="form-label">Display Name *</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Homepage Top Banner" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Slot Key *</label>
+          <input type="text" name="slot_key" class="form-control font-monospace"
+                 placeholder="e.g. home_banner" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Placement *</label>
+          <select name="placement" class="form-select" required>
+            {% for p in all_placements %}
+            <option value="{{ p }}">{{ p|replace({'_':' '})|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Ad Code (HTML / JS snippet)</label>
+          <textarea name="ad_code" class="form-control font-monospace" rows="3"
+                    placeholder='<script src="â€¦"></script> or <ins class="adsbygoogle">â€¦</ins>'></textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Publisher Name</label>
+          <input type="text" name="publisher_name" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Publisher Email</label>
+          <input type="email" name="publisher_email" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-grid align-items-end">
+          <button type="submit" class="btn btn-primary rounded-pill fw-bold">
+            <i class="bi bi-check-lg mr-1"></i>Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# â”€â”€ List â”€â”€ #}
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-header bg-white border-0 py-3">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-layout-sidebar mr-2 text-info"></i>Existing Slots</h5>
+    </div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light"><tr>
+          <th class="px-4">ID</th>
+          <th>Name</th>
+          <th>Slot Key</th>
+          <th>Placement</th>
+          <th>Publisher</th>
+          <th>Impressions</th>
+          <th>Clicks</th>
+          <th>Status</th>
+          <th class="text-end px-4">Actions</th>
+        </tr></thead>
+        <tbody>
+        {% for p in placements %}
+          {% set s = p.status %}
+          {% set sc = s == 'active' ? 'bg-success-subtle text-success'
+                   : s == 'paused' ? 'bg-warning-subtle text-warning'
+                   : 'bg-secondary-subtle text-secondary' %}
+          <tr>
+            <td class="px-4"><span class="badge bg-secondary">#{{ p.id }}</span></td>
+            <td class="fw-semibold">{{ p.name }}</td>
+            <td><code class="small bg-light px-2 py-1 rounded">{{ p.slot_key }}</code></td>
+            <td>{{ p.placement|replace({'_':' '})|capitalize }}</td>
+            <td>{{ p.publisher_name|default('â€”') }}</td>
+            <td class="font-monospace small">{{ p.impressions|default(0)|number_format }}</td>
+            <td class="font-monospace small">{{ p.clicks|default(0)|number_format }}</td>
+            <td><span class="badge {{ sc }}">{{ s }}</span></td>
+            <td class="text-end px-4">
+              <div class="btn-group btn-group-sm">
+                <form method="POST" action="/admin/revenue/ads/toggle/{{ p.id }}" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="btn btn-sm {% if s == 'active' %}btn-outline-warning{% else %}btn-outline-success{% endif %} rounded-pill">
+                    {{ s == 'active' ? 'Pause' : 'Activate' }}
+                  </button>
+                </form>
+                <form method="GET" action="/admin/revenue/ads/delete/{{ p.id }}" style="display:inline"
+                      onsubmit="return confirm('Delete this ad placement?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="btn btn-sm btn-outline-danger rounded-pill">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No ad placements yet. Create one above.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

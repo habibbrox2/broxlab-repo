@@ -1,506 +1,432 @@
 {% extends "admin/layout.twig" %}
-{% block title %}Manage Comments{% endblock %}
+{% block title %}Comments Management{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h1 class="h3 mb-0 fw-bold">
-              <i class="bi bi-chat-square-dots me-2"></i> Comments Management
-            </h1>
-            <p class="text-muted mt-2 mb-0">Manage and moderate user comments across your site</p>
-          </div>
-        </div>
-      </div>
+<div class="px-4 py-4 max-w-7xl mx-auto">
+
+  <!-- Gradient Header -->
+  <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-600 px-6 py-5 mb-6 shadow-lg">
+   <div class="absolute inset-0 bg-white/10 [mask-image:radial-gradient(ellipse_at_top_right,transparent_40%,black_70%)]"></div>
+   <div class="relative flex items-center justify-between">
+    <div class="flex items-center gap-3">
+     <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-inner">
+      <i class="lucide lucide-message-square text-white text-lg"></i>
+     </div>
+     <div>
+      <h1 class="text-xl font-bold text-white m-0">Comments Management</h1>
+      <p class="text-sm text-white/80 mt-1 mb-0">Manage and moderate user comments across your site</p>
+     </div>
     </div>
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <p class="text-muted small mb-0">Total Comments</p>
-                <h3 class="mb-0 fw-bold">{{ total_comments }}</h3>
-              </div>
-              <div class="bg-primary bg-opacity-10 p-3 rounded">
-                <i class="bi bi-chat-left-text fs-5 text-primary"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <p class="text-muted small mb-0">Today's Comments</p>
-                <h3 class="mb-0 fw-bold">{{ today_count }}</h3>
-              </div>
-              <div class="bg-success bg-opacity-10 p-3 rounded">
-                <i class="bi bi-calendar-check fs-5 text-success"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <p class="text-muted small mb-0">Pending Approval</p>
-                <h3 class="mb-0 fw-bold">{{ pending_count }}</h3>
-              </div>
-              <div class="bg-warning bg-opacity-10 p-3 rounded">
-                <i class="bi bi-hourglass-split fs-5 text-warning"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <p class="text-muted small mb-0">Avg Per Day</p>
-                <h3 class="mb-0 fw-bold">{{ (total_comments / 30)|round }}</h3>
-              </div>
-              <div class="bg-info bg-opacity-10 p-3 rounded">
-                <i class="bi bi-graph-up fs-5 text-info"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Comments Table -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-light border-bottom">
-        <form class="row g-2 align-items-end" method="GET">
-          <div class="col-md-3">
-            <label class="form-label small text-muted mb-1">Search</label>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-              <input type="text"
-                     class="form-control form-control-sm"
-                     placeholder="Search comments..."
-                     name="search"
-                     value="{{ search }}">
-            </div>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small text-muted mb-1">Status</label>
-            <select class="form-select form-select-sm" name="status">
-              <option value="all" {% if status == 'all' %}selected{% endif %}>All Status</option>
-              <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
-              <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small text-muted mb-1">Limit</label>
-            <select name="limit" class="form-select form-select-sm">
-              <option value="10">10 items</option>
-              <option value="20" selected>20 items</option>
-              <option value="50">50 items</option>
-              <option value="100">100 items</option>
-            </select>
-          </div>
-          <div class="col-md-3 text-end">
-            <button type="submit" class="btn btn-sm btn-primary">
-              <i class="bi bi-funnel me-1"></i> Apply
-            </button>
-          </div>
-        </form>
-      </div>
-      <div class="table-responsive">
-        {% if comments %}
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th class="inl-p-0016">
-                  <input type="checkbox" class="form-check-input" id="selectAll">
-                </th>
-                <th>Author</th>
-                <th class="inl-p-0017">Comment Content</th>
-                <th>Date</th>
-                <th class="inl-p-0018">Engagement</th>
-                <th class="inl-p-0019">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for comment in comments %}
-                <tr>
-                  <td>
-                    <input type="checkbox"
-                           class="form-check-input comment-checkbox"
-                           value="{{ comment.id }}">
-                  </td>
-                  <td>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="bg-primary bg-opacity-10 rounded-circle p-2 inl-p-0020">
-                        <i class="bi bi-person text-primary"></i>
-                      </div>
-                      <div>
-                        <p class="mb-0 fw-bold small">
-                          {% if comment.user_id %}
-                            User #{{ comment.user_id }}
-                          {% else %}
-                            {{ comment.guest_name }}
-                          {% endif %}
-                        </p>
-                        <p class="mb-0 text-muted small">{{ comment.user_id ? 'Registered' : 'Guest' }}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <p class="mb-0 text-truncate" title="{{ comment.content|striptags }}">
-                      {{ comment.content|striptags|slice(0, 80) }}
-                      {% if comment.content|length > 80 %}...{% endif %}
-                    </p>
-                    <p class="mb-0 text-muted small mt-1">
-                      On: <strong>{{ comment.content_type|capitalize }} #{{ comment.content_id }}</strong>
-                      {% if comment.parent_id %}<span class="badge bg-secondary bg-opacity-10 text-secondary">Reply</span>{% endif %}
-                    </p>
-                  </td>
-                  <td>
-                    <small class="text-muted">
-                      {{ comment.created_at|date("M d, Y") }}
-                      <br>
-                      {{ comment.created_at|date("H:i") }}
-                    </small>
-                  </td>
-                  <td>
-                    <small class="text-muted">
-                      <i class="bi bi-hand-thumbs-up"></i> {{ comment.likes|default(0) }}
-                      <br>
-                      <i class="bi bi-chat"></i> {{ comment.reply_count|default(0) }}
-                    </small>
-                  </td>
-                  <td>
-                    <div class="btn-group btn-group-sm" role="group">
-                      <a href="/admin/comments/{{ comment.id }}"
-                         class="btn btn-outline-primary"
-                         title="View Details">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      <button type="button"
-                              class="btn btn-outline-info"
-                              onclick="editCommentQuick({{ comment.id }})"
-                              title="Edit">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      {% if comment.status != 'hidden' %}
-                        <button type="button"
-                                class="btn btn-outline-warning"
-                                onclick="hideCommentQuick({{ comment.id }})"
-                                title="Hide">
-                          <i class="bi bi-eye-slash"></i>
-                        </button>
-                      {% else %}
-                        <button type="button"
-                                class="btn btn-outline-success"
-                                onclick="unhideCommentQuick({{ comment.id }})"
-                                title="Unhide">
-                          <i class="bi bi-eye"></i>
-                        </button>
-                      {% endif %}
-                      <button type="button"
-                              class="btn btn-outline-danger"
-                              onclick="deleteComment({{ comment.id }})"
-                              title="Delete">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          <!-- Bulk Actions -->
-          <div class="card-footer bg-light">
-            <div class="row align-items-center">
-              <div class="col">
-                <div class="d-flex gap-2">
-                  <select class="form-select form-select-sm inl-p-0021" id="bulkAction">
-                    <option value="">Bulk Actions</option>
-                    <option value="approve">Approve Selected</option>
-                    <option value="delete">Delete Selected</option>
-                  </select>
-                  <button type="button"
-                          class="btn btn-sm btn-outline-secondary"
-                          onclick="executeBulkAction()">Apply</button>
-                </div>
-              </div>
-              <div class="col-auto text-muted small">
-                <span id="selectedCount">0</span> selected
-              </div>
-            </div>
-          </div>
-        {% else %}
-          <div class="card-body text-center py-5">
-            <div class="mb-3">
-              <i class="bi bi-chat-left-dots fs-1 text-muted"></i>
-            </div>
-            <p class="text-muted mb-0">No comments found</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-    <!-- Pagination -->
-    {% include "admin/partials/pagination.twig" %}
+   </div>
   </div>
-  <!-- Comment Detail Modal -->
-  <div class="modal fade" id="commentModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header border-bottom">
-          <h5 class="modal-title fw-bold">Comment Details</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" id="commentModalBody">
-          <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer border-top">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-danger" id="deleteCommentBtn">Delete</button>
-        </div>
-      </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+   <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div class="flex items-center justify-between">
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Total Comments</p>
+      <h3 class="text-2xl font-bold text-slate-900 m-0">{{ total_comments|default(0) }}</h3>
+     </div>
+     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+      <i class="lucide lucide-message-square-text text-lg"></i>
+     </div>
     </div>
+   </div>
+   <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div class="flex items-center justify-between">
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Today's Comments</p>
+      <h3 class="text-2xl font-bold text-slate-900 m-0">{{ today_count|default(0) }}</h3>
+     </div>
+     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+      <i class="lucide lucide-calendar-check text-lg"></i>
+     </div>
+    </div>
+   </div>
+   <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div class="flex items-center justify-between">
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Pending Approval</p>
+      <h3 class="text-2xl font-bold text-slate-900 m-0">{{ pending_count|default(0) }}</h3>
+     </div>
+     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+      <i class="lucide lucide-hourglass text-lg"></i>
+     </div>
+    </div>
+   </div>
+   <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div class="flex items-center justify-between">
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Avg Per Day</p>
+      <h3 class="text-2xl font-bold text-slate-900 m-0">{{ (total_comments / 30)|round|default(0) }}</h3>
+     </div>
+     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+      <i class="lucide lucide-trending-up text-lg"></i>
+     </div>
+    </div>
+   </div>
   </div>
-  <script>
+
+  <!-- Filter + Table Card -->
+  <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
+   <!-- Filter Bar -->
+   <div class="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white rounded-t-xl">
+    <form class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" method="GET">
+     <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Search</label>
+      <div class="flex rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all bg-white">
+       <span class="inline-flex items-center px-3 bg-slate-50 border-r border-slate-200 text-slate-400"><i class="lucide lucide-search text-sm"></i></span>
+       <input type="text"
+        class="flex-1 px-3 py-2 border-0 outline-none text-sm"
+        placeholder="Search comments..."
+        name="search"
+        value="{{ search|e('html_attr') }}">
+      </div>
+     </div>
+     <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
+      <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none bg-white" name="status">
+       <option value="all" {% if status == 'all' %}selected{% endif %}>All Status</option>
+       <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+       <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+       <option value="hidden" {% if status == 'hidden' %}selected{% endif %}>Hidden</option>
+      </select>
+     </div>
+     <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Per Page</label>
+      <select name="limit" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none bg-white">
+       <option value="10" {% if limit == 10 %}selected{% endif %}>10 items</option>
+       <option value="20" {% if limit == 20 %}selected{% endif %}>20 items</option>
+       <option value="50" {% if limit == 50 %}selected{% endif %}>50 items</option>
+       <option value="100" {% if limit == 100 %}selected{% endif %}>100 items</option>
+      </select>
+     </div>
+     <div class="flex items-end">
+      <button type="submit" class="inline-flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-[0.97] transition-all shadow-sm">
+       <i class="lucide lucide-filter mr-1"></i> Apply Filters
+      </button>
+     </div>
+    </form>
+   </div>
+
+   <!-- Table -->
+   <div class="overflow-x-auto">
+    {% if comments %}
+    <table class="w-full border-collapse text-sm">
+     <thead>
+      <tr class="bg-slate-50 border-b border-slate-200">
+       <th class="px-4 py-3 text-left w-10">
+        <input type="checkbox"
+         class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+         id="selectAll">
+       </th>
+       <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Author</th>
+       <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Comment</th>
+       <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+       <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Engagement</th>
+       <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+      </tr>
+     </thead>
+     <tbody class="divide-y divide-slate-100">
+      {% for comment in comments %}
+      <tr class="hover:bg-indigo-50/40 transition-colors group">
+       <td class="px-4 py-3">
+        <input type="checkbox"
+         class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 comment-checkbox"
+         value="{{ comment.id }}">
+       </td>
+       <td class="px-4 py-3">
+        <div class="flex items-center gap-2.5">
+         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 shrink-0">
+          <i class="lucide lucide-user text-sm"></i>
+         </div>
+         <div class="min-w-0">
+          <p class="m-0 text-sm font-semibold text-slate-800 truncate max-w-[130px]">
+           {% if comment.user_id %}
+           User #{{ comment.user_id }}
+           {% else %}
+           {{ comment.guest_name|default('Anonymous') }}
+           {% endif %}
+          </p>
+          <p class="m-0 text-xs text-slate-500">{{ comment.user_id ? 'Registered' : 'Guest' }}</p>
+         </div>
+        </div>
+       </td>
+       <td class="px-4 py-3 min-w-[240px]">
+        <p class="m-0 text-sm text-slate-700 truncate max-w-xs" title="{{ comment.content|striptags }}">
+         {{ comment.content|striptags|slice(0, 80) }}{% if comment.content|length > 80 %}...{% endif %}
+        </p>
+        <div class="flex items-center gap-1.5 mt-1">
+         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">{{ comment.content_type|capitalize }} #{{ comment.content_id }}</span>
+         {% if comment.parent_id %}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700">Reply</span>{% endif %}
+         {% if comment.status == 'pending' %}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">Pending</span>{% endif %}
+         {% if comment.status == 'hidden' %}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700">Hidden</span>{% endif %}
+        </div>
+       </td>
+       <td class="px-4 py-3">
+        <span class="text-xs text-slate-500 whitespace-nowrap">
+         {{ comment.created_at|date("M d, Y") }}
+         <br>
+         <span class="text-[11px]">{{ comment.created_at|date("H:i") }}</span>
+        </span>
+       </td>
+       <td class="px-4 py-3">
+        <div class="flex gap-3 text-xs text-slate-500">
+         <span class="inline-flex items-center gap-1"><i class="lucide lucide-thumbs-up" style="width:12px;height:12px;"></i> {{ comment.likes|default(0) }}</span>
+         <span class="inline-flex items-center gap-1"><i class="lucide lucide-message-square" style="width:12px;height:12px;"></i> {{ comment.reply_count|default(0) }}</span>
+        </div>
+       </td>
+       <td class="px-4 py-3">
+        <div class="flex items-center justify-center gap-1">
+         <a href="/admin/comments/{{ comment.id }}"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+          title="View Details">
+          <i class="lucide lucide-eye text-sm"></i>
+         </a>
+         <button type="button"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-all"
+          onclick="editCommentQuick({{ comment.id }})"
+          title="Edit">
+          <i class="lucide lucide-pencil text-sm"></i>
+         </button>
+         {% if comment.status != 'hidden' %}
+         <button type="button"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all"
+          onclick="hideCommentQuick({{ comment.id }})"
+          title="Hide">
+          <i class="lucide lucide-eye-off text-sm"></i>
+         </button>
+         {% else %}
+         <button type="button"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+          onclick="unhideCommentQuick({{ comment.id }})"
+          title="Unhide">
+          <i class="lucide lucide-eye text-sm"></i>
+         </button>
+         {% endif %}
+         <button type="button"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+          onclick="deleteComment({{ comment.id }})"
+          title="Delete">
+          <i class="lucide lucide-trash-2 text-sm"></i>
+         </button>
+        </div>
+       </td>
+      </tr>
+      {% endfor %}
+     </tbody>
+    </table>
+
+    <!-- Bulk Actions Bar -->
+    <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
+     <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+       <select class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none bg-white" id="bulkAction">
+        <option value="">Bulk Actions</option>
+        <option value="approve">Approve Selected</option>
+        <option value="delete">Delete Selected</option>
+       </select>
+       <button type="button"
+        class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+        onclick="executeBulkAction()">Apply</button>
+      </div>
+      <div class="text-sm text-slate-500 font-medium">
+       <span id="selectedCount">0</span> selected
+      </div>
+     </div>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="flex flex-col items-center justify-center py-16 px-4">
+     <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 mb-4">
+      <i class="lucide lucide-message-square text-3xl text-slate-300"></i>
+     </div>
+     <h3 class="text-lg font-semibold text-slate-800 mb-1">No Comments Yet</h3>
+     <p class="text-sm text-slate-500 mb-0 text-center max-w-xs">No comments match your current filters. Try adjusting the search or status filter above.</p>
+    </div>
+    {% endif %}
+   </div>
+  </div>
+
+  <!-- Pagination -->
+  {% include "admin/partials/pagination.twig" %}
+
+ </div>
+
+ <!-- Comment Detail Modal -->
+ <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm" id="commentModal">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 my-2 max-h-[90vh] flex flex-col" role="dialog" aria-modal="true">
+   <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 rounded-t-xl bg-gradient-to-r from-slate-50 to-white">
+    <h5 class="text-lg font-bold text-slate-900 m-0">Comment Details</h5>
+    <button type="button"
+     class="w-8 h-8 flex items-center justify-center border-0 bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-150 cursor-pointer"
+     data-brox-dismiss="modal">
+     <i class="lucide lucide-x text-lg"></i>
+    </button>
+   </div>
+   <div class="flex-1 px-5 py-4 overflow-y-auto" id="commentModalBody">
+    <div class="flex flex-col items-center justify-center py-8">
+     <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent" role="status">
+      <span class="sr-only">Loading...</span>
+     </div>
+    </div>
+   </div>
+   <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-200 rounded-b-xl bg-slate-50">
+    <button type="button"
+     class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all duration-150 cursor-pointer"
+     data-brox-dismiss="modal">Close</button>
+    <button type="button"
+     class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all duration-150 cursor-pointer shadow-sm"
+     id="deleteCommentBtn">Delete</button>
+   </div>
+  </div>
+ </div>
+
+ <script>
 let currentCommentId = null;
 
 // Toggle select all
 document.getElementById('selectAll')?.addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.comment-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = this.checked;
-    });
-    updateSelectedCount();
+ const checkboxes = document.querySelectorAll('.comment-checkbox');
+ checkboxes.forEach(cb => cb.checked = this.checked);
+ updateSelectedCount();
 });
 
 // Update selected count
-document.querySelectorAll('.comment-checkbox')?.forEach(checkbox => {
-    checkbox.addEventListener('change', updateSelectedCount);
+document.querySelectorAll('.comment-checkbox')?.forEach(cb => {
+ cb.addEventListener('change', updateSelectedCount);
 });
 
 function updateSelectedCount() {
-    const checked = document.querySelectorAll('.comment-checkbox:checked').length;
-    document.getElementById('selectedCount').textContent = checked;
+ const checked = document.querySelectorAll('.comment-checkbox:checked').length;
+ document.getElementById('selectedCount').textContent = checked;
 }
 
 // View comment
 function viewComment(commentId) {
-    currentCommentId = commentId;
-    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
-
-    // Show loading spinner
+ currentCommentId = commentId;
+ const modal = new broxUI.Modal(document.getElementById('commentModal'));
+ document.getElementById('commentModalBody').innerHTML = `
+  <div class="flex flex-col items-center justify-center py-8">
+   <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent" role="status">
+    <span class="sr-only">Loading...</span>
+   </div>
+  </div>
+ `;
+ modal.show();
+ fetch('/admin/comments/detail?id=' + commentId)
+  .then(r => r.json())
+  .then(data => {
+   if (data.success) {
     document.getElementById('commentModalBody').innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
+     <div class="space-y-4">
+      <div>
+       <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Author</label>
+       <p class="font-semibold text-slate-800">${data.author}</p>
+      </div>
+      <div>
+       <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Content</label>
+       <div class="border rounded-lg p-4 bg-slate-50 text-sm text-slate-700">${data.content}</div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+        <p class="text-sm text-slate-700">${data.created_at}</p>
+       </div>
+       <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Likes</label>
+        <p class="text-sm text-slate-700 flex items-center gap-1.5"><i class="lucide lucide-thumbs-up text-indigo-600" style="width:14px;height:14px;"></i> ${data.likes}</p>
+       </div>
+      </div>
+      <div>
+       <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Content Type</label>
+       <p class="text-sm text-slate-700">${data.content_type} #${data.content_id}</p>
+      </div>
+     </div>
     `;
-
-    modal.show();
-
-    // Load comment details
-    fetch(`/admin/comments/detail?id=${commentId}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('commentModalBody').innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">AUTHOR</label>
-                        <p class="fw-bold">${data.author}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">CONTENT</label>
-                        <div class="border rounded p-3 bg-light">${data.content}</div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label text-muted small fw-bold">DATE</label>
-                            <p>${data.created_at}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label text-muted small fw-bold">LIKES</label>
-                            <p><i class="bi bi-hand-thumbs-up text-primary"></i> ${data.likes}</p>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">CONTENT TYPE</label>
-                        <p>${data.content_type} #${data.content_id}</p>
-                    </div>
-                `;
-            } else {
-                document.getElementById('commentModalBody').innerHTML = `
-                    <div class="alert alert-danger" role="alert">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        ${data.message || 'Failed to load comment details'}
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            document.getElementById('commentModalBody').innerHTML = `
-                <div class="alert alert-danger" role="alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Error loading comment details
-                </div>
-            `;
-        });
+   } else {
+    document.getElementById('commentModalBody').innerHTML = '<div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"><i class="lucide lucide-alert-triangle mr-2"></i>' + (data.message || 'Failed to load comment details') + '</div>';
+   }
+  })
+  .catch(() => {
+   document.getElementById('commentModalBody').innerHTML = '<div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"><i class="lucide lucide-alert-triangle mr-2"></i>Error loading comment details</div>';
+  });
 }
 
 // Delete comment from modal
 document.getElementById('deleteCommentBtn')?.addEventListener('click', function() {
-    if (currentCommentId) {
-        deleteComment(currentCommentId);
-    }
+ if (currentCommentId) deleteComment(currentCommentId);
 });
 
 // Delete comment
 function deleteComment(commentId) {
-    if (!confirm('Delete this comment permanently? This action cannot be undone.')) return;
-
-    fetch(`/admin/comments/${commentId}/delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            // Close modal if open
-            const modalElement = document.getElementById('commentModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
-
-            // Show success message
-            alert('Comment deleted successfully');
-            location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'Failed to delete comment'));
-        }
-    })
-    .catch(error => {
-        alert('Error deleting comment');
-    });
+ if (!confirm('Delete this comment permanently? This action cannot be undone.')) return;
+ fetch('/admin/comments/' + commentId + '/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+  .then(r => r.json())
+  .then(data => {
+   if (data.success) {
+    const el = document.getElementById('commentModal');
+    const modal = broxUI.Modal.getInstance(el);
+    if (modal) modal.hide();
+    alert('Comment deleted successfully');
+    location.reload();
+   } else {
+    alert('Error: ' + (data.message || 'Failed to delete comment'));
+   }
+  })
+  .catch(() => alert('Error deleting comment'));
 }
 
-// Edit comment quick action
-function editCommentQuick(commentId) {
-    window.location.href = `/admin/comments/${commentId}`;
-}
+// Edit comment
+function editCommentQuick(commentId) { window.location.href = '/admin/comments/' + commentId; }
 
-// Hide comment quick action
+// Hide comment
 function hideCommentQuick(commentId) {
-    const reason = prompt('Why are you hiding this comment? (optional)');
-
-    const formData = new FormData();
-    if (reason) formData.append('reason', reason);
-
-    fetch(`/admin/comments/${commentId}/hide`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment hidden successfully');
-            location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'Failed to hide comment'));
-        }
-    })
-    .catch(error => {
-        alert('Error hiding comment');
-    });
+ const reason = prompt('Why are you hiding this comment? (optional)');
+ const formData = new FormData();
+ if (reason) formData.append('reason', reason);
+ fetch('/admin/comments/' + commentId + '/hide', { method: 'POST', body: formData })
+  .then(r => r.json())
+  .then(data => {
+   if (data.success) { alert('Comment hidden successfully'); location.reload(); }
+   else { alert('Error: ' + (data.message || 'Failed to hide comment')); }
+  })
+  .catch(() => alert('Error hiding comment'));
 }
 
-// Unhide comment quick action
+// Unhide comment
 function unhideCommentQuick(commentId) {
-    if (!confirm('Unhide this comment?')) return;
-
-    fetch(`/admin/comments/${commentId}/unhide`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('Comment unhidden successfully');
-            location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'Failed to unhide comment'));
-        }
-    })
-    .catch(error => {
-        alert('Error unhiding comment');
-    });
+ if (!confirm('Unhide this comment?')) return;
+ fetch('/admin/comments/' + commentId + '/unhide', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+  .then(r => r.json())
+  .then(data => {
+   if (data.success) { alert('Comment unhidden successfully'); location.reload(); }
+   else { alert('Error: ' + (data.message || 'Failed to unhide comment')); }
+  })
+  .catch(() => alert('Error unhiding comment'));
 }
 
 // Bulk actions
 function executeBulkAction() {
-    const action = document.getElementById('bulkAction').value;
-    const checked = document.querySelectorAll('.comment-checkbox:checked');
-
-    if (!action) {
-        alert('Please select an action');
-        return;
-    }
-
-    if (checked.length === 0) {
-        alert('Please select at least one comment');
-        return;
-    }
-
-    const ids = Array.from(checked).map(c => parseInt(c.value));
-
-    let confirmMsg = '';
-    if (action === 'approve') {
-        confirmMsg = `Approve ${ids.length} comment(s)?`;
-    } else if (action === 'delete') {
-        confirmMsg = `Delete ${ids.length} comment(s) permanently? This action cannot be undone.`;
-    }
-
-    if (!confirm(confirmMsg)) return;
-
-    fetch('/admin/comments/bulk-action', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            action: action,
-            ids: ids
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message || 'Bulk action completed');
-            location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'Failed to complete bulk action'));
-        }
-    })
-    .catch(error => {
-        alert('Error executing bulk action');
-    });
+ const action = document.getElementById('bulkAction').value;
+ const checked = document.querySelectorAll('.comment-checkbox:checked');
+ if (!action) { alert('Please select an action'); return; }
+ if (checked.length === 0) { alert('Please select at least one comment'); return; }
+ const ids = Array.from(checked).map(c => parseInt(c.value));
+ let confirmMsg = action === 'approve' ? 'Approve ' + ids.length + ' comment(s)?' : 'Delete ' + ids.length + ' comment(s) permanently? This action cannot be undone.';
+ if (!confirm(confirmMsg)) return;
+ fetch('/admin/comments/bulk-action', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: action, ids: ids })
+ })
+ .then(r => r.json())
+ .then(data => {
+  if (data.success) { alert(data.message || 'Bulk action completed'); location.reload(); }
+  else { alert('Error: ' + (data.message || 'Failed to complete bulk action')); }
+ })
+ .catch(() => alert('Error executing bulk action'));
 }
-  </script>
+ </script>
 {% endblock %}

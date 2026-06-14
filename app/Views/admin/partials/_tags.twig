@@ -1,45 +1,47 @@
 {# Partial: Tags multi-select and prefill
-   Expects: allTags (array of {id,name}), selectedTags (array of ids/names/objects)
+ Expects: allTags (array of {id,name}), selectedTags (array of ids/names/objects)
 #}
 {% set selectedIds = [] %}
 {% set selectedNames = [] %}
 {% for st in selectedTags|default([]) %}
-    {% if st is iterable %}
-        {% if st.id is defined and (st.id ~ '') is not empty %}
-            {% set selectedIds = selectedIds|merge([st.id ~ '']) %}
-        {% endif %}
-        {% if st.name is defined and (st.name ~ '') is not empty %}
-            {% set selectedNames = selectedNames|merge([st.name]) %}
-        {% endif %}
-    {% else %}
-        {% set raw = st ~ '' %}
-        {% if raw matches '/^[0-9]+$/' %}
-            {% set selectedIds = selectedIds|merge([raw]) %}
-        {% elseif raw is not empty %}
-            {% set selectedNames = selectedNames|merge([raw]) %}
-        {% endif %}
-    {% endif %}
+ {% if st is iterable %}
+ {% if st.id is defined and (st.id ~ '') is not empty %}
+ {% set selectedIds = selectedIds|merge([st.id ~ '']) %}
+ {% endif %}
+ {% if st.name is defined and (st.name ~ '') is not empty %}
+ {% set selectedNames = selectedNames|merge([st.name]) %}
+ {% endif %}
+ {% else %}
+ {% set raw = st ~ '' %}
+ {% if raw matches '/^[0-9]+$/' %}
+ {% set selectedIds = selectedIds|merge([raw]) %}
+ {% elseif raw is not empty %}
+ {% set selectedNames = selectedNames|merge([raw]) %}
+ {% endif %}
+ {% endif %}
 {% endfor %}
 
-<select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
-    {% for tag in allTags %}
-        {% set tagId = tag.id ~ '' %}
-        {% set isSelected = (tagId in selectedIds) or (tag.name in selectedNames) %}
-        <option value="{{ tag.id }}" {{ isSelected ? 'selected' : '' }}>{{ tag.name }}</option>
-    {% endfor %}
+<select multiple class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 blogspot-tags" id="tags" name="tags[]">
+ {% for tag in allTags %}
+ {% set tagId = tag.id ~ '' %}
+ {% set isSelected = (tagId in selectedIds) or (tag.name in selectedNames) %}
+ <option value="{{ tag.id }}" {{ isSelected ? 'selected' : '' }}>{{ tag.name }}</option>
+ {% endfor %}
 
-    {# Include selected ids/names not present in allTags (legacy/fallback) #}
-    {% set allTagIds = allTags|map(t => t.id ~ '')|default([]) %}
-    {% set allTagNames = allTags|map(t => t.name)|default([]) %}
-    {% for sid in selectedIds %}
-        {% if not (sid in allTagIds) %}
-            <option value="{{ sid }}" selected>{{ sid }}</option>
-        {% endif %}
-    {% endfor %}
-    {% for name in selectedNames %}
-        {% if not (name in allTagNames) %}
-            <option value="{{ name }}" selected>{{ name }}</option>
-        {% endif %}
-    {% endfor %}
+ {# Include selected ids/names not present in allTags (legacy/fallback) #}
+ {% set allTagIds = allTags|map(t => t.id ~ '')|default([]) %}
+ {% set allTagNames = allTags|map(t => t.name)|default([]) %}
+ {% for sid in selectedIds %}
+ {% if not (sid in allTagIds) %}
+ <option value="{{ sid }}" selected>{{ sid }}</option>
+ {% endif %}
+ {% endfor %}
+ {% for name in selectedNames %}
+ {% if not (name in allTagNames) %}
+ <option value="{{ name }}" selected>{{ name }}</option>
+ {% endif %}
+ {% endfor %}
 </select>
-<small class="form-text text-muted mt-1">Type to search and press Enter to select or create</small>
+<small class="text-xs text-neutral-400 mt-1">Type to search and press Enter to select or create</small>
+
+

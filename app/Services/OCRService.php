@@ -14,7 +14,7 @@ class OCRService
 
     public function __construct(string $apiKey = null, int $timeout = 30)
     {
-        $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: 'K81289438988957';
+        $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: '';
         $this->timeout = $timeout;
     }
 

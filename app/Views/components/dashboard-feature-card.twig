@@ -1,0 +1,40 @@
+{#
+  Dashboard Feature Card Component
+  
+  Props:
+  - icon: icon name (e.g., 'edit', 'download', 'share')
+  - title: card title
+  - description: short description
+  - color: Tailwind color class (teal-500, green-500, etc.)
+  - action_url: URL to navigate to
+  - action_text: button text (default: 'Open')
+  - badge_text: optional badge text
+#}
+
+<a href="{{ action_url }}" class="group no-underline">
+  <div class="bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 p-6 border-l-4 border-{{ color }} h-full flex flex-col cursor-pointer">
+    {# Icon #}
+    <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-{{ color }}/10 mb-4 group-hover:bg-{{ color }}/20 transition">
+      <i class="lucide-{{ icon }} text-{{ color }} text-xl"></i>
+    </div>
+
+    {# Title & Description #}
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ title }}</h3>
+    <p class="text-sm text-gray-600 mb-4 flex-grow">{{ description }}</p>
+
+    {# Badge if provided #}
+    {% if badge_text %}
+      <div class="mb-3">
+        <span class="inline-block bg-{{ color }}/10 text-{{ color }} text-xs font-semibold px-3 py-1 rounded-full">
+          {{ badge_text }}
+        </span>
+      </div>
+    {% endif %}
+
+    {# Action Button #}
+    <div class="text-{{ color }} font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+      <span>{{ action_text|default('Open') }}</span>
+      <i class="lucide-arrow-right text-sm"></i>
+    </div>
+  </div>
+</a>

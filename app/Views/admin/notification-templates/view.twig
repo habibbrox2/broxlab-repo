@@ -2,233 +2,213 @@
 {% block title %}{{ template.name }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
-        rel="stylesheet">
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        {% if template.icon %}
-          <i class="mdi mdi-{{ template.icon }}"></i>
-        {% else %}
-          <i class="mdi mdi-bell-outline"></i>
-        {% endif %}
-        {{ template.name }}
-      </div>
-      <div class="admin-page-subtitle">Template Details & Configuration</div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ {# ── Gradient Page Header ── #}
+ <section class="scroll-fade-in relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8">
+  <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
+  <div class="relative flex flex-wrap items-end justify-between gap-4">
+   <div class="flex items-start gap-4">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+     {% if template.icon %}<i class="lucide lucide-{{ template.icon }} text-2xl text-white"></i>{% else %}<i class="lucide lucide-bell text-2xl text-white"></i>{% endif %}
     </div>
-    <div class="row">
-      <!-- Main Content Column -->
-      <div class="col-lg-8">
-        <!-- Template Info Card -->
-        <div class="admin-panel-card mb-4">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-information-outline me-2"></i>Template Information</strong>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-1">Slug</small>
-                <code class="bg-light p-2 rounded d-block">{{ template.slug }}</code>
-              </div>
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-1">Type</small>
-                <span class="badge bg-secondary"><i class="mdi mdi-bell"></i> Notification Template</span>
-              </div>
-            </div>
-            {% if template.description %}
-              <div class="mb-3">
-                <small class="text-muted d-block mb-1">Description</small>
-                <p class="mb-0">{{ template.description }}</p>
-              </div>
-            {% endif %}
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <small class="text-muted d-block mb-1">Created</small>
-                <span><i class="mdi mdi-calendar"></i> {{ template.created_at|date("M d, Y H:i") }}</span>
-              </div>
-              <div class="col-md-6 mb-3">
-                <small class="text-muted d-block mb-1">Created By</small>
-                <span>
-                  {% if template.created_by %}
-                    System User #{{ template.created_by }}
-                  {% else %}
-                    System
-                  {% endif %}
-                </span>
-              </div>
-            </div>
-            {% if template.updated_at and template.updated_at != template.created_at %}
-              <div class="row">
-                <div class="col-md-6">
-                  <small class="text-muted d-block mb-1">Last Updated</small>
-                  <span><i class="mdi mdi-calendar-clock"></i> {{ template.updated_at|date("M d, Y H:i") }}</span>
-                </div>
-                <div class="col-md-6">
-                  <small class="text-muted d-block mb-1">Updated By</small>
-                  <span>
-                    {% if template.updated_by %}
-                      User #{{ template.updated_by }}
-                    {% else %}
-                      -
-                    {% endif %}
-                  </span>
-                </div>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-        <!-- Template Content Card -->
-        <div class="admin-panel-card mb-4">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-file-document-outline me-2"></i>Content Preview</strong>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="mb-4">
-              <small class="text-muted d-block mb-2"><strong>Title Template</strong></small>
-              <div class="alert alert-light border p-3">
-                <strong>{{ template.title }}</strong>
-              </div>
-            </div>
-            <div>
-              <small class="text-muted d-block mb-2"><strong>Message Body</strong></small>
-              <div class="alert alert-light border p-3 inl-a-0035">{{ template.body }}</div>
-            </div>
-          </div>
-        </div>
-        <!-- Configuration Card -->
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-cogs-outline me-2"></i>Configuration & Status</strong>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-2"><strong>Delivery Channels</strong></small>
-                <div class="d-flex flex-wrap gap-2">
-                  {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
-                  {% for channel in channels %}
-                    <span class="badge bg-primary">
-                      {% if channel == 'in_app' %}
-                        <i class="mdi mdi-bell"></i> In-App
-                      {% elseif channel == 'fcm' %}
-                        <i class="mdi mdi-mobile-alert"></i> FCM Push
-                      {% elseif channel == 'email' %}
-                        <i class="mdi mdi-email"></i> Email
-                      {% elseif channel == 'sms' %}
-                        <i class="mdi mdi-message-text"></i> SMS
-                      {% else %}
-                        {{ channel }}
-                      {% endif %}
-                    </span>
-                  {% endfor %}
-                </div>
-              </div>
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-2"><strong>Status</strong></small>
-                <div>
-                  {% if template.is_active %}
-                    <span class="badge bg-success"><i class="mdi mdi-check-circle"></i> Active</span>
-                  {% else %}
-                    <span class="badge bg-secondary"><i class="mdi mdi-circle-outline"></i> Inactive</span>
-                  {% endif %}
-                  {% if template.deleted_at %}<span class="badge bg-danger"><i class="mdi mdi-trash-can"></i> Deleted</span>{% endif %}
-                </div>
-              </div>
-            </div>
-            {% if template.icon or template.color %}
-              <hr class="my-3">
-              <div class="row">
-                {% if template.icon %}
-                  <div class="col-md-6">
-                    <small class="text-muted d-block mb-2"><strong>Icon</strong></small>
-                    <div>
-                      <i class="mdi mdi-{{ template.icon }} me-2 inl-a-0036"></i>
-                      <code>mdi-{{ template.icon }}</code>
-                    </div>
-                  </div>
-                {% endif %}
-                {% if template.color %}
-                  <div class="col-md-6">
-                    <small class="text-muted d-block mb-2"><strong>Color</strong></small>
-                    <div>
-                      <span class="badge"
-                            style="background-color: {{ template.color }};
-                                   padding: 8px 12px;
-                                   font-size: 12px">{{ template.color }}</span>
-                    </div>
-                  </div>
-                {% endif %}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <!-- Sidebar -->
-      <div class="col-lg-4">
-        <!-- Variables Card -->
-        <div class="admin-panel-card sticky-top mb-4 inl-a-0029">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-tag-multiple me-2"></i>Template Variables</strong>
-          </div>
-          <div class="admin-panel-card-body small">
-            {% set variables = template.variables is iterable ? template.variables : template.variables|json_decode %}
-            {% if variables and variables|length > 0 %}
-              <p class="text-muted mb-3">Variables to provide when sending this notification:</p>
-              <div class="list-group list-group-sm">
-                {% for key, desc in variables %}
-                  <div class="list-group-item py-2">
-                    <code class="d-block mb-1">&#123;&#123; {{ key }} &#125;&#125;</code>
-                    {% if desc %}
-                      <small class="text-muted">{{ desc }}</small>
-                    {% else %}
-                      <small class="text-muted text-secondary">No description</small>
-                    {% endif %}
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <p class="text-muted mb-0">No variables defined for this template.</p>
-            {% endif %}
-          </div>
-        </div>
-        <!-- Usage Example Card -->
-        <div class="admin-panel-card mb-4">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-code-braces me-2"></i>Usage Example</strong>
-          </div>
-          <div class="admin-panel-card-body p-0">
-            <pre class="mb-0 inl-a-0037"><code>&lt;?php
-              \$result = sendTemplateNotification(
-              '{{ template.slug }}',
-              \$userId,
-              [
-              {% for key in (template.variables is iterable ? template.variables : template.variables|json_decode)|keys %}
-                '{{ key }}' => 'value',
-              {% endfor %}
-              ],
-              ['in_app','fcm','email']
-              );
-              ?&gt;</code></pre>
-          </div>
-        </div>
-        <!-- Actions Card -->
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <strong><i class="mdi mdi-tools me-2"></i>Actions</strong>
-          </div>
-          <div class="admin-panel-card-body">
-            <a href="/admin/notification-templates/{{ template.id }}/edit"
-               class="modern-btn modern-btn-primary w-100 mb-2">
-              <i class="mdi mdi-pencil me-2"></i>Edit Template
-            </a>
-            <a href="/admin/notification-templates"
-               class="modern-btn modern-btn-outline-secondary w-100">
-              <i class="mdi mdi-arrow-left me-2"></i>Back to List
-            </a>
-          </div>
-        </div>
-      </div>
+    <div>
+     <h1 class="text-2xl font-bold text-white sm:text-3xl">{{ template.name }}</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Template Details &amp; Configuration</p>
     </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/notification-templates/{{ template.id }}/edit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"><i class="lucide lucide-pencil"></i> Edit Template</a>
+    <a href="/admin/notification-templates" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"><i class="lucide lucide-arrow-left"></i> Back to List</a>
+   </div>
   </div>
+ </section>
+
+ <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+  {# ── Main Content Column ── #}
+  <div class="lg:col-span-8 space-y-4">
+   {# ── Template Info Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-info" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Template Information</h2>
+    </div>
+    <div class="p-5 space-y-4">
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Slug</small>
+       <code class="inline-block rounded bg-slate-100 px-2 py-1 text-sm font-mono text-slate-700">{{ template.slug }}</code>
+      </div>
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Type</small>
+       <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700"><i class="lucide lucide-bell mr-1" style="width:0.75em;height:0.75em;"></i> Notification Template</span>
+      </div>
+     </div>
+     {% if template.description %}
+     <div>
+      <small class="block text-xs font-medium text-slate-500 mb-1">Description</small>
+      <p class="text-sm text-slate-700">{{ template.description }}</p>
+     </div>
+     {% endif %}
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Created</small>
+       <span class="text-sm text-slate-700"><i class="lucide lucide-calendar mr-1" style="width:0.875em;height:0.875em;"></i> {{ template.created_at|date("M d, Y H:i") }}</span>
+      </div>
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Created By</small>
+       <span class="text-sm text-slate-700">{% if template.created_by %}User #{{ template.created_by }}{% else %}System{% endif %}</span>
+      </div>
+     </div>
+     {% if template.updated_at and template.updated_at != template.created_at %}
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Last Updated</small>
+       <span class="text-sm text-slate-700"><i class="lucide lucide-calendar-clock mr-1" style="width:0.875em;height:0.875em;"></i> {{ template.updated_at|date("M d, Y H:i") }}</span>
+      </div>
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Updated By</small>
+       <span class="text-sm text-slate-700">{% if template.updated_by %}User #{{ template.updated_by }}{% else %}-{% endif %}</span>
+      </div>
+     </div>
+     {% endif %}
+    </div>
+   </section>
+
+   {# ── Content Preview Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-file-text" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Content Preview</h2>
+    </div>
+    <div class="p-5 space-y-4">
+     <div>
+      <small class="block text-xs font-medium text-slate-500 mb-2">Title Template</small>
+      <div class="rounded-lg border border-slate-200 bg-slate-50 p-3"><strong class="text-sm text-slate-900">{{ template.title }}</strong></div>
+     </div>
+     <div>
+      <small class="block text-xs font-medium text-slate-500 mb-2">Message Body</small>
+      <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{{ template.body }}</div>
+     </div>
+    </div>
+   </section>
+
+   {# ── Configuration Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-settings" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Configuration &amp; Status</h2>
+    </div>
+    <div class="p-5 space-y-4">
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-2">Delivery Channels</small>
+       <div class="flex flex-wrap gap-2">
+        {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
+        {% for channel in channels %}
+        <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+         {% if channel == 'in_app' %}<i class="lucide lucide-bell mr-1" style="width:0.75em;height:0.75em;"></i> In-App
+         {% elseif channel == 'fcm' %}<i class="lucide lucide-smartphone mr-1" style="width:0.75em;height:0.75em;"></i> FCM Push
+         {% elseif channel == 'email' %}<i class="lucide lucide-mail mr-1" style="width:0.75em;height:0.75em;"></i> Email
+         {% elseif channel == 'sms' %}<i class="lucide lucide-message-square mr-1" style="width:0.75em;height:0.75em;"></i> SMS
+         {% else %}{{ channel }}{% endif %}
+        </span>
+        {% endfor %}
+       </div>
+      </div>
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-2">Status</small>
+       <div class="flex flex-wrap gap-2">
+        {% if template.is_active %}
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"><i class="lucide lucide-check-circle mr-1" style="width:0.75em;height:0.75em;"></i> Active</span>
+        {% else %}
+        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"><i class="lucide lucide-circle mr-1" style="width:0.75em;height:0.75em;"></i> Inactive</span>
+        {% endif %}
+        {% if template.deleted_at %}<span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700"><i class="lucide lucide-trash-2 mr-1" style="width:0.75em;height:0.75em;"></i> Deleted</span>{% endif %}
+       </div>
+      </div>
+     </div>
+     {% if template.icon or template.color %}
+     <hr class="border-slate-200">
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {% if template.icon %}
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Icon</small>
+       <div class="flex items-center gap-2 text-sm text-slate-700"><i class="lucide lucide-{{ template.icon }}" style="width:1em;height:1em;"></i> <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">mdi-{{ template.icon }}</code></div>
+      </div>
+      {% endif %}
+      {% if template.color %}
+      <div>
+       <small class="block text-xs font-medium text-slate-500 mb-1">Color</small>
+       <div><span class="inline-flex items-center rounded px-2 py-1 text-xs font-semibold text-white" style="background-color: {{ template.color }};">{{ template.color }}</span></div>
+      </div>
+      {% endif %}
+     </div>
+     {% endif %}
+    </div>
+   </section>
+  </div>
+
+  {# ── Sidebar ── #}
+  <div class="lg:col-span-4 space-y-4">
+   {# ── Variables Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-tags" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Template Variables</h2>
+    </div>
+    <div class="p-5 text-sm">
+     {% set variables = template.variables is iterable ? template.variables : template.variables|json_decode %}
+     {% if variables and variables|length > 0 %}
+     <p class="text-slate-500 mb-3">Variables to provide when sending this notification:</p>
+     <div class="divide-y divide-slate-100">
+      {% for key, desc in variables %}
+      <div class="py-2 first:pt-0 last:pb-0">
+       <code class="block mb-1 text-xs font-mono text-indigo-600">&#123;&#123; {{ key }} &#125;&#125;</code>
+       <small class="text-slate-500">{{ desc ?: 'No description' }}</small>
+      </div>
+      {% endfor %}
+     </div>
+     {% else %}
+     <p class="text-slate-500 mb-0">No variables defined for this template.</p>
+     {% endif %}
+    </div>
+   </section>
+
+   {# ── Usage Example Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-code" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Usage Example</h2>
+    </div>
+    <div class="p-5">
+     <pre class="mb-0 overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-green-400"><code>&lt;?php
+ $result = sendTemplateNotification(
+   '{{ template.slug }}',
+   $userId,
+   [
+   {% for key in (template.variables is iterable ? template.variables : template.variables|json_decode)|keys %}
+     '{{ key }}' => 'value',
+   {% endfor %}
+   ],
+   ['in_app','fcm','email']
+ );
+ ?&gt;</code></pre>
+    </div>
+   </section>
+
+   {# ── Actions Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-wrench" style="width:0.875em;height:0.875em;"></i></div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Actions</h2>
+    </div>
+    <div class="p-5 space-y-2">
+     <a href="/admin/notification-templates/{{ template.id }}/edit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 hover:shadow-md"><i class="lucide lucide-pencil" style="width:1em;height:1em;"></i> Edit Template</a>
+     <a href="/admin/notification-templates" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:-translate-y-0.5"><i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back to List</a>
+    </div>
+   </section>
+  </div>
+ </div>
+</div>
 {% endblock %}

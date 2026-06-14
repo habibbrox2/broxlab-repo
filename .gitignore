@@ -162,6 +162,7 @@ Thumbs.db
 .continue/
 .kilocode/
 .roo/
+.kilo/kilo.json
 
 # ─────────────────────────────────────────────────────────────────
 #  9. GENERATED ASSETS (Edit sources, run build - don't commit dist)
@@ -208,6 +209,11 @@ coverage/
 .phpunit.result.cache
 phpunit.xml
 jest.config.js.bak
+/build/test-results/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.playwright/
 
 # ─────────────────────────────────────────────────────────────────
 #  13. LOCAL DEVELOPMENT ONLY (Never push)

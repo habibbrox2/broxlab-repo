@@ -1,0 +1,73 @@
+# 🔐 Sensitive Data Protection Guide
+
+## Overview
+
+This repository contains important instructions and code for **BroxBhai** - an enterprise-grade PHP + Node.js + Python AI-powered platform.
+
+⚠️ **CRITICAL: This document explains what data is NEVER committed to git.**
+
+---
+
+## 🚫 What NEVER Goes to Git
+
+### 1. **Secrets & Credentials** ⚠️ CRITICAL
+```
+❌ NEVER COMMIT:
+  - .env files with passwords/credentials
+  - API keys (Firebase, OpenAI, etc.)
+  - SSH private keys
+  - Database passwords
+  - Service account files
+  
+✅ DO THIS INSTEAD:
+  - Commit: .env.example (with dummy values)
+  - Keep: Actual .env only on production server
+  - Use: GitHub Secrets for CI/CD
+```
+
+### 2. **Database Backups** ⚠️ CRITICAL
+```
+❌ NEVER COMMIT:
+  - *.sql files
+  - *.sql.gz backups
+  - Database dumps
+  - /backups/database/ folder
+```
+
+### 3. **cPanel Server Files**
+```
+❌ NEVER COMMIT:
+  - /web-host/cpanel/ (server setup)
+  - /web-host/composer (binary)
+  - /web-host/.htaccess
+  
+✅ DO COMMIT:
+  - /web-host/scripts/ (deployment automation)
+  - /web-host/.github/ (GitHub Actions workflows)
+```
+
+### 4. **Production Data**
+```
+❌ NEVER COMMIT:
+  - /uploads/ (user files)
+  - /logs/ (application logs)
+  - /backups/ (database/release backups)
+  - .env files (database credentials)
+```
+
+---
+
+## ✅ What DOES Go to Git
+
+✅ COMMIT:
+- `/web-host/scripts/*.sh` (deployment scripts)
+- `/web-host/.github/workflows/` (CI/CD config)
+- `/web-host/DEPLOYMENT_SCRIPTS_GUIDE.md` (documentation)
+- `/app/` (PHP source code)
+- `/src/` (JavaScript sources)
+- `/docs/` (documentation)
+- `.env.example` (with placeholder values)
+
+---
+
+**Remember: When in doubt about what to commit, don't commit it! 🔒**

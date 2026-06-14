@@ -189,8 +189,11 @@ class ChatMessageService
                     continue;
                 }
                 $image = $part['image_url'] ?? [];
+                if (!is_array($image)) {
+                    continue;
+                }
                 $url = $image['url'] ?? null;
-                if (!$url) {
+                if (!$url || !is_string($url)) {
                     continue;
                 }
                 $detail = $image['detail'] ?? 'high';

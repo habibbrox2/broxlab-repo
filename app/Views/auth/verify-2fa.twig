@@ -1,93 +1,256 @@
 {% extends "layout.twig" %}
-{% import '_macros/flash.twig' as flash_macros %}
+{% set suppress_layout_flash = true %}
 {% block title %}Two-Factor Authentication - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
 {% block content %}
-  <div class="auth-page auth-page-shell">
-    <div class="auth-shell auth-shell-md">
-      <div class="auth-card auth-card--shell">
-        <div class="auth-card-header auth-shell-header text-center">
-          <div class="auth-shell-icon text-white mb-2">
-            <i class="bi bi-shield-fill"></i>
+<div class="relative isolate overflow-hidden bg-slate-50 py-10 sm:py-14">
+  <div class="pointer-events-none absolute inset-0 -z-10">
+    <div class="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-violet-500/10 blur-3xl"></div>
+    <div class="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl"></div>
+  </div>
+
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div class="grid items-stretch gap-6 lg:grid-cols-2">
+      {# ── Sidebar with info ── #}
+      <aside class="relative hidden overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 p-8 text-white shadow-2xl shadow-slate-950/20 lg:flex lg:flex-col lg:justify-between">
+        <div class="absolute inset-0 opacity-20" aria-hidden="true">
+          <div class="absolute -top-16 right-0 h-48 w-48 rounded-full bg-white/10 blur-3xl"></div>
+          <div class="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-violet-300/10 blur-3xl"></div>
+        </div>
+        <div class="relative space-y-6">
+          <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-violet-100 backdrop-blur">
+            <i class="lucide lucide-shield h-3.5 w-3.5"></i>
+            2FA Required
           </div>
-          <h2 class="auth-shell-title mb-2">Two-Factor Authentication</h2>
-          <p class="auth-shell-subtitle mb-0">Enter the 6-digit code from your authenticator app</p>
-        </div>
-        <div class="auth-card-body auth-shell-body">
-            {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
-            <form id="verify2faForm" novalidate>
-              <!-- CSRF Token -->
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <!-- 2FA Code Field -->
-              <div class="mb-4">
-                <label for="code" class="form-label">6-Digit Code</label>
-                <input type="text"
-                       class="form-control form-control-lg text-center"
-                       id="code"
-                       name="code"
-                       placeholder="000000"
-                       maxlength="6"
-                       pattern="[0-9]{6}"
-                       required
-                       inputmode="numeric">
-                <div class="form-text">Check your authenticator app for the code</div>
-                <div class="invalid-feedback">Please enter a valid 6-digit code.</div>
+          <div class="space-y-3">
+            <h1 class="text-4xl font-black tracking-tight text-white">Extra security, extra peace of mind.</h1>
+            <p class="max-w-xl text-sm leading-6 text-slate-300">
+              Enter the 6-digit code from your authenticator app to complete the sign-in process.
+            </p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+              <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-cyan-200">
+                <i class="lucide lucide-shield-check h-5 w-5"></i>
               </div>
-              <!-- Submit Button -->
-              <button type="submit"
-                      class="btn btn-primary w-100 mb-3 btn-lg"
-                      id="submitBtn">
-                <span id="btnText">Verify Code</span>
-                <span id="spinner"
-                      class="spinner-border spinner-border-sm ms-2 auth-hidden"
-                      role="status"
-                      aria-hidden="true"></span>
-              </button>
-            </form>
-            <!-- Backup Code Option -->
-            <hr class="my-4">
-            <div class="text-center">
-              <p class="mb-3 text-muted small">Don't have access to your authenticator?</p>
-              <a href="#"
-                 class="btn btn-outline-secondary w-100"
-                 id="backupCodeToggle">
-                <i class="bi bi-key-fill me-2"></i>Use Backup Code
-              </a>
+              <p class="text-sm font-semibold text-white">Two-factor auth</p>
+              <p class="mt-1 text-xs leading-5 text-slate-300">Adds an extra verification step beyond your password.</p>
             </div>
-            <!-- Backup Code Form (Hidden) -->
-            <form id="backupCodeForm" class="mt-3 auth-hidden" novalidate>
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <div class="mb-3">
-                <label for="backup_code" class="form-label">Backup Code</label>
-                <input type="text"
-                       class="form-control"
-                       id="backup_code"
-                       name="backup_code"
-                       placeholder="Enter a backup code"
-                       required>
-                <small class="form-text text-muted">Backup codes are 8 characters long</small>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+              <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-violet-200">
+                <i class="lucide lucide-key h-5 w-5"></i>
               </div>
-              <button type="submit" class="btn btn-secondary w-100">Verify Backup Code</button>
-            </form>
-            <!-- Help -->
-            <div class="auth-footer mt-4">
-              <p class="text-muted mb-0">
-                <a href="/login" class="text-primary">Back to login</a>
-              </p>
+              <p class="text-sm font-semibold text-white">Backup codes</p>
+              <p class="mt-1 text-xs leading-5 text-slate-300">Lost your device? Use a backup code instead.</p>
             </div>
+          </div>
         </div>
-      </div>
-      <div class="auth-shell-notes">
-        <div class="alert alert-info auth-shell-note" role="alert">
-          <h6 class="alert-heading">
-            <i class="bi bi-info-circle-fill me-2"></i>What is 2FA?
-          </h6>
-          <p class="mb-0 small">
-            Two-Factor Authentication adds an extra layer of security to your account by requiring a code
-            from your authenticator app in addition to your password.
-          </p>
+        <div class="relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-violet-200">
+            <i class="lucide lucide-lock h-6 w-6"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-white">Why 2FA?</p>
+            <p class="text-xs text-slate-300">Two-Factor Authentication adds an extra layer of security by requiring a code from your authenticator app in addition to your password.</p>
+          </div>
         </div>
-      </div>
+      </aside>
+
+      {# ── Main form card ── #}
+      <section class="scroll-fade-in overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_-30px_rgba(15,23,42,0.25)]">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-5 sm:px-8 sm:py-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.26em] text-violet-700">
+                <i class="lucide lucide-shield h-3.5 w-3.5"></i>
+                2FA Code
+              </div>
+              <h2 class="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Enter your code</h2>
+              <p class="mt-2 max-w-xl text-sm leading-6 text-slate-500">Check your authenticator app for the 6-digit code.</p>
+            </div>
+            <div class="hidden sm:flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600/10 text-violet-600">
+              <i class="lucide lucide-shield h-6 w-6"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-6 sm:px-8 sm:py-8">
+          {% if error %}
+          <div class="mb-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <i class="lucide lucide-alert-circle mt-0.5 h-4 w-4 shrink-0"></i>
+            <span>{{ error }}</span>
+          </div>
+          {% endif %}
+
+          <form id="verify2faForm" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="mb-5 space-y-1.5">
+              <label for="code" class="block text-sm font-semibold text-slate-700">6-Digit Code</label>
+              <div class="relative">
+                <i class="lucide lucide-shield absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none"></i>
+                <input type="text"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-11 py-3.5 text-center text-2xl font-bold tracking-[0.3em] text-slate-900 shadow-sm transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10"
+                  id="code"
+                  name="code"
+                  placeholder="000000"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  required
+                  inputmode="numeric"
+                  autocomplete="one-time-code">
+              </div>
+              <p class="text-xs text-slate-500">Open your authenticator app and enter the code shown.</p>
+            </div>
+
+            <button type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-500/30 active:scale-[0.98]"
+              id="submitBtn">
+              <span id="btnText"><i class="lucide lucide-shield-check h-5 w-5"></i> Verify Code</span>
+              <span id="spinner"
+                class="hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
+                role="status" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <hr class="my-6 border-slate-200">
+
+          <div class="text-center">
+            <p class="mb-3 text-sm text-slate-500">Don't have access to your authenticator?</p>
+            <a href="#"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:-translate-y-0.5"
+              id="backupCodeToggle">
+              <i class="lucide lucide-key h-4 w-4"></i>
+              Use Backup Code
+            </a>
+          </div>
+
+          {# Backup Code Form (Hidden) #}
+          <form id="backupCodeForm" class="mt-3 hidden" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="mb-4 space-y-1.5">
+              <label for="backup_code" class="block text-sm font-semibold text-slate-700">Backup Code</label>
+              <div class="relative">
+                <i class="lucide lucide-key absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none"></i>
+                <input type="text"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-11 py-3.5 text-slate-900 shadow-sm transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10"
+                  id="backup_code"
+                  name="backup_code"
+                  placeholder="Enter a backup code"
+                  required>
+              </div>
+              <p class="text-xs text-slate-500">Backup codes are 8 characters long</p>
+            </div>
+            <button type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:-translate-y-0.5">
+              <i class="lucide lucide-key h-4 w-4"></i>
+              Verify Backup Code
+            </button>
+          </form>
+
+          <div class="mt-6 text-center text-sm">
+            <a href="/login" class="inline-flex items-center gap-1 font-semibold text-violet-600 hover:text-violet-700">
+              <i class="lucide lucide-arrow-left h-4 w-4"></i>
+              Back to login
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
-  {# Inline script removed - use external JavaScript file instead #}
+
+  {# Info cards below form on mobile #}
+  <div class="mx-auto mt-6 max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4" role="alert">
+      <h6 class="mb-2 flex items-center gap-2 text-sm font-bold text-sky-800">
+        <i class="lucide lucide-info h-4 w-4"></i>What is 2FA?
+      </h6>
+      <p class="mb-0 text-xs leading-5 text-sky-700">
+        Two-Factor Authentication adds an extra layer of security to your account by requiring a code
+        from your authenticator app in addition to your password.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('verify2faForm');
+  const backupForm = document.getElementById('backupCodeForm');
+  const toggleBtn = document.getElementById('backupCodeToggle');
+  const btn = document.getElementById('submitBtn');
+  const btnText = document.getElementById('btnText');
+  const spinner = document.getElementById('spinner');
+
+  // Auto-submit on 6 digits
+  const codeInput = document.getElementById('code');
+  if (codeInput) {
+    codeInput.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      if (this.value.length === 6) {
+        form.dispatchEvent(new Event('submit'));
+      }
+    });
+  }
+
+  // Toggle backup code form
+  if (toggleBtn && backupForm) {
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      backupForm.classList.toggle('hidden');
+    });
+  }
+
+  // Form submission handler
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+      btnText.innerHTML = 'Verifying...';
+
+      const formData = new FormData(this);
+      fetch('/verify-2fa', {
+        method: 'POST',
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = data.redirect || '/user/dashboard';
+        } else {
+          btn.disabled = false;
+          spinner.classList.add('hidden');
+          btnText.innerHTML = '<i class="lucide lucide-shield-check h-5 w-5"></i> Verify Code';
+          alert(data.message || 'Invalid code. Please try again.');
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        btnText.innerHTML = '<i class="lucide lucide-shield-check h-5 w-5"></i> Verify Code';
+      });
+    });
+  }
+
+  // Backup code submission
+  if (backupForm) {
+    backupForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('/verify-2fa/backup', {
+        method: 'POST',
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = data.redirect || '/user/dashboard';
+        } else {
+          alert(data.message || 'Invalid backup code.');
+        }
+      });
+    });
+  }
+});
+</script>
 {% endblock %}

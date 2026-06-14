@@ -15,13 +15,6 @@ class FreeApiOptimizer
     // Free models on OpenRouter (as of 2024)
     private $freeModels = [
         // Best free models (no credits required)
-        'openrouter/auto' => [
-            'name' => 'Auto (Free)',
-            'cost' => 0,
-            'context_length' => 128000,
-            'supports_streaming' => true,
-            'rate_limit' => 'medium'
-        ],
         'meta-llama/llama-3-8b-instruct:free' => [
             'name' => 'Llama 3 8B Instruct (Free)',
             'cost' => 0,
@@ -134,7 +127,7 @@ class FreeApiOptimizer
     {
         // Task-specific model selection
         $modelPreferences = [
-            'general' => ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat:free', 'openrouter/auto'],
+            'general' => ['meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat:free', 'qwen/qwen-2.5-72b-instruct:free'],
             'code' => ['meta-llama/llama-3-8b-instruct:free', 'meta-llama/llama-3.2-90b-vision-instruct:free', 'qwen/qwen-2.5-72b-instruct:free'],
             'vision' => ['meta-llama/llama-3.2-90b-vision-instruct:free', 'meta-llama/llama-3-8b-instruct:free', 'google/gemini-2.0-flash-exp:free'],
             'fast' => ['microsoft/phi-4-mini:free', 'THUDM/glm-4-9b-chat:free'],
@@ -155,9 +148,9 @@ class FreeApiOptimizer
 
         // Fallback to auto
         return [
-            'model' => 'openrouter/auto',
+            'model' => 'meta-llama/llama-3-8b-instruct:free',
             'provider' => 'openrouter',
-            'config' => $this->freeModels['openrouter/auto']
+            'config' => $this->freeModels['meta-llama/llama-3-8b-instruct:free']
         ];
     }
 

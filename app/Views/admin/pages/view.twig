@@ -2,59 +2,158 @@
 {% block title %}{{ page.title }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-text me-2"></i>
-        Page Details
-      </div>
-      <div class="admin-page-subtitle">View page information</div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4">
 
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-header">
-        <h6 class="admin-panel-card-title mb-0">
-          <i class="bi bi-file-text me-2"></i>{{ page.title }}
-        </h6>
-      </div>
-      <div class="admin-panel-card-body">
-        <p class="mb-1 text-muted">
-          <i class="bi bi-calendar me-1"></i> {{ page.created_at|date("Y-m-d H:i") }}
-        </p>
-      </div>
-    </div>
-
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">{{ page.content|raw }}</div>
-    </div>
-
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-header">
-        <h6 class="admin-panel-card-title mb-0">
-          <i class="bi bi-chat-dots me-2"></i>Comments & Feedback
-        </h6>
-      </div>
-      <div class="admin-panel-card-body">
-        <p class="text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          Comments are managed through the main Comments panel.
-          <a href="/admin/comments" class="modern-btn btn-sm btn-primary ms-2">
-            <i class="bi bi-chat-dots me-1"></i>Go to Comments Management
-          </a>
-        </p>
-        <p class="mb-0">
-          <small class="text-muted">
-            <i class="bi bi-people-fill me-1"></i>Users can post comments on the public page at:
-            <a href="/pages/view/{{ page.slug }}" target="_blank" class="text-primary">/pages/view/{{ page.slug }}</a>
-          </small>
-        </p>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-end">
-      <a href="/admin/pages" class="modern-btn modern-btn-white">
-        <i class="bi bi-arrow-left me-1"></i> Back to Pages
-      </a>
-    </div>
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3 min-w-0">
+    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-file text-xl"></i>
+    </div>
+    <div class="min-w-0">
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl truncate">{{ page.title }}</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Page details and content preview</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/pages/edit?id={{ page.id }}" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i> Edit
+    </a>
+    <a href="/admin/pages" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Back to Pages
+    </a>
+   </div>
+  </div>
+ </div>
+
+ <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  {# ── Main Content Column ── #}
+  <div class="lg:col-span-2 space-y-6">
+   {# ── Page Info Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+      <i class="lucide lucide-info" style="width:1em;height:1em;"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Page Information</h2>
+      <p class="text-xs text-slate-500">Date, slug, and metadata</p>
+     </div>
+    </div>
+    <div class="p-5 space-y-3">
+     <div class="flex flex-wrap items-center gap-2 text-sm">
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-slate-700">
+       <i class="lucide lucide-calendar text-slate-500" style="width:0.875em;height:0.875em;"></i>
+       {{ page.created_at|date("Y-m-d H:i") }}
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5">
+       <i class="lucide lucide-link text-slate-500" style="width:0.875em;height:0.875em;"></i>
+       <a href="/pages/view/{{ page.slug }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium text-xs">{{ page.slug }}</a>
+      </span>
+     </div>
+    </div>
+   </section>
+
+   {# ── Content Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+      <i class="lucide lucide-align-left" style="width:1em;height:1em;"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Content</h2>
+      <p class="text-xs text-slate-500">Full page body</p>
+     </div>
+    </div>
+    <div class="p-5 sm:p-6 prose prose-sm max-w-none prose-headings:text-slate-900 prose-a:text-indigo-600">
+     {{ page.content|raw }}
+    </div>
+   </section>
+  </div>
+
+  {# ── Sidebar Column ── #}
+  <div class="space-y-6">
+   {# ── Status Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+      <i class="lucide lucide-toggle-right" style="width:1em;height:1em;"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Page Status</h2>
+      <p class="text-xs text-slate-500">Visibility settings</p>
+     </div>
+    </div>
+    <div class="p-5 space-y-4">
+     <div class="flex items-center justify-between">
+      <span class="text-sm text-slate-600">Status</span>
+      {% if page.published %}
+       <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+        <i class="lucide lucide-globe mr-1" style="width:0.75em;height:0.75em;"></i> Published
+       </span>
+      {% else %}
+       <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+        <i class="lucide lucide-pencil mr-1" style="width:0.75em;height:0.75em;"></i> Draft
+       </span>
+      {% endif %}
+     </div>
+     <div class="flex items-center justify-between">
+      <span class="text-sm text-slate-600">Slug</span>
+      <code class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ page.slug }}</code>
+     </div>
+    </div>
+   </section>
+
+   {# ── Comments Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600">
+      <i class="lucide lucide-message-circle" style="width:1em;height:1em;"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Comments & Feedback</h2>
+      <p class="text-xs text-slate-500">Manage reader responses</p>
+     </div>
+    </div>
+    <div class="p-5 space-y-3">
+     <p class="text-sm text-slate-600 flex items-center gap-1.5">
+      <i class="lucide lucide-info text-slate-400" style="width:0.875em;height:0.875em;"></i>
+      Comments are managed through the main Comments panel.
+     </p>
+     <a href="/admin/comments" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 w-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-95">
+      <i class="lucide lucide-message-circle" style="width:1em;height:1em;"></i> Go to Comments Management
+     </a>
+     <p class="text-xs text-slate-400">
+      <i class="lucide lucide-users mr-1" style="width:0.75em;height:0.75em;"></i>Public view:
+      <a href="/pages/view/{{ page.slug }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium">/pages/view/{{ page.slug }}</a>
+     </p>
+    </div>
+   </section>
+
+   {# ── Quick Actions Card ── #}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-indigo-100/50 shadow-sm">
+    <div class="p-5 space-y-3">
+     <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+      <i class="lucide lucide-zap text-indigo-600" style="width:1em;height:1em;"></i>
+      Quick Actions
+     </h3>
+     <a href="/admin/pages/edit?id={{ page.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 w-full px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-95">
+      <i class="lucide lucide-pencil" style="width:1em;height:1em;"></i> Edit Page
+     </a>
+     <a href="/admin/pages/create" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white border border-slate-300 w-full px-4 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 active:scale-95">
+      <i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Create New Page
+     </a>
+     <a href="/pages/view/{{ page.slug }}" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white border border-slate-300 w-full px-4 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 active:scale-95">
+      <i class="lucide lucide-external-link" style="width:1em;height:1em;"></i> View on Site
+     </a>
+    </div>
+   </section>
+  </div>
+ </div>
+</div>
 {% endblock %}

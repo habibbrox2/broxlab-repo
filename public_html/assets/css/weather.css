@@ -1,57 +1,93 @@
-﻿/* Weather Winget Styling */
+/* ============================================================
+   Weather Styles — Custom classes for weather templates
+   Used by: weather/home.twig, weather/details.twig,
+            public/partials/weather-widget.twig
+   ============================================================ */
 
-/* Widget gradients */
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+/* ---- Section Wrapper ---- */
+.home-weather-section {
+  scroll-margin-top: 5rem;
 }
 
-.bg-gradient-danger {
-    background: linear-gradient(135deg, #f0936c 0%, #f5576c 100%) !important;
+/* ---- Search Form ---- */
+.weather-search-form {
+  max-width: 100%;
 }
 
-/* Weather icon sizes */
-.weather-icon-wrapper i {
-    font-size: 3rem;
-    line-height: 1;
+/* ---- Weather Icon Wrapper ---- */
+.weather-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Hover effects for cards */
-.hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.15) !important;
-}
-
-/* Search form styling */
-.weather-search-form .input-group-text {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+/* ---- Inline Spinner (replaces Tailwind's animate-spin for custom sizing) ---- */
+.inline-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: weather-spin 0.75s linear infinite;
+  vertical-align: middle;
 }
 
-/* Card body spacing */
-.weather-card .card-body {
-    padding: 2rem;
+@keyframes weather-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Spinner for loading state */
-.spinner-border.text-light {
-    border-color: rgba(255,255,255,0.3);
-    border-right-color: #fff;
+/* ---- Alert Fade Animation ---- */
+.fade {
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .weather-card .display-3 {
-        font-size: 2.5rem;
-    }
-    
-    .home-weather-section .card-body .row {
-        text-align: center;
-    }
-    
-    .home-weather-section .d-flex.align-items-center {
-        justify-content: center !important;
-    }
+.fade.show {
+  opacity: 1;
+}
+
+/* ---- Custom Alert Color Variants (not covered by Tailwind config) ---- */
+.bg-amber-500-light {
+  background-color: #fef3c7; /* amber-100 */
+}
+
+.text-amber-600-dark {
+  color: #d97706; /* amber-600 */
+}
+
+/* ---- Custom Hover Shadow & Transition ---- */
+.transition-shadow-md {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover\:shadow-md-md:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ---- Weather Details Table ---- */
+table.w-full thead th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+table.w-full tbody td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+table.w-full tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 767.98px) {
+  .home-weather-section {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
 }

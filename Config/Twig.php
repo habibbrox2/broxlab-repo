@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 1) . '/vendor/autoload.php';
@@ -107,6 +108,16 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
 // ============================================================
 // INITIALIZE APP SETTINGS MODEL
 // ============================================================
+
+if (!isset($mysqli) || !$mysqli instanceof mysqli) {
+    logError('Database connection is not available for Twig initialization', 'CRITICAL', [
+        'provided_type' => isset($mysqli) ? gettype($mysqli) : 'undefined',
+        'file' => __FILE__,
+        'line' => __LINE__,
+    ]);
+    renderError(500, 'Database connection is unavailable');
+    exit;
+}
 
 $settingsModel = new AppSettings($mysqli);
 

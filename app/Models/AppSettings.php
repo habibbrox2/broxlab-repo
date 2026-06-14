@@ -16,66 +16,6 @@ class AppSettings
     }
 
     /**
-     * Parse public header nav items from settings with safe fallback.
-     */
-    public function getPublicNavItems(?array $settings = null, bool $enabledOnly = true): array
-    {
-        $settings = $settings ?? $this->getAll();
-        $raw = $settings['public_nav_json'] ?? null;
-
-        if ($raw === null || $raw === '') {
-            return $this->getDefaultPublicNavItems();
-        }
-
-        $decoded = is_array($raw) ? $raw : json_decode((string)$raw, true);
-        if (!is_array($decoded)) {
-            return $this->getDefaultPublicNavItems();
-        }
-
-        $items = [];
-        foreach ($decoded as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-            $normalized = $this->normalizePublicNavItem($item);
-            if ($normalized === null) {
-                continue;
-            }
-            $items[] = $normalized;
-        }
-
-        if (empty($items)) {
-            return $this->getDefaultPublicNavItems();
-        }
-
-        usort($items, static function (array $a, array $b) {
-            return (int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0);
-        });
-
-        $items = array_slice($items, 0, 8);
-        if ($enabledOnly) {
-            $items = array_values(array_filter($items, static function (array $item): bool {
-                return (bool)($item['enabled'] ?? false);
-            }));
-        }
-
-        return !empty($items) ? $items : $this->getDefaultPublicNavItems();
-    }
-
-    /**
-     * Default public header menu items.
-     */
-    public function getDefaultPublicNavItems(): array
-    {
-        return [
-            ['label' => 'Home', 'url' => '/', 'icon' => 'bi-house-door-fill', 'match' => '/', 'enabled' => true, 'order' => 10],
-            ['label' => 'Mobiles', 'url' => '/mobiles', 'icon' => 'bi-phone-fill', 'match' => '/mobiles', 'enabled' => true, 'order' => 20],
-            ['label' => 'Articles', 'url' => '/posts', 'icon' => 'bi-newspaper', 'match' => '/posts', 'enabled' => true, 'order' => 30],
-            ['label' => 'Services', 'url' => '/services', 'icon' => 'bi-award-fill', 'match' => '/services', 'enabled' => true, 'order' => 40],
-        ];
-    }
-
-    /**
      * Get all settings (with caching)
      */
     public function getAll(): array
@@ -234,7 +174,6 @@ class AppSettings
             'default_language' => 'bn',
             'timezone' => 'Asia/Dhaka',
             'maintenance_mode' => 0,
-            'public_nav_json' => null,
             'contact_email' => '',
             'contact_phone' => '',
             'contact_address' => '',
@@ -309,59 +248,5 @@ class AppSettings
     public function toArray(): array
     {
         return $this->getAll();
-    }
-
-    private function normalizePublicNavItem(array $item): ?array
-    {
-        $label = trim(strip_tags((string)($item['label'] ?? '')));
-        $url = trim(strip_tags((string)($item['url'] ?? '')));
-        $icon = trim(strip_tags((string)($item['icon'] ?? '')));
-        $match = trim(strip_tags((string)($item['match'] ?? '')));
-        $order = is_numeric($item['order'] ?? null) ? (int)$item['order'] : 999;
-
-        if ($label === '' || $url === '') {
-            return null;
-        }
-
-        $labelLen = function_exists('mb_strlen') ? mb_strlen($label) : strlen($label);
-        if ($labelLen < 1 || $labelLen > 40) {
-            return null;
-        }
-
-        if (!preg_match('#^/(?!/)[^\s]*$#', $url)) {
-            return null;
-        }
-
-        if ($match !== '' && !preg_match('#^/(?!/)[^\s]*$#', $match)) {
-            $match = '';
-        }
-        if ($match === '') {
-            $match = $url;
-        }
-
-        if ($icon !== '') {
-            $icon = preg_replace('/^bi\s+/', '', $icon);
-            if (stripos($icon, 'bi-') !== 0) {
-                $icon = 'bi-' . ltrim($icon, '-');
-            }
-            if (!preg_match('/^bi-[a-z0-9-]+$/i', $icon)) {
-                $icon = '';
-            }
-        }
-
-        $enabledRaw = $item['enabled'] ?? true;
-        $enabled = filter_var($enabledRaw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-        if ($enabled === null) {
-            $enabled = !empty($enabledRaw);
-        }
-
-        return [
-            'label' => $label,
-            'url' => $url,
-            'icon' => $icon,
-            'match' => $match,
-            'enabled' => (bool)$enabled,
-            'order' => $order,
-        ];
     }
 }

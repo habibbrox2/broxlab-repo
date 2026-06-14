@@ -330,6 +330,10 @@ class ModelRouter
      */
     private function findProviderForModel(string $model): ?string
     {
+        if ($model === 'kilo-auto/free' || str_starts_with($model, 'kilo-auto/')) {
+            return 'kilo';
+        }
+
         // For OpenRouter models, the provider is usually 'openrouter'
         if (strpos($model, '/') !== false && strpos($model, 'accounts/fireworks/') === false) {
             return 'openrouter';

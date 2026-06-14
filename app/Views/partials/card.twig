@@ -1,37 +1,39 @@
-{# views/partials/card.twig #}
-<div class="card h-100 shadow-sm border-0 rounded-4 hover-shadow {{ item.extra_class|default('') }}">
-    <!-- Image -->
-    {% set img_src = item.image_path|default(item.image|default(null)) %}
-    {% if img_src is iterable %}
-        {% set img_src = img_src|first %}
-        {% if img_src.url is defined %}{% set img_src = img_src.url %}{% elseif img_src.path is defined %}{% set img_src = img_src.path %}{% endif %}
-    {% endif %}
-    <img src="{{ img_src|default('/images/placeholder.png') }}"
-         alt="{{ item.title|default(item.name)|default('Item') }}"
-         class="card-img-top img-height-220"
-         loading="lazy">
+{# views/partials/rounded-xl border border-slate-200 bg-white shadow-sm.twig #}
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full border-0 rounded-2xl hover-shadow-md {{ item.extra_class|default('') }}">
+ <!-- Image -->
+ {% set img_src = item.image_path|default(item.image|default(null)) %}
+ {% if img_src is iterable %}
+ {% set img_src = img_src|first %}
+ {% if img_src.url is defined %}{% set img_src = img_src.url %}{% elseif img_src.path is defined %}{% set img_src = img_src.path %}{% endif %}
+ {% endif %}
+ <img src="{{ img_src|default('/images/placeholder.png') }}"
+ alt="{{ item.title|default(item.name)|default('Item') }}"
+ class="rounded-xl border border-slate-200 bg-white shadow-sm-img-top img-height-220"
+ loading="lazy">
 
-    <!-- Card Body -->
-    <div class="card-body d-flex flex-column">
-        <h5 class="card-title text-truncate" title="{{ item.title|default(item.name) }}">
-            {{ item.brand_name is defined ? item.brand_name ~ ' ' ~ item.model_name : item.title|default(item.name) }}
-        </h5>
+ <!-- Card Body -->
+ <div class="p-4 flex flex-column">
+ <h5 class=" truncate" title="{{ item.title|default(item.name) }}">
+ {{ item.brand_name is defined ? item.brand_name ~ ' ' ~ item.model_name : item.title|default(item.name) }}
+ </h5>
 
-        {# Optional status badge (only for mobiles or items that have status) #}
-        {% if item.status is defined %}
-            <p class="mb-2">
-                <span class="badge 
-                    {{ item.status=='official' ? 'bg-success' 
-                      : item.status=='unofficial' ? 'bg-warning text-surface-dark' 
-                      : 'bg-info' }}">
-                    {{ item.status|capitalize }}
-                </span>
-            </p>
-        {% endif %}
+ {# Optional status inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold (only for mobiles or items that have status) #}
+ {% if item.status is defined %}
+ <p class="mb-2">
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ item.status=='official' ? 'bg-emerald-600' : item.status=='unofficial' 'bg-amber-500 text-surface-dark' 'bg-sky-500' }}">
+ {{ item.status|capitalize }}
+ </span>
+ </p>
+ {% endif %}
 
-        <!-- CTA Button -->
-        <a href="{{ item.url|default('#') }}" class="btn btn-outline-primary btn-sm mt-auto">
-            <i class="bi bi-eye"></i> View Details
-        </a>
-    </div>
+ <!-- CTA Button -->
+ <a href="{{ item.url|default('#') }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 text-xs mt-auto">
+ <i class="lucide lucide-eye"></i> View Details
+ </a>
+ </div>
 </div>
+
+
+
+
+

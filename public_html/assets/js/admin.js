@@ -12,26 +12,13 @@ import {
 import { initPasswordModals } from './modules/security.js';
 import { initPresetAutoSelector } from './modules/preset-selector.js';
 import { runWhenReady } from './modules/utils.js';
-
-// Constants
-const DESKTOP_WIDTH = 992;
-const MINI_EXPANDED_CLASS = 'admin-sidebar-mini-expanded';
-const MINI_STORAGE_KEY = 'adminSidebarMini';
-const SIDEBAR_WIDTH_KEY = 'adminSidebarWidth';
-const MIN_SIDEBAR_WIDTH = 200;
-const MAX_SIDEBAR_WIDTH = 600;
-const DEFAULT_SIDEBAR_WIDTH = 300;
+import { initDatepickerLoader } from './datepicker-loader.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.querySelector('.sidebar-overlay');
-  const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
-  const sidebarMiniToggle = document.querySelector('.sidebar-mini-toggle');
-  const adminShellRow = document.querySelector('.admin-shell-row');
-  const adminMain = document.querySelector('.admin-main');
-  const sidebarResizer = document.getElementById('adminColumnResizer');
+  // Initialize datepicker lazy loader
+  initDatepickerLoader();
 
   // Initialize modules
   initAdminNotificationRuntime();
@@ -48,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.changePassword = passwordFunctions.changePassword;
     }
   });
-  // Add other functions as needed
 
   // The rest of the original code...
 
@@ -84,517 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   applyStackedTables();
-
-  if (sidebar && sidebarToggles.length > 0) {
-    const normalizePath = (value) => {
-      const raw = String(value || '').trim();
-      if (!raw) return '/';
-      const stripped = raw.replace(/\/+$/, '');
-      return stripped === '' ? '/' : stripped;
-    };
-
-    const cssEscape = (value) => {
-      if (typeof window.CSS !== 'undefined' && typeof window.CSS.escape === 'function') {
-        return window.CSS.escape(value);
-      }
-      return String(value).replace(/([ !"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
-    };
-
-    const syncSidebarActiveState = () => {
-      const links = Array.from(sidebar.querySelectorAll('a.list-group-item-action[href]'));
-      if (!links.length) return;
-
-      const currentPath = normalizePath(window.location.pathname);
-      const currentPathWithQuery = `${currentPath}${window.location.search || ''}`;
-      let bestMatch = null;
-      let bestScore = -1;
-
-      links.forEach((link) => {
-        const href = String(link.getAttribute('href') || '').trim();
-        if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) {
-          return;
-        }
-
-        let targetUrl = null;
-        try {
-          targetUrl = new URL(href, window.location.origin);
-        } catch (err) {
-          return;
-        }
-
-        const targetPath = normalizePath(targetUrl.pathname);
-        const targetPathWithQuery = `${targetPath}${targetUrl.search || ''}`;
-        let score = -1;
-
-        if (currentPathWithQuery === targetPathWithQuery) {
-          score = 5000 + targetPathWithQuery.length;
-        } else if (currentPath === targetPath) {
-          score = 4000 + targetPath.length;
-        } else if (targetPath !== '/' && currentPath.startsWith(`${targetPath}/`)) {
-          score = 3000 + targetPath.length;
-        }
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = link;
-        }
-      });
-
-      if (!bestMatch) return;
-
-      links.forEach((link) => {
-        link.classList.remove('active');
-        link.removeAttribute('aria-current');
-      });
-
-      const collapseToggles = Array.from(sidebar.querySelectorAll('a[data-bs-toggle="collapse"]'));
-      collapseToggles.forEach((toggle) => {
-        toggle.classList.remove('active');
-      });
-
-      bestMatch.classList.add('active');
-      bestMatch.setAttribute('aria-current', 'page');
-
-      let parentCollapse = bestMatch.closest('.collapse');
-      while (parentCollapse && parentCollapse.id) {
-        parentCollapse.classList.add('show');
-        const selector = `a[data-bs-toggle="collapse"][href="#${cssEscape(parentCollapse.id)}"]`;
-        const toggle = sidebar.querySelector(selector);
-        if (toggle) {
-          toggle.classList.add('active');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
-        parentCollapse = parentCollapse.parentElement?.closest('.collapse') || null;
-      }
-    };
-
-    const syncMobileSidebarState = () => {
-      const isMobile = window.innerWidth < DESKTOP_WIDTH;
-      const isOpen = sidebar.classList.contains('show');
-      document.body.classList.toggle('admin-sidebar-open', isMobile && isOpen);
-    };
-
-    const toggleSidebar = () => {
-      sidebar.classList.toggle('show');
-      if (overlay) overlay.classList.toggle('show');
-      syncMobileSidebarState();
-    };
-
-    const closeSidebar = () => {
-      sidebar.classList.remove('show');
-      if (overlay) overlay.classList.remove('show');
-      syncMobileSidebarState();
-    };
-
-    const readMiniState = () => {
-      try {
-        return localStorage.getItem(MINI_STORAGE_KEY) === '1';
-      } catch (err) {
-        return false;
-      }
-    };
-
-    const writeMiniState = (enabled) => {
-      try {
-        localStorage.setItem(MINI_STORAGE_KEY, enabled ? '1' : '0');
-      } catch (err) {
-        // Silent fail if storage is unavailable
-      }
-    };
-
-    const clampSidebarWidth = (width, rowWidth = 0) => {
-      const maxByRow =
-        rowWidth > 0 ? Math.max(MIN_SIDEBAR_WIDTH, rowWidth - 360) : MAX_SIDEBAR_WIDTH;
-      const hardMax = Math.min(MAX_SIDEBAR_WIDTH, maxByRow);
-      return Math.min(hardMax, Math.max(MIN_SIDEBAR_WIDTH, Math.round(width)));
-    };
-
-    const readSidebarWidth = () => {
-      try {
-        const value = Number.parseInt(localStorage.getItem(SIDEBAR_WIDTH_KEY) || '', 10);
-        return Number.isFinite(value) ? value : DEFAULT_SIDEBAR_WIDTH;
-      } catch (err) {
-        return DEFAULT_SIDEBAR_WIDTH;
-      }
-    };
-
-    const writeSidebarWidth = (width) => {
-      try {
-        localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
-      } catch (err) {
-        // Silent fail if storage is unavailable
-      }
-    };
-
-    const resetSidebarWidth = () => {
-      sidebar.style.flex = '';
-      sidebar.style.maxWidth = '';
-      if (adminMain) {
-        adminMain.style.flex = '';
-        adminMain.style.maxWidth = '';
-      }
-    };
-
-    const applySidebarWidth = (width) => {
-      if (!adminShellRow || !adminMain) return;
-      const rowRect = adminShellRow.getBoundingClientRect();
-      const clamped = clampSidebarWidth(width, rowRect.width);
-      sidebar.style.flex = `0 0 ${clamped}px`;
-      sidebar.style.maxWidth = `${clamped}px`;
-      adminMain.style.flex = `1 1 calc(100% - ${clamped}px)`;
-      adminMain.style.maxWidth = `calc(100% - ${clamped}px)`;
-    };
-
-    const applyMiniSidebarState = (forceState = null) => {
-      if (window.innerWidth < 992) {
-        document.body.classList.remove('admin-sidebar-mini');
-        document.body.classList.remove(MINI_EXPANDED_CLASS);
-        resetSidebarWidth();
-        if (sidebarMiniToggle) {
-          sidebarMiniToggle.setAttribute('aria-expanded', 'false');
-        }
-        return;
-      }
-      const shouldEnable = forceState !== null ? Boolean(forceState) : readMiniState();
-      document.body.classList.toggle('admin-sidebar-mini', shouldEnable);
-      if (!shouldEnable) {
-        document.body.classList.remove(MINI_EXPANDED_CLASS);
-        applySidebarWidth(readSidebarWidth());
-      } else {
-        resetSidebarWidth();
-      }
-      if (sidebarMiniToggle) {
-        sidebarMiniToggle.setAttribute('aria-pressed', shouldEnable ? 'true' : 'false');
-        sidebarMiniToggle.setAttribute('aria-expanded', 'false');
-      }
-    };
-
-    const isDesktop = () => window.innerWidth >= DESKTOP_WIDTH;
-    const isMiniMode = () => document.body.classList.contains('admin-sidebar-mini');
-    const setMiniExpanded = (expanded) => {
-      const shouldExpand = Boolean(expanded) && isDesktop() && isMiniMode();
-      document.body.classList.toggle(MINI_EXPANDED_CLASS, shouldExpand);
-      if (sidebarMiniToggle) {
-        sidebarMiniToggle.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
-      }
-    };
-
-    applyMiniSidebarState();
-
-    if (sidebarMiniToggle) {
-      sidebarMiniToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const nextState = !document.body.classList.contains('admin-sidebar-mini');
-        document.body.classList.toggle('admin-sidebar-mini', nextState);
-        document.body.classList.remove(MINI_EXPANDED_CLASS);
-        writeMiniState(nextState);
-        if (nextState) {
-          resetSidebarWidth();
-        } else {
-          applySidebarWidth(readSidebarWidth());
-        }
-        sidebarMiniToggle.setAttribute('aria-pressed', nextState ? 'true' : 'false');
-        sidebarMiniToggle.setAttribute('aria-expanded', 'false');
-      });
-    }
-
-    if (sidebarResizer && adminShellRow && adminMain) {
-      let isResizing = false;
-      let pointerId = null;
-      let liveWidth = readSidebarWidth();
-
-      const updateResizerVisibility = () => {
-        const isDesktop = window.innerWidth >= DESKTOP_WIDTH;
-        const isMini = isMiniMode();
-
-        // Reset all visibility classes first
-        sidebarResizer.classList.remove('d-none', 'd-lg-flex', 'd-flex');
-
-        if (isDesktop) {
-          // On desktop, show the resizer (as flex)
-          if (isMini) {
-            sidebarResizer.classList.add('d-flex', 'is-mini');
-          } else {
-            sidebarResizer.classList.add('d-lg-flex');
-          }
-        } else {
-          // On mobile, hide completely
-          sidebarResizer.classList.add('d-none');
-        }
-      };
-
-      const ensureMiniDisabledForResize = () => {
-        if (!isMiniMode()) return;
-        document.body.classList.remove('admin-sidebar-mini');
-        document.body.classList.remove(MINI_EXPANDED_CLASS);
-        writeMiniState(false);
-        applySidebarWidth(readSidebarWidth());
-        updateResizerVisibility();
-      };
-
-      const startResize = (event) => {
-        if (window.innerWidth < DESKTOP_WIDTH) return;
-        if (isMiniMode()) {
-          ensureMiniDisabledForResize();
-        }
-        isResizing = true;
-        pointerId = event.pointerId;
-        adminShellRow.classList.add('is-resizing');
-        try {
-          sidebarResizer.setPointerCapture(pointerId);
-        } catch (err) {
-          // ignore capture errors
-        }
-        event.preventDefault();
-      };
-
-      const moveResize = (event) => {
-        if (!isResizing) return;
-        const rowRect = adminShellRow.getBoundingClientRect();
-        const next = clampSidebarWidth(event.clientX - rowRect.left, rowRect.width);
-        liveWidth = next;
-        applySidebarWidth(next);
-      };
-
-      const endResize = () => {
-        if (!isResizing) return;
-        isResizing = false;
-        adminShellRow.classList.remove('is-resizing');
-        if (window.innerWidth >= DESKTOP_WIDTH && !isMiniMode()) {
-          writeSidebarWidth(liveWidth);
-        }
-        if (pointerId !== null) {
-          try {
-            sidebarResizer.releasePointerCapture(pointerId);
-          } catch (err) {
-            // ignore release errors
-          }
-        }
-        pointerId = null;
-      };
-
-      sidebarResizer.addEventListener('pointerdown', startResize);
-      window.addEventListener('pointermove', moveResize);
-      window.addEventListener('pointerup', endResize);
-      window.addEventListener('pointercancel', endResize);
-      sidebarResizer.addEventListener('dblclick', () => {
-        if (window.innerWidth < DESKTOP_WIDTH) return;
-        if (isMiniMode()) {
-          ensureMiniDisabledForResize();
-        }
-        liveWidth = DEFAULT_SIDEBAR_WIDTH;
-        writeSidebarWidth(liveWidth);
-        applySidebarWidth(liveWidth);
-      });
-      sidebarResizer.addEventListener('keydown', (event) => {
-        if (window.innerWidth < DESKTOP_WIDTH) return;
-        if (isMiniMode()) {
-          ensureMiniDisabledForResize();
-        }
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-        event.preventDefault();
-        const delta = event.key === 'ArrowLeft' ? -16 : 16;
-        const rowRect = adminShellRow.getBoundingClientRect();
-        liveWidth = clampSidebarWidth((liveWidth || readSidebarWidth()) + delta, rowRect.width);
-        writeSidebarWidth(liveWidth);
-        applySidebarWidth(liveWidth);
-      });
-
-      updateResizerVisibility();
-      applySidebarWidth(readSidebarWidth());
-      window.addEventListener('resize', updateResizerVisibility);
-    }
-
-    // Desktop mini-sidebar behavior:
-    // Hover/focus on sidebar => expand to full
-    // Click/focus outside sidebar => collapse back to mini
-    sidebar.addEventListener('mouseenter', () => {
-      if (isDesktop() && isMiniMode()) {
-        setMiniExpanded(true);
-      }
-    });
-
-    sidebar.addEventListener('focusin', () => {
-      if (isDesktop() && isMiniMode()) {
-        setMiniExpanded(true);
-      }
-    });
-
-    sidebar.addEventListener('mouseleave', () => {
-      if (isDesktop() && isMiniMode()) {
-        setMiniExpanded(false);
-      }
-    });
-
-    document.addEventListener('pointerdown', (event) => {
-      if (!isDesktop() || !isMiniMode()) return;
-      const target = event.target;
-      if (sidebar.contains(target)) return;
-      if (sidebarMiniToggle && sidebarMiniToggle.contains(target)) return;
-      setMiniExpanded(false);
-    });
-
-    document.addEventListener('focusin', (event) => {
-      if (!isDesktop() || !isMiniMode()) return;
-      const target = event.target;
-      if (sidebar.contains(target)) return;
-      if (sidebarMiniToggle && sidebarMiniToggle.contains(target)) return;
-      setMiniExpanded(false);
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (
-        event.key === 'Escape' &&
-        window.innerWidth < DESKTOP_WIDTH &&
-        sidebar.classList.contains('show')
-      ) {
-        closeSidebar();
-        return;
-      }
-      if (!isDesktop() || !isMiniMode()) return;
-      if (event.key === 'Escape') {
-        setMiniExpanded(false);
-      }
-    });
-
-    // Toggle sidebar on click
-    sidebarToggles.forEach((toggle) => {
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent document click from immediately closing it
-        toggleSidebar();
-      });
-    });
-
-    // Close sidebar on button click (Mobile)
-    const closeBtns = document.querySelectorAll('.sidebar-close');
-    closeBtns.forEach((btn) => {
-      btn.addEventListener('click', closeSidebar);
-    });
-
-    // Close sidebar when clicking on overlay
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-
-    // Close sidebar on outside click in mobile view.
-    document.addEventListener('click', (event) => {
-      if (window.innerWidth >= DESKTOP_WIDTH) return;
-      if (!sidebar.classList.contains('show')) return;
-
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (sidebar.contains(target)) return;
-      if (overlay && overlay.contains(target)) return;
-      if (Array.from(sidebarToggles).some((toggle) => toggle.contains(target))) return;
-
-      closeSidebar();
-    });
-
-    // Handle window resize: remove .show class if switching to desktop view
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 992 && sidebar.classList.contains('show')) {
-        closeSidebar();
-      }
-      applyMiniSidebarState();
-      if (!isMiniMode() && window.innerWidth >= DESKTOP_WIDTH) {
-        applySidebarWidth(readSidebarWidth());
-      }
-      syncMobileSidebarState();
-    });
-
-    // Close sidebar when a menu link is clicked (Mobile)
-    const menuLinks = sidebar.querySelectorAll('a.list-group-item:not([data-bs-toggle])');
-    menuLinks.forEach((link) => {
-      link.addEventListener('click', () => {
-        if (window.innerWidth < 992) {
-          closeSidebar();
-        }
-      });
-    });
-
-    // Persist open submenu state across page loads
-    try {
-      const STORAGE_KEY = 'admin.sidebar.openSubmenus';
-      const collapses = sidebar.querySelectorAll('.collapse[id]');
-      const openSet = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
-
-      // Restore saved open submenus
-      openSet.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) {
-          try {
-            const bs = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, });
-            bs.show();
-          } catch (e) {
-            // ignore if bootstrap not available yet
-          }
-        }
-      });
-
-      // Track show/hide events
-      collapses.forEach((c) => {
-        c.addEventListener('shown.bs.collapse', () => {
-          openSet.add(c.id);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
-        });
-        c.addEventListener('hidden.bs.collapse', () => {
-          openSet.delete(c.id);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openSet)));
-        });
-      });
-    } catch (err) {
-      // localStorage or bootstrap events not available; fail silently
-    }
-
-    // Enforce single expanded submenu at a time.
-    if (typeof bootstrap !== 'undefined') {
-      const STORAGE_KEY = 'admin.sidebar.openSubmenus';
-      const collapses = Array.from(sidebar.querySelectorAll('.collapse[id]'));
-      const persistSingleOpen = (id) => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(id ? [id,] : []));
-        } catch (err) {
-          // Ignore storage failures.
-        }
-      };
-      const hideCollapse = (el) => {
-        if (!el || !el.classList.contains('show')) return;
-        try {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false, }).hide();
-        } catch (err) {
-          el.classList.remove('show');
-        }
-      };
-
-      const opened = collapses.filter((el) => el.classList.contains('show'));
-      if (opened.length <= 1) {
-        persistSingleOpen(opened[0]?.id || null);
-      } else {
-        opened.slice(1).forEach(hideCollapse);
-        persistSingleOpen(opened[0].id);
-      }
-
-      collapses.forEach((current) => {
-        current.addEventListener('show.bs.collapse', () => {
-          collapses.forEach((other) => {
-            if (other !== current) hideCollapse(other);
-          });
-        });
-
-        current.addEventListener('shown.bs.collapse', () => {
-          persistSingleOpen(current.id);
-        });
-
-        current.addEventListener('hidden.bs.collapse', () => {
-          const active = collapses.find((el) => el.classList.contains('show'));
-          persistSingleOpen(active ? active.id : null);
-        });
-      });
-    }
-
-    syncSidebarActiveState();
-    syncMobileSidebarState();
-  }
 });
 
 // Page loaded flag
@@ -606,16 +81,6 @@ runWhenReady(() => {
 (function () {
   'use strict';
 
-  const onReady =
-    typeof runWhenReady === 'function'
-      ? runWhenReady
-      : (fn) => {
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', fn, { once: true, });
-        } else {
-          fn();
-        }
-      };
 
   const byId = (id) => document.getElementById(id);
   const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -638,7 +103,7 @@ runWhenReady(() => {
     if (!value) return fallback;
     try {
       return JSON.parse(value);
-    } catch (e) {
+    } catch {
       return fallback;
     }
   };
@@ -660,11 +125,11 @@ runWhenReady(() => {
           info: 'info',
         };
         const cls = map[normalized] || 'info';
-        toast.className = `alert alert-${cls} alert-dismissible show position-fixed top-0 end-0 m-3`;
+        toast.className = `fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border transition-all duration-300 ${cls === 'danger' ? 'bg-red-50 border-red-200 text-red-700' : cls === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-sky-50 border-sky-200 text-sky-700'}`;
         toast.style.zIndex = '9999';
         toast.innerHTML = `
                     ${String(message || '')}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert"></button>
                 `;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), Number(duration) || 5000);
@@ -773,10 +238,10 @@ runWhenReady(() => {
         const setFeedback = (message = '', state = '') => {
           if (!feedback) return;
           feedback.textContent = message;
-          feedback.classList.remove('text-success', 'text-danger', 'text-muted');
-          if (state === 'ok') feedback.classList.add('text-success');
-          else if (state === 'bad') feedback.classList.add('text-danger');
-          else feedback.classList.add('text-muted');
+          feedback.classList.remove('text-emerald-600', 'text-red-600', 'text-slate-400');
+          if (state === 'ok') feedback.classList.add('text-emerald-600');
+          else if (state === 'bad') feedback.classList.add('text-red-600');
+          else feedback.classList.add('text-slate-400');
         };
 
         const checkSlug = async (slug) => {
@@ -794,7 +259,7 @@ runWhenReady(() => {
             } else {
               setFeedback(data?.message || 'Slug unavailable', 'bad');
             }
-          } catch (e) {
+          } catch {
             setFeedback('Could not verify slug right now', 'bad');
           }
         };
@@ -976,6 +441,17 @@ runWhenReady(() => {
     notificationsWorkflows: () => import('./admin/modules/notifications-workflows.js'),
     rbacUsers: () => import('./admin/modules/rbac-users.js'),
     security2fa: () => import('./admin/modules/security-2fa.js'),
+    activityLog: () => import('./admin/modules/activity-log.js'),
+    services: () => import('./admin/modules/services.js'),
+    settings: () => import('./admin/modules/settings.js'),
+    emailTemplates: () => import('./admin/modules/email-templates.js'),
+    applications: () => import('./admin/modules/applications.js'),
+    oauth: () => import('./admin/modules/oauth.js'),
+    shared: () => import('./admin/modules/shared.js'),
+    subscribers: () => import('./admin/modules/subscribers.js'),
+    misc: () => import('./admin/modules/misc.js'),
+    serverStatus: () => import('./admin/modules/server-status.js'),
+    realtimeMonitoring: () => import('./admin/modules/realtime-monitoring.js'),
   };
 
   function logModuleError(moduleName, error) {
@@ -1028,172 +504,15 @@ runWhenReady(() => {
   }
 
   function initFlashMessageAutoDismiss() {
-    const flashMsg = byId('flash-message');
-    if (!flashMsg || typeof bootstrap === 'undefined') return;
-    setTimeout(() => {
-      try {
-        new bootstrap.Alert(flashMsg).close();
-      } catch (e) { /* ignore auto-dismiss errors */ }
-    }, 5000);
+    loadAdminModule('shared')
+      .then((mod) => mod.initFlashMessageAutoDismiss({ byId, }))
+      .catch((error) => logModuleError('shared', error));
   }
 
-  function initPasswordModals() {
-    const setPasswordForm = byId('setPasswordForm');
-    const changePasswordForm = byId('changePasswordForm');
-    if (!setPasswordForm && !changePasswordForm) return;
-
-    const specialCharPattern = new RegExp("[!@#$%^&*()_+\\-=\\[\\]{};:'\",.<>?/\\\\]");
-
-    function validatePasswordStrength(inputId) {
-      const input = byId(inputId);
-      if (!input) return;
-      const password = input.value || '';
-      const isChangeForm = inputId.includes('change');
-      const prefix = isChangeForm ? 'changePwd' : 'pwd';
-
-      const lengthCheck = byId(`${prefix}Length`);
-      const upperCheck = byId(`${prefix}Upper`);
-      const lowerCheck = byId(`${prefix}Lower`);
-      const numberCheck = byId(`${prefix}Number`);
-      const specialCheck = byId(`${prefix}Special`);
-
-      if (lengthCheck) lengthCheck.classList.toggle('valid', password.length >= 8);
-      if (upperCheck) upperCheck.classList.toggle('valid', /[A-Z]/.test(password));
-      if (lowerCheck) lowerCheck.classList.toggle('valid', /[a-z]/.test(password));
-      if (numberCheck) numberCheck.classList.toggle('valid', /[0-9]/.test(password));
-      if (specialCheck)
-        specialCheck.classList.toggle(
-          'valid',
-          specialCharPattern.test(password)
-        );
-    }
-
-    const newPasswordInput = byId('newPassword');
-    const changePasswordInput = byId('changeNewPassword');
-    if (newPasswordInput)
-      newPasswordInput.addEventListener('input', () => validatePasswordStrength('newPassword'));
-    if (changePasswordInput)
-      changePasswordInput.addEventListener('input', () =>
-        validatePasswordStrength('changeNewPassword')
-      );
-
-    function showAlert(alertBox, message, type = 'danger') {
-      if (!alertBox) return;
-      alertBox.className = `alert alert-${type} alert-dismissible show`;
-      alertBox.textContent = message;
-    }
-
-    function setPassword() {
-      const form = byId('setPasswordForm');
-      if (!form) return;
-      const password = form.password?.value || '';
-      const confirmPassword = form.password_confirm?.value || '';
-      const csrfToken = form.csrf_token?.value || getCsrfToken();
-      const alertBox = byId('setPasswordAlert');
-
-      if (!password || !confirmPassword) {
-        showAlert(alertBox, 'All fields are required', 'danger');
-        return;
-      }
-      if (password !== confirmPassword) {
-        showAlert(alertBox, 'Passwords do not match', 'danger');
-        return;
-      }
-      if (password.length < 8) {
-        showAlert(alertBox, 'Password must be at least 8 characters', 'danger');
-        return;
-      }
-
-      fetch('/api/oauth/set-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: new URLSearchParams({
-          password: password,
-          password_confirm: confirmPassword,
-          csrf_token: csrfToken,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            showAlert(alertBox, data.message, 'success');
-            setTimeout(() => {
-              form.reset();
-              bootstrap.Modal.getInstance(byId('setPasswordModal'))?.hide();
-              location.reload();
-            }, 1500);
-          } else {
-            showAlert(alertBox, data.error || 'Failed to set password', 'danger');
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          showAlert(alertBox, 'An error occurred. Please try again.', 'danger');
-        });
-    }
-
-    function changePassword() {
-      const form = byId('changePasswordForm');
-      if (!form) return;
-      const currentPassword = form.current_password?.value || '';
-      const newPassword = form.password?.value || '';
-      const confirmPassword = form.password_confirm?.value || '';
-      const csrfToken = form.csrf_token?.value || getCsrfToken();
-      const alertBox = byId('changePasswordAlert');
-
-      if (!currentPassword || !newPassword || !confirmPassword) {
-        showAlert(alertBox, 'All fields are required', 'danger');
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        showAlert(alertBox, 'Passwords do not match', 'danger');
-        return;
-      }
-
-      fetch('/user/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: new URLSearchParams({
-          current_password: currentPassword,
-          password: newPassword,
-          password_confirm: confirmPassword,
-          csrf_token: csrfToken,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            showAlert(alertBox, data.message, 'success');
-            setTimeout(() => {
-              form.reset();
-              bootstrap.Modal.getInstance(byId('changePasswordModal'))?.hide();
-              location.reload();
-            }, 1500);
-          } else {
-            showAlert(alertBox, data.error || 'Failed to change password', 'danger');
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          showAlert(alertBox, 'An error occurred. Please try again.', 'danger');
-        });
-    }
-
-    byId('setPasswordBtn')?.addEventListener('click', setPassword);
-    byId('changePasswordBtn')?.addEventListener('click', changePassword);
-
-    // Return functions for global access
-    return {
-      validatePasswordStrength,
-      setPassword,
-      changePassword,
-    };
+  function initOAuthPasswordModals() {
+    loadAdminModule('oauth')
+      .then((mod) => mod.initOAuthPasswordModals({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('oauth', error));
   }
 
   function initAccountSettings() {
@@ -1219,410 +538,39 @@ runWhenReady(() => {
   }
 
   function initActivityLog() {
-    const tbody = byId('log-table-body');
-    if (!tbody) return;
-
-    let currentPage = 1;
-    let perPage = 50;
-    const currentSort = { by: 'created_at', order: 'DESC', };
-    let totalRecords = 0;
-    let totalPages = 1;
-    let activityEnabled = tbody.dataset.activityEnabled === 'true';
-
-    function parseBrowserInfo(userAgent) {
-      if (!userAgent) return 'Unknown';
-      let browser = 'Unknown';
-      let os = 'Unknown';
-      let version = '';
-      if (userAgent.includes('Edge')) {
-        browser = 'Edge';
-        const match = userAgent.match(/Edge\/(\d+)/);
-        if (match) version = match[1];
-      } else if (userAgent.includes('Chrome')) {
-        browser = 'Chrome';
-        const match = userAgent.match(/Chrome\/(\d+)/);
-        if (match) version = match[1];
-      } else if (userAgent.includes('Safari')) {
-        browser = 'Safari';
-        const match = userAgent.match(/Version\/(\d+)/);
-        if (match) version = match[1];
-      } else if (userAgent.includes('Firefox')) {
-        browser = 'Firefox';
-        const match = userAgent.match(/Firefox\/(\d+)/);
-        if (match) version = match[1];
-      } else if (userAgent.includes('Opera')) {
-        browser = 'Opera';
-        const match = userAgent.match(/Version\/(\d+)/);
-        if (match) version = match[1];
-      } else if (userAgent.includes('MSIE') || userAgent.includes('Trident')) {
-        browser = 'Internet Explorer';
-        const match = userAgent.match(/MSIE (\d+)/) || userAgent.match(/rv:(\d+)/);
-        if (match) version = match[1];
-      }
-
-      if (userAgent.includes('Windows')) {
-        if (userAgent.includes('Windows NT 10.0')) os = 'Windows 10/11';
-        else if (userAgent.includes('Windows NT 6.3')) os = 'Windows 8.1';
-        else if (userAgent.includes('Windows NT 6.2')) os = 'Windows 8';
-        else if (userAgent.includes('Windows NT 6.1')) os = 'Windows 7';
-        else os = 'Windows';
-      } else if (userAgent.includes('Mac OS X')) os = 'macOS';
-      else if (userAgent.includes('Linux')) os = 'Linux';
-      else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
-      else if (userAgent.includes('Android')) os = 'Android';
-
-      let info = browser;
-      if (version) info += ` ${version}`;
-      info += ` (${os})`;
-      return info;
-    }
-
-    function renderLog(log) {
-      const time = new Date(log.created_at).toLocaleString();
-      const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || `#${log.user_id || '0'}`;
-      let browserInfo = 'Unknown';
-      if (log.details && log.details._browser) browserInfo = log.details._browser;
-      else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
-
-      const row = document.createElement('tr');
-      row.dataset.id = log.id;
-      row.innerHTML = `
-                <td class="log-time">${time}</td>
-                <td class="log-user"><i class="bi bi-person-circle me-2"></i>${username}</td>
-                <td class="log-action">${log.action}</td>
-                <td><span class="resource-type">${log.resource_type || 'N/A'} <strong>#${log.resource_id || 'N/A'}</strong></span></td>
-                <td><span class="badge ${statusClass}">${log.status}</span></td>
-                <td class="ip-badge" title="${escapeHtml(log.user_agent || 'N/A')}">
-                    <div style="font-size: 0.8rem; color: #333; font-weight: 500;">${log.ip_address || 'N/A'}</div>
-                    <div style="font-size: 0.75rem; color: #999;">${browserInfo}</div>
-                </td>
-            `;
-      row.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'A') showLogDetailsModal(log);
-      });
-      return row;
-    }
-
-    function showLogDetailsModal(log) {
-      const time = new Date(log.created_at).toLocaleString();
-      const statusClass = log.status === 'success' ? 'bg-success' : 'bg-danger';
-      const username = log.username || `#${log.user_id || '0'}`;
-      byId('modalLogId').textContent = log.id;
-      byId('modalLogTime').textContent = time;
-      byId('modalLogUser').textContent = username;
-      byId('modalLogRole').textContent = log.role;
-      byId('modalLogAction').textContent = log.action;
-      byId('modalLogResource').textContent =
-        `${log.resource_type || 'N/A'} #${log.resource_id || 'N/A'}`;
-      byId('modalLogStatus').innerHTML = `<span class="badge ${statusClass}">${log.status}</span>`;
-      byId('modalLogIp').textContent = log.ip_address || 'N/A';
-      byId('modalLogAgent').textContent = log.user_agent || 'N/A';
-
-      let browserInfo = 'Not available';
-      if (log.details && log.details._browser) browserInfo = log.details._browser;
-      else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
-      byId('modalLogBrowser').innerHTML =
-        `<span class="badge bg-info">${escapeHtml(browserInfo)}</span>`;
-
-      const detailsJson = log.details
-        ? JSON.stringify(log.details, null, 2)
-        : 'No additional details';
-      byId('modalLogDetails').textContent = detailsJson;
-      window.currentLogJson = JSON.stringify(log, null, 2);
-      const modal = new bootstrap.Modal(byId('logDetailsModal'));
-      modal.show();
-    }
-
-    async function fetchLogs(page = 1) {
-      const q = byId('searchBox')?.value?.trim() || '';
-      const status = byId('filterStatus')?.value || '';
-      const user = byId('filterUser')?.value?.trim() || '';
-      const resource = byId('filterResource')?.value?.trim() || '';
-
-      const params = new URLSearchParams({
-        page,
-        perPage,
-        sort_by: currentSort.by,
-        sort_order: currentSort.order,
-      });
-      if (q) params.set('q', q);
-      if (status) params.set('status', status);
-      if (user) params.set('user_id', user);
-      if (resource) params.set('resource_type', resource);
-
-      try {
-        const res = await fetch(`/api/log-activity?${params.toString()}`);
-        const data = await res.json();
-
-        tbody.innerHTML = '';
-        if (data.logs && data.logs.length) {
-          data.logs.forEach((log) => tbody.appendChild(renderLog(log)));
-        } else {
-          tbody.innerHTML =
-            '<tr><td colspan="6" class="empty-state"><div><i class="bi bi-inbox"></i><p>No logs found</p></div></td></tr>';
-        }
-
-        currentPage = data.page;
-        totalRecords = data.total;
-        totalPages = data.totalPages;
-
-        const start = (currentPage - 1) * perPage + 1;
-        const end = Math.min(currentPage * perPage, totalRecords);
-        byId('startRecord').textContent = totalRecords > 0 ? start : 0;
-        byId('endRecord').textContent = end;
-        byId('totalRecord').textContent = totalRecords;
-        byId('pageIndicator').textContent = `Page ${currentPage} of ${totalPages}`;
-
-        byId('prevPage').disabled = currentPage <= 1;
-        byId('nextPage').disabled = currentPage >= totalPages;
-      } catch (err) {
-        console.error('Error fetching logs', err);
-        tbody.innerHTML =
-          '<tr><td colspan="6" class="empty-state"><i class="bi bi-exclamation-circle"></i> Error loading logs</td></tr>';
-      }
-    }
-
-    document.querySelectorAll('thead th[data-sort]').forEach((th) => {
-      th.addEventListener('click', () => {
-        const sortBy = th.dataset.sort;
-        const sortSpan = byId(`sort-${sortBy}`);
-        document.querySelectorAll('.sort-indicator').forEach((s) => {
-          s.textContent = '';
-          s.classList.remove('active');
-        });
-
-        if (currentSort.by === sortBy) {
-          currentSort.order = currentSort.order === 'DESC' ? 'ASC' : 'DESC';
-        } else {
-          currentSort.by = sortBy;
-          currentSort.order = 'DESC';
-        }
-
-        if (sortSpan) {
-          sortSpan.classList.add('active');
-          sortSpan.textContent = currentSort.order === 'DESC' ? 'v' : '^';
-        }
-
-        currentPage = 1;
-        fetchLogs();
-      });
-    });
-
-    byId('prevPage')?.addEventListener('click', () => fetchLogs(currentPage - 1));
-    byId('nextPage')?.addEventListener('click', () => fetchLogs(currentPage + 1));
-    byId('btnRefresh')?.addEventListener('click', () => {
-      currentPage = 1;
-      fetchLogs(1);
-    });
-
-    ['searchBox', 'filterStatus', 'filterUser', 'filterResource',].forEach((id) => {
-      byId(id)?.addEventListener('change', () => {
-        currentPage = 1;
-        fetchLogs(1);
-      });
-    });
-
-    byId('perPageSelect')?.addEventListener('change', (e) => {
-      perPage = parseInt(e.target.value, 10);
-      currentPage = 1;
-      fetchLogs(1);
-    });
-
-    byId('exportCsv')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      exportLogs('csv');
-    });
-    byId('exportJson')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      exportLogs('json');
-    });
-
-    function exportLogs(format) {
-      const q = byId('searchBox')?.value?.trim() || '';
-      const status = byId('filterStatus')?.value || '';
-      const user = byId('filterUser')?.value?.trim() || '';
-      const resource = byId('filterResource')?.value?.trim() || '';
-
-      const params = new URLSearchParams({ format, });
-      if (q) params.set('q', q);
-      if (status) params.set('status', status);
-      if (user) params.set('user_id', user);
-      if (resource) params.set('resource_type', resource);
-
-      window.location.href = `/api/log-activity/export?${params.toString()}`;
-    }
-
-    byId('modalCopyJson')?.addEventListener('click', () => {
-      if (!window.currentLogJson) return;
-      navigator.clipboard
-        .writeText(window.currentLogJson)
-        .then(() => {
-          const btn = byId('modalCopyJson');
-          if (!btn) return;
-          const originalText = btn.innerHTML;
-          btn.innerHTML = '<i class="bi bi-check me-2"></i>Copied!';
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-success');
-          setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-primary');
-          }, 2000);
-        })
-        .catch(() => {
-          alert('Failed to copy to clipboard');
-        });
-    });
-
-    byId('toggleActivity')?.addEventListener('click', async () => {
-      const target = !activityEnabled;
-      try {
-        const res = await fetch('/api/log-activity/toggle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({ enabled: target, }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          activityEnabled = Boolean(data.enabled);
-          byId('toggleActivityLabel').textContent = activityEnabled
-            ? 'Activity: ON'
-            : 'Activity: OFF';
-          alert(
-            data.message ||
-            (activityEnabled ? 'Activity logging enabled' : 'Activity logging disabled')
-          );
-        } else {
-          alert(data.message || 'Failed to update activity logging');
-        }
-      } catch (e) {
-        alert('Error updating activity logging');
-      }
-    });
-
-    fetchLogs(1);
+    loadAdminModule('activityLog')
+      .then((mod) => mod.initActivityLog({ byId, escapeHtml, getCsrfToken, }))
+      .catch((error) => logModuleError('activityLog', error));
   }
 
   function initDashboardData() {
-    const dataEl = byId('admin-dashboard-data');
-    if (!dataEl) return;
-    window.BLOG_DASHBOARD = {
-      trendLabels: parseJson(dataEl.dataset.trendLabels, []),
-      trendSeries: parseJson(dataEl.dataset.trendSeries, []),
-    };
+    loadAdminModule('shared')
+      .then((mod) => mod.initDashboardData({ byId, parseJson, }))
+      .catch((error) => logModuleError('shared', error));
   }
 
   function initContentFormData() {
-    const dataEl = byId('admin-content-data');
-    if (!dataEl) return;
-    const categoryIds = parseJson(dataEl.dataset.categoryIds, []);
-    const tagIds = parseJson(dataEl.dataset.tagIds, []);
-    const contentType = dataEl.dataset.contentType || '';
-
-    window.itemCategoryIds = categoryIds;
-    window.itemTagIds = tagIds;
-    if (contentType === 'posts') {
-      window.postCategoryIds = categoryIds;
-      window.postTagIds = tagIds;
-    } else if (contentType === 'pages') {
-      window.pageCategoryIds = categoryIds;
-      window.pageTagIds = tagIds;
-    }
-
-    if (window.adminContent?.fetchCategories) {
-      window.adminContent.fetchCategories(categoryIds, '#category_ids_select');
-    }
-    if (window.adminContent?.initializeCategoriesSelect) {
-      window.adminContent.initializeCategoriesSelect('#category_ids_select');
-    }
-    if (window.adminContent?.fetchTags) {
-      window.adminContent.fetchTags(tagIds, '#tags');
-    }
-    if (window.adminContent?.initializeTagsSelect) {
-      window.adminContent.initializeTagsSelect('#tags');
-    }
+    loadAdminModule('shared')
+      .then((mod) => mod.initContentFormData({ byId, parseJson, }))
+      .catch((error) => logModuleError('shared', error));
   }
 
   function initEmailTemplatesEdit() {
-    const form = byId('emailTemplateForm');
-    const previewBtn = byId('previewBtn');
-    if (!form || !previewBtn) return;
-    const templateId = form.dataset.templateId;
-    const adminDir = getAdminDir();
-
-    function previewTemplate() {
-      const formData = new FormData(form);
-      const originalHTML = previewBtn.innerHTML;
-      previewBtn.disabled = true;
-      previewBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
-
-      fetch(`${adminDir}/email-templates/${templateId}/preview`, {
-        method: 'POST',
-        body: formData,
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            byId('previewSubject').innerHTML = `<strong>${escapeHtml(data.subject)}</strong>`;
-            byId('previewBody').innerHTML = data.body;
-            showToast('Preview updated successfully', 'success');
-          } else {
-            showToast(`Preview failed: ${data.message}`, 'danger');
-          }
-        })
-        .catch((err) => {
-          showToast(`Error: ${err}`, 'danger');
-          console.error('Preview error:', err);
-        })
-        .finally(() => {
-          previewBtn.disabled = false;
-          previewBtn.innerHTML = originalHTML;
-        });
-    }
-
-    previewBtn.addEventListener('click', previewTemplate);
+    loadAdminModule('emailTemplates')
+      .then((mod) => mod.initEmailTemplatesEdit({ byId, getAdminDir, escapeHtml, }))
+      .catch((error) => logModuleError('emailTemplates', error));
   }
 
   function initEmailTemplatesList() {
-    if (!document.querySelector('[data-email-template-list]')) return;
-    window.deleteTemplate = function (id, name) {
-      if (
-        !confirm(
-          `Are you sure you want to delete the email template "${name}"? This action cannot be undone.`
-        )
-      ) {
-        return;
-      }
-      fetch(`${getAdminDir()}/email-templates/${id}/delete`, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest', },
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            showToast(data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
-          } else {
-            showToast(data.message, 'danger');
-          }
-        })
-        .catch((err) => showToast(`Error: ${err}`, 'danger'));
-    };
+    loadAdminModule('emailTemplates')
+      .then((mod) => mod.initEmailTemplatesList({ getAdminDir, }))
+      .catch((error) => logModuleError('emailTemplates', error));
   }
 
   function initMediaDetail() {
-    if (!document.querySelector('[data-media-detail]')) return;
-    window.copyToClipboard = function (text) {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => {
-          alert('URL copied to clipboard!');
-        })
-        .catch((err) => {
-          console.error('Failed to copy:', err);
-        });
-    };
+    loadAdminModule('shared')
+      .then((mod) => mod.initMediaDetail())
+      .catch((error) => logModuleError('shared', error));
   }
 
   function initMediaUpload() {
@@ -1655,426 +603,27 @@ runWhenReady(() => {
   }
 
   function initApplicationsView() {
-    if (!byId('approveModal') || !byId('rejectModal')) return;
-    let appIdToAction = null;
-    const csrf = getCsrfToken();
-
-    function submitAction(url, body) {
-      return fetch(url, { method: 'POST', body, }).then((r) => r.json());
-    }
-
-    window.approveApplication = function (appId) {
-      appIdToAction = appId;
-      new bootstrap.Modal(byId('approveModal')).show();
-    };
-
-    window.confirmApprove = function () {
-      const notes = byId('approveNotes')?.value || '';
-      const formData = new FormData();
-      formData.append('csrf_token', csrf);
-      if (notes) formData.append('notes', notes);
-      submitAction(`/admin/applications/${appIdToAction}/approve`, formData)
-        .then((data) => {
-          showToast('Success', data.message, 'success');
-          setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(() => showToast('Error', 'Failed to approve application', 'error'));
-    };
-
-    window.rejectApplication = function (appId) {
-      appIdToAction = appId;
-      new bootstrap.Modal(byId('rejectModal')).show();
-    };
-
-    window.confirmReject = function () {
-      const reason = byId('rejectReason')?.value || '';
-      if (!reason) {
-        showToast('Error', 'Rejection reason is required', 'error');
-        return;
-      }
-      const formData = new FormData();
-      formData.append('csrf_token', csrf);
-      formData.append('reason', reason);
-      submitAction(`/admin/applications/${appIdToAction}/reject`, formData)
-        .then((data) => {
-          showToast('Success', data.message, 'success');
-          setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(() => showToast('Error', 'Failed to reject application', 'error'));
-    };
-
-    window.markProcessing = function (appId) {
-      appIdToAction = appId;
-      new bootstrap.Modal(byId('processingModal')).show();
-    };
-
-    window.confirmProcessing = function () {
-      const notes = byId('processingNotes')?.value || '';
-      const formData = new FormData();
-      formData.append('csrf_token', csrf);
-      if (notes) formData.append('notes', notes);
-      submitAction(`/admin/applications/${appIdToAction}/processing`, formData)
-        .then((data) => {
-          showToast('Success', data.message, 'success');
-          setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(() => showToast('Error', 'Failed to update application', 'error'));
-    };
-
-    window.addNote = function (appId) {
-      const note = byId('noteText')?.value || '';
-      if (!note) {
-        showToast('Error', 'Note cannot be empty', 'error');
-        return;
-      }
-      const formData = new FormData();
-      formData.append('csrf_token', csrf);
-      formData.append('note', note);
-      submitAction(`/admin/applications/${appId}/note`, formData)
-        .then((data) => {
-          showToast('Success', data.message, 'success');
-          byId('noteText').value = '';
-          setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(() => showToast('Error', 'Failed to add note', 'error'));
-    };
-
-    window.activateService = function (appId) {
-      if (!confirm('Activate this service for the user?')) return;
-      const formData = new FormData();
-      formData.append('csrf_token', csrf);
-      submitAction(`/admin/applications/${appId}/activate`, formData)
-        .then((data) => {
-          showToast('Success', data.message, 'success');
-          setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(() => showToast('Error', 'Failed to activate service', 'error'));
-    };
-
-    window.revertStatus = function (appId) {
-      if (!confirm('Revert application status to pending?')) return;
-      fetch(`/api/admin/applications/${appId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
-        body: JSON.stringify({ status: 'pending', }),
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            showToast('Success', data.message || 'Status reverted', 'success');
-            setTimeout(() => window.location.reload(), 1000);
-          } else {
-            showToast('Error', data.message || 'Failed to revert status', 'error');
-          }
-        })
-        .catch(() => showToast('Error', 'Failed to revert status', 'error'));
-    };
+    loadAdminModule('applications')
+      .then((mod) => mod.initApplicationsView({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('applications', error));
   }
 
   function initSettingsPage() {
-    const settingsRoot = document.querySelector('.settings-page');
-    if (!settingsRoot) return;
-    const adminPath = getAdminDir();
-    const submitBtn = settingsRoot.querySelector('button[type="submit"]');
-
-    document.querySelectorAll('.form-control, .form-select, .form-check-input').forEach((input) => {
-      input.addEventListener('change', () => {
-        if (submitBtn) submitBtn.classList.add('btn-warning');
-      });
-    });
-
-    const logoUpload = byId('siteLogoUpload');
-    const logoPreview = byId('logoPreview');
-    if (logoUpload && logoPreview) {
-      logoUpload.addEventListener('change', (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        logoPreview.src = url;
-        logoPreview.classList.remove('d-none');
-        logoPreview.onload = () => URL.revokeObjectURL(url);
-      });
-    }
-
-    const faviconUpload = byId('faviconUpload');
-    const faviconPreview = byId('faviconPreview');
-    if (faviconUpload && faviconPreview) {
-      faviconUpload.addEventListener('change', (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        faviconPreview.src = url;
-        faviconPreview.onload = () => URL.revokeObjectURL(url);
-      });
-    }
-
-    byId('removeLogoBtn')?.addEventListener('click', () => {
-      if (!confirm('Remove site logo? This will clear the saved logo.')) return;
-      const hidden = byId('remove_site_logo');
-      if (hidden) hidden.value = '1';
-      settingsRoot.querySelector('form.needs-validation')?.submit();
-    });
-
-    const testEmailBtn = byId('sendTestEmailBtn');
-    if (testEmailBtn) {
-      testEmailBtn.addEventListener('click', async () => {
-        const recipient = byId('testEmailRecipient')?.value || '';
-        const action = `${adminPath}/app-settings/send-test-email-ajax`;
-
-        testEmailBtn.disabled = true;
-        const originalText = testEmailBtn.textContent;
-        testEmailBtn.textContent = 'Sending...';
-
-        try {
-          const resp = await fetch(action, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
-            body: new URLSearchParams({ test_email: recipient, }),
-          });
-          const data = await resp.json();
-          showTestEmailModal(data.success, data.message || 'No response');
-        } catch (err) {
-          showTestEmailModal(false, `Request failed: ${err.message || err}`);
-        } finally {
-          testEmailBtn.disabled = false;
-          testEmailBtn.textContent = originalText;
-        }
-      });
-    }
-
-    function showTestEmailModal(success, message) {
-      let modalEl = byId('testEmailModal');
-      if (!modalEl) {
-        modalEl = document.createElement('div');
-        modalEl.id = 'testEmailModal';
-        modalEl.className = 'modal fade';
-        modalEl.tabIndex = -1;
-        modalEl.innerHTML = `
-                    <div class="modal-dialog modal-sm modal-dialog-centered">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title">Test Email</h5>
-                          <button type="button" class="modern-btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                          <p id="testEmailModalMessage"></p>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="modern-btn modern-btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                      </div>
-                    </div>`;
-        document.body.appendChild(modalEl);
-      }
-
-      const msgEl = modalEl.querySelector('#testEmailModalMessage');
-      if (msgEl) {
-        msgEl.textContent = message;
-        msgEl.classList.toggle('text-success', Boolean(success));
-        msgEl.classList.toggle('text-danger', !success);
-      }
-
-      const bootstrapModal = new bootstrap.Modal(modalEl);
-      bootstrapModal.show();
-    }
-
-    const save2faAdminBtn = byId('save2faAdminBtn');
-    if (save2faAdminBtn) {
-      save2faAdminBtn.addEventListener('click', () => {
-        const isRequired = byId('require2faAdmin')?.checked;
-        const btn = save2faAdminBtn;
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-        const csrfToken = getCsrfToken() || '';
-        const body = new URLSearchParams({
-          csrf_token: csrfToken,
-          key: 'require_2fa_for_admin',
-          value: isRequired ? '1' : '0',
-        });
-        fetch('/admin/app-settings/security/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: body.toString(),
-        })
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.success) {
-              const alertDiv = document.createElement('div');
-              alertDiv.className = 'alert alert-success alert-dismissible show mt-3';
-              alertDiv.innerHTML = `
-                            <i class="bi bi-check-circle me-2"></i>
-                            <strong>Success!</strong> ${data.message}
-                            <button type="button" class="modern-btn-close" data-bs-dismiss="alert"></button>
-                        `;
-              const tabPane = document.querySelector('#security');
-              tabPane?.insertBefore(alertDiv, tabPane.firstChild);
-              bootstrap.Modal.getInstance(byId('require2faAdminModal'))?.hide();
-            } else {
-              alert(`Error: ${data.message}`);
-            }
-          })
-          .catch(() => {
-            alert('An error occurred. Please try again.');
-          })
-          .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-          });
-      });
-    }
+    loadAdminModule('settings')
+      .then((mod) => mod.initSettingsPage({ byId, getCsrfToken, getAdminDir, }))
+      .catch((error) => logModuleError('settings', error));
   }
 
   function initAppSecuritySettings() {
-    if (!byId('btnExport')) return;
-
-    const csrfToken = getCsrfToken();
-
-    byId('btnExport')?.addEventListener('click', () => {
-      window.location.href = '/admin/app-settings/security/export';
-    });
-
-    byId('btnImport')?.addEventListener('click', () => {
-      const modal = new bootstrap.Modal(byId('importModal'));
-      modal.show();
-    });
-
-    byId('confirmImport')?.addEventListener('click', () => {
-      const fileInput = byId('settingsFile');
-      const file = fileInput?.files?.[0];
-      if (!file) {
-        alert('Please select a file');
-        return;
-      }
-      const formData = new FormData(byId('importForm'));
-      fetch('/admin/app-settings/security/import', { method: 'POST', body: formData, })
-        .then((res) => res.json())
-        .then((data) => {
-          bootstrap.Modal.getInstance(byId('importModal'))?.hide();
-          if (data.success) {
-            showAlert(`Successfully imported ${data.updated} settings`, 'success');
-            setTimeout(() => location.reload(), 1500);
-          } else {
-            showAlert(data.message || 'Import failed', 'danger');
-          }
-        })
-        .catch((err) => {
-          showAlert(`Import error: ${err.message}`, 'danger');
-        });
-    });
-
-    byId('btnReset')?.addEventListener('click', () => {
-      const modal = new bootstrap.Modal(byId('resetModal'));
-      modal.show();
-    });
-
-    byId('resetConfirmation')?.addEventListener('input', (e) => {
-      const confirmBtn = byId('confirmReset');
-      if (confirmBtn) confirmBtn.disabled = e.target.value !== 'RESET_ALL_SETTINGS';
-    });
-
-    byId('confirmReset')?.addEventListener('click', () => {
-      const formData = new FormData();
-      formData.append('csrf_token', csrfToken);
-      formData.append('confirm', 'RESET_ALL_SETTINGS');
-      fetch('/admin/app-settings/security/reset', { method: 'POST', body: formData, })
-        .then((res) => res.json())
-        .then((data) => {
-          bootstrap.Modal.getInstance(byId('resetModal'))?.hide();
-          if (data.success) {
-            showAlert(data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
-          } else {
-            showAlert(data.message || 'Reset failed', 'danger');
-          }
-        })
-        .catch((err) => {
-          showAlert(`Reset error: ${err.message}`, 'danger');
-        });
-    });
-
-    document.querySelectorAll('.save-single-setting').forEach((btn) => {
-      btn.addEventListener('click', function () {
-        const key = this.dataset.key;
-        const inputId = this.dataset.inputId || key;
-        const input = byId(inputId) || byId(key);
-        const type = input?.dataset?.type;
-        let value = input?.value;
-        if (!input) return;
-        if (type === 'boolean') value = input.checked ? '1' : '0';
-        else if (type === 'json') {
-          try {
-            JSON.parse(value);
-          } catch {
-            showAlert(`Invalid JSON for ${key}`, 'danger');
-            return;
-          }
-        }
-        const formData = new FormData();
-        formData.append('csrf_token', csrfToken);
-        formData.append('key', key);
-        formData.append('value', value);
-        this.disabled = true;
-        const originalText = this.innerHTML;
-        fetch('/admin/app-settings/security/update', { method: 'POST', body: formData, })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) showAlert(data.message, 'success');
-            else showAlert(data.message || 'Save failed', 'danger');
-          })
-          .catch((err) => {
-            showAlert(`Error: ${err.message}`, 'danger');
-          })
-          .finally(() => {
-            this.disabled = false;
-            this.innerHTML = originalText;
-          });
-      });
-    });
-
-    document.querySelectorAll('.setting-input').forEach((input) => {
-      const originalValue = input.value;
-      input.addEventListener('change', function () {
-        const resetBtn = this.parentElement.querySelector('.reset-single-setting');
-        if (resetBtn)
-          resetBtn.style.display = this.value !== originalValue ? 'inline-block' : 'none';
-      });
-    });
-
-    document.querySelectorAll('.reset-single-setting').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        location.reload();
-      });
-    });
-
-    function showAlert(message, type = 'info') {
-      const alertDiv = byId('settingsAlert');
-      const alertMsg = byId('alertMessage');
-      if (!alertDiv || !alertMsg) return;
-      const alert = alertDiv.querySelector('.alert');
-      alertMsg.textContent = message;
-      if (alert) alert.className = `alert alert-${type} alert-dismissible show`;
-      alertDiv.style.display = 'block';
-      setTimeout(() => {
-        alertDiv.style.display = 'none';
-      }, 5000);
-    }
+    loadAdminModule('settings')
+      .then((mod) => mod.initAppSecuritySettings({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('settings', error));
   }
 
   function initRbacPermissionsList() {
-    const searchBox = byId('searchBox');
-    if (!searchBox) return;
-    searchBox.addEventListener('keyup', function () {
-      const filter = this.value.toLowerCase();
-      document.querySelectorAll('.permission-row').forEach((row) => {
-        row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
-      });
-    });
+    loadAdminModule('rbacUsers')
+      .then((mod) => mod.initRbacPermissionsList())
+      .catch((error) => logModuleError('rbacUsers', error));
   }
 
   function initRbacRolesEdit() {
@@ -2120,1046 +669,154 @@ runWhenReady(() => {
   }
 
   function initServicesForms() {
-    const dataEl = byId('service-form-data');
-    if (!dataEl) return;
-    const serviceCategoryIds = parseJson(dataEl.dataset.serviceCategoryIds, []);
-    const serviceTagIds = parseJson(dataEl.dataset.serviceTagIds, []);
-    const serviceAllTags = parseJson(dataEl.dataset.serviceAllTags, []);
-    const serviceAllCategories = parseJson(dataEl.dataset.serviceAllCategories, []);
-    const excludeId = dataEl.dataset.excludeId ? parseInt(dataEl.dataset.excludeId, 10) : null;
-
-    window.serviceCategoryIds = serviceCategoryIds;
-    window.serviceTagIds = serviceTagIds;
-    window.serviceAllTags = serviceAllTags;
-    window.serviceAllCategories = serviceAllCategories;
-    window.serviceExcludeId = excludeId;
-
-    if (typeof window.initializeServiceSlugGenerator === 'function') {
-      window.initializeServiceSlugGenerator(excludeId);
-    }
-
-    if (window.adminContent?.fetchCategories) {
-      window.adminContent.fetchCategories(serviceCategoryIds, '#service_categories');
-    }
-    if (window.adminContent?.initializeCategoriesSelect) {
-      window.adminContent.initializeCategoriesSelect('#service_categories');
-    }
-    if (window.adminContent?.fetchTags) {
-      window.adminContent.fetchTags(serviceTagIds, '#tags');
-    }
-    if (window.adminContent?.initializeTagsSelect) {
-      window.adminContent.initializeTagsSelect('#tags');
-    }
-
-    const iconUploadBtn = byId('iconUploadBtn');
-    const iconUploadInput = byId('iconUploadInput');
-    const iconPreview = byId('iconPreview');
-    const iconPreviewContainer = byId('iconPreviewContainer');
-    const iconInput = byId('iconInput');
-    const removeIconBtn = byId('removeIconBtn');
-
-    iconUploadBtn?.addEventListener('click', () => iconUploadInput?.click());
-    iconUploadInput?.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          if (iconPreview) iconPreview.src = event.target.result;
-          iconPreviewContainer?.classList.remove('d-none');
-          if (iconInput) iconInput.value = file.name;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-    removeIconBtn?.addEventListener('click', () => {
-      if (iconUploadInput) iconUploadInput.value = '';
-      if (iconInput) iconInput.value = '';
-      iconPreviewContainer?.classList.add('d-none');
-    });
-
-    const dropZone = byId('dropZone');
-    const imageUploadInput = byId('imageUploadInput');
-    const imagePreviewContainer = byId('imagePreviewContainer');
-
-    function handleImageFiles(files) {
-      Array.from(files).forEach((file, index) => {
-        if (file.type.startsWith('image/')) {
-          if (file.size > 10 * 1024 * 1024) {
-            alert(`Image "${file.name}" is too large (max 10MB)`);
-            return;
-          }
-
-          const reader = new FileReader();
-          reader.onload = function (event) {
-            const previewId = `preview-${Date.now()}-${index}`;
-            const fileKey = `${file.name}::${file.size}::${file.lastModified}`;
-            const previewHTML = `
-                            <div class="col-md-6 col-lg-12 col-xl-6 mb-3" id="${previewId}-container" data-file-key="${fileKey}">
-                                <div class="admin-panel-card border shadow-sm h-100">
-                                    <img src="${event.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Preview">
-                                    <div class="card-body p-3">
-                                        <h6 class="card-title text-truncate mb-2" title="${file.name}">
-                                            <i class="bi bi-image text-primary me-1"></i>${file.name}
-                                        </h6>
-                                        <p class="card-text small text-muted mb-2">
-                                            <i class="bi bi-file-earmark me-1"></i>
-                                            ${(file.size / 1024).toFixed(2)} KB
-                                        </p>
-                                        <button type="button" class="btn btn-sm btn-danger w-100" onclick="removePreview('${previewId}-container')">
-                                            <i class="bi bi-trash me-1"></i>Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-            imagePreviewContainer?.insertAdjacentHTML('beforeend', previewHTML);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-
-    window.removePreview = function (containerId) {
-      const element = byId(containerId);
-      if (!element) return;
-      const fileKey = element.getAttribute('data-file-key');
-      if (fileKey && imageUploadInput?.files?.length) {
-        const dt = new DataTransfer();
-        Array.from(imageUploadInput.files).forEach((f) => {
-          const k = `${f.name}::${f.size}::${f.lastModified}`;
-          if (k !== fileKey) dt.items.add(f);
-        });
-        imageUploadInput.files = dt.files;
-      }
-      element.remove();
-    };
-
-    dropZone?.addEventListener('click', () => imageUploadInput?.click());
-    dropZone?.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.add('border-primary', 'bg-primary-subtle');
-    });
-    dropZone?.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.remove('border-primary', 'bg-primary-subtle');
-    });
-    dropZone?.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.remove('border-primary', 'bg-primary-subtle');
-      const files = e.dataTransfer.files;
-      handleImageFiles(files);
-    });
-    imageUploadInput?.addEventListener('change', (e) => {
-      handleImageFiles(e.target.files);
-    });
-
-    window.removeMetadata = function (btn) {
-      btn.closest('.row')?.remove();
-    };
-
-    byId('addMetadataBtn')?.addEventListener('click', () => {
-      const html = `
-                <div class="row g-2 mb-2 align-items-center">
-                    <div class="col-md-5">
-                        <input type="text" class="form-control" placeholder="Key" data-metadata-key>
-                    </div>
-                    <div class="col-md-6">
-                        <input type="text" class="form-control" placeholder="Value" data-metadata-value>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeMetadata(this)">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-      byId('metadataFields')?.insertAdjacentHTML('beforeend', html);
-    });
-
-    window.removeFormField = function (btn) {
-      btn.closest('.form-field-item')?.remove();
-    };
-
-    byId('addFormFieldBtn')?.addEventListener('click', () => {
-      const html = `
-                <div class="admin-panel-card mb-2 border form-field-item">
-                    <div class="card-body p-3">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-3">
-                                <input type="text" class="form-control" placeholder="Field Name" data-field-label>
-                            </div>
-                            <div class="col-md-2">
-                                <select class="form-select" data-field-type>
-                                    <option value="text">Text</option>
-                                    <option value="email">Email</option>
-                                    <option value="phone">Phone</option>
-                                    <option value="textarea">Textarea</option>
-                                    <option value="select">Select</option>
-                                    <option value="date">Date</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" data-field-required>
-                                    <label class="form-check-label small">Required</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" class="form-control" placeholder="Placeholder text" data-field-placeholder>
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeFormField(this)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-      byId('formFieldsContainer')?.insertAdjacentHTML('beforeend', html);
-    });
-
-    window.removeImage = function (btn) {
-      const item = btn.closest('.image-item');
-      if (!item) return;
-      const imageId = item.getAttribute('data-image-id');
-      if (imageId) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'deleted_image_ids[]';
-        input.value = imageId;
-        byId('serviceForm')?.appendChild(input);
-      }
-      item.remove();
-    };
-
-    const serviceForm = byId('serviceForm');
-    serviceForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const editor = window.editor_content;
-      const hiddenDescriptionInput = byId('content-input');
-      const contentEl = byId('content');
-      const fallbackContent = contentEl
-        ? typeof contentEl.value === 'string'
-          ? contentEl.value
-          : contentEl.innerHTML || ''
-        : '';
-      const descriptionHtml =
-        editor && typeof editor.getContent === 'function'
-          ? editor.getContent() || ''
-          : hiddenDescriptionInput?.value || fallbackContent || '';
-      const descriptionText = String(descriptionHtml || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/gi, ' ')
-        .trim();
-
-      if (!descriptionText) {
-        window.showMessage?.('Service description is required', 'danger');
-        return;
-      }
-
-      if (hiddenDescriptionInput) {
-        hiddenDescriptionInput.value = descriptionHtml;
-      }
-
-      const metadata = {};
-      document.querySelectorAll('#metadataFields [data-metadata-key]').forEach((keyInput) => {
-        const key = keyInput.value;
-        const value =
-          keyInput.parentElement.parentElement.querySelector('[data-metadata-value]')?.value;
-        if (key) metadata[key] = value;
-      });
-
-      const formFields = [];
-      document.querySelectorAll('#formFieldsContainer .form-field-item').forEach((item) => {
-        const labelInput = item.querySelector('[data-field-label]');
-        const typeSelect = item.querySelector('[data-field-type]');
-        const requiredCheckbox = item.querySelector('[data-field-required]');
-        const placeholderInput = item.querySelector('[data-field-placeholder]');
-        if (labelInput && labelInput.value.trim()) {
-          formFields.push({
-            label: labelInput.value.trim(),
-            field_type: typeSelect ? typeSelect.value : 'text',
-            required: requiredCheckbox ? (requiredCheckbox.checked ? 1 : 0) : 0,
-            placeholder: placeholderInput ? placeholderInput.value.trim() : '',
-          });
-        }
-      });
-
-      const imageUpdates = [];
-      document.querySelectorAll('.image-item').forEach((item) => {
-        const id = item.getAttribute('data-image-id');
-        if (!id) return;
-        const altInput = item.querySelector('[data-field="alt_text"]');
-        const captionInput = item.querySelector('[data-field="caption"]');
-        const orderInput = item.querySelector('[data-field="display_order"]');
-        const alt = altInput ? altInput.value.trim() : '';
-        const caption = captionInput ? captionInput.value.trim() : '';
-        const displayOrder = orderInput ? parseInt(orderInput.value || 0, 10) : 0;
-        const featuredRadio = document.querySelector('input[name="featured_image"]:checked');
-        const isFeatured = featuredRadio && featuredRadio.value === id ? 1 : 0;
-
-        imageUpdates.push({
-          id: parseInt(id, 10),
-          alt_text: alt,
-          caption: caption,
-          display_order: displayOrder,
-          is_featured: isFeatured,
-        });
-      });
-
-      const formData = new FormData(serviceForm);
-      formData.append('metadata', JSON.stringify(metadata));
-      formData.append('form_fields', JSON.stringify(formFields));
-      formData.append('image_updates', JSON.stringify(imageUpdates));
-
-      try {
-        const endpoint = formData.get('service_id')
-          ? '/admin/services/update'
-          : '/admin/services/create';
-        const response = await fetch(endpoint, { method: 'POST', body: formData, });
-        const data = await response.json();
-        if (data.success) {
-          window.showMessage?.(data.message || 'Service saved successfully!', 'success');
-          setTimeout(
-            () =>
-            (window.location.href =
-              `/admin/services/details/${data.service_id || formData.get('service_id')}`),
-            2000
-          );
-        } else {
-          window.showMessage?.(data.message || 'Failed to save service', 'danger');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        window.showMessage?.('An error occurred. Please try again.', 'danger');
-      }
-    });
+    loadAdminModule('services')
+      .then((mod) => mod.initServicesForms({ byId, parseJson, }))
+      .catch((error) => logModuleError('services', error));
   }
 
   function initServicesIndex() {
-    const deleteModal = byId('deleteModal');
-    if (!deleteModal) return;
-    const csrfToken = getCsrfToken();
-    let deleteServiceId = null;
-    const modal = new bootstrap.Modal(deleteModal);
-
-    document.querySelectorAll('.delete-service').forEach((btn) => {
-      btn.addEventListener('click', function () {
-        deleteServiceId = this.dataset.id;
-        modal.show();
-      });
-    });
-
-    byId('confirmDelete')?.addEventListener('click', () => {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `/admin/services/details/${deleteServiceId}/delete`;
-      form.innerHTML = `<input type="hidden" name="csrf_token" value="${csrfToken}">`;
-      document.body.appendChild(form);
-      form.submit();
-    });
+    loadAdminModule('services')
+      .then((mod) => mod.initServicesIndex({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('services', error));
   }
 
   function initServicesApplications() {
-    const listView = byId('listView');
-    if (!listView) return;
-
-    let currentPage = 1;
-    const pageSize = 20;
-
-    const viewToggle = document.querySelectorAll('input[name="view"]');
-    const dashboardView = byId('dashboardView');
-
-    viewToggle.forEach((radio) => {
-      radio.addEventListener('change', function () {
-        if (this.value === 'list') {
-          listView.style.display = 'block';
-          if (dashboardView) dashboardView.style.display = 'none';
-          loadApplications();
-        } else {
-          listView.style.display = 'none';
-          if (dashboardView) dashboardView.style.display = 'block';
-          loadDashboard();
-        }
-      });
-    });
-
-    async function loadApplications() {
-      const status = byId('filterStatus')?.value || '';
-      const priority = byId('filterPriority')?.value || '';
-      const dateFrom = byId('filterDateFrom')?.value || '';
-      const dateTo = byId('filterDateTo')?.value || '';
-
-      const params = new URLSearchParams({
-        limit: pageSize,
-        offset: (currentPage - 1) * pageSize,
-      });
-      if (status) params.set('status', status);
-      if (priority) params.set('priority', priority);
-      if (dateFrom) params.set('date_from', dateFrom);
-      if (dateTo) params.set('date_to', dateTo);
-
-      try {
-        const response = await fetch(`/api/admin/applications?${params}`);
-        const data = await response.json();
-        if (data.success) {
-          renderApplicationsTable(data.data);
-          updateStats();
-          updatePagination(data.total);
-        }
-      } catch (error) {
-        console.error('Error loading applications:', error);
-        byId('applicationsTable').innerHTML =
-          '<tr><td colspan="8" class="text-center text-danger py-4">Failed to load applications</td></tr>';
-      }
-    }
-
-    function renderApplicationsTable(apps) {
-      const html = apps
-        .map(
-          (app) => `
-                <tr>
-                    <td class="ps-4"><strong>#${app.id}</strong></td>
-                    <td>${app.user_name} <br><small class="text-muted">${app.user_email}</small></td>
-                    <td>${app.service_name}</td>
-                    <td><span class="badge ${getStatusBadgeClass(app.status)}">${app.status}</span></td>
-                    <td><span class="badge ${getPriorityBadgeClass(app.priority)}">${app.priority}</span></td>
-                    <td class="small text-muted">${new Date(app.created_at).toLocaleDateString()}</td>
-                    <td>${app.approved_by_name || '--'}</td>
-                    <td>
-                        <button class="modern-btn btn-sm btn-outline-primary rounded-2" onclick="viewApplication(${app.id})">
-                            <i class="bi bi-eye"></i> View
-                        </button>
-                    </td>
-                </tr>
-            `
-        )
-        .join('');
-
-      byId('applicationsTable').innerHTML = html;
-    }
-
-    function getStatusBadgeClass(status) {
-      const classes = {
-        pending: 'bg-warning',
-        processing: 'bg-info',
-        approved: 'bg-success',
-        rejected: 'bg-danger',
-      };
-      return classes[status] || 'bg-secondary';
-    }
-
-    function getPriorityBadgeClass(priority) {
-      const classes = { low: 'bg-secondary', normal: 'bg-info', high: 'bg-danger', };
-      return classes[priority] || 'bg-secondary';
-    }
-
-    async function updateStats() {
-      try {
-        const response = await fetch('/api/admin/applications/stats');
-        const data = await response.json();
-        if (data.success) {
-          byId('stat-total').textContent = data.data.total;
-          byId('stat-pending').textContent = data.data.pending;
-          byId('stat-approved').textContent = data.data.approved;
-          byId('stat-rejected').textContent = data.data.rejected;
-        }
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      }
-    }
-
-    window.viewApplication = async function (appId) {
-      try {
-        const response = await fetch(`/api/admin/applications/${appId}`);
-        const data = await response.json();
-        if (data.success) {
-          renderApplicationDetail(data.data);
-          const modal = new bootstrap.Modal(byId('detailModal'));
-          modal.show();
-        }
-      } catch (error) {
-        console.error('Error loading application:', error);
-        window.showMessage?.('Failed to load application details', 'danger');
-      }
-    };
-
-    function renderApplicationDetail(app) {
-      const content = `
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="small text-muted">User</div>
-                        <div class="fw-bold">${app.user.username}</div>
-                        <div class="small">${app.user.email}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="small text-muted">Service</div>
-                        <div class="fw-bold">${app.service.name}</div>
-                        <div class="small">${app.service.categories ? app.service.categories.map((c) => c.name).join(', ') : '-'}</div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="row mb-3">
-                    <div class="col-md-3">
-                        <div class="small text-muted">Status</div>
-                        <select class="form-select form-select-sm rounded-2" id="appStatus">
-                            <option value="pending" ${app.status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="processing" ${app.status === 'processing' ? 'selected' : ''}>Processing</option>
-                            <option value="approved" ${app.status === 'approved' ? 'selected' : ''}>Approved</option>
-                            <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="small text-muted">Priority</div>
-                        <select class="form-select form-select-sm rounded-2" id="appPriority">
-                            <option value="low" ${app.priority === 'low' ? 'selected' : ''}>Low</option>
-                            <option value="normal" ${app.priority === 'normal' ? 'selected' : ''}>Normal</option>
-                            <option value="high" ${app.priority === 'high' ? 'selected' : ''}>High</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="small text-muted">Activated</div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="appActivated" ${app.service_activated ? 'checked' : ''}>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="small text-muted">Submitted</div>
-                        <div>${new Date(app.created_at).toLocaleDateString()}</div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="mb-3">
-                    <label class="form-label small text-muted text-uppercase">Application Data</label>
-                    <pre class="bg-light p-3 rounded-2 small"><code>${JSON.stringify(app.application_data, null, 2)}</code></pre>
-                </div>
-
-                ${app.status === 'rejected' && app.rejection_reason
-          ? `
-                    <div class="alert alert-danger rounded-2">
-                        <strong>Rejection Reason:</strong>
-                        <p class="mb-0">${app.rejection_reason}</p>
-                    </div>
-                `
-          : ''
-        }
-
-                <div class="mb-3">
-                    <label class="form-label small text-muted text-uppercase">Admin Notes</label>
-                    <textarea class="form-control rounded-2" id="appAdminNotes" rows="4">${app.admin_notes || ''}</textarea>
-                </div>
-
-                ${app.status === 'rejected'
-          ? `
-                    <div class="mb-3">
-                        <label class="form-label small text-muted text-uppercase">Rejection Reason</label>
-                        <input type="text" class="form-control rounded-2" id="appRejectionReason" value="${app.rejection_reason || ''}">
-                    </div>
-                `
-          : ''
-        }
-
-                <div class="mt-4">
-                    <h6 class="fw-bold mb-2">Audit Log</h6>
-                    <div class="timeline small">
-                        ${app.audit_log
-          .map(
-            (log) => `
-                            <div class="mb-2">
-                                <div class="text-muted"><small>${new Date(log.created_at).toLocaleString()}</small></div>
-                                <div><strong>${log.action_type}</strong>: ${log.description}</div>
-                            </div>
-                        `
-          )
-          .join('')}
-                    </div>
-                </div>
-            `;
-
-      byId('detailContent').innerHTML = content;
-      window.currentAppId = app.id;
-    }
-
-    byId('applyFilters')?.addEventListener('click', () => {
-      currentPage = 1;
-      loadApplications();
-    });
-
-    byId('clearFilters')?.addEventListener('click', () => {
-      byId('filterStatus').value = '';
-      byId('filterPriority').value = '';
-      byId('filterDateFrom').value = '';
-      byId('filterDateTo').value = '';
-      currentPage = 1;
-      loadApplications();
-    });
-
-    function updatePagination(total) {
-      const maxPages = Math.ceil(total / pageSize);
-      const container = byId('paginationContainer');
-      if (!container) return;
-      if (maxPages > 1) {
-        container.style.display = 'block';
-        byId('pageInfo').textContent = `Page ${currentPage} of ${maxPages}`;
-        byId('prevPage').onclick = (e) => {
-          e.preventDefault();
-          if (currentPage > 1) {
-            currentPage--;
-            loadApplications();
-          }
-        };
-        byId('nextPage').onclick = (e) => {
-          e.preventDefault();
-          if (currentPage < maxPages) {
-            currentPage++;
-            loadApplications();
-          }
-        };
-      } else {
-        container.style.display = 'none';
-      }
-    }
-
-    async function loadDashboard() {
-      await updateStats();
-    }
-
-    loadApplications();
+    loadAdminModule('services')
+      .then((mod) => mod.initServicesApplications({ byId, escapeHtml, }))
+      .catch((error) => logModuleError('services', error));
   }
 
-  async function initNotificationModuleHelpers() {
-    try {
-      const notificationSystem = await import('/assets/firebase/v2/dist/notification-system.js');
-      const analytics = await import('/assets/firebase/v2/dist/analytics.js');
-      return { notificationSystem, analytics, };
-    } catch (e) {
-      return { notificationSystem: null, analytics: null, };
-    }
+  function initServerStatusIndicator() {
+    loadAdminModule('serverStatus')
+      .then((mod) => mod.initServerStatusIndicator())
+      .catch((error) => logModuleError('serverStatus', error));
   }
 
-  async function initNotificationsList() {
-    const hasAction = document.querySelector('[data-action="resend-notification"]');
-    if (!hasAction) return;
-    const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
-    const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
-    const showError = notificationSystem?.showError || window.showError || window.showMessage;
-    const trackResend = analytics?.trackAdminNotificationResend;
-
-    document.addEventListener('click', (event) => {
-      const button = event.target.closest?.('[data-action="resend-notification"]');
-      if (!button) return;
-      const notificationId = parseInt(button.dataset.notificationId, 10);
-      if (Number.isNaN(notificationId)) return;
-      fetch('/api/notification/resend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-        body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            if (trackResend) trackResend(notificationId, data.recipient_count || 0);
-            showSuccess?.(data.message || 'Notification resent');
-            location.reload();
-          } else {
-            showError?.(`? Error: ${data.error || 'Unknown error'}`);
-          }
-        })
-        .catch((err) => showError?.(err.message || 'Error resending'));
-    });
+  function initRealtimeMonitoring() {
+    loadAdminModule('realtimeMonitoring')
+      .then((mod) => mod.initRealtimeMonitoring())
+      .catch((error) => logModuleError('realtimeMonitoring', error));
   }
 
-  async function initNotificationsView() {
-    const dataEl = byId('notification-view-data');
-    if (!dataEl) return;
-    const notificationId = parseInt(dataEl.dataset.notificationId || '0', 10);
-    if (!notificationId) return;
-    const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
-    const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
-    const showError = notificationSystem?.showError || window.showError || window.showMessage;
-    const showInfo = notificationSystem?.showInfo || window.showInfo || window.showMessage;
-    const trackResend = analytics?.trackAdminNotificationResend;
+  window.__adminInlineHelpers = {
+    byId,
+    getCsrfToken,
+    getAdminDir,
+    escapeHtml,
+    parseJson,
+    loadAdminModule,
+    logModuleError,
+    initUnifiedSlugFeatures,
+    initContentPreviewSync,
+    initAutosaveForContentForms,
+    initOfflineDraftForContentForms,
+    initFlashMessageAutoDismiss,
+    initOAuthPasswordModals,
+    initAccountSettings,
+    initActivityLog,
+    initDashboardData,
+    initContentFormData,
+    initEmailTemplatesEdit,
+    initEmailTemplatesList,
+    initMediaDetail,
+    initMediaUpload,
+    initDeleteMobile,
+    initMobileFormShared,
+    initApplicationsView,
+    initSettingsPage,
+    initAppSecuritySettings,
+    initRbacPermissionsList,
+    initRbacRolesEdit,
+    initRbacUserRoles,
+    initSecurity2FASetup,
+    initSecurity2FABackup,
+    initSecurity2FA,
+    initUsersAddUser,
+    initUsersEditUser,
+    initServicesForms,
+    initServicesIndex,
+    initServicesApplications,
+    initServerStatusIndicator,
+    initRealtimeMonitoring,
+  };
+})();
 
-    async function resendNotificationNow() {
-      if (!confirm('Do you want to resend this notification now?')) return;
-      try {
-        const response = await fetch('/api/notification/resend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          trackResend?.(notificationId, data.recipient_count || 0);
-          showSuccess?.(data.message || 'Notification resent');
-          location.reload();
-        } else {
-          showError?.(`Error: ${data.error || 'Unknown error'}`);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showError?.(`Error: ${error.message}`);
-      }
-    }
 
-    function duplicateNotification() {
-      showInfo?.('Duplicate notification feature is coming soon.');
-    }
+// Page loaded flag
+runWhenReady(() => {
+  document.body.classList.add('loaded');
+});
 
-    function deleteNotification() {
-      if (confirm('Do you want to delete this notification?')) {
-        showInfo?.('Delete notification feature is coming soon.');
-      }
-    }
+// ==================== ADMIN INLINE SCRIPTS (MIGRATED) ====================
+(function () {
+  'use strict';
 
-    document.addEventListener('click', (event) => {
-      const button = event.target.closest?.('[data-action]');
-      if (!button) return;
-      const action = button.dataset.action;
-      if (action === 'resend-notification') return resendNotificationNow();
-      if (action === 'duplicate-notification') return duplicateNotification();
-      if (action === 'delete-notification') return deleteNotification();
-    });
+  const {
+    byId,
+    getCsrfToken,
+    getAdminDir,
+    escapeHtml,
+    parseJson,
+    loadAdminModule,
+    logModuleError,
+    initFlashMessageAutoDismiss,
+    initOAuthPasswordModals,
+    initAccountSettings,
+    initActivityLog,
+    initDashboardData,
+    initContentFormData,
+    initUnifiedSlugFeatures,
+    initContentPreviewSync,
+    initAutosaveForContentForms,
+    initOfflineDraftForContentForms,
+    initEmailTemplatesEdit,
+    initEmailTemplatesList,
+    initMediaDetail,
+    initMediaUpload,
+    initDeleteMobile,
+    initMobileFormShared,
+    initApplicationsView,
+    initSettingsPage,
+    initAppSecuritySettings,
+    initRbacPermissionsList,
+    initRbacRolesEdit,
+    initRbacUserRoles,
+    initSecurity2FASetup,
+    initSecurity2FABackup,
+    initSecurity2FA,
+    initUsersAddUser,
+    initUsersEditUser,
+    initServicesForms,
+    initServicesIndex,
+    initServicesApplications,
+    initServerStatusIndicator,
+    initRealtimeMonitoring,
+  } = window.__adminInlineHelpers || {};
+
+  // ==================== ADMIN INLINE SCRIPTS ====================
+
+  function initNotificationsList() {
+    loadAdminModule('notificationsWorkflows')
+      .then((mod) => mod.initNotificationsList())
+      .catch((error) => logModuleError('notificationsWorkflows', error));
+  }
+
+  function initNotificationsView() {
+    loadAdminModule('notificationsWorkflows')
+      .then((mod) => mod.initNotificationsView())
+      .catch((error) => logModuleError('notificationsWorkflows', error));
   }
 
   function initNotificationsDashboard() {
-    const root = byId('notificationsDashboardRoot');
-    if (!root) return;
-    const filterEndpoints = [
-      root.dataset.filterEndpoint,
-      '/api/notification/list',
-      '/api/admin/notifications',
-    ].filter(Boolean);
-
-    async function tryFilter(status) {
-      for (const endpoint of filterEndpoints) {
-        const url = status ? `${endpoint}?status=${encodeURIComponent(status)}` : endpoint;
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (data && data.success) return true;
-        } catch (e) {
-          continue;
-        }
-      }
-      return false;
-    }
-
-    window.filterNotifications = async function (status = null) {
-      const ok = await tryFilter(status);
-      if (ok) location.reload();
-    };
-
-    window.loadNotificationDetail = function (notifId) {
-      const detailContent = byId('detailContent');
-      if (!detailContent) return;
-      fetch(`/api/notification/${notifId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            const notif = data.notification;
-            detailContent.innerHTML = `
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Title</label>
-                                <p>${notif.title}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Message</label>
-                                <p>${notif.message}</p>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Recipient Type</label>
-                                    <p><span class="badge bg-info">${notif.recipient_type}</span></p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Status</label>
-                                    <p><span class="badge bg-secondary">${notif.status}</span></p>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Delivery Channels</label>
-                                <p>
-                                    ${notif.channels.includes('push') ? '<span class="badge bg-primary me-2"><i class="bi bi-phone"></i> Push</span>' : ''}
-                                    ${notif.channels.includes('email') ? '<span class="badge bg-success me-2"><i class="bi bi-envelope"></i> Email</span>' : ''}
-                                    ${notif.channels.includes('in_app') ? '<span class="badge bg-warning"><i class="bi bi-chat"></i> In-App</span>' : ''}
-                                </p>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Created At</label>
-                                    <p>${new Date(notif.created_at).toLocaleString('bn-BD')}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Scheduled At</label>
-                                    <p>${notif.scheduled_at ? new Date(notif.scheduled_at).toLocaleString('bn-BD') : 'Not scheduled'}</p>
-                                </div>
-                            </div>
-                        `;
-
-            if (data.delivery_logs && data.delivery_logs.length > 0) {
-              const rows = data.delivery_logs
-                .map(
-                  (l) => `
-                                <tr>
-                                    <td>${l.id}</td>
-                                    <td>${l.user_id || 'guest'}</td>
-                                    <td>${l.device_id || '-'}</td>
-                                    <td>${l.channel || '-'}</td>
-                                    <td>${l.ip_address || '-'}</td>
-                                    <td><small>${l.token || '-'}</small></td>
-                                    <td>${l.status}</td>
-                                    <td><small>${l.message_id || '-'}</small></td>
-                                    <td><small>${l.provider_response ? l.provider_response.substring(0, 200) + (l.provider_response.length > 200 ? '...' : '') : '-'}</small></td>
-                                    <td class="small text-muted">${l.created_at}</td>
-                                </tr>
-                            `
-                )
-                .join('');
-
-              detailContent.innerHTML += `
-                                <hr>
-                                <h6>Delivery Logs</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>User</th>
-                                                <th>Device</th>
-                                                <th>Channel</th>
-                                                <th>IP</th>
-                                                <th>Token</th>
-                                                <th>Status</th>
-                                                <th>Message ID</th>
-                                                <th>Provider Response</th>
-                                                <th>When</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>${rows}</tbody>
-                                    </table>
-                                </div>
-                            `;
-            }
-          }
-        })
-        .catch(() => {
-          if (detailContent) {
-            detailContent.innerHTML =
-              '<div class="alert alert-danger">Failed to load notification details</div>';
-          }
-        });
-    };
-
-    window.deleteNotification = function (notifId) {
-      if (!confirm('Do you want to delete this notification?')) return;
-      fetch(`/api/notification/${notifId}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-Token': getCsrfToken(), },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            location.reload();
-          } else {
-            alert('Failed to delete notification');
-          }
-        });
-    };
+    loadAdminModule('notificationsWorkflows')
+      .then((mod) => mod.initNotificationsDashboard())
+      .catch((error) => logModuleError('notificationsWorkflows', error));
   }
 
-  async function initNotificationsDrafts() {
-    const list = byId('draftsList');
-    if (!list) return;
-    const notificationSystem =
-      await import('/assets/firebase/v2/dist/notification-system.js').catch(() => null);
-    const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
-    const showError = notificationSystem?.showError || window.showError || window.showMessage;
-
-    async function loadDrafts() {
-      try {
-        const response = await fetch('/api/notification/list-drafts');
-        const data = await response.json();
-        if (data.success && data.drafts.length > 0) {
-          let html = `
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Message</th>
-                                    <th>Type</th>
-                                    <th>Created At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-          data.drafts.forEach((draft) => {
-            const createdAt = new Date(draft.created_at).toLocaleDateString('bn-BD', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            html += `
-                            <tr>
-                                <td>#${draft.id}</td>
-                                <td><strong>${draft.title}</strong></td>
-                                <td>${draft.message.substring(0, 50)}...</td>
-                                <td><span class="badge bg-primary">${draft.type}</span></td>
-                                <td>${createdAt}</td>
-                                <td>
-                                    <button class="modern-btn btn-sm btn-primary" data-action="edit-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </button>
-                                    <button class="modern-btn btn-sm btn-success" data-action="send-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-send"></i> Send
-                                    </button>
-                                    <button class="modern-btn btn-sm btn-danger" data-action="delete-draft" data-draft-id="${draft.id}">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-          });
-          html += '</tbody></table>';
-          list.innerHTML = html;
-        } else {
-          list.innerHTML = `
-                        <div class="p-4 text-center text-muted">
-                            <i class="bi bi-inbox mb-3 d-block"></i>
-                            <strong>No drafts found</strong><br>
-                            <small><a href="/admin/notifications/send" class="text-decoration-none">Create a new notification draft</a></small>
-                        </div>
-                    `;
-        }
-      } catch (error) {
-        list.innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
-      }
-    }
-
-    function editDraft(draftId) {
-      fetch(`/api/notification/draft-detail?draft_id=${draftId}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success && data.draft) {
-            const draft = data.draft;
-            byId('editDraftId').value = draft.id;
-            byId('editTitle').value = draft.title;
-            byId('editMessage').value = draft.message;
-            byId('editType').value = draft.type;
-            byId('editActionUrl').value = draft.action_url || '';
-            byId('editRecipientType').value = draft.recipient_type;
-            new bootstrap.Modal(byId('editDraftModal')).show();
-          } else {
-            showError?.('Failed to load draft details');
-          }
-        })
-        .catch((err) => {
-          console.error('Error:', err);
-          showError?.(`Error: ${err.message}`);
-        });
-    }
-
-    async function deleteDraft(draftId) {
-      if (!confirm('Do you want to delete this draft?')) return;
-      try {
-        const response = await fetch('/api/notification/delete-draft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({ draft_id: draftId, }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          showSuccess?.('Draft deleted successfully');
-          loadDrafts();
-        } else {
-          showError?.('Failed to delete draft');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showError?.(`Error: ${error.message}`);
-      }
-    }
-
-    async function sendDraft(draftId) {
-      if (!confirm('Do you want to send this draft now?')) return;
-      try {
-        const response = await fetch('/api/notification/send-draft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({ draft_id: draftId, }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          showSuccess?.(data.message || 'Draft sent successfully');
-          loadDrafts();
-          setTimeout(() => {
-            window.location.href = `/admin/notifications/view?id=${data.notification_id}`;
-          }, 1500);
-        } else {
-          showError?.(`Error: ${data.error || 'Unknown error'}`);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        showError?.(`Error: ${error.message}`);
-      }
-    }
-
-    async function saveEditedDraft() {
-      const draftId = byId('editDraftId').value;
-      const data = {
-        draft_id: draftId,
-        title: byId('editTitle').value,
-        message: byId('editMessage').value,
-        type: byId('editType').value,
-        action_url: byId('editActionUrl').value,
-        recipient_type: byId('editRecipientType').value,
-        channels: ['push',],
-        recipient_ids: [],
-      };
-      try {
-        const response = await fetch('/api/notification/update-draft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify(data),
-        });
-        const result = await response.json();
-        if (result.success) {
-          showSuccess?.(result.message || 'Draft updated successfully');
-          bootstrap.Modal.getInstance(byId('editDraftModal'))?.hide();
-          loadDrafts();
-        } else {
-          showError?.('Failed to update draft');
-        }
-      } catch (error) {
-        showError?.(`Error: ${error.message}`);
-      }
-    }
-
-    document.addEventListener('click', (event) => {
-      const button = event.target.closest?.('[data-action]');
-      if (!button) return;
-      const action = button.dataset.action;
-      if (action === 'save-draft') return saveEditedDraft();
-      if (action === 'edit-draft') return editDraft(parseInt(button.dataset.draftId, 10));
-      if (action === 'send-draft') return sendDraft(parseInt(button.dataset.draftId, 10));
-      if (action === 'delete-draft') return deleteDraft(parseInt(button.dataset.draftId, 10));
-    });
-
-    loadDrafts();
+  function initNotificationsDrafts() {
+    loadAdminModule('notificationsWorkflows')
+      .then((mod) => mod.initNotificationsDrafts())
+      .catch((error) => logModuleError('notificationsWorkflows', error));
   }
 
   function initNotificationsSend() {
@@ -3172,28 +829,10 @@ runWhenReady(() => {
       .then((notificationsWorkflows) => notificationsWorkflows.initNotificationsScheduled())
       .catch((error) => logModuleError('notificationsWorkflows', error));
   }
-  async function initNotificationsDashboardRealtime() {
-    if (!byId('notificationsDashboardRealtime')) return;
-    try {
-      const [scheduledMod, notificationSystemMod, offlineMod,] = await Promise.all([
-        import('/assets/firebase/v2/dist/scheduled-notifications.js'),
-        import('/assets/firebase/v2/dist/notification-system.js'),
-        import('/assets/firebase/v2/dist/offline-handler.js'),
-      ]);
-
-      const ScheduledNotifications = scheduledMod.ScheduledNotifications || scheduledMod.default;
-      const MultiDeviceSync =
-        notificationSystemMod.MultiDeviceSync || notificationSystemMod.default?.MultiDeviceSync;
-      const OfflineNotificationHandler =
-        offlineMod.OfflineNotificationHandler || offlineMod.default;
-
-      console.info('Notifications dashboard modules loaded');
-      console.info('Available modules:', {
-        ScheduledNotifications,
-        MultiDeviceSync,
-        OfflineNotificationHandler,
-      });
-    } catch (e) { /* ignore notification module diagnostics */ }
+  function initNotificationsDashboardRealtime() {
+    loadAdminModule('misc')
+      .then((mod) => mod.initNotificationsDashboardRealtime())
+      .catch((error) => logModuleError('misc', error));
   }
 
   function initNotificationsDeviceSync() {
@@ -3207,443 +846,51 @@ runWhenReady(() => {
       .catch((error) => logModuleError('notificationsWorkflows', error));
   }
   function initNotificationsSubscribers() {
-    const root = byId('notificationSubscribersRoot');
-    if (!root) return;
-
-    const tableBody = byId('subscribersTableBody');
-    const totalCountEl = byId('subsTotalCount');
-
-    const toast = (title, message, type) => {
-      if (typeof window.showNotificationToast === 'function') {
-        window.showNotificationToast(title, message, type);
-      } else if (typeof window.showMessage === 'function') {
-        window.showMessage(message, type === 'success' ? 'success' : 'danger');
-      } else {
-        alert(message);
-      }
-    };
-
-    function getFilters() {
-      return {
-        recipient: byId('recipientFilter')?.value || 'all',
-        permission: byId('permissionFilter')?.value || 'granted',
-        search: (byId('searchInput')?.value || '').trim(),
-        per_page: byId('perPage')?.value || '20',
-      };
-    }
-
-    function renderSubscribers(rows) {
-      if (!tableBody) return;
-      if (!Array.isArray(rows) || rows.length === 0) {
-        tableBody.innerHTML =
-          '<tr><td colspan="9" class="text-center text-muted py-4">No subscribers found</td></tr>';
-        return;
-      }
-
-      tableBody.innerHTML = rows
-        .map((s) => {
-          const id = escapeHtml(s.id ?? '-');
-          const deviceId = escapeHtml(s.device_id ?? '');
-          const deviceName = escapeHtml(s.device_name ?? '-');
-          const token = String(s.token ?? '');
-          const tokenShort = escapeHtml(token.length > 40 ? `${token.slice(0, 40)}...` : token);
-          const permission = escapeHtml(s.permission ?? 'granted');
-          const permClass =
-            permission === 'granted'
-              ? 'bg-success'
-              : permission === 'default'
-                ? 'bg-secondary'
-                : 'bg-danger';
-          const type = escapeHtml(s.device_type ?? '-');
-          const created = escapeHtml(s.created_at ?? '-');
-          const userLabel = s.user_id
-            ? `<strong>${escapeHtml(s.username || s.email || `UID:${s.user_id}`)}</strong>`
-            : '<span class="text-muted">Guest</span>';
-
-          return `
-                        <tr>
-                            <td>${id}</td>
-                            <td>${userLabel}</td>
-                            <td><small>${deviceId || '-'}</small></td>
-                            <td><small>${deviceName}</small></td>
-                            <td><small>${tokenShort || '-'}</small></td>
-                            <td><span class="badge ${permClass}">${permission}</span></td>
-                            <td>${type}</td>
-                            <td><small>${created}</small></td>
-                            <td class="text-end">
-                                <div class="d-inline-flex gap-2">
-                                    <button class="modern-btn modern-btn-danger btn-sm" onclick="revokeDevice('${deviceId}', this)">Revoke</button>
-                                    <button class="modern-btn modern-btn-outline-danger btn-sm" onclick="deleteDevicePermanent('${deviceId}', this)">Delete</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-        })
-        .join('');
-    }
-
-    async function reloadSubscribersTable() {
-      const filters = getFilters();
-      const q = new URLSearchParams();
-      if (filters.recipient) q.set('recipient', filters.recipient);
-      if (filters.search) q.set('search', filters.search);
-      if (filters.permission) q.set('permission', filters.permission);
-      if (filters.per_page) q.set('per_page', filters.per_page);
-
-      try {
-        const res = await fetch(`/api/admin/notification-subscribers?${q.toString()}`, {
-          headers: { 'X-CSRF-Token': getCsrfToken(), },
-        });
-        const data = await res.json();
-        if (!data || !data.success) {
-          throw new Error(data?.error || 'Failed to fetch subscribers');
-        }
-        renderSubscribers(data.subscribers || []);
-        if (totalCountEl) totalCountEl.textContent = String(data.pagination?.total ?? 0);
-      } catch (err) {
-        console.error(err);
-        toast('Error', 'Subscribers data fetch failed', 'danger');
-      }
-    }
-
-    window.applySubsFilter = function () {
-      const filters = getFilters();
-      const q = new URLSearchParams();
-      if (filters.recipient) q.set('recipient', filters.recipient);
-      if (filters.search) q.set('search', filters.search);
-      if (filters.permission) q.set('permission', filters.permission);
-      if (filters.per_page) q.set('per_page', filters.per_page);
-      window.history.replaceState({}, '', `${window.location.pathname}?${q.toString()}`);
-      reloadSubscribersTable();
-    };
-
-    window.revokeDevice = async function (deviceId, btn) {
-      if (!deviceId) return;
-      if (!confirm('Do you want to revoke subscription for this device?')) return;
-      if (btn) btn.disabled = true;
-      try {
-        const endpoints = [
-          '/api/notification/revoke-device',
-          '/api/admin/notification-subscribers/revoke',
-        ];
-        let data = null;
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-              body: JSON.stringify({ device_id: deviceId, }),
-            });
-            data = await res.json();
-            if (data && data.success) break;
-          } catch (err) {
-            data = null;
-          }
-        }
-        if (data && data.success) {
-          toast('Success', 'Subscription revoked', 'success');
-          await reloadSubscribersTable();
-        } else {
-          toast('Error', data && data.error ? data.error : 'Revoke failed', 'danger');
-          if (btn) btn.disabled = false;
-        }
-      } catch (err) {
-        console.error(err);
-        toast('Error', 'Network error', 'danger');
-        if (btn) btn.disabled = false;
-      }
-    };
-
-    window.deleteDevicePermanent = async function (deviceId, btn) {
-      if (!deviceId) return;
-      if (!confirm('Delete this device permanently? This action cannot be undone.')) return;
-      if (btn) btn.disabled = true;
-      try {
-        const res = await fetch('/api/admin/notification-subscribers/revoke', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({ device_id: deviceId, permanent: true, }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          toast('Success', 'Device deleted permanently', 'success');
-          await reloadSubscribersTable();
-        } else {
-          toast('Error', data.error || 'Delete failed', 'danger');
-          if (btn) btn.disabled = false;
-        }
-      } catch (err) {
-        console.error(err);
-        toast('Error', 'Network error', 'danger');
-        if (btn) btn.disabled = false;
-      }
-    };
-
-    window.revokeAllDevices = async function (permanent = false) {
-      const filters = getFilters();
-      const scopeLabel = filters.search
-        ? `recipient=${filters.recipient}, search="${filters.search}"`
-        : `recipient=${filters.recipient}`;
-      const confirmText = permanent
-        ? `Delete all filtered devices permanently?\n(${scopeLabel})\nThis action cannot be undone.`
-        : `Revoke all filtered devices?\n(${scopeLabel})`;
-      if (!confirm(confirmText)) return;
-
-      try {
-        const res = await fetch('/api/admin/notification-subscribers/revoke-all', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
-          body: JSON.stringify({
-            recipient: filters.recipient,
-            search: filters.search,
-            permanent,
-          }),
-        });
-        const data = await res.json();
-        if (!data || !data.success) {
-          throw new Error(data?.error || 'Bulk action failed');
-        }
-
-        const affected = Number(data.affected || 0);
-        toast('Success', `${affected} device ${permanent ? 'deleted' : 'revoked'}`, 'success');
-        await reloadSubscribersTable();
-      } catch (err) {
-        console.error(err);
-        toast('Error', err.message || 'Bulk action failed', 'danger');
-      }
-    };
-
-    byId('subsFilterForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      window.applySubsFilter();
-    });
-    byId('revokeAllBtn')?.addEventListener('click', () => window.revokeAllDevices(false));
-    byId('deleteAllBtn')?.addEventListener('click', () => window.revokeAllDevices(true));
-
-    reloadSubscribersTable();
+    loadAdminModule('subscribers')
+      .then((mod) => mod.initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }))
+      .catch((error) => logModuleError('subscribers', error));
   }
 
   function initNotificationsPauseResume() {
-    const form = byId('pauseResumeForm');
-    if (!form) return;
-    const csrf = getCsrfToken();
-    const notify = (message, type = 'success', duration = 5000) => {
-      if (typeof window.showToast === 'function') {
-        window.showToast(message, type, duration);
-        return;
-      }
-      window.showMessage?.(message, type, duration);
-    };
-
-    function post(url, body) {
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
-        body: JSON.stringify(body),
-      }).then((r) => r.json());
-    }
-
-    byId('pauseBtn')?.addEventListener('click', async () => {
-      const id = byId('notification_id')?.value;
-      const reason = byId('reason')?.value || '';
-      if (!id) {
-        notify('Provide notification id', 'error');
-        return;
-      }
-      if (reason && reason.length > 500) {
-        notify('Reason too long (max 500 chars)', 'error');
-        return;
-      }
-      const res = await post(`/api/notification/${id}/pause`, { reason, });
-      if (res && res.success) notify(res.message || 'Paused');
-      else notify(res.error || 'Failed', 'error');
-    });
-
-    byId('resumeBtn')?.addEventListener('click', async () => {
-      const id = byId('notification_id')?.value;
-      if (!id) {
-        notify('Provide notification id', 'error');
-        return;
-      }
-      const res = await post(`/api/notification/${id}/resume`, {});
-      if (res && res.success) notify(res.message || 'Resumed');
-      else notify(res.error || 'Failed', 'error');
-    });
+    loadAdminModule('subscribers')
+      .then((mod) => mod.initNotificationsPauseResume({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('subscribers', error));
   }
 
   function initNotificationsRateLimit() {
-    const form = byId('rateLimitForm');
-    if (!form) return;
-    const csrf = getCsrfToken();
-    const notify = (message, type = 'success', duration = 5000) => {
-      if (typeof window.showToast === 'function') {
-        window.showToast(message, type, duration);
-        return;
-      }
-      window.showMessage?.(message, type, duration);
-    };
-
-    async function getLimits() {
-      const res = await fetch('/api/notification/admin-rate-limit', {
-        headers: { 'X-CSRF-Token': csrf, },
-      }).then((r) => r.json());
-      if (res.success) {
-        const limits = res.limits || {};
-        byId('currentLimits').innerText = `Current limits: ${JSON.stringify(limits)}`;
-        byId('hourly').value = limits.hourly || '';
-        byId('daily').value = limits.daily || '';
-      } else {
-        byId('currentLimits').innerText = 'Error loading limits';
-      }
-    }
-
-    function post(url, body) {
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, },
-        body: JSON.stringify(body),
-      }).then((r) => r.json());
-    }
-
-    byId('saveBtn')?.addEventListener('click', async () => {
-      const hourlyRaw = byId('hourly')?.value;
-      const dailyRaw = byId('daily')?.value;
-      let hourly = null;
-      let daily = null;
-      if (hourlyRaw !== '') {
-        if (isNaN(Number(hourlyRaw)) || Number(hourlyRaw) < 0) {
-          notify('Hourly must be a non-negative number', 'error');
-          return;
-        }
-        hourly = parseInt(hourlyRaw, 10);
-      }
-      if (dailyRaw !== '') {
-        if (isNaN(Number(dailyRaw)) || Number(dailyRaw) < 0) {
-          notify('Daily must be a non-negative number', 'error');
-          return;
-        }
-        daily = parseInt(dailyRaw, 10);
-      }
-      if (hourly !== null && daily !== null && daily < hourly) {
-        notify('Daily must be greater than or equal to hourly', 'error');
-        return;
-      }
-
-      const body = {};
-      if (hourly !== null) body.hourly = hourly;
-      if (daily !== null) body.daily = daily;
-
-      const res = await post('/api/notification/admin-rate-limit', body);
-      if (res && res.success) {
-        notify(res.message || 'Limits updated');
-        getLimits();
-      } else {
-        notify(res.error || 'Failed to save', 'error');
-      }
-    });
-
-    getLimits();
+    loadAdminModule('subscribers')
+      .then((mod) => mod.initNotificationsRateLimit({ byId, getCsrfToken, }))
+      .catch((error) => logModuleError('subscribers', error));
   }
 
   function initNotificationsTopicsManagement() {
-    const root = byId('topicsManagementRoot');
-    if (!root) return;
-    async function load() {
-      const res = await fetch('/api/topics/list');
-      const data = await res.json();
-      const list = byId('topicsList');
-      if (!list) return;
-      if (data.success) {
-        const html = data.topics
-          .map(
-            (t) =>
-              `<div><strong>${t.name}</strong> (${t.slug}) - default: ${t.default_enabled}</div>`
-          )
-          .join('');
-        list.innerHTML = html;
-      }
-    }
-    load();
+    loadAdminModule('misc')
+      .then((mod) => mod.initNotificationsTopicsManagement())
+      .catch((error) => logModuleError('misc', error));
   }
 
   function initNotificationsSendByTopic() {
-    const select = byId('topicSelect');
-    if (!select) return;
-    async function loadTopics() {
-      const res = await fetch('/api/topics/list');
-      const j = await res.json();
-      if (j.success) {
-        select.innerHTML = j.topics
-          .map((t) => `<option value="${t.slug}">${t.name}</option>`)
-          .join('');
-      }
-    }
-
-    byId('sendBtn')?.addEventListener('click', async () => {
-      const topic = select.value;
-      const title = byId('title')?.value || '';
-      const message = byId('message')?.value || '';
-      const res = await fetch('/api/admin/send-by-topic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', },
-        body: JSON.stringify({ topic, title, message, channels: ['push',], }),
-      });
-      const j = await res.json();
-      if (j.success) alert(`Queued: ${j.notification_id}`);
-      else alert(`Error: ${j.error || 'unknown'}`);
-    });
-
-    loadTopics();
+    loadAdminModule('misc')
+      .then((mod) => mod.initNotificationsSendByTopic())
+      .catch((error) => logModuleError('misc', error));
   }
 
   function initNotificationsKillSwitch() {
-    const toggleBtn = byId('toggleBtn');
-    const saveBtn = byId('saveBtn');
-    const maintenanceMsg = byId('maintenanceMsg');
-    if (!toggleBtn || !saveBtn || !maintenanceMsg) return;
-
-    async function load() {
-      const res = await fetch('/api/admin/notifications/kill-switch');
-      const data = await res.json();
-      if (data.success) {
-        toggleBtn.textContent = data.enabled ? 'Enabled' : 'Disabled';
-        toggleBtn.dataset.enabled = data.enabled ? '1' : '0';
-        maintenanceMsg.value = data.message || '';
-      }
-    }
-
-    toggleBtn.addEventListener('click', () => {
-      const current = toggleBtn.dataset.enabled === '1';
-      toggleBtn.dataset.enabled = current ? '0' : '1';
-      toggleBtn.textContent = current ? 'Disabled' : 'Enabled';
-    });
-
-    saveBtn.addEventListener('click', async () => {
-      const enabled = toggleBtn.dataset.enabled === '1' ? 1 : 0;
-      const message = maintenanceMsg.value || '';
-      const res = await fetch('/api/admin/notifications/kill-switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', },
-        body: JSON.stringify({ enabled, message, }),
-      });
-      const j = await res.json();
-      if (j.success) alert('Saved');
-      else alert('Error');
-    });
-
-    load();
+    loadAdminModule('subscribers')
+      .then((mod) => mod.initNotificationsKillSwitch({ byId, }))
+      .catch((error) => logModuleError('subscribers', error));
   }
 
   function initNotificationsSubscribersLegacy() {
-    const root = byId('notificationsSubscribersLegacyRoot');
-    if (!root) return;
-    window.applySubsFilter = window.applySubsFilter || function () { };
+    loadAdminModule('misc')
+      .then((mod) => mod.initNotificationsSubscribersLegacy())
+      .catch((error) => logModuleError('misc', error));
   }
 
   function initNotificationsDashboardLegacy() {
-    const root = byId('notificationsDashboardLegacyRoot');
-    if (!root) return;
-    window.filterNotifications = window.filterNotifications || function () { };
+    loadAdminModule('misc')
+      .then((mod) => mod.initNotificationsDashboardLegacy())
+      .catch((error) => logModuleError('misc', error));
   }
 
   function initNotificationsAnalytics() {
@@ -3660,9 +907,17 @@ runWhenReady(() => {
 
   // Additional migrated handlers are appended below in smaller patches.
 
-  onReady(() => {
+  const ready = (fn) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true, });
+    } else {
+      fn();
+    }
+  };
+
+  ready(() => {
     initFlashMessageAutoDismiss();
-    initPasswordModals();
+    initOAuthPasswordModals();
     initAccountSettings();
     initActivityLog();
     initDashboardData();
@@ -3709,192 +964,50 @@ runWhenReady(() => {
     initNotificationsSubscribersLegacy();
     initNotificationsDashboardLegacy();
     initNotificationsAnalytics();
+    initServerStatusIndicator();
+    initRealtimeMonitoring();
   });
 
-  // Server Status Indicator
-  const initServerStatusIndicator = () => {
-    const indicator = document.getElementById('serverStatusIndicator');
-    const icon = document.getElementById('serverStatusIcon');
-    const text = document.getElementById('serverStatusText');
 
-    if (!indicator || !icon || !text) return;
-
-    let checkInterval = null;
-    let isChecking = false;
-
-    const updateStatus = (status, message) => {
-      indicator.classList.remove('online', 'offline', 'warning', 'checking');
-
-      switch (status) {
-        case 'online':
-          indicator.classList.add('online');
-          icon.className = 'bi bi-server';
-          text.textContent = 'Online';
-          indicator.title = 'All systems operational';
-          break;
-        case 'offline':
-          indicator.classList.add('offline');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Offline';
-          indicator.title = message || 'Server offline';
-          break;
-        case 'warning':
-          indicator.classList.add('warning');
-          icon.className = 'bi bi-exclamation-triangle';
-          text.textContent = 'Warning';
-          indicator.title = message || 'Some services may be degraded';
-          break;
-        case 'checking':
-        default:
-          indicator.classList.add('checking');
-          icon.className = 'bi bi-arrow-repeat';
-          text.textContent = 'Checking...';
-          indicator.title = 'Checking server status...';
-          break;
-      }
-    };
-
-    const updateServiceStatus = (serviceName, status, error = null) => {
-      const item = document.querySelector(`.server-status-item[data-service="${serviceName}"]`);
-      if (!item) return;
-
-      const badge = item.querySelector('.status-badge');
-      if (!badge) return;
-
-      badge.setAttribute('data-status', status);
-      badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-
-      if (error) {
-        badge.title = error;
-      }
-    };
-
-    const updateLastCheck = () => {
-      const lastCheckEl = document.getElementById('serverStatusLastCheck');
-      if (lastCheckEl) {
-        lastCheckEl.textContent = `Last checked: ${new Date().toLocaleString()}`;
-      }
-    };
-
-    const checkServerStatus = async () => {
-      if (isChecking) return;
-      isChecking = true;
-
-      try {
-        updateStatus('checking');
-
-        const response = await fetch('/api/admin/system-health', {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          credentials: 'same-origin',
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Update individual service statuses (Node.js removed)
-          const services = ['database', 'cache', 'api'];
-          services.forEach((service) => {
-            if (data[service]) {
-              const status = data[service].check ? 'online' : 'offline';
-              const error = data[service].error || null;
-              updateServiceStatus(service, status, error);
-            }
-          });
-
-          // Check if all required services are operational.
-          const { database, cache, api } = data;
-
-          if (database.check && cache.check && api.check) {
-            updateStatus('online', 'All systems operational');
-          } else if (database.check || cache.check || api.check) {
-            updateStatus('warning', 'Some services may be degraded');
-          } else {
-            updateStatus('offline', 'All services offline');
-          }
-
-          updateLastCheck();
-        } else {
-          updateStatus('offline', 'Server health check failed');
-        }
-      } catch (error) {
-        console.warn('Server status check failed:', error);
-        updateStatus('offline', 'Unable to check server status');
-      } finally {
-        isChecking = false;
-      }
-    };
-
-    // Initial check
-    checkServerStatus();
-
-    // Set up periodic checks (every 30 seconds)
-    checkInterval = setInterval(checkServerStatus, 30000);
-
-    // Add click handler to manually refresh
-    indicator.addEventListener('click', (e) => {
-      e.preventDefault();
-      checkServerStatus();
-    });
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-      if (checkInterval) {
-        clearInterval(checkInterval);
-      }
-    });
+  window.__adminInlineHelpers = {
+    byId,
+    getCsrfToken,
+    getAdminDir,
+    escapeHtml,
+    parseJson,
+    loadAdminModule,
+    logModuleError,
+    initUnifiedSlugFeatures,
+    initContentPreviewSync,
+    initAutosaveForContentForms,
+    initOfflineDraftForContentForms,
+    initFlashMessageAutoDismiss,
+    initOAuthPasswordModals,
+    initAccountSettings,
+    initActivityLog,
+    initDashboardData,
+    initContentFormData,
+    initEmailTemplatesEdit,
+    initEmailTemplatesList,
+    initMediaDetail,
+    initMediaUpload,
+    initDeleteMobile,
+    initMobileFormShared,
+    initApplicationsView,
+    initSettingsPage,
+    initAppSecuritySettings,
+    initRbacPermissionsList,
+    initRbacRolesEdit,
+    initRbacUserRoles,
+    initSecurity2FASetup,
+    initSecurity2FABackup,
+    initSecurity2FA,
+    initUsersAddUser,
+    initUsersEditUser,
+    initServicesForms,
+    initServicesIndex,
+    initServicesApplications,
+    initServerStatusIndicator,
+    initRealtimeMonitoring,
   };
-
-  initServerStatusIndicator();
 })();
-
-// (function () {
-//     // 1. Get CSRF token from meta tag
-//     const meta = document.querySelector('meta[name="csrf-token"]');
-//     if (!meta) return;
-
-//     const csrfToken = meta.getAttribute('content');
-//     if (!csrfToken) return;
-
-//     // 2. Inject CSRF token into all forms
-//     document.querySelectorAll('form').forEach(form => {
-//         let input = form.querySelector('input[name="csrf_token"]');
-
-//         if (!input) {
-//             // Create hidden input if not exists
-//             input = document.createElement('input');
-//             input.type = 'hidden';
-//             input.name = 'csrf_token';
-//             form.appendChild(input);
-//         }
-
-//         // Update token value
-//         input.value = csrfToken;
-//     });
-
-//     // 3. Attach CSRF token to ALL fetch requests
-//     const originalFetch = window.fetch;
-//     window.fetch = function (url, options = {}) {
-//         options.headers = options.headers || {};
-//         options.headers['X-CSRF-TOKEN'] = csrfToken;
-//         return originalFetch(url, options);
-//     };
-
-//     // 4. Attach CSRF token to XMLHttpRequest
-//     const originalOpen = XMLHttpRequest.prototype.open;
-//     XMLHttpRequest.prototype.open = function () {
-//         this.addEventListener('readystatechange', function () {
-//             if (this.readyState === 1) {
-//                 this.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-//             }
-//         });
-//         originalOpen.apply(this, arguments);
-//     };
-// })();

@@ -3,596 +3,2233 @@
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block title %}{{ service ? 'Edit Service' : 'Create Service' }}{% endblock %}
 {% block stylesheets %}
-  {% set rte_version = getRTEVersion() %}
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-        rel="stylesheet">
-  <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
-{% endblock %}
-{% block content %}
-  <div class="container-fluid py-4">
-    <div class="service-form-wrapper">
-      <div class="container service-form-container">
-        <!-- Header Glass Card -->
-        <div class="header-glass-card">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-3">
-              <div class="header-icon-badge">
-                <i class="bi bi-gear-fill"></i>
-              </div>
-              <div>
-                <h1 class="page-title">{{ service ? 'Edit Service' : 'Create New Service' }}</h1>
-                <p class="page-subtitle">
-                  {{ service ? 'Update service details and configuration' : 'Fill in the details to create a new service' }}
-                </p>
-              </div>
-            </div>
-            <a href="/admin/services" class="modern-btn modern-btn-secondary">
-              <i class="bi bi-arrow-left"></i>
-              Back to Services
-            </a>
-          </div>
-        </div>
-        <!-- Main Form -->
-        <form id="serviceForm" method="POST" enctype="multipart/form-data">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          {% if service %}
-            <input type="hidden"
-                   name="service_id"
-                   value="{{ service.id | default("") }}">
-          {% endif %}
-          <div class="row g-4">
-            <!-- Main Content Column -->
-            <div class="col-lg-8">
-              <!-- Basic Information -->
-              <div class="admin-panel-card">
-                <div class="admin-panel-card-header">
-                  <h5 class="admin-panel-card-header-title">
-                    <i class="bi bi-info-circle-fill"></i>
-                    Basic Information
-                  </h5>
-                </div>
-                <div class="admin-panel-card-body">
-                  <div class="row g-4">
-                    <div class="col-md-8">
-                      <label class="modern-form-label">
-                        Service Name
-                        <span class="required">*</span>
-                      </label>
-                      <input type="text"
-                             class="modern-input form-control-lg"
-                             name="name"
-                             value="{% if service %}{{ service.name | default("") }}{% endif %}"
-                             placeholder="Enter service name"
-                             required>
-                      <div class="form-helper">A clear, descriptive name for your service</div>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="modern-form-label">
-                        Status <span class="required">*</span>
-                      </label>
-                      <select class="modern-select form-select-lg" name="status">
-                        <option value="active"
-                                {% if service and service.status == 'active' %}selected{% endif %}><i class="bi bi-check-circle-fill me-1"></i>Active</option>
-                        <option value="inactive"
-                                {% if service and service.status == 'inactive' %}selected{% endif %}>
-                          <i class="bi bi-pause-circle-fill me-1"></i>Inactive
-                        </option>
-                        <option value="archived"
-                                {% if service and service.status == 'archived' %}selected{% endif %}>
-                          <i class="bi bi-archive-fill me-1"></i>Archived
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="row g-4 mt-2">
-                    <div class="col-12">
-                      <label class="modern-form-label">
-                        URL Slug <span class="required">*</span>
-                      </label>
-                      <div class="modern-input-group">
-                        <span class="modern-input-group-text">
-                          <i class="bi bi-link-45deg"></i>
-                        </span>
-                        <input type="text"
-                               class="modern-input"
-                               name="slug"
-                               value="{% if service %}{{ service.slug | default("") }}{% endif %}"
-                               placeholder="service-url-slug"
-                               required>
-                      </div>
-                      <div id="slug-feedback" class="form-helper"></div>
-                    </div>
-                  </div>
-                  <div class="row g-4 mt-2">
-                    <div class="col-12">
-                      <label class="modern-form-label">Redirect URL (Optional)</label>
-                      <div class="modern-input-group">
-                        <span class="modern-input-group-text">
-                          <i class="bi bi-box-arrow-up-right"></i>
-                        </span>
-                        <input type="text"
-                               class="modern-input"
-                               name="redirect_url"
-                               value="{{ service.redirect_url|default("") }}"
-                               placeholder="https://example.com/service অথবা /internal-path">
-                      </div>
-                      <div class="form-helper">Set this to redirect users to another page when they open this service.</div>
-                    </div>
-                  </div>
-                  <div class="mt-4">
-                    <label class="modern-form-label">
-                      Description <span class="required">*</span>
-                    </label>
-                    {% include 'partials/editor.twig' with {
-                    'editorId': 'content',
-                    'editorName': 'description',
-                    'editorClass': 'modern-rich-editor',
-                    'initialContent': service.description|default(''),
-                    'darkMode': false,
-                    'rtl': false
-                    } %}
-                    <div class="form-helper">Describe what this service offers and its key features</div>
-                  </div>
-                </div>
-              </div>
-              <!-- Categories & Tags -->
-              <div class="admin-panel-card">
-                <div class="admin-panel-card-header">
-                  <h5 class="admin-panel-card-header-title">
-                    <i class="bi bi-tags-fill"></i>
-                    Categories & Tags
-                  </h5>
-                </div>
-                <div class="admin-panel-card-body">
-                  <div class="mb-4">
-                    <label class="modern-form-label">Categories</label>
-                    <select multiple
-                            class="form-control blogspot-categories"
-                            id="service_categories"
-                            name="categories[]">
-                      {% if all_categories is defined and all_categories is iterable %}
-                        {% for cat in all_categories %}
-                          {% set checked = (service_category_ids is defined and (cat.id|int) in service_category_ids) %}
-                          <option value="{{ cat.id }}" {{ checked ? 'selected' : '' }}>{{ cat.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
-                    <div class="form-helper">Select categories or type to create new ones</div>
-                  </div>
-                  <div>
-                    <label class="modern-form-label">Tags</label>
-                    <select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
-                      {% if all_tags is defined and all_tags is iterable %}
-                        {% for t in all_tags %}
-                          {% set tchecked = (service_tag_ids is defined and (t.id|int) in service_tag_ids) %}
-                          <option value="{{ t.id }}" {{ tchecked ? 'selected' : '' }}>{{ t.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
-                    <div class="form-helper">Select multiple tags or type to add new ones</div>
-                  </div>
-                </div>
-              </div>
-              <!-- Images Gallery -->
-              <div class="admin-panel-card">
-                <div class="admin-panel-card-header">
-                  <h5 class="admin-panel-card-header-title">
-                    <i class="bi bi-images"></i>
-                    Images Gallery
-                  </h5>
-                </div>
-                <div class="admin-panel-card-body">
-                  <div id="imagesContainer" class="mb-4">
-                    {% if service.images is defined and service.images|length > 0 %}
-                      {% for image in service.images %}
-                        <div class="image-item card mb-3 border" data-image-id="{{ image.id }}">
-                          <div class="card-body">
-                            <div class="row align-items-center">
-                              <!-- Image Preview -->
-                              <div class="col-md-3">
-                                <img src="{{ image.thumbnail_path|default(image.image_path) |default('/assets/img/no-image.png') }}"
-                                     alt="{{ image.alt_text|default("Service image") }}"
-                                     class="img-fluid rounded shadow-sm">
-                              </div>
-                              <!-- Image Meta -->
-                              <div class="col-md-9">
-                                <div class="row g-2">
-                                  <!-- Alt Text -->
-                                  <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Alt Text</label>
-                                    <input type="text"
-                                           class="form-control form-control-sm"
-                                           value="{{ image.alt_text|default("") }}"
-                                           data-field="alt_text"
-                                           placeholder="Image description">
-                                  </div>
-                                  <!-- Order -->
-                                  <div class="col-md-3">
-                                    <label class="form-label small fw-semibold">Order</label>
-                                    <input type="number"
-                                           class="form-control form-control-sm"
-                                           value="{{ image.display_order|default(0) }}"
-                                           data-field="display_order"
-                                           min="0">
-                                  </div>
-                                  <!-- Featured -->
-                                  <div class="col-md-3">
-                                    <label class="form-label small fw-semibold">Featured</label>
-                                    <div class="form-check form-switch">
-                                      <input class="form-check-input"
-                                             type="radio"
-                                             name="featured_image"
-                                             value="{{ image.id }}"
-                                             {% if image.is_featured|default(false) %}checked{% endif %}>
-                                      <label class="form-check-label small">Set as featured</label>
-                                    </div>
-                                  </div>
-                                  <!-- Caption -->
-                                  <div class="col-md-9">
-                                    <label class="form-label small fw-semibold">Caption</label>
-                                    <textarea class="form-control form-control-sm"
-                                              rows="2"
-                                              data-field="caption"
-                                              placeholder="Optional caption">{{ image.caption|default('') }}</textarea>
-                                  </div>
-                                  <!-- Delete -->
-                                  <div class="col-md-3">
-                                    <label class="form-label small fw-semibold">&nbsp;</label>
-                                    <button type="button"
-                                            class="btn btn-sm btn-danger w-100"
-                                            onclick="removeImage(this)">
-                                      <i class="bi bi-trash me-1"></i>Delete
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-                  <!-- Upload New Images -->
-                  <div class="modern-dropzone" id="dropZone">
-                    <input type="file"
-                           id="imageUploadInput"
-                           class="d-none"
-                           name="images[]"
-                           multiple
-                           accept="image/*">
-                    <div class="dropzone-icon">
-                      <i class="bi bi-cloud-upload"></i>
-                    </div>
-                    <h6 class="fw-bold mb-2">Drag & Drop Images Here</h6>
-                    <p class="text-muted mb-2">or click to browse</p>
-                    <small class="text-muted">Supported: JPG, PNG, GIF, WebP (Max 10MB each)</small>
-                  </div>
-                  <div id="imagePreviewContainer" class="row g-3 mt-3"></div>
-                </div>
-              </div>
-              <!-- Application Form Fields -->
-              <div class="admin-panel-card">
-                <div class="admin-panel-card-header">
-                  <h5 class="admin-panel-card-header-title">
-                    <i class="bi bi-journal-text"></i>
-                    Application Form Fields
-                  </h5>
-                </div>
-                <div class="admin-panel-card-body">
-                  <p class="text-muted mb-3">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Define custom fields for the service application form
-                  </p>
-                  <div id="formFieldsContainer" class="mb-3">
-                    {% if service and service.form_templates and service.form_templates|length > 0 %}
-                      {% for field in service.form_templates %}
-                        <div class="admin-panel-card mb-2 border form-field-item"
-                             data-field-id="{{ field.id }}">
-                          <div class="card-body p-3">
-                            <div class="row g-2 align-items-center">
-                              <div class="col-md-3">
-                                <input type="text"
-                                       class="form-control"
-                                       placeholder="Field Name"
-                                       value="{{ field.label }}"
-                                       data-field-label>
-                              </div>
-                              <div class="col-md-2">
-                                <select class="form-select" data-field-type>
-                                  <option value="text" {% if field.field_type == 'text' %}selected{% endif %}>Text</option>
-                                  <option value="email" {% if field.field_type == 'email' %}selected{% endif %}>Email</option>
-                                  <option value="phone" {% if field.field_type == 'phone' %}selected{% endif %}>Phone</option>
-                                  <option value="textarea"
-                                          {% if field.field_type == 'textarea' %}selected{% endif %}>Textarea</option>
-                                  <option value="select"
-                                          {% if field.field_type == 'select' %}selected{% endif %}>Select</option>
-                                  <option value="date" {% if field.field_type == 'date' %}selected{% endif %}>Date</option>
-                                </select>
-                              </div>
-                              <div class="col-md-2">
-                                <div class="form-check form-switch">
-                                  <input class="form-check-input"
-                                         type="checkbox"
-                                         data-field-required
-                                         {% if field.required == 1 or field.required == '1' %}checked{% endif %}>
-                                  <label class="form-check-label small">Required</label>
-                                </div>
-                              </div>
-                              <div class="col-md-4">
-                                <input type="text"
-                                       class="form-control"
-                                       placeholder="Placeholder text"
-                                       value="{{ field.placeholder|default("") }}"
-                                       data-field-placeholder>
-                              </div>
-                              <div class="col-md-1">
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-danger w-100"
-                                        onclick="removeFormField(this)">
-                                  <i class="bi bi-trash"></i>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-                  <button type="button"
-                          class="modern-btn modern-btn-primary"
-                          id="addFormFieldBtn">
-                    <i class="bi bi-plus me-2"></i>Add Form Field
-                  </button>
-                </div>
-              </div>
-              <!-- Metadata -->
-              <div class="admin-panel-card">
-                <div class="admin-panel-card-header">
-                  <h5 class="admin-panel-card-header-title">
-                    <i class="bi bi-code"></i>
-                    Custom Metadata
-                  </h5>
-                </div>
-                <div class="admin-panel-card-body">
-                  <p class="text-muted mb-3">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Add custom key-value pairs for additional service data
-                  </p>
-                  <div id="metadataFields" class="mb-3">
-                    {% if service and service.metadata and service.metadata|length > 0 %}
-                      {% for key, value in service.metadata %}
-                        <div class="row g-2 mb-2 align-items-center">
-                          <div class="col-md-5">
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="Key"
-                                   value="{{ key }}"
-                                   data-metadata-key>
-                          </div>
-                          <div class="col-md-6">
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="Value"
-                                   value="{{ value }}"
-                                   data-metadata-value>
-                          </div>
-                          <div class="col-md-1">
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-danger w-100"
-                                    onclick="removeMetadata(this)">
-                              <i class="bi bi-x"></i>
-                            </button>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    {% endif %}
-                  </div>
-                  <button type="button"
-                          class="modern-btn modern-btn-primary"
-                          id="addMetadataBtn">
-                    <i class="bi bi-plus me-2"></i>Add Metadata
-                  </button>
-                </div>
-              </div>
-            </div>
-            <!-- Sidebar Column -->
-            <div class="col-lg-4">
-              <div class="sticky-sidebar">
-                <!-- Configuration Card -->
-                <div class="admin-panel-card">
-                  <div class="admin-panel-card-header">
-                    <h5 class="admin-panel-card-header-title">
-                      <i class="bi bi-sliders"></i>
-                      Service Configuration
-                    </h5>
-                  </div>
-                  <div class="admin-panel-card-body">
-                    <div class="modern-switch-wrapper">
-                      <input class="modern-switch-input d-none"
-                             type="checkbox"
-                             name="is_premium"
-                             id="isPremium"
-                             value="1"
-                             {% if service and service.is_premium %}checked{% endif %}>
-                      <label for="isPremium" class="modern-switch"></label>
-                      <label for="isPremium" class="modern-switch-label">
-                        <i class="bi bi-crown-fill text-warning"></i>
-                        Premium Service
-                      </label>
-                    </div>
-                    <div class="modern-switch-wrapper">
-                      <input class="modern-switch-input d-none"
-                             type="checkbox"
-                             name="requires_approval"
-                             id="requiresApproval"
-                             value="1"
-                             {% if service and service.requires_approval %}checked{% endif %}>
-                      <label for="requiresApproval" class="modern-switch"></label>
-                      <label for="requiresApproval" class="modern-switch-label">
-                        <i class="bi bi-check-circle-fill text-info"></i>
-                        Requires Admin Approval
-                      </label>
-                    </div>
-                    <div class="modern-switch-wrapper">
-                      <input class="modern-switch-input d-none"
-                             type="checkbox"
-                             name="auto_approve"
-                             id="autoApprove"
-                             value="1"
-                             {% if service and service.auto_approve %}checked{% endif %}>
-                      <label for="autoApprove" class="modern-switch"></label>
-                      <label for="autoApprove" class="modern-switch-label">
-                        <i class="bi bi-lightning-fill text-success"></i>
-                        Auto-Approve Applications
-                      </label>
-                    </div>
-                    <div class="modern-switch-wrapper">
-                      <input class="modern-switch-input d-none"
-                             type="checkbox"
-                             name="requires_documents"
-                             id="requiresDocuments"
-                             value="1"
-                             {% if service and service.requires_documents %}checked{% endif %}>
-                      <label for="requiresDocuments" class="modern-switch"></label>
-                      <label for="requiresDocuments" class="modern-switch-label">
-                        <i class="bi bi-file-earmark-text text-primary"></i>
-                        Requires Documents
-                      </label>
-                    </div>
-                    <div id="premiumPriceGroup"
-                         class="mt-3"
-                         style="{% if not (service and service.is_premium) %}display:none;
-                                {% endif %}">
-                      <label class="modern-form-label">
-                        Premium Service Price <span class="required">*</span>
-                      </label>
-                      <div class="modern-input-group">
-                        <span class="modern-input-group-text">{{ app_settings.currency_symbol|default("à§³") }}</span>
-                        <input type="number"
-                               class="modern-input"
-                               id="premiumPriceInput"
-                               name="price"
-                               min="0"
-                               step="0.01"
-                               value="{{ service.price|default("") }}"
-                               placeholder="0.00">
-                      </div>
-                      <div class="form-helper">Required when Premium Service is enabled.</div>
-                    </div>
-                    {% if not service %}
-                      <div class="modern-switch-wrapper">
-                        <input class="modern-switch-input d-none"
-                               type="checkbox"
-                               name="send_push_notification"
-                               id="sendPushNotification"
-                               value="1">
-                        <label for="sendPushNotification" class="modern-switch"></label>
-                        <label for="sendPushNotification" class="modern-switch-label">
-                          <i class="bi bi-bell-fill text-danger"></i>
-                          Send Push Notification
-                        </label>
-                      </div>
-                      <div class="form-helper">Status Active হলে পাঠানো হবে</div>
-                    {% endif %}
-                  </div>
-                </div>
-                <!-- Icon Settings -->
-                <div class="admin-panel-card">
-                  <div class="admin-panel-card-header">
-                    <h5 class="admin-panel-card-header-title">
-                      <i class="bi bi-collection"></i>
-                      Service Icon
-                    </h5>
-                  </div>
-                  <div class="admin-panel-card-body">
-                    <label class="form-label fw-semibold">Icon Class or Upload</label>
-                    <div class="input-group">
-                      <span class="input-group-text bg-light"><i class="bi bi-collection"></i></span>
-                      <input type="text"
-                             class="form-control"
-                             name="icon"
-                             id="iconInput"
-                             value="{{ service.icon or '' }}"
-                             placeholder="bi bi-star">
-                      <button class="modern-btn modern-btn-white" type="button" id="iconUploadBtn">
-                        <i class="bi bi-upload"></i>
-                      </button>
-                    </div>
-                    <div class="form-helper">Enter an icon class (Bootstrap Icons) or upload an image</div>
-                    <div id="iconPreviewContainer" class="d-none mt-3">
-                      <div class="text-center p-3 bg-light rounded">
-                        <img id="iconPreview"
-                             src=""
-                             alt="Icon preview"
-                             class="img-fluid inl-a-0053">
-                        <button type="button"
-                                class="btn btn-sm btn-danger d-block w-100 mt-2"
-                                id="removeIconBtn">
-                          <i class="bi bi-x me-1"></i>Remove Icon
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file"
-                           id="iconUploadInput"
-                           name="icon_file"
-                           accept="image/*"
-                           class="d-none">
-                  </div>
-                </div>
-                <!-- Quick Actions -->
-                <div class="quick-action-card">
-                  <h6 class="quick-action-title">Ready to save?</h6>
-                  <button type="submit"
-                          class="modern-btn modern-btn-white modern-btn-lg w-100 mb-3">
-                    <i class="bi bi-save"></i>
-                    {{ service ? 'Update Service' : 'Create Service' }}
-                  </button>
-                  <a href="/admin/services"
-                     class="modern-btn modern-btn-secondary modern-btn-lg w-100">
-                    <i class="bi bi-x-lg"></i> Cancel
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+ {% set rte_version = getRTEVersion() %}
+ <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+ rel="stylesheet">
+ <link href="/rtceditor/editor.css?v={{ rte_version }}" rel="stylesheet">
+ {% include 'admin/partials/_shared-form-styles.twig' %}
+ <style>
+
+ /* ── Custom toggle (kept for backward compat) */
+ .modern-switch-wrapper {
+ @apply flex items-center gap-3 py-2;
+ }
+ .modern-switch-input.hidden { @apply sr-only; }
+ .modern-switch {
+ @apply relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full
+ transition-all duration-200 ease-out;
+ background: #cbd5e1;
+ box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+ }
+ .modern-switch-input:checked + .modern-switch {
+ background: #6366f1;
+ box-shadow: inset 0 1px 3px rgba(99,102,241,0.2);
+ }
+ .modern-switch::after {
+ content: '';
+ @apply inline-block h-5 w-5 rounded-full bg-white shadow-sm
+ transition-all duration-200 ease-out;
+ transform: translateX(2px);
+ }
+ .modern-switch-input:checked + .modern-switch::after {
+ transform: translateX(22px);
+ box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+ }
+ .modern-switch-label {
+ @apply flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer select-none;
+ }
+
+ /* ── Dropzone ── */
+ .card-dropzone {
+ @apply flex flex-col items-center justify-center rounded-xl border-2 border-dashed
+ border-slate-300 bg-slate-50/50 px-6 py-8 cursor-pointer
+ transition-all duration-200 ease-out;
+ }
+ .card-dropzone:hover {
+ @apply border-indigo-400 bg-indigo-50/50;
+ }
+
+ /* ── Dark Mode Overrides (file-specific) ── */
+ [data-theme="dark"] .modern-switch { background: #475569; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+ [data-theme="dark"] .modern-switch-input:checked + .modern-switch { background: #6366f1; }
+ [data-theme="dark"] .card-dropzone { @apply border-slate-600 bg-slate-800/50; }
+ [data-theme="dark"] .card-dropzone:hover { @apply border-indigo-500 bg-indigo-950/20; }
+
+ /* AI Writer Floating Button */
+ .ai-fab-service {
+ position: fixed;
+ bottom: 1.5rem;
+ right: 1.5rem;
+ z-index: 9995;
+ width: 56px;
+ height: 56px;
+ border-radius: 50%;
+ background: linear-gradient(135deg, #667eea, #764ba2);
+ color: #fff;
+ border: none;
+ box-shadow: 0 4px 20px rgba(102,126,234,0.45);
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+ opacity: 0;
+ transform: scale(0) translateY(20px);
+ pointer-events: none;
+ }
+ .ai-fab-service.visible {
+ opacity: 1;
+ transform: scale(1) translateY(0);
+ pointer-events: auto;
+ }
+ .ai-fab-service:hover {
+ transform: scale(1.1) translateY(-3px);
+ box-shadow: 0 8px 30px rgba(102,126,234,0.6);
+ }
+ .ai-fab-service:active {
+ transform: scale(0.95);
+ }
+ .ai-fab-service i {
+ font-size: 1.4rem;
+ transition: transform 0.3s ease;
+ }
+ .ai-fab-service:hover i {
+ transform: rotate(-15deg) scale(1.1);
+ }
+ .ai-fab-badge {
+ position: absolute;
+ top: -4px;
+ right: -4px;
+ width: 20px;
+ height: 20px;
+ border-radius: 50%;
+ background: #ff6b6b;
+ color: #fff;
+ font-size: 0.65rem;
+ font-weight: 700;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ box-shadow: 0 2px 8px rgba(255,107,107,0.5);
+ animation: ai-fab-pulse 2s ease-in-out infinite;
+ }
+ @keyframes ai-fab-pulse {
+ 0%, 100% { transform: scale(1); }
+ 50% { transform: scale(1.15); }
+ }
+ .ai-fab-tooltip {
+ position: absolute;
+ right: 68px;
+ top: 50%;
+ transform: translateY(-50%);
+ background: rgba(0,0,0,0.85);
+ color: #fff;
+ padding: 0.4rem 0.85rem;
+ border-radius: 8px;
+ font-size: 0.8rem;
+ font-weight: 500;
+ white-space: nowrap;
+ opacity: 0;
+ visibility: hidden;
+ transition: all 0.25s ease;
+ pointer-events: none;
+ }
+ .ai-fab-tooltip::after {
+ content: '';
+ position: absolute;
+ right: -6px;
+ top: 50%;
+ transform: translateY(-50%);
+ border-left: 6px solid rgba(0,0,0,0.85);
+ border-top: 5px solid transparent;
+ border-bottom: 5px solid transparent;
+ }
+ .ai-fab-service:hover .ai-fab-tooltip {
+ opacity: 1;
+ visibility: visible;
+ }
+
+ /* Prefill flash animation */
+ @keyframes prefill-flash {
+ 0% { background-color: transparent; box-shadow: none; }
+ 15% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+ 50% { background-color: #d4edda; box-shadow: 0 0 0 3px rgba(40,167,69,0.35); }
+ 100% { background-color: transparent; box-shadow: none; }
+ }
+ .prefill-flash {
+ animation: prefill-flash 2s ease-out forwards;
+ border-radius: 4px;
+ transition: background-color 0.3s ease, box-shadow-md 0.3s ease;
+ }
+ /* Prefill toast notification */
+ .prefill-toast {
+ position: fixed;
+ top: 16px;
+ right: 16px;
+ z-index: 10000;
+ background: #fff;
+ border: 1px solid #28a745;
+ border-left: 5px solid #28a745;
+ border-radius: 10px;
+ padding: 0.85rem 1.25rem;
+ box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ font-size: 0.9rem;
+ font-weight: 500;
+ color: #1a1a2e;
+ transform: translateX(120%);
+ transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+ max-width: 380px;
+ }
+ .prefill-toast.show {
+ transform: translateX(0);
+ }
+ .prefill-toast i {
+ color: #28a745;
+ font-size: 1.3rem;
+ }
+ .prefill-toast .toast-close {
+ margin-left: auto;
+ background: none;
+ border: none;
+ color: #6c757d;
+ cursor: pointer;
+ padding: 0.15rem 0.35rem;
+ font-size: 1.1rem;
+ border-radius: 4px;
+ transition: background 0.2s;
+ }
+ .prefill-toast .toast-close:hover {
+ background: #f1f3f5;
+ }
+
+ /* AI Service Overlay (reuses same rounded-xl border border-slate-200 bg-white shadow-sm style as content form) */
+ .ai-gen-overlay {
+ position: fixed; inset: 0; z-index: 9999;
+ background: rgba(0,0,0,0.45);
+ backdrop-filter: blur(4px);
+ display: flex; align-items: center; justify-content: center;
+ opacity: 0; visibility: hidden;
+ transition: opacity 0.3s ease, visibility 0.3s ease;
+ }
+ .ai-gen-overlay.active {
+ opacity: 1; visibility: visible;
+ }
+ .ai-gen-dialog {
+ background: #fff; border-radius: 20px;
+ padding: 2.5rem; max-width: 420px; width: 90%;
+ box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+ text-align: center;
+ transform: scale(0.9) translateY(20px);
+ transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+ }
+ .ai-gen-overlay.active .ai-gen-dialog {
+ transform: scale(1) translateY(0);
+ }
+ .ai-gen-spinner {
+ width: 56px; height: 56px; margin: 0 auto 1.25rem;
+ border: 5px solid #e9ecef;
+ border-top-color: #667eea;
+ border-radius: 50%;
+ animation: ai-spin 0.8s linear infinite;
+ }
+ .ai-gen-spinner.done {
+ border-color: #198754;
+ border-top-color: #198754;
+ animation: ai-pop 0.4s ease;
+ }
+ .ai-gen-spinner.error {
+ border-color: #dc3545;
+ border-top-color: #dc3545;
+ animation: none;
+ }
+ @keyframes ai-spin { to { transform: rotate(360deg); } }
+ @keyframes ai-pop {
+ 0% { transform: scale(1); }
+ 50% { transform: scale(1.15); }
+ 100% { transform: scale(1); }
+ }
+ .ai-gen-title {
+ font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;
+ color: #1a1a2e;
+ }
+ .ai-gen-text {
+ font-size: 0.9rem; color: #6c757d; margin-bottom: 1.25rem;
+ min-height: 1.4em;
+ }
+ .ai-gen-progress {
+ height: 4px; background: #e9ecef; border-radius: 4px;
+ overflow: hidden; margin-bottom: 1rem;
+ }
+ .ai-gen-progress-bar {
+ height: 100%; width: 0%;
+ background: linear-gradient(90deg, #667eea, #764ba2);
+ border-radius: 4px;
+ transition: width 0.4s ease;
+ }
+ .ai-gen-progress-bar.done {
+ background: linear-gradient(90deg, #28a745, #20c997);
+ }
+ .ai-gen-progress-bar.error {
+ background: linear-gradient(90deg, #dc3545, #e74c3c);
+ }
+ .ai-gen-check {
+ display: none; width: 56px; height: 56px; margin: 0 auto 1.25rem;
+ background: #198754; border-radius: 50%;
+ align-items: center; justify-content: center;
+ }
+ .ai-gen-check.show { display: flex; }
+ .ai-gen-check i { color: #fff; font-size: 1.8rem; }
+ @keyframes ai-check-in {
+ 0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+ 100% { transform: scale(1) rotate(0); opacity: 1; }
+ }
+ .ai-gen-check i { animation: ai-check-in 0.4s ease; }
+
+ /* Pexels Image Picker Modal */
+ .pexels-modal {
+ position: fixed; inset: 0; z-index: 9998;
+ background: rgba(0,0,0,0.5);
+ backdrop-filter: blur(6px);
+ display: flex; align-items: center; justify-content: center;
+ padding: 1.5rem;
+ opacity: 0; visibility: hidden;
+ transition: opacity 0.3s ease, visibility 0.3s ease;
+ }
+ .pexels-modal.active {
+ opacity: 1; visibility: visible;
+ }
+ .pexels-modal-content {
+ background: #fff; border-radius: 16px;
+ max-width: 800px; width: 100%; max-height: 85vh;
+ display: flex; flex-direction: column;
+ box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+ transform: scale(0.92) translateY(20px);
+ transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+ }
+ .pexels-modal.active .pexels-modal-content {
+ transform: scale(1) translateY(0);
+ }
+ .pexels-modal-header {
+ display: flex; align-items: center; justify-content: space-between;
+ padding: 1rem 1.5rem;
+ border-bottom: 1px solid #e9ecef;
+ flex-shrink: 0;
+ }
+ .pexels-modal-header h5 {
+ margin: 0; font-weight: 700;
+ display: flex; align-items: center; gap: 0.5rem;
+ }
+ .pexels-modal-header h5 i { color: #05a081; }
+ .pexels-modal-close {
+ background: none; border: none; font-size: 1.5rem;
+ color: #6c757d; cursor: pointer; padding: 0.25rem;
+ line-height: 1; border-radius: 8px; transition: all 0.2s;
+ }
+ .pexels-modal-close:hover { background: #f1f3f5; color: #1a1a2e; }
+ .pexels-modal-search {
+ padding: 1rem 1.5rem;
+ border-bottom: 1px solid #e9ecef;
+ display: flex; gap: 0.5rem;
+ flex-shrink: 0;
+ }
+ .pexels-modal-search input {
+ flex: 1;
+ border: 2px solid #e9ecef;
+ border-radius: 10px;
+ padding: 0.55rem 1rem;
+ font-size: 0.9rem;
+ outline: none;
+ transition: border-color 0.2s;
+ }
+ .pexels-modal-search input:focus {
+ border-color: #05a081;
+ }
+ .pexels-modal-search button {
+ padding: 0.55rem 1.25rem;
+ border: none;
+ border-radius: 10px;
+ background: #05a081;
+ color: #fff;
+ font-weight: 600;
+ cursor: pointer;
+ transition: all 0.2s;
+ }
+ .pexels-modal-search button:hover {
+ background: #048069;
+ transform: translateY(-1px);
+ }
+ .pexels-modal-search button:disabled {
+ opacity: 0.6;
+ cursor: not-allowed;
+ transform: none;
+ }
+ .pexels-modal-body {
+ flex: 1; overflow-y: auto; padding: 1.5rem;
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+ gap: 1rem;
+ }
+ .pexels-modal-body .pexels-empty {
+ grid-column: 1 / -1;
+ text-align: center;
+ padding: 3rem 1rem;
+ color: #6c757d;
+ }
+ .pexels-modal-body .pexels-empty i {
+ font-size: 3rem;
+ display: block;
+ margin-bottom: 0.75rem;
+ }
+ .pexels-photo-card {
+ border-radius: 12px;
+ overflow: hidden;
+ box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+ cursor: pointer;
+ transition: all 0.25s ease;
+ border: 3px solid transparent;
+ position: relative;
+ }
+ .pexels-photo-card:hover {
+ transform: translateY(-3px);
+ box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+ border-color: #05a081;
+ }
+ .pexels-photo-card.selected {
+ border-color: #05a081;
+ box-shadow: 0 0 0 3px rgba(5,160,129,0.3);
+ }
+ .pexels-photo-card img {
+ width: 100%;
+ height: 200px;
+ object-fit: cover;
+ display: block;
+ }
+ .pexels-photo-card .pexels-photo-info {
+ padding: 0.5rem 0.75rem;
+ background: #fff;
+ font-size: 0.78rem;
+ color: #6c757d;
+ white-space: nowrap;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ }
+ .pexels-photo-card .pexels-photo-info a {
+ color: #05a081;
+ text-decoration: none;
+ }
+ .pexels-photo-card .pexels-loading-overlay {
+ position: absolute; inset: 0;
+ background: rgba(255,255,255,0.85);
+ display: flex; align-items: center; justify-content: center;
+ opacity: 0; visibility: hidden;
+ transition: all 0.2s;
+ }
+ .pexels-photo-card .pexels-loading-overlay.active {
+ opacity: 1; visibility: visible;
+ }
+ .pexels-modal-footer {
+ display: flex; align-items: center; justify-content: space-between;
+ padding: 0.75rem 1.5rem;
+ border-top: 1px solid #e9ecef;
+ flex-shrink: 0;
+ font-size: 0.85rem;
+ color: #6c757d;
+ }
+ .pexels-modal-footer .pexels-credit a {
+ color: #05a081;
+ text-decoration: none;
+ font-weight: 600;
+ }
+ .pexels-modal-footer .pexels-credit a:hover {
+ text-decoration: underline;
+ }
+ .pexels-modal-footer button {
+ padding: 0.5rem 1.5rem;
+ border: none;
+ border-radius: 10px;
+ background: linear-gradient(135deg, #667eea, #764ba2);
+ color: #fff;
+ font-weight: 600;
+ cursor: pointer;
+ transition: all 0.2s;
+ }
+ .pexels-modal-footer button:disabled {
+ opacity: 0.5;
+ cursor: not-allowed;
+ transform: none;
+ }
+ .pexels-modal-footer button:hover:not(:disabled) {
+ transform: translateY(-1px);
+ box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+ }
+ .pexels-loading {
+ text-align: center; padding: 3rem 1rem;
+ color: #6c757d;
+ grid-column: 1 / -1;
+ }
+ .inline-spinner {
+ width: 2.5rem;
+ height: 2.5rem;
+ border: 3px solid #e9ecef;
+ border-top-color: #667eea;
+ border-radius: 50%;
+ animation: ai-spin 0.8s linear infinite;
+ display: inline-block;
+ }
+ .inline-spinner-sm {
+ width: 1.25rem;
+ height: 1.25rem;
+ border-width: 2px;
+ }
+ .pexels-loading .inline-spinner { width: 2.5rem; height: 2.5rem; }
+ .pexels-error {
+ text-align: center; padding: 2rem 1rem;
+ color: #dc3545;
+ grid-column: 1 / -1;
+ }
+ </style>
+{% endblock %} {% block content %}
+ <div class="w-full px-4 sm:px-6 py-4">
+ <div>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-900 via-blue-900 to-slate-900 p-6 text-white shadow-2xl shadow-sky-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-sky-300/20 blur-3xl"></div>
   </div>
-  <div id="service-form-data"
-       data-service-category-ids='{{ service_category_ids|default([]) |json_encode|e("html_attr") }}'
-       data-service-tag-ids='{{ service_tag_ids|default([]) |json_encode|e("html_attr") }}'
-       data-service-all-tags='{{ all_tags|default([]) |json_encode|e("html_attr") }}'
-       data-service-all-categories='{{ all_categories|default([]) |json_encode|e("html_attr") }}'
-       data-exclude-id='{{ service ? service.id : "" }}'
-       class="inl-a-0006"></div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-award text-xl"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">{{ service ? 'Edit Service' : 'Create New Service' }}</h1>
+     <p class="mt-1 text-sm text-sky-200/80">{{ service ? 'Update service details and configuration' : 'Fill in the details to create a new service' }}</p>
+    </div>
+   </div>
+   <a href="/admin/services" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97] self-start sm:self-auto">
+    <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Back to Services
+   </a>
+  </div>
+ </div>
+ <!-- Main Form -->
+ <form id="serviceForm" method="POST" enctype="multipart/form-data">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ {% if service %}
+ <input type="hidden"
+ name="service_id"
+ value="{{ service.id | default("") }}">
+ {% endif %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <!-- Main Content Column -->
+ <div class="lg:col-span-8">
+ <!-- Basic Information -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-info"></i>
+ Basic Information
+ </h5>
+ </div>
+ <div class="card-body">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="md:col-span-8">
+ <label class="form-label">
+ Service Name
+ <span class="required">*</span>
+ </label>
+ <input type="text"
+ class="form-input"
+ name="name"
+ value="{% if service %}{{ service.name | default("") }}{% endif %}"
+ placeholder="Enter service name"
+ required>
+ <span class="form-hint">A clear, descriptive name for your service</span>
+ </div>
+ <div class="md:col-span-4">
+ <label class="form-label">
+ Status <span class="required">*</span>
+ </label>
+ <select class="form-select" name="status">
+ <option value="active"
+ {% if service and service.status == 'active' %}selected{% endif %}><i class="lucide lucide-check-circle mr-1"></i>Active</option>
+ <option value="inactive"
+ {% if service and service.status == 'inactive' %}selected{% endif %}>
+ <i class="lucide lucide-pause-circle mr-1"></i>Inactive
+ </option>
+ <option value="archived"
+ {% if service and service.status == 'archived' %}selected{% endif %}>
+ <i class="lucide lucide-archive mr-1"></i>Archived
+ </option>
+ </select>
+ </div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mt-2">
+ <div class="md:col-span-12">
+ <label class="form-label">
+ URL Slug <span class="required">*</span>
+ </label>
+ <div class="relative">
+ <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+ <i class="lucide lucide-link text-base"></i>
+ </span>
+ <input type="text"
+ class="form-input pl-10"
+ name="slug"
+ value="{% if service %}{{ service.slug | default("") }}{% endif %}"
+ placeholder="service-url-slug"
+ required>
+ </div>
+ <span class="form-hint" id="slug-feedback"></span>
+ </div>
+ </div>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mt-2">
+ <div class="md:col-span-12">
+ <label class="form-label">Redirect URL <span class="text-slate-400 font-normal">(optional)</span></label>
+ <div class="relative">
+ <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+ <i class="lucide lucide-external-link text-base"></i>
+ </span>
+ <input type="text"
+ class="form-input pl-10"
+ name="redirect_url"
+ value="{{ service.redirect_url|default("") }}"
+ placeholder="https://example.com/service or /internal-path">
+ </div>
+ <span class="form-hint">Set this to redirect users to another page when they open this service.</span>
+ </div>
+ </div>
+ <div class="form-group">
+ <label class="form-label">
+ Description <span class="required">*</span>
+ </label>
+ {% include 'partials/editor.twig' with {
+ 'editorId': 'content',
+ 'editorName': 'description',
+ 'editorClass': 'modern-rich-editor',
+ 'initialContent': service.description|default(''),
+ 'darkMode': false,
+ 'rtl': false
+ } %}
+ <span class="form-hint">Describe what this service offers and its key features</span>
+ </div>
+ </div>
+ </div>
+ <!-- Categories & Tags -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-tags"></i>
+ Categories & Tags
+ </h5>
+ </div>
+ <div class="card-body">
+ <div class="form-group">
+ <label class="form-label">Categories</label>
+ <select multiple
+ class="form-select h-32"
+ id="service_categories"
+ name="categories[]">
+ {% if all_categories is defined and all_categories is iterable %}
+ {% for cat in all_categories %}
+ {% set checked = (service_category_ids is defined and (cat.id|int) in service_category_ids) %}
+ <option value="{{ cat.id }}" {{ checked ? 'selected' : '' }}>{{ cat.name }}</option>
+ {% endfor %}
+ {% endif %}
+ </select>
+ <span class="form-hint">Select categories or type to create new ones</span>
+ </div>
+ <div class="form-group">
+ <label class="form-label">Tags</label>
+ <select multiple class="form-select h-32" id="tags" name="tags[]">
+ {% if all_tags is defined and all_tags is iterable %}
+ {% for t in all_tags %}
+ {% set tchecked = (service_tag_ids is defined and (t.id|int) in service_tag_ids) %}
+ <option value="{{ t.id }}" {{ tchecked ? 'selected' : '' }}>{{ t.name }}</option>
+ {% endfor %}
+ {% endif %}
+ </select>
+ <span class="form-hint">Select multiple tags or type to add new ones</span>
+ </div>
+ </div>
+ </div>
+ <!-- Images Gallery -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-images"></i>
+ Images Gallery
+ </h5>
+ </div>
+ <div class="card-body">
+ <div id="imagesContainer" class="space-y-3 mb-4">
+ {% if service.images is defined and service.images|length > 0 %}
+ {% for image in service.images %}
+ <div class="image-item rounded-xl border border-slate-200 bg-white shadow-sm mb-3" data-image-id="{{ image.id }}">
+ <div class="p-4">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
+ <!-- Image Preview -->
+ <div class="md:col-span-3">
+ <img src="{{ image.thumbnail_path|default(image.image_path) |default('/assets/img/no-image.png') }}"
+ alt="{{ image.alt_text|default("Service image") }}"
+ class="max-w-full h-auto rounded shadow-sm">
+ </div>
+ <!-- Image Meta -->
+ <div class="md:col-span-9">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2">
+ <!-- Alt Text -->
+ <div class="md:col-span-6">
+ <label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Alt Text</label>
+ <input type="text"
+ class="form-input"
+ value="{{ image.alt_text|default("") }}"
+ data-field="alt_text"
+ placeholder="Image description">
+ </div>
+ <!-- Order -->
+ <div class="md:col-span-3">
+ <label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Order</label>
+ <input type="number"
+ class="form-input"
+ value="{{ image.display_order|default(0) }}"
+ data-field="display_order"
+ min="0">
+ </div>
+ <!-- Featured -->
+ <div class="md:col-span-3">
+ <label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Featured</label>
+ <div class="flex items-center gap-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+ type="radio"
+ name="featured_image"
+ value="{{ image.id }}"
+ {% if image.is_featured|default(false) %}checked{% endif %}>
+ <label class="text-sm text-slate-700 small">Set as featured</label>
+ </div>
+ </div>
+ <!-- Caption -->
+ <div class="md:col-span-9">
+ <label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Caption</label>
+ <textarea class="form-textarea h-20"
+ rows="2"
+ data-field="caption"
+ placeholder="Optional caption">{{ image.caption|default('') }}</textarea>
+ </div>
+ <!-- Delete -->
+ <div class="md:col-span-3">
+ <label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">&nbsp;</label>
+ <button type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700 w-full"
+ onclick="removeImage(this)">
+ <i class="lucide lucide-trash-2 mr-1"></i>Delete
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ {% endif %}
+ </div>
+ <!-- Upload New Images -->
+ <div class="card-dropzone" id="dropZone">
+ <input type="file"
+ id="imageUploadInput"
+ class="hidden"
+ name="images[]"
+ multiple
+ accept="image/*">
+ <i class="lucide lucide-cloud-upload text-4xl text-slate-400 mb-3"></i>
+ <h6 class="font-bold text-sm text-slate-700 mb-1">Drag & Drop Images Here</h6>
+ <p class="text-xs text-slate-500 mb-3">or click to browse</p>
+ <span class="text-xs text-slate-400">Supported: JPG, PNG, GIF, WebP (Max 10MB each)</span>
+ </div>
+ <div id="imagePreviewContainer" class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3 mt-3"></div>
+ <div class="mt-3">
+ <button type="button" class="btn-outline w-full" id="pexelsBtn">
+ <i class="lucide lucide-image mr-1"></i> Find Image from Pexels
+ </button>
+ </div>
+ <div class="mt-3">
+ <button type="button" class="btn-outline w-full" id="pixabayBtn">
+ <i class="lucide lucide-image mr-1"></i> Find Image from Pixabay
+ </button>
+ </div>
+ </div>
+ </div>
+ <!-- Application Form Fields -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-file-text"></i>
+ Application Form Fields
+ </h5>
+ </div>
+ <div class="card-body">
+ <p class="text-slate-500 mb-3">
+ <i class="lucide lucide-info mr-1"></i>
+ Define custom fields for the service application form
+ </p>
+ <div id="formFieldsContainer" class="mb-3">
+ {% if service and service.form_templates and service.form_templates|length > 0 %}
+ {% for field in service.form_templates %}
+ <div class=" border border-slate-200 bg-white shadow-sm mb-2 form-field-item"
+ data-field-id="{{ field.id }}">
+ <div class="p-4 p-3">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 items-center">
+ <div class="md:col-span-3">
+ <input type="text"
+ class="form-input"
+ placeholder="Field Name"
+ value="{{ field.label }}"
+ data-field-label>
+ </div>
+ <div class="md:col-span-2">
+ <select class="form-select" data-field-type>
+ <option value="text" {% if field.field_type == 'text' %}selected{% endif %}>Text</option>
+ <option value="email" {% if field.field_type == 'email' %}selected{% endif %}>Email</option>
+ <option value="phone" {% if field.field_type == 'phone' %}selected{% endif %}>Phone</option>
+ <option value="textarea"
+ {% if field.field_type == 'textarea' %}selected{% endif %}>Textarea</option>
+ <option value="select"
+ {% if field.field_type == 'select' %}selected{% endif %}>Select</option>
+ <option value="date" {% if field.field_type == 'date' %}selected{% endif %}>Date</option>
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <div class="flex items-center gap-3">
+ <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+ type="checkbox"
+ data-field-required
+ {% if field.required == 1 or field.required == '1' %}checked{% endif %}>
+ <label class="text-sm text-slate-700 small">Required</label>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <input type="text"
+ class="form-input"
+ placeholder="Placeholder text"
+ value="{{ field.placeholder|default("") }}"
+ data-field-placeholder>
+ </div>
+ <div class="md:col-span-1">
+ <button type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-red-600 hover:bg-red-100 w-full"
+ onclick="removeFormField(this)">
+ <i class="lucide lucide-trash-2"></i>
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ {% endif %}
+ </div>
+ <button type="button"
+ class="btn-primary"
+ id="addFormFieldBtn">
+ <i class="lucide lucide-plus mr-2"></i>Add Form Field
+ </button>
+ </div>
+ </div>
+ <!-- Metadata -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-code"></i>
+ Custom Metadata
+ </h5>
+ </div>
+ <div class="card-body">
+ <p class="text-slate-500 mb-3">
+ <i class="lucide lucide-info mr-1"></i>
+ Add custom key-value pairs for additional service data
+ </p>
+ <div id="metadataFields" class="mb-3">
+ {% if service and service.metadata and service.metadata|length > 0 %}
+ {% for key, value in service.metadata %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 mb-2 items-center">
+ <div class="md:col-span-5">
+ <input type="text"
+ class="form-input"
+ placeholder="Key"
+ value="{{ key }}"
+ data-metadata-key>
+ </div>
+ <div class="md:col-span-6">
+ <input type="text"
+ class="form-input"
+ placeholder="Value"
+ value="{{ value }}"
+ data-metadata-value>
+ </div>
+ <div class="md:col-span-1">
+ <button type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-red-600 hover:bg-red-100 w-full"
+ onclick="removeMetadata(this)">
+ <i class="lucide lucide-x"></i>
+ </button>
+ </div>
+ </div>
+ {% endfor %}
+ {% endif %}
+ </div>
+ <button type="button"
+ class="btn-primary"
+ id="addMetadataBtn">
+ <i class="lucide lucide-plus mr-2"></i>Add Metadata
+ </button>
+ </div>
+ </div>
+ </div>
+ <!-- Sidebar Column -->
+ <div class="lg:col-span-4">
+ <div class="sticky-sidebar">
+ <!-- Configuration Card -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-sliders"></i>
+ Service Configuration
+ </h5>
+ </div>
+ <div class="card-body">
+ <div class="modern-switch-wrapper">
+ <input class="modern-switch-input hidden"
+ type="checkbox"
+ name="is_premium"
+ id="isPremium"
+ value="1"
+ {% if service and service.is_premium %}checked{% endif %}>
+ <label for="isPremium" class="modern-switch"></label>
+ <label for="isPremium" class="modern-switch-label">
+ <i class="lucide lucide-crown text-amber-600"></i>
+ Premium Service
+ </label>
+ </div>
+ <div class="modern-switch-wrapper">
+ <input class="modern-switch-input hidden"
+ type="checkbox"
+ name="requires_approval"
+ id="requiresApproval"
+ value="1"
+ {% if service and service.requires_approval %}checked{% endif %}>
+ <label for="requiresApproval" class="modern-switch"></label>
+ <label for="requiresApproval" class="modern-switch-label">
+ <i class="lucide lucide-check-circle text-sky-600"></i>
+ Requires Admin Approval
+ </label>
+ </div>
+ <div class="modern-switch-wrapper">
+ <input class="modern-switch-input hidden"
+ type="checkbox"
+ name="auto_approve"
+ id="autoApprove"
+ value="1"
+ {% if service and service.auto_approve %}checked{% endif %}>
+ <label for="autoApprove" class="modern-switch"></label>
+ <label for="autoApprove" class="modern-switch-label">
+ <i class="lucide lucide-zap text-emerald-600"></i>
+ Auto-Approve Applications
+ </label>
+ </div>
+ <div class="modern-switch-wrapper">
+ <input class="modern-switch-input hidden"
+ type="checkbox"
+ name="requires_documents"
+ id="requiresDocuments"
+ value="1"
+ {% if service and service.requires_documents %}checked{% endif %}>
+ <label for="requiresDocuments" class="modern-switch"></label>
+ <label for="requiresDocuments" class="modern-switch-label">
+ <i class="lucide lucide-file-text text-indigo-600"></i>
+ Requires Documents
+ </label>
+ </div>
+ <div id="premiumPriceGroup"
+ class="form-group"
+ style="{% if not (service and service.is_premium) %}display:none;
+ {% endif %}">
+ <label class="form-label">
+ Premium Service Price <span class="required">*</span>
+ </label>
+ <div class="relative">
+ <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">{{ app_settings.currency_symbol|default("৳") }}</span>
+ <input type="number"
+ class="form-input pl-10"
+ id="premiumPriceInput"
+ name="price"
+ min="0"
+ step="0.01"
+ value="{{ service.price|default("") }}"
+ placeholder="0.00">
+ </div>
+ <span class="form-hint">Required when Premium Service is enabled.</span>
+ </div>
+ {% if not service %}
+ <div class="modern-switch-wrapper">
+ <input class="modern-switch-input hidden"
+ type="checkbox"
+ name="send_push_notification"
+ id="sendPushNotification"
+ value="1">
+ <label for="sendPushNotification" class="modern-switch"></label>
+ <label for="sendPushNotification" class="modern-switch-label">
+ <i class="lucide lucide-bell text-red-600"></i>
+ Send Push Notification
+ </label>
+ </div>
+ <div>Status Active হলে পাঠানো হবে</div>
+ {% endif %}
+ </div>
+ </div>
+ <!-- Icon Settings -->
+ <div class="card-base">
+ <div class="card-header">
+ <h5 class="card-title">
+ <i class="lucide lucide-library"></i>
+ Service Icon
+ </h5>
+ </div>
+ <div class="card-body space-y-3">
+ <label class="form-label">Icon Class or Upload</label>
+ <div class="flex items-center rounded-xl border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white transition-all">
+ <span class="shrink-0 flex items-center px-3 py-2.5 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-library"></i></span>
+ <input type="text"
+ class="w-full border-0 px-3 py-2.5 text-sm focus:outline-none bg-transparent"
+ name="icon"
+ id="iconInput"
+ value="{{ service.icon or '' }}"
+ placeholder="lucide lucide-star">
+ <button class="shrink-0 inline-flex items-center justify-center px-3 text-slate-500 hover:bg-slate-100 border-l border-slate-300 transition self-stretch" type="button" id="iconUploadBtn">
+ <i class="lucide lucide-upload"></i>
+ </button>
+ </div>
+ <span class="form-hint">Enter an icon class (Lucide icons) or upload an image</span>
+ <div id="iconPreviewContainer" class="hidden">
+ <div class="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl border border-slate-200">
+ <img id="iconPreview" src="" alt="Icon preview" class="max-w-full h-auto rounded max-h-24">
+ <button type="button"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition"
+ id="removeIconBtn">
+ <i class="lucide lucide-x"></i>Remove
+ </button>
+ </div>
+ </div>
+ <input type="file" id="iconUploadInput" name="icon_file" accept="image/*" class="hidden">
+ </div>
+ </div>
+ <!-- Quick Actions -->
+ <div class="card-base border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-indigo-100/50">
+ <div class="card-body">
+ <h6 class="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+ <i class="lucide lucide-zap text-indigo-600"></i>
+ Ready to {{ service ? 'update' : 'publish' }}?
+ </h6>
+ <div class="space-y-2.5">
+ <button type="submit"
+ class="btn-primary w-full">
+ <i class="lucide lucide-save"></i>
+ {{ service ? 'Update Service' : 'Create Service' }}
+ </button>
+ <a href="/admin/services"
+ class="btn-outline w-full justify-center">
+ <i class="lucide lucide-x"></i> Cancel
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
+ <div id="service-form-data"
+ data-service-category-ids='{{ service_category_ids|default([]) |json_encode|e("html_attr") }}'
+ data-service-tag-ids='{{ service_tag_ids|default([]) |json_encode|e("html_attr") }}'
+ data-service-all-tags='{{ all_tags|default([]) |json_encode|e("html_attr") }}'
+ data-service-all-categories='{{ all_categories|default([]) |json_encode|e("html_attr") }}'
+ data-exclude-id='{{ service ? service.id :"" }}'></div>
+
+ <!-- AI Writer Floating Button -->
+ <button class="ai-fab-service" id="aiFabServiceBtn" aria-label="Open AI Writer" title="AI Writer">
+ <i class="lucide lucide-wand"></i>
+ <span class="ai-fab-badge">AI</span>
+ <span class="ai-fab-tooltip">Generate Description with AI</span>
+ </button>
+
+ <!-- AI Generation Overlay -->
+ <div class="ai-gen-overlay" id="aiGenOverlayService" role="dialog" aria-modal="true" aria-label="Generating service description">
+ <div class="ai-gen-dialog">
+ <div class="ai-gen-spinner" id="aiGenSpinnerService"></div>
+ <div class="ai-gen-check" id="aiGenCheckService"><i class="lucide lucide-check"></i></div>
+ <div class="ai-gen-title" id="aiGenTitleService">Generating Description</div>
+ <div class="ai-gen-text" id="aiGenTextService">Starting up...</div>
+ <div class="ai-gen-progress">
+ <div class="ai-gen-progress-bar" id="aiGenProgressBarService"></div>
+ </div>
+ <small class="text-slate-500" id="aiGenCharsService"></small>
+ </div>
+ </div>
+
+ <!-- Prefill Toast Notification -->
+ <div class="prefill-toast" id="prefillToast">
+ <i class="lucide lucide-check-circle"></i>
+ <span id="prefillToastText">Fields auto-filled from URL</span>
+ <button class="toast-close" id="prefillToastClose" type="button">&times;</button>
+ </div>
+
+ <!-- Pexels Image Picker Modal -->
+ <div class="pexels-modal" id="pexelsModal" role="dialog" aria-modal="true" aria-label="Search Pexels images">
+ <div class="pexels-modal-content">
+ <div class="pexels-modal-header">
+ <h5><i class="lucide lucide-image"></i> Search Images from Pexels</h5>
+ <button type="button" class="pexels-modal-close" id="pexelsModalClose">&times;</button>
+ </div>
+ <div class="pexels-modal-search">
+ <input type="text" id="pexelsSearchInput" placeholder="Search for images related to your service..." value="">
+ <button type="button" id="pexelsSearchBtn"><i class="lucide lucide-search mr-1"></i>Search</button>
+ </div>
+ <div class="pexels-modal-body" id="pexelsResults">
+ <div class="pexels-empty">
+ <i class="lucide lucide-image"></i>
+ <p class="font-semibold mb-1">Search for images</p>
+ <p class="mb-0 small">Enter a search term above to find relevant images from Pexels</p>
+ </div>
+ </div>
+ <div class="pexels-modal-footer">
+ <span class="pexels-credit">
+ Photos from <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>
+ <span id="pexelsTotalResults" class="ml-2 text-slate-500"></span>
+ </span>
+ <button type="button" id="pexelsInsertBtn" disabled>
+ <i class="lucide lucide-download mr-1"></i> Download Selected
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <div class="pexels-modal" id="pixabayModal" role="dialog" aria-modal="true" aria-label="Search Pixabay images">
+ <div class="pexels-modal-content">
+ <div class="pexels-modal-header">
+ <h5><i class="lucide lucide-image"></i> Search Images from Pixabay</h5>
+ <button type="button" class="pexels-modal-close" id="pixabayModalClose">&times;</button>
+ </div>
+ <div class="pexels-modal-search">
+ <input type="text" id="pixabaySearchInput" placeholder="Search for images related to your service..." value="">
+ <button type="button" id="pixabaySearchBtn"><i class="lucide lucide-search mr-1"></i>Search</button>
+ </div>
+ <div class="pexels-modal-body" id="pixabayResults">
+ <div class="pexels-empty">
+ <i class="lucide lucide-image"></i>
+ <p class="font-semibold mb-1">Search for images</p>
+ <p class="mb-0 small">Enter a search term above to find relevant images from Pixabay</p>
+ </div>
+ </div>
+ <div class="pexels-modal-footer">
+ <span class="pexels-credit">
+ Images from <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>
+ <span id="pixabayTotalResults" class="ml-2 text-slate-500"></span>
+ </span>
+ <button type="button" id="pixabayInsertBtn" disabled>
+ <i class="lucide lucide-download mr-1"></i> Download Selected
+ </button>
+ </div>
+ </div>
+ </div>
 {% endblock %}
 {% block scripts %}
-  {% set rte_version = getRTEVersion() %}
-  <script src="/rtceditor/editor.js?v={{ rte_version }}" defer></script>
-  <script>
-        (function () {
-            const premiumToggle = document.getElementById('isPremium');
-            const premiumPriceGroup = document.getElementById('premiumPriceGroup');
-            const premiumPriceInput = document.getElementById('premiumPriceInput');
+ {% set rte_version = getRTEVersion() %}
+ <script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
+ <script>
+ (function () {
+ const premiumToggle = document.getElementById('isPremium');
+ const premiumPriceGroup = document.getElementById('premiumPriceGroup');
+ const premiumPriceInput = document.getElementById('premiumPriceInput');
 
-            if (!premiumToggle || !premiumPriceGroup || !premiumPriceInput) {
-                return;
-            }
+ if (!premiumToggle || !premiumPriceGroup || !premiumPriceInput) {
+ return;
+ }
 
-            const syncPremiumPriceVisibility = () => {
-                const enabled = premiumToggle.checked;
-                premiumPriceGroup.style.display = enabled ? '' : 'none';
-                premiumPriceInput.required = enabled;
-                if (!enabled) {
-                    premiumPriceInput.value = '';
-                }
-            };
+ const syncPremiumPriceVisibility = () => {
+ const enabled = premiumToggle.checked;
+ premiumPriceGroup.style.display = enabled ? '' : 'none';
+ premiumPriceInput.required = enabled;
+ if (!enabled) {
+ premiumPriceInput.value = '';
+ }
+ };
 
-            premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
-            syncPremiumPriceVisibility();
-        })();
-  </script>
+ premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
+ syncPremiumPriceVisibility();
+ })();
+ </script>
+
+ <!-- AI Writer FAB + Generation Script -->
+ <script>
+ // Global helper: escape HTML special characters (used by multiple IIFE blocks)
+ function escapeHtml(str) {
+ var d = document.createElement('div');
+ d.textContent = str;
+ return d.innerHTML;
+ }
+
+ (function() {
+ 'use strict';
+
+ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+ const fabBtn = document.getElementById('aiFabServiceBtn');
+ const descCard = document.querySelector('.card-base:has(.modern-rich-editor)');
+
+ // Prefill flash indicator helpers
+ function flashField(el, label) {
+ if (!el) return;
+ el.classList.add('prefill-flash');
+ el.style.position = 'relative';
+ setTimeout(function() { el.classList.remove('prefill-flash'); }, 2200);
+ }
+
+ function showPrefillToast(fieldNames) {
+ if (!fieldNames.length) return;
+ var toast = document.getElementById('prefillToast');
+ var text = document.getElementById('prefillToastText');
+ if (!toast || !text) return;
+ text.textContent = '\u2713 Auto-filled: ' + fieldNames.join(', ');
+ toast.classList.add('show');
+ var timer = setTimeout(function() { toast.classList.remove('show'); }, 5000);
+ var closeBtn = document.getElementById('prefillToastClose');
+ if (closeBtn) {
+ closeBtn.onclick = function() {
+ clearTimeout(timer);
+ toast.classList.remove('show');
+ };
+ }
+ toast.onclick = function(e) {
+ if (e.target === closeBtn) return;
+ clearTimeout(timer);
+ toast.classList.remove('show');
+ };
+ }
+
+ // URL param prefill for service AI writer
+ var urlTopic = '';
+ var urlTone = '';
+ var urlKeywords = '';
+ try {
+ function safeDecodeUrlValue(val) {
+ if (!val) return '';
+ var s = String(val);
+ try { s = decodeURIComponent(s); } catch (_) {}
+ return s;
+ }
+
+ function sanitizePrefillHtml(html) {
+ if (!html) return '';
+ var raw = String(html);
+ try {
+ var doc = new DOMParser().parseFromString('<div>' + raw + '</div>', 'text/html');
+ var root = doc.body && doc.body.firstChild;
+ if (!root) return '';
+
+ var allowed = {
+ 'P': true, 'H1': true, 'H2': true, 'H3': true,
+ 'UL': true, 'OL': true, 'LI': true,
+ 'STRONG': true, 'EM': true, 'B': true, 'I': true,
+ 'BR': true, 'BLOCKQUOTE': true,
+ 'A': true,
+ 'DIV': true, 'SPAN': true
+ };
+
+ function isSafeUrl(url) {
+ var u = String(url || '').trim();
+ if (!u) return true;
+ if (/^javascript:/i.test(u)) return false;
+ return /^(https?:|mailto:|tel:|\/|#)/i.test(u);
+ }
+
+ function cleanNode(node) {
+ if (!node) return;
+ if (node.nodeType === Node.COMMENT_NODE) {
+ node.remove();
+ return;
+ }
+ if (node.nodeType === Node.ELEMENT_NODE) {
+ var tag = (node.tagName || '').toUpperCase();
+ if (!allowed[tag]) {
+ var parent = node.parentNode;
+ if (parent) {
+ while (node.firstChild) parent.insertBefore(node.firstChild, node);
+ parent.removeChild(node);
+ } else {
+ node.remove();
+ }
+ return;
+ }
+
+ Array.from(node.attributes || []).forEach(function (attr) {
+ var name = (attr.name || '').toLowerCase();
+ var value = attr.value || '';
+ if (name.startsWith('on') || name === 'style') {
+ node.removeAttribute(attr.name);
+ return;
+ }
+ if ((name === 'href' || name === 'src') && !isSafeUrl(value)) {
+ node.removeAttribute(attr.name);
+ }
+ });
+ }
+ Array.from(node.childNodes || []).forEach(cleanNode);
+ }
+
+ cleanNode(root);
+ return root.innerHTML || '';
+ } catch (_) {
+ return '';
+ }
+ }
+
+ var sp = new URLSearchParams(window.location.search);
+ urlTopic = safeDecodeUrlValue(sp.get('topic') || sp.get('q') || '');
+ urlTone = sp.get('tone') || '';
+ urlKeywords = safeDecodeUrlValue(sp.get('keywords') || '');
+
+ // Direct form field prefill from URL params
+ var urlSlug = sp.get('slug') || '';
+ var urlContent = sp.get('content') || '';
+ var safeHtmlContent = sanitizePrefillHtml(safeDecodeUrlValue(urlContent));
+
+ var prefilledFields = [];
+
+ if (urlTopic) {
+ var nameInput = document.querySelector('input[name="name"]');
+ if (nameInput && !nameInput.value.trim()) {
+ nameInput.value = urlTopic;
+ flashField(nameInput, 'Service Name');
+ prefilledFields.push('Service Name');
+ }
+ }
+ if (urlSlug) {
+ var slugInput = document.querySelector('input[name="slug"]');
+ if (slugInput && !slugInput.value.trim()) {
+ slugInput.value = urlSlug;
+ flashField(slugInput, 'Slug');
+ prefilledFields.push('Slug');
+ }
+ }
+ if (safeHtmlContent) {
+ try {
+ var editor = window.editor_content;
+ var contentFilled = false;
+ if (editor && typeof editor.setContent === 'function') {
+ var existing = '';
+ try { existing = String(editor.getContent() || '').trim(); } catch(_) {}
+ if (!existing) {
+ editor.setContent(safeHtmlContent);
+ contentFilled = true;
+ }
+ } else {
+ var ta = document.querySelector('textarea[name="description"]');
+ if (ta && !ta.value.trim()) {
+ ta.value = safeHtmlContent;
+ contentFilled = true;
+ }
+ }
+ if (contentFilled) {
+ var editorEl = document.querySelector('.modern-rich-editor');
+ if (editorEl) flashField(editorEl, 'Description');
+ prefilledFields.push('Description');
+ }
+ } catch(_) {}
+ }
+
+ // Show toast if any fields were prefilled
+ if (prefilledFields.length) {
+ showPrefillToast(prefilledFields);
+ }
+ } catch(_) {}
+
+ // Overlay elements
+ const overlay = document.getElementById('aiGenOverlayService');
+ const spinner = document.getElementById('aiGenSpinnerService');
+ const checkIcon = document.getElementById('aiGenCheckService');
+ const overlayTitle = document.getElementById('aiGenTitleService');
+ const overlayText = document.getElementById('aiGenTextService');
+ const progressBar = document.getElementById('aiGenProgressBarService');
+ const charsDisplay = document.getElementById('aiGenCharsService');
+
+ if (!fabBtn || !overlay) return;
+
+ // --- FAB visibility ---
+ function checkFabVisibility() {
+ if (!descCard) return;
+ var rect = descCard.getBoundingClientRect();
+ var isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+ fabBtn.classList.toggle('visible', !isVisible);
+ }
+
+ var scrollTimer = null;
+ window.addEventListener('scroll', function() {
+ if (scrollTimer) return;
+ scrollTimer = setTimeout(function() {
+ checkFabVisibility();
+ scrollTimer = null;
+ }, 150);
+ }, { passive: true });
+
+ window.addEventListener('load', checkFabVisibility);
+ window.addEventListener('resize', checkFabVisibility);
+ checkFabVisibility();
+
+ // --- Overlay helpers ---
+ function showProgress(pct, text, title) {
+ progressBar.style.width = pct + '%';
+ if (text) overlayText.textContent = text;
+ if (title) overlayTitle.textContent = title;
+ }
+
+ function showOverlay() {
+ spinner.className = 'ai-gen-spinner';
+ checkIcon.classList.remove('show');
+ progressBar.className = 'ai-gen-progress-bar';
+ overlayTitle.textContent = 'Generating Description';
+ overlayText.textContent = 'Starting up...';
+ progressBar.style.width = '5%';
+ if (charsDisplay) charsDisplay.textContent = '';
+ overlay.classList.add('active');
+ }
+
+ function hideOverlay() {
+ overlay.classList.remove('active');
+ }
+
+ function showCompletion(success, message) {
+ if (success) {
+ spinner.className = 'ai-gen-spinner done';
+ checkIcon.classList.add('show');
+ progressBar.className = 'ai-gen-progress-bar done';
+ progressBar.style.width = '100%';
+ overlayTitle.textContent = 'Complete!';
+ overlayText.textContent = message || 'Description generated successfully';
+ setTimeout(function() { hideOverlay(); }, 1200);
+ } else {
+ spinner.className = 'ai-gen-spinner error';
+ progressBar.className = 'ai-gen-progress-bar error';
+ overlayTitle.textContent = 'Generation Failed';
+ overlayText.textContent = message || 'An error occurred';
+ setTimeout(function() { hideOverlay(); }, 3000);
+ }
+ }
+
+ function convertToHtml(title, content) {
+ var html = '';
+ if (title) html += '<h2>' + escapeHtml(title) + '</h2>\n';
+ var paragraphs = (content || '').split(/\n{2,}/);
+ var inList = false;
+ paragraphs.forEach(function(p) {
+ var t = p.trim();
+ if (!t) return;
+ if (t.startsWith('### ')) {
+ if (inList) { html += '</ul>\n'; inList = false; }
+ html += '<h3>' + escapeHtml(t.slice(4)) + '</h3>\n';
+ } else if (t.startsWith('## ')) {
+ if (inList) { html += '</ul>\n'; inList = false; }
+ html += '<h2>' + escapeHtml(t.slice(3)) + '</h2>\n';
+ } else if (t.startsWith('# ')) {
+ if (inList) { html += '</ul>\n'; inList = false; }
+ html += '<h1>' + escapeHtml(t.slice(2)) + '</h1>\n';
+ } else if (t.startsWith('> ')) {
+ if (inList) { html += '</ul>\n'; inList = false; }
+ html += '<blockquote>' + escapeHtml(t.slice(2)) + '</blockquote>\n';
+ } else if (t.startsWith('- ') || t.startsWith('* ')) {
+ if (!inList) { html += '<ul>\n'; inList = true; }
+ html += '<li>' + escapeHtml(t.slice(2)) + '</li>\n';
+ } else {
+ if (inList) { html += '</ul>\n'; inList = false; }
+ html += '<p>' + escapeHtml(t) + '</p>\n';
+ }
+ });
+ if (inList) html += '</ul>\n';
+ return html;
+ }
+
+ function setEditorContent(html) {
+ var editor = window.editor_content;
+ if (editor && typeof editor.setContent === 'function') {
+ // Get current content and append if it exists
+ var existingHtml = '';
+ try { existingHtml = String(editor.getContent() || '').trim(); } catch(_) {}
+ if (existingHtml) {
+ editor.setContent(existingHtml + '\n\n' + html);
+ } else {
+ editor.setContent(html);
+ }
+ } else {
+ var textarea = document.querySelector('textarea[name="description"]');
+ if (textarea) {
+ var existing = textarea.value || '';
+ textarea.value = existing ? existing + '\n\n' + html : html;
+ }
+ }
+ }
+
+ // --- Prompt + Generation ---
+ function buildPrompt(options) {
+ var prompt = 'Write a detailed service description';
+ if (options.tone && options.tone !== 'informative') {
+ prompt += ' in a ' + options.tone + ' tone';
+ }
+ if (options.length && options.length !== 'medium') {
+ prompt += '. Make it ' + options.length + ' in length';
+ }
+ prompt += ' for the following service: ' + options.topic + '.';
+ if (options.keywords) {
+ prompt += ' Include these keywords: ' + options.keywords + '.';
+ }
+ prompt += ' Describe what the service offers, its key features, and benefits. Use markdown formatting with headings and paragraphs. Do NOT include metadata blocks or TITLE: labels. Just write the description directly.';
+ return prompt;
+ }
+
+ // --- Streaming support ---
+ async function streamGeneration(options) {
+ showOverlay();
+ showProgress(10, 'Starting stream...', 'Live Stream');
+
+ var messages = [
+ {
+ role: 'system',
+ content: 'You are a professional service description writer. Generate a well-structured description with proper headings and paragraphs using markdown formatting. Focus on benefits, features, and value proposition. Write the description directly without any title labels or metadata blocks.'
+ },
+ {
+ role: 'user',
+ content: buildPrompt(options)
+ }
+ ];
+
+ try {
+ var resp = await fetch('/api/admin/ai/chat', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+ body: JSON.stringify({
+ messages: messages,
+ stream: true,
+ tools: []
+ })
+ });
+
+ if (!resp.ok) {
+ var errData = await resp.json().catch(function() { return {}; });
+ throw new Error(errData.error || 'HTTP ' + resp.status);
+ }
+
+ var reader = resp.body.getReader();
+ var decoder = new TextDecoder();
+ var buffer = '';
+ var fullHtml = '';
+ var charCount = 0;
+
+ showProgress(25, 'Receiving content...', 'Live Stream');
+
+ while (true) {
+ var result = await reader.read();
+ if (result.done) break;
+
+ buffer += decoder.decode(result.value, { stream: true });
+ var lines = buffer.split('\n');
+ buffer = lines.pop() || '';
+
+ for (var si = 0; si < lines.length; si++) {
+ var line = lines[si].trim();
+ if (!line || line === 'data: [DONE]') continue;
+ if (line.startsWith('data: ')) {
+ try {
+ var parsed = JSON.parse(line.slice(6));
+ var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+ if (content) {
+ fullHtml += content;
+ charCount = fullHtml.length;
+ showProgress(Math.min(85, 25 + (charCount / 100)), charCount + ' chars received', 'Live Stream');
+
+ // Live-update overlay text with partial content
+ overlayText.innerHTML = '<small class="text-slate-500 block text-left" style="max-height:80px;overflow-y:auto;font-size:0.82rem;">'
+ + escapeHtml(fullHtml.slice(-300))
+ + '</small>';
+ if (charsDisplay) charsDisplay.textContent = charCount + ' characters received';
+ }
+ } catch (_) { /* skip malformed SSE line */ }
+ }
+ }
+ }
+
+ // Process remaining buffer
+ if (buffer.trim() && buffer.startsWith('data: ')) {
+ try {
+ var parsed = JSON.parse(buffer.slice(6));
+ var content = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+ if (content) fullHtml += content;
+ } catch (_) {}
+ }
+
+ showProgress(85, 'Converting ' + fullHtml.length + ' chars to HTML...', 'Finalizing');
+
+ // Convert the raw streamed text to HTML
+ var rawLines = fullHtml.split('\n');
+ var title = '';
+ var bodyLines = [];
+ if (rawLines.length > 0 && /^#{1,2}\s/.test(rawLines[0])) {
+ title = rawLines[0].replace(/^#+\s*/, '').trim();
+ rawLines = rawLines.slice(1);
+ }
+ bodyLines = rawLines.join('\n').trim();
+ var html = convertToHtml(title, bodyLines);
+
+ if (html) {
+ showProgress(95, 'Inserting into editor...', 'Finalizing');
+ setEditorContent(html);
+ // Scroll to description editor
+ var editorEl = document.querySelector('.modern-rich-editor');
+ if (editorEl) editorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ }
+
+ showCompletion(true, 'Description streamed into editor!');
+
+ } catch (err) {
+ showCompletion(false, err.message || 'Stream error');
+ }
+ }
+
+ // --- Non-streaming generation (existing) ---
+ function nonStreamGeneration(options) {
+ showOverlay();
+ showProgress(10, 'Sending request...', 'Generating Description');
+
+ var messages = [
+ {
+ role: 'system',
+ content: 'You are a professional service description writer. Generate a well-structured description with proper headings and paragraphs using markdown formatting. Focus on benefits, features, and value proposition.'
+ },
+ {
+ role: 'user',
+ content: buildPrompt(options)
+ }
+ ];
+
+ fetch('/api/admin/ai/chat', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+ body: JSON.stringify({
+ messages: messages,
+ stream: false,
+ tools: []
+ })
+ })
+ .then(function(resp) { return resp.json(); })
+ .then(function(data) {
+ if (data.success && data.content) {
+ showProgress(70, 'Processing response...', 'Generating Description');
+ var rawText = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+ // Strip any metadata blocks
+ rawText = rawText.replace(/```[\s\S]*?```/g, '').replace(/TITLE:|SLUG:|META_TITLE:|META_DESCRIPTION:|TAGS:|CATEGORIES:/gi, '').trim();
+ // Check if first line looks like a title, extract it
+ var lines = rawText.split('\n');
+ var title = '';
+ var content = '';
+ if (lines.length > 0 && /^#{1,2}\s/.test(lines[0])) {
+ title = lines[0].replace(/^#+\s*/, '').trim();
+ lines = lines.slice(1);
+ }
+ content = lines.join('\n').trim();
+ var html = convertToHtml(title, content);
+ showProgress(90, 'Inserting into editor...', 'Finalizing');
+ setEditorContent(html);
+ // Scroll to description editor
+ var editorEl = document.querySelector('.modern-rich-editor');
+ if (editorEl) editorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+ showCompletion(true, 'Description inserted into editor!');
+ } else {
+ showCompletion(false, data.error || data.message || 'Empty response');
+ }
+ })
+ .catch(function(err) {
+ showCompletion(false, err.message || 'Network error');
+ });
+ }
+
+ // --- Entry point ---
+ var fabClickGuard = false;
+ fabBtn.addEventListener('click', function() {
+ if (fabClickGuard) return;
+ fabClickGuard = true;
+
+ // Show a lightweight input modal with topic, tone, length, keywords, stream toggle
+ Swal.fire({
+ title: 'Generate Service Description',
+ html:
+ '<div class="text-left">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Service / Topic <span class="text-red-600">*</span></label>' +
+ '<input id="swal-topic" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mb-3" placeholder="e.g., Professional Web Development" value="' + urlTopic.replace(/'/g, '&#39;') + '" autofocus>' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Tone</label>' +
+ '<select id="swal-tone" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mb-3">' +
+ '<option value="informative"' + (urlTone === 'informative' ? ' selected' : '') + '>Informative</option>' +
+ '<option value="professional"' + (urlTone === 'professional' ? ' selected' : '') + '>Professional</option>' +
+ '<option value="persuasive"' + (urlTone === 'persuasive' ? ' selected' : '') + '>Persuasive</option>' +
+ '<option value="conversational"' + (urlTone === 'conversational' ? ' selected' : '') + '>Conversational</option>' +
+ '</select>' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Length</label>' +
+ '<select id="swal-length" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mb-3">' +
+ '<option value="short">Short</option>' +
+ '<option value="medium" selected>Medium</option>' +
+ '<option value="long">Long</option>' +
+ '</select>' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Keywords (optional)</label>' +
+ '<input id="swal-keywords" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="e.g., responsive, SEO-friendly" value="' + (urlKeywords ? escapeHtml(urlKeywords) : '') + '">' +
+ '<div class="flex items-center gap-2 mt-3">' +
+ '<div class="flex items-center gap-3 mb-0">' +
+ '<input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" id="swal-stream" checked>' +
+ '<label class="text-sm text-slate-700 small" for="swal-stream"><i class="lucide lucide-podcast mr-1"></i>Live Stream</label>' +
+ '</div>' +
+ '<span class="text-slate-500 small"><i class="lucide lucide-info mr-1"></i>Real-time output</span>' +
+ '</div>' +
+ '</div>',
+ showCancelButton: true,
+ confirmButtonText: '<i class="lucide lucide-zap mr-1"></i> Generate',
+ cancelButtonText: 'Cancel',
+ confirmButtonColor: '#667eea',
+ showLoaderOnConfirm: true,
+ preConfirm: function() {
+ var topic = document.getElementById('swal-topic').value.trim();
+ if (!topic) {
+ Swal.showValidationMessage('Please enter a topic');
+ return false;
+ }
+ return {
+ topic: topic,
+ tone: document.getElementById('swal-tone').value,
+ length: document.getElementById('swal-length').value,
+ keywords: document.getElementById('swal-keywords').value.trim(),
+ streamEnabled: document.getElementById('swal-stream').checked
+ };
+ }
+ }).then(function(result) {
+ if (!result.isConfirmed || !result.value) {
+ fabClickGuard = false;
+ return;
+ }
+
+ var options = result.value;
+ fabClickGuard = false;
+
+ // Route to streaming or non-streaming based on toggle
+ if (options.streamEnabled) {
+ streamGeneration(options);
+ } else {
+ nonStreamGeneration(options);
+ }
+ }).catch(function() {
+ fabClickGuard = false;
+ });
+ });
+
+ // --- Keyboard shortcut: Ctrl+Shift+A / Cmd+Shift+A ---
+ document.addEventListener('keydown', function(e) {
+ if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+ // Ignore if user is typing in an input/textarea
+ var tag = e.target.tagName;
+ if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+ e.preventDefault();
+ fabBtn.click();
+ }
+ });
+ })();
+
+ // --- Pexels Image Picker ---
+ (function() {
+ var pexelsBtn = document.getElementById('pexelsBtn');
+ var modal = document.getElementById('pexelsModal');
+ var closeBtn = document.getElementById('pexelsModalClose');
+ var searchInput = document.getElementById('pexelsSearchInput');
+ var searchBtn = document.getElementById('pexelsSearchBtn');
+ var resultsEl = document.getElementById('pexelsResults');
+ var insertBtn = document.getElementById('pexelsInsertBtn');
+ var totalResults = document.getElementById('pexelsTotalResults');
+
+ if (!pexelsBtn || !modal) return;
+
+ var selectedPhoto = null;
+ var currentQuery = '';
+ var currentPage = 1;
+ var totalPages = 1;
+
+ function openModal() {
+ modal.classList.add('active');
+ // Auto-fill search from service name
+ var nameInput = document.querySelector('input[name="name"]');
+ if (nameInput && nameInput.value.trim() && !searchInput.value) {
+ searchInput.value = nameInput.value.trim();
+ performSearch(searchInput.value);
+ } else {
+ searchInput.focus();
+ }
+ }
+
+ function closeModal() {
+ modal.classList.remove('active');
+ selectedPhoto = null;
+ insertBtn.disabled = true;
+ }
+
+ function showLoading() {
+ resultsEl.innerHTML = '<div class="pexels-loading"><div class="inline-spinner text-emerald-600" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+ }
+
+ function showError(msg) {
+ resultsEl.innerHTML = '<div class="pexels-error"><i class="lucide lucide-alert-triangle mr-1"></i>' + escapeHtml(msg) + '</div>';
+ }
+
+ function showEmpty() {
+ resultsEl.innerHTML = '<div class="pexels-empty"><i class="lucide lucide-image"></i><p class="font-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+ }
+
+ async function performSearch(query, page) {
+ page = page || 1;
+ if (!query) return;
+ currentQuery = query;
+ currentPage = page;
+ showLoading();
+ selectedPhoto = null;
+ insertBtn.disabled = true;
+
+ try {
+ var resp = await fetch('/api/pexels/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+ var data = await resp.json();
+
+ if (!data.success) {
+ showError(data.error || 'Search failed');
+ return;
+ }
+
+ if (!data.photos || !data.photos.length) {
+ showEmpty();
+ if (totalResults) totalResults.textContent = '';
+ return;
+ }
+
+ totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+ if (totalResults) {
+ totalResults.textContent = data.total_results + ' results';
+ }
+
+ renderPhotos(data.photos, page, totalPages);
+ } catch (err) {
+ showError('Network error: ' + (err.message || 'Unknown'));
+ }
+ }
+
+ function renderPhotos(photos, page, totalPages) {
+ var html = '';
+ photos.forEach(function(photo) {
+ var src = photo.src?.medium || photo.src?.small || '';
+ var alt = escapeHtml(photo.alt || 'Pexels photo');
+ var photographer = escapeHtml(photo.photographer || 'Unknown');
+ var width = photo.width || 0;
+ var height = photo.height || 0;
+ html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+ html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+ html += '<div class="pexels-photo-info">' + photographer + '</div>';
+ html += '<div class="pexels-loading-overlay"><div class="inline-spinner inline-spinner-sm text-emerald-600"></div></div>';
+ html += '</div>';
+ });
+
+ // Pagination nav
+ if (totalPages > 1) {
+ html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+ if (page > 1) {
+ html += '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 pexels-page-inline-flex" data-page="' + (page - 1) + '"><i class="lucide lucide-chevron-left"></i> Previous</button>';
+ }
+ html += '<small class="text-slate-500">Page ' + page + ' of ' + totalPages + '</small>';
+ if (page < totalPages) {
+ html += '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 pexels-page-inline-flex" data-page="' + (page + 1) + '">Next <i class="lucide lucide-chevron-right"></i></button>';
+ }
+ html += '</div>';
+ }
+
+ resultsEl.innerHTML = html;
+
+ // Click handler for photo selection
+ resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+ card.addEventListener('click', function() {
+ resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+ card.classList.add('selected');
+ selectedPhoto = {
+ id: card.dataset.id,
+ url: card.dataset.url,
+ alt: card.dataset.alt,
+ photographer: card.dataset.photographer,
+ width: parseInt(card.dataset.width) || 0,
+ height: parseInt(card.dataset.height) || 0
+ };
+ insertBtn.disabled = false;
+ });
+ });
+
+ // Click handler for pagination
+ resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+ btn.addEventListener('click', function() {
+ performSearch(currentQuery, parseInt(this.dataset.page));
+ });
+ });
+ }
+
+ // Insert selected image into the images gallery
+ insertBtn.addEventListener('click', async function() {
+ if (!selectedPhoto) return;
+ insertBtn.disabled = true;
+ insertBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Downloading...';
+
+ var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+ if (selectedCard) selectedCard.classList.add('active');
+
+ try {
+ var resp = await fetch('/api/pexels/download-image', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+ body: JSON.stringify({
+ image_url: selectedPhoto.url,
+ alt_text: selectedPhoto.alt
+ })
+ });
+ var data = await resp.json();
+
+ if (data.success && data.url) {
+ // Add the downloaded image to the images gallery
+ var container = document.getElementById('imagesContainer');
+ if (container) {
+ var imgUrl = data.thumbnail_url || data.url;
+ var altText = escapeHtml(selectedPhoto.alt) || 'Image from Pexels';
+ var uniqueId = 'pexels-' + Date.now();
+
+ var newItem = document.createElement('div');
+ newItem.className = 'image-item rounded-xl border border-slate-200 bg-white shadow-sm mb-3 border';
+ newItem.dataset.imageId = '';
+ newItem.innerHTML = '<div class="p-4">' +
+ '<div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">' +
+ '<div class="md:col-span-3">' +
+ '<img src="' + escapeHtml(imgUrl) + '" alt="' + altText + '" class="max-w-full h-auto rounded shadow-sm">' +
+ '</div>' +
+ '<div class="md:col-span-9">' +
+ '<div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2">' +
+ '<div class="md:col-span-6">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Alt Text</label>' +
+ '<input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm" value="' + altText + '" data-field="alt_text" placeholder="Image description">' +
+ '</div>' +
+ '<div class="md:col-span-3">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Order</label>' +
+ '<input type="number" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm" value="0" data-field="display_order" min="0">' +
+ '</div>' +
+ '<div class="md:col-span-3">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Featured</label>' +
+ '<div class="flex items-center gap-3">' +
+ '<input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="radio" name="featured_image" value="new_' + uniqueId + '">' +
+ '<label class="text-sm text-slate-700 small">Set as featured</label>' +
+ '</div>' +
+ '</div>' +
+ '<div class="md:col-span-9">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">Caption</label>' +
+ '<textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm" rows="2" data-field="caption" placeholder="Optional caption"></textarea>' +
+ '</div>' +
+ '<div class="md:col-span-3">' +
+ '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">&nbsp;</label>' +
+ '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700 w-full" onclick="removeImage(this)"><i class="lucide lucide-trash-2 mr-1"></i>Delete</button>' +
+ '</div>' +
+ '<input type="hidden" name="pexels_images[]" value="' + escapeHtml(data.url) + '">' +
+ '</div>' +
+ '</div>' +
+ '</div>' +
+ '</div>';
+ container.appendChild(newItem);
+
+ // Remove the empty state placeholder if present
+ var emptyState = container.querySelector('.pexels-empty-state');
+ if (emptyState) emptyState.remove();
+ }
+
+ // Show success toast
+ var toastText = document.getElementById('prefillToastText');
+ var toast = document.getElementById('prefillToast');
+ if (toast && toastText) {
+ toastText.textContent = '\u2713 Image added to gallery';
+ toast.classList.add('show');
+ setTimeout(function() { toast.classList.remove('show'); }, 3000);
+ }
+
+ closeModal();
+ } else {
+ showError(data.error || 'Download failed');
+ if (selectedCard) selectedCard.classList.remove('active');
+ insertBtn.disabled = false;
+ insertBtn.innerHTML = '<i class="lucide lucide-download mr-1"></i> Download Selected';
+ }
+ } catch (err) {
+ showError('Download error: ' + (err.message || 'Unknown'));
+ if (selectedCard) selectedCard.classList.remove('active');
+ insertBtn.disabled = false;
+ insertBtn.innerHTML = '<i class="lucide lucide-download mr-1"></i> Download Selected';
+ }
+ });
+
+ // Event listeners
+ pexelsBtn.addEventListener('click', openModal);
+ closeBtn.addEventListener('click', closeModal);
+ searchBtn.addEventListener('click', function() {
+ performSearch(searchInput.value.trim());
+ });
+ searchInput.addEventListener('keydown', function(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ performSearch(searchInput.value.trim());
+ }
+ });
+
+ // Close on overlay click
+ modal.addEventListener('click', function(e) {
+ if (e.target === modal) closeModal();
+ });
+
+ // Close on Escape
+ document.addEventListener('keydown', function(e) {
+ if (e.key === 'Escape' && modal.classList.contains('active')) {
+ closeModal();
+ }
+ });
+ })();
+
+ // --- Pixabay Image Picker ---
+ (function() {
+ var pixabayBtn = document.getElementById('pixabayBtn');
+ var modal = document.getElementById('pixabayModal');
+ var closeBtn = document.getElementById('pixabayModalClose');
+ var searchInput = document.getElementById('pixabaySearchInput');
+ var searchBtn = document.getElementById('pixabaySearchBtn');
+ var resultsEl = document.getElementById('pixabayResults');
+ var insertBtn = document.getElementById('pixabayInsertBtn');
+ var totalResults = document.getElementById('pixabayTotalResults');
+
+ if (!pixabayBtn || !modal) return;
+
+ var selectedPhoto = null;
+ var currentQuery = '';
+ var currentPage = 1;
+ var totalPages = 1;
+
+ function openModal() {
+ modal.classList.add('active');
+ var nameInput = document.querySelector('input[name="name"]');
+ if (nameInput && nameInput.value.trim() && !searchInput.value) {
+ searchInput.value = nameInput.value.trim();
+ performSearch(searchInput.value);
+ } else {
+ searchInput.focus();
+ }
+ }
+
+ function closeModal() {
+ modal.classList.remove('active');
+ selectedPhoto = null;
+ insertBtn.disabled = true;
+ }
+
+ function showLoading() {
+ resultsEl.innerHTML = '<div class="pexels-loading"><div class="inline-spinner text-emerald-600" role="status"></div><p class="mt-2 small">Searching...</p></div>';
+ }
+
+ function showError(msg) {
+ resultsEl.innerHTML = '<div class="pexels-error"><i class="lucide lucide-alert-triangle mr-1"></i>' + escapeHtml(msg) + '</div>';
+ }
+
+ function showEmpty() {
+ resultsEl.innerHTML = '<div class="pexels-empty"><i class="lucide lucide-image"></i><p class="font-semibold mb-1">No images found</p><p class="mb-0 small">Try a different search term</p></div>';
+ }
+
+ async function performSearch(query, page) {
+ page = page || 1;
+ if (!query) return;
+ currentQuery = query;
+ currentPage = page;
+ showLoading();
+ selectedPhoto = null;
+ insertBtn.disabled = true;
+
+ try {
+ var resp = await fetch('/api/pixabay/search?q=' + encodeURIComponent(query) + '&page=' + page + '&per_page=15');
+ var data = await resp.json();
+
+ if (!data.success) {
+ showError(data.error || 'Search failed');
+ return;
+ }
+
+ if (!data.images || !data.images.length) {
+ showEmpty();
+ if (totalResults) totalResults.textContent = '';
+ return;
+ }
+
+ totalPages = Math.ceil((data.total_results || 0) / (data.per_page || 15));
+ if (totalResults) {
+ totalResults.textContent = data.total_results + ' results';
+ }
+
+ renderPhotos(data.images, page, totalPages);
+ } catch (err) {
+ showError('Network error: ' + (err.message || 'Unknown'));
+ }
+ }
+
+ function renderPhotos(photos, page, totalPages) {
+ var html = '';
+ photos.forEach(function(photo) {
+ var src = photo.src?.medium || photo.src?.small || '';
+ var alt = escapeHtml(photo.alt || 'Pixabay image');
+ var photographer = escapeHtml(photo.photographer || 'Unknown');
+ var width = photo.width || 0;
+ var height = photo.height || 0;
+ html += '<div class="pexels-photo-card" data-id="' + photo.id + '" data-url="' + escapeHtml(photo.src?.large || photo.src?.original || '') + '" data-alt="' + alt + '" data-photographer="' + photographer + '" data-width="' + width + '" data-height="' + height + '">';
+ html += '<img src="' + escapeHtml(src) + '" alt="' + alt + '" loading="lazy">';
+ html += '<div class="pexels-photo-info">' + photographer + '</div>';
+ html += '<div class="pexels-loading-overlay"><div class="inline-spinner inline-spinner-sm text-emerald-600"></div></div>';
+ html += '</div>';
+ });
+
+ if (totalPages > 1) {
+ html += '<div class="pexels-pagination" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem 0;">';
+ if (page > 1) {
+ html += '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 pexels-page-inline-flex" data-page="' + (page - 1) + '"><i class="lucide lucide-chevron-left"></i> Previous</button>';
+ }
+ html += '<small class="text-slate-500">Page ' + page + ' of ' + totalPages + '</small>';
+ if (page < totalPages) {
+ html += '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 pexels-page-inline-flex" data-page="' + (page + 1) + '">Next <i class="lucide lucide-chevron-right"></i></button>';
+ }
+ html += '</div>';
+ }
+
+ resultsEl.innerHTML = html;
+
+ resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(card) {
+ card.addEventListener('click', function() {
+ resultsEl.querySelectorAll('.pexels-photo-card').forEach(function(c) { c.classList.remove('selected'); });
+ card.classList.add('selected');
+ selectedPhoto = {
+ id: card.dataset.id,
+ url: card.dataset.url,
+ alt: card.dataset.alt,
+ photographer: card.dataset.photographer,
+ width: parseInt(card.dataset.width) || 0,
+ height: parseInt(card.dataset.height) || 0
+ };
+ insertBtn.disabled = false;
+ });
+ });
+
+ resultsEl.querySelectorAll('.pexels-page-btn').forEach(function(btn) {
+ btn.addEventListener('click', function() {
+ performSearch(currentQuery, parseInt(this.dataset.page));
+ });
+ });
+ }
+
+ insertBtn.addEventListener('click', async function() {
+ if (!selectedPhoto) return;
+ insertBtn.disabled = true;
+ insertBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-1"></span>Downloading...';
+
+ var selectedCard = resultsEl.querySelector('.pexels-photo-card.selected .pexels-loading-overlay');
+ if (selectedCard) selectedCard.classList.add('active');
+
+ try {
+ var resp = await fetch('/api/pixabay/download-image', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+ body: JSON.stringify({
+ image_url: selectedPhoto.url,
+ alt_text: selectedPhoto.alt
+ })
+ });
+ var data = await resp.json();
+
+ if (data.success && data.url) {
+ var container = document.getElementById('imagesContainer');
+ if (container) {
+ var imgUrl = data.thumbnail_url || data.url;
+ var altText = escapeHtml(selectedPhoto.alt) || 'Image from Pixabay';
+ var uniqueId = 'pixabay-' + Date.now();
+
+ var newItem = document.createElement('div');
+ newItem.className = 'image-item rounded-xl border border-slate-200 bg-white shadow-sm mb-3 border';
+ newItem.dataset.imageId = '';
+ newItem.innerHTML = '<div class="p-4">' +
+ '<div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">' +
+ '<div class="md:col-span-3">' +
+ '<img src="' + escapeHtml(imgUrl) + '" alt="' + altText + '" class="max-w-full h-auto rounded shadow-sm">' +
+ '</div>' +
+ '<div class="md:col-span-9">' +
+ '<input type="hidden" name="service_images[]" value="' + escapeHtml(data.url) + '">' +
+ '<p class="mb-1">' + altText + '</p>' +
+ '</div>' +
+ '</div>' +
+ '</div>';
+ container.insertAdjacentElement('afterbegin', newItem);
+ }
+
+ closeModal();
+ } else {
+ showError(data.error || 'Download failed');
+ if (selectedCard) selectedCard.classList.remove('active');
+ insertBtn.disabled = false;
+ insertBtn.innerHTML = '<i class="lucide lucide-download mr-1"></i> Download Selected';
+ }
+ } catch (err) {
+ showError('Download error: ' + (err.message || 'Unknown'));
+ if (selectedCard) selectedCard.classList.remove('active');
+ insertBtn.disabled = false;
+ insertBtn.innerHTML = '<i class="lucide lucide-download mr-1"></i> Download Selected';
+ }
+ });
+
+ pixabayBtn.addEventListener('click', openModal);
+ closeBtn.addEventListener('click', closeModal);
+ searchBtn.addEventListener('click', function() {
+ performSearch(searchInput.value.trim());
+ });
+ searchInput.addEventListener('keydown', function(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ performSearch(searchInput.value.trim());
+ }
+ });
+
+ modal.addEventListener('click', function(e) {
+ if (e.target === modal) closeModal();
+ });
+
+ document.addEventListener('keydown', function(e) {
+ if (e.key === 'Escape' && modal.classList.contains('active')) {
+ closeModal();
+ }
+ });
+ })();
+ </script>
 {% endblock %}
+
+
+
+
+
+
+

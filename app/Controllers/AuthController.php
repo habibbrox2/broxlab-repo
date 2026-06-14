@@ -94,6 +94,7 @@ $router->get('/register', ['middleware' => ['guest_only']], function () use ($tw
 $router->get('/forgot-password', ['middleware' => ['guest_only']], function () use ($twig) {
     echo $twig->render('auth/forgot-password.twig', [
         'title' => 'Forgot Password',
+        'old_email' => sanitize_input($_GET['email'] ?? ''),
     ]);
 });
 
@@ -116,6 +117,7 @@ $router->get('/reset-password', ['middleware' => ['guest_only']], function () us
 
     echo $twig->render('auth/reset-password.twig', [
         'title' => 'Reset Password',
+        'token_valid' => true,
         'reset_token' => $token,
         'min_password_length' => $securityManager->getSetting('min_password_length', 8),
     ]);
@@ -162,7 +164,7 @@ $router->get('/verify-email', function () use ($twig, $securityManager) {
 
 
 /**
- * Logout
+ * Logout - GET route for direct access (e.g., from public layout)
  */
 $router->get('/logout', ['middleware' => ['auth']], function () use ($authManager, $mysqli) {
     $userId = AuthManager::getCurrentUserId();
@@ -188,6 +190,42 @@ $router->get('/logout', ['middleware' => ['auth']], function () use ($authManage
     );
 });
 
+/**
+ * Logout - POST route for form submissions (admin sidebar) and AJAX requests
+ */
+$router->post('/logout', ['middleware' => ['auth']], function () use ($authManager, $mysqli) {
+    $userId = AuthManager::getCurrentUserId();
+
+    if ($userId) {
+        // Migrate FCM tokens back to guest before destroying session
+        $notificationModel = new NotificationModel($mysqli);
+        $guestDeviceId = sanitize_input($_COOKIE['guest_device_id'] ?? '');
+
+        if (!empty($guestDeviceId)) {
+            $notificationModel->migrateUserTokensToGuest($userId, $guestDeviceId);
+        }
+
+        $authManager->destroySession($userId);
+    }
+
+    // Return JSON for AJAX requests, redirect for form submissions
+    $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+    $isApiRequest = (strpos($accept, 'application/json') !== false)
+        || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+
+    if ($isApiRequest) {
+        json_response(['success' => true, 'message' => 'Logged out successfully'], 200);
+    } else {
+        authSuccessResponse(
+            [],
+            'You have been logged out',
+            'redirect',
+            200,
+            '/login'
+        );
+    }
+});
+
 // ============================================================
 // POST ROUTES
 // ============================================================
@@ -204,6 +242,11 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
     // Get request data (handles both JSON AJAX and form submissions)
     $data = getRequestData();
     $requestedRedirect = resolveAuthRedirectPath($data);
+
+    // post_login_redirect disabled: clear any captured previous-page redirect immediately
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        unset($_SESSION['post_login_redirect']);
+    }
 
     // Determine response type (AJAX or regular form submission)
     $type = isAjaxRequest() ? 'json' : 'redirect';
@@ -402,9 +445,10 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
         $redirectUrl = '/user/dashboard';
     }
 
-    if ($requestedRedirect !== '') {
-        $redirectUrl = $requestedRedirect;
-    }
+    // Redirect to default dashboard regardless of previous page
+    // if ($requestedRedirect !== '') {
+    //     $redirectUrl = $requestedRedirect;
+    // }
 
     if (session_status() === PHP_SESSION_ACTIVE) {
         unset($_SESSION['post_login_redirect']);
@@ -425,6 +469,11 @@ $router->post('/register', ['middleware' => ['guest_only']], function () use ($u
     // Get request data (handles both JSON AJAX and form submissions)
     $data = getRequestData();
     $requestedRedirect = resolveAuthRedirectPath($data);
+
+    // post_login_redirect disabled: clear any captured previous-page redirect immediately
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        unset($_SESSION['post_login_redirect']);
+    }
 
     // Determine response type (AJAX or regular form submission)
     $type = isAjaxRequest() ? 'json' : 'redirect';
@@ -588,7 +637,9 @@ $router->post('/register', ['middleware' => ['guest_only']], function () use ($u
             'Registration successful! Welcome to ' . getSetting('site_name', 'BroxBhai'),
             $type,
             200,
-            $requestedRedirect !== '' ? $requestedRedirect : '/user/dashboard'
+            // Always redirect to user dashboard after registration
+            //$requestedRedirect !== '' ? $requestedRedirect : '/user/dashboard'
+            '/user/dashboard'
         );
     }
 

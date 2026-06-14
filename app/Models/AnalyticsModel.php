@@ -21,6 +21,26 @@ class AnalyticsModel
     }
 
     /**
+     * Get a combined analytics summary used by admin tools/UI
+     *
+     * @return array
+     */
+    public function getSummary(): array
+    {
+        try {
+            return [
+                'visitors' => $this->getVisitorStats(),
+                'daily' => $this->getDailyStats(14),
+                'top_pages' => $this->getTopPages(5),
+                'recent_events' => $this->getRecentEvents(10),
+            ];
+        } catch (Throwable $e) {
+            logError('Analytics getSummary error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get visitor statistics
      */
     public function getVisitorStats(?string $startDate = null, ?string $endDate = null): array
@@ -223,7 +243,7 @@ class AnalyticsModel
     /**
      * Get failed login attempts (Security Alert) - Optimized
      */
-    public function getFailedLoginAttempts(int $hours = 24): array
+    public function getFailedLoginAttempts(int $hours = 24, int $limit = 100): array
     {
         try {
             $date = date('Y-m-d H:i:s', strtotime("-{$hours} hours"));
@@ -239,7 +259,7 @@ class AnalyticsModel
                 GROUP BY ip_address, user_id
                 HAVING attempts >= 3
                 ORDER BY attempts DESC
-                LIMIT 100
+                LIMIT ?
             ");
 
             if (!$stmt) {
@@ -247,7 +267,7 @@ class AnalyticsModel
                 return [];
             }
 
-            $stmt->bind_param('s', $date);
+            $stmt->bind_param('si', $date, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
             return $result->fetch_all(MYSQLI_ASSOC) ?? [];
@@ -260,7 +280,7 @@ class AnalyticsModel
     /**
      * Get suspicious OAuth activity (Security Alert) - Optimized
      */
-    public function getSuspiciousOAuthActivity(int $hours = 24): array
+    public function getSuspiciousOAuthActivity(int $hours = 24, int $limit = 100): array
     {
         try {
             if (!$this->tableExists('auth_audit_log')) {
@@ -282,7 +302,7 @@ class AnalyticsModel
                 GROUP BY user_id, action, provider
                 HAVING activity_count >= 2
                 ORDER BY activity_count DESC
-                LIMIT 100
+                LIMIT ?
             ");
 
             if (!$stmt) {
@@ -290,7 +310,7 @@ class AnalyticsModel
                 return [];
             }
 
-            $stmt->bind_param('s', $date);
+            $stmt->bind_param('si', $date, $limit);
             $stmt->execute();
             $result = $stmt->get_result();
             return $result->fetch_all(MYSQLI_ASSOC) ?? [];

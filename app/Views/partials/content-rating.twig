@@ -3,176 +3,266 @@
 
 {% if rating_content_id %}
 <section
-    class="content-rating-widget card border-0 shadow-sm rounded-4 mb-4"
-    data-rating-widget
-    data-content-type="{{ rating_content_type }}"
-    data-content-id="{{ rating_content_id }}"
+ class="content-rating-widget rounded-2xl border border-slate-200 bg-white shadow-sm mb-4 dark:border-slate-700 dark:bg-slate-800 dark:shadow-slate-900/30"
+ data-rating-widget
+ data-content-type="{{ rating_content_type }}"
+ data-content-id="{{ rating_content_id }}"
 >
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h3 class="h6 fw-bold mb-0">
-                <i class="bi bi-star-fill text-warning me-2"></i>Rate This Content
-            </h3>
-            <div class="small text-muted">
-                <span data-rating-average>0.0</span>/5
-                <span class="mx-1">|</span>
-                <span data-rating-total>0</span> ratings
-            </div>
-        </div>
+<style>
+/* ── Rating Breakdown Row Hover Animations ── */
+.content-rating-widget [data-rating-bar] {
+  transition: width 0.5s ease-out, box-shadow 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+}
+.content-rating-widget .rating-breakdown-row {
+  transition: background 0.25s ease, padding 0.25s ease, border-radius 0.25s ease;
+  border-radius: 0.5rem;
+  margin: 0 -0.5rem;
+  padding: 0.125rem 0.5rem;
+  cursor: default;
+}
+.content-rating-widget .rating-breakdown-row:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.08) 0%, rgba(251, 191, 36, 0.02) 100%);
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.content-rating-widget .rating-breakdown-row:hover [data-rating-bar] {
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35), 0 0 4px rgba(251, 191, 36, 0.2);
+  filter: brightness(1.15);
+}
+.content-rating-widget .rating-breakdown-row:hover .rating-breakdown-label {
+  color: #92400e;
+}
+.content-rating-widget .rating-breakdown-row:hover .rating-breakdown-label .lucide {
+  color: #f59e0b;
+}
+.content-rating-widget .rating-breakdown-row:hover .rating-breakdown-count {
+  color: #78350f;
+  font-weight: 700;
+}
 
-        <div class="d-flex align-items-center flex-wrap gap-2 mb-3" role="group" aria-label="Rate this content">
-            {% for i in 1..5 %}
-                <button
-                    type="button"
-                    class="btn btn-sm content-rating-star-btn"
-                    data-rating-value="{{ i }}"
-                    aria-label="Rate {{ i }} star{{ i > 1 ? 's' : '' }}"
-                >
-                    <i class="bi bi-star-fill"></i>
-                </button>
-            {% endfor %}
-            <span class="small text-muted ms-1" data-rating-current>Not rated yet</span>
-        </div>
+/* ── Dark Mode Overrides ── */
+[data-theme="dark"] .content-rating-widget .rating-breakdown-row:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.12) 0%, rgba(251, 191, 36, 0.03) 100%);
+}
+[data-theme="dark"] .content-rating-widget .rating-breakdown-row:hover .rating-breakdown-label {
+  color: #fcd34d;
+}
+[data-theme="dark"] .content-rating-widget .rating-breakdown-row:hover .rating-breakdown-label .lucide {
+  color: #fbbf24;
+}
+[data-theme="dark"] .content-rating-widget .rating-breakdown-row:hover .rating-breakdown-count {
+  color: #fde68a;
+}
+[data-theme="dark"] .content-rating-widget .rating-breakdown-row:hover [data-rating-bar] {
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.5), 0 0 6px rgba(251, 191, 36, 0.3);
+  filter: brightness(1.25);
+}
+</style>
+ {# Header with gradient accent #}
+ <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/80 via-amber-50/40 to-transparent px-5 py-4 dark:border-slate-700/80 dark:from-amber-900/30 dark:via-amber-900/15 dark:to-transparent">
+ <div class="flex flex-wrap items-center justify-between gap-2">
+ <h3 class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+ <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/20">
+ <i class="lucide lucide-star" style="width:0.85em;height:0.85em;"></i>
+ </span>
+ Rate This Content
+ </h3>
+ <div class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+ <i class="lucide lucide-star text-amber-500" style="width:0.875em;height:0.875em;"></i>
+ <span class="font-bold text-slate-700 dark:text-slate-200" data-rating-average>0.0</span>
+ <span class="text-slate-400 dark:text-slate-500">/5</span>
+ <span class="mx-1 h-3 w-px bg-slate-200"></span>
+ <span data-rating-total class="font-bold text-slate-700 dark:text-slate-200">0</span>
+ <span class="text-slate-400 dark:text-slate-500">ratings</span>
+ </div>
+ </div>
+ </div>
 
-        <div class="content-rating-breakdown">
-            {% for star in 5..1 %}
-                <div class="content-rating-row">
-                    <span class="content-rating-row-label">{{ star }} <i class="bi bi-star-fill text-warning"></i></span>
-                    <div class="progress flex-grow-1 inl-c-0003">
-                        <div
-                            class="progress-bar bg-warning inl-c-0004"
-                            role="progressbar"
-                           
-                            data-rating-bar="{{ star }}"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            aria-valuenow="0"
-                        ></div>
-                    </div>
-                    <span class="content-rating-row-count" data-rating-count="{{ star }}">0</span>
-                </div>
-            {% endfor %}
-        </div>
+ <div class="p-5 space-y-5">
+ {# Star Rating Buttons #}
+ <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Rate this content">
+ {% for i in 1..5 %}
+ <button
+ type="button"
+ class="rating-star-btn group relative inline-flex h-10 w-10 items-center justify-center rounded-xl border-2 border-transparent text-slate-300 transition-all duration-200 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-400 hover:shadow-sm hover:shadow-amber-500/10 hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 active:scale-95 dark:text-slate-500 dark:hover:border-amber-600/60 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 dark:hover:shadow-amber-500/5 dark:focus-visible:ring-offset-slate-800"
+ data-rating-value="{{ i }}"
+ aria-label="Rate {{ i }} star{{ i > 1 ? 's' : '' }}"
+ >
+ <i class="lucide lucide-star transition-all duration-200" style="width:1.25em;height:1.25em;"></i>
+ {# Tooltip label #}
+ <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-800 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+ {% if i == 1 %}Poor{% elseif i == 2 %}Fair{% elseif i == 3 %}Good{% elseif i == 4 %}Very Good{% else %}Excellent{% endif %}
+ </span>
+ </button>
+ {% endfor %}
+ <span class="ml-2 text-xs font-medium text-slate-400 dark:text-slate-500" data-rating-current>
+ <i class="lucide lucide-info mr-1" style="width:0.75em;height:0.75em;"></i>Not rated yet
+ </span>
+ </div>
 
-        <div class="small mt-2" data-rating-status></div>
-    </div>
+ {# Rating Breakdown #}
+ <div class="space-y-2">
+ <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Rating Breakdown</h4>
+ <div class="space-y-1.5">
+ {% for star in 5..1 %}
+ <div class="rating-breakdown-row flex items-center gap-3">
+ <span class="rating-breakdown-label flex w-12 items-center gap-1 text-xs font-semibold text-slate-600 shrink-0 transition-colors duration-200 dark:text-slate-400">
+ {{ star }}
+ <i class="lucide lucide-star text-amber-400 transition-colors duration-200" style="width:0.75em;height:0.75em;"></i>
+ </span>
+ <div class="relative flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden dark:bg-slate-700/80">
+ <div
+ class="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
+ data-rating-bar="{{ star }}"
+ role="progressbar"
+ aria-valuemin="0"
+ aria-valuemax="100"
+ aria-valuenow="0"
+ style="width: 0%"
+ ></div>
+ </div>
+ <span class="rating-breakdown-count w-6 text-right text-xs font-semibold text-slate-500 tabular-nums transition-colors duration-200 dark:text-slate-400" data-rating-count="{{ star }}">0</span>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+
+ {# Status Message #}
+ <div data-rating-status class="flex items-center gap-2 text-xs font-medium"></div>
+ </div>
 </section>
-
-
 
 <script>
 (function () {
-    const widgets = document.querySelectorAll('[data-rating-widget]:not([data-rating-ready="1"])');
-    if (!widgets.length) return;
+ const widgets = document.querySelectorAll('[data-rating-widget]:not([data-rating-ready="1"])');
+ if (!widgets.length) return;
 
-    const renderWidget = (widget, payload) => {
-        const summary = payload && payload.summary ? payload.summary : {};
-        const distribution = summary.distribution || {};
-        const percentages = summary.percentages || {};
-        const total = Number(summary.total || 0);
-        const average = Number(summary.average || 0).toFixed(1);
-        const userRating = Number(payload && payload.user_rating ? payload.user_rating : 0);
+ const renderWidget = (widget, payload) => {
+ const summary = payload && payload.summary ? payload.summary : {};
+ const distribution = summary.distribution || {};
+ const percentages = summary.percentages || {};
+ const total = Number(summary.total || 0);
+ const average = Number(summary.average || 0).toFixed(1);
+ const userRating = Number(payload && payload.user_rating ? payload.user_rating : 0);
 
-        const averageEl = widget.querySelector('[data-rating-average]');
-        const totalEl = widget.querySelector('[data-rating-total]');
-        const currentEl = widget.querySelector('[data-rating-current]');
-        const starButtons = widget.querySelectorAll('[data-rating-value]');
+ const averageEl = widget.querySelector('[data-rating-average]');
+ const totalEl = widget.querySelector('[data-rating-total]');
+ const currentEl = widget.querySelector('[data-rating-current]');
+ const starButtons = widget.querySelectorAll('[data-rating-value]');
 
-        if (averageEl) averageEl.textContent = average;
-        if (totalEl) totalEl.textContent = String(total);
-        if (currentEl) currentEl.textContent = userRating > 0 ? ('Your rating: ' + userRating + '/5') : 'Not rated yet';
+ if (averageEl) averageEl.textContent = average;
+ if (totalEl) totalEl.textContent = String(total);
+ if (currentEl) {
+ currentEl.innerHTML = userRating > 0
+ ? '<i class="lucide lucide-check-circle mr-1" style="width:0.75em;height:0.75em;"></i>Your rating: ' + userRating + '/5'
+ : '<i class="lucide lucide-info mr-1" style="width:0.75em;height:0.75em;"></i>Not rated yet';
+ }
 
-        starButtons.forEach((btn) => {
-            const value = Number(btn.getAttribute('data-rating-value') || 0);
-            btn.classList.toggle('active', value > 0 && value <= userRating);
-        });
+ starButtons.forEach((starBtn) => {
+ const value = Number(starBtn.getAttribute('data-rating-value') || 0);
+ const isActive = value > 0 && value <= userRating;
+ const icon = starBtn.querySelector('.lucide');
+ starBtn.classList.toggle('rating-star-btn--active', isActive);
+ if (icon) {
+ icon.classList.toggle('text-amber-400', isActive);
+ icon.classList.toggle('text-slate-300', !isActive);
+ }
+ });
 
-        [1, 2, 3, 4, 5].forEach((star) => {
-            const barEl = widget.querySelector('[data-rating-bar="' + star + '"]');
-            const countEl = widget.querySelector('[data-rating-count="' + star + '"]');
-            const count = Number(distribution[star] || 0);
-            const width = Number(percentages[star] || 0);
+ [1, 2, 3, 4, 5].forEach((star) => {
+ const barEl = widget.querySelector('[data-rating-bar="' + star + '"]');
+ const countEl = widget.querySelector('[data-rating-count="' + star + '"]');
+ const count = Number(distribution[star] || 0);
+ const width = Number(percentages[star] || 0);
 
-            if (countEl) countEl.textContent = String(count);
-            if (barEl) {
-                barEl.style.width = width + '%';
-                barEl.setAttribute('aria-valuenow', String(width));
-            }
-        });
-    };
+ if (countEl) countEl.textContent = String(count);
+ if (barEl) {
+ barEl.style.width = width + '%';
+ barEl.setAttribute('aria-valuenow', String(width));
+ }
+ });
+ };
 
-    const setStatus = (widget, text, type) => {
-        const statusEl = widget.querySelector('[data-rating-status]');
-        if (!statusEl) return;
-        statusEl.className = 'small mt-2';
-        if (type === 'success') statusEl.classList.add('text-success');
-        if (type === 'error') statusEl.classList.add('text-danger');
-        if (type === 'muted') statusEl.classList.add('text-muted');
-        statusEl.textContent = text || '';
-    };
+ const setStatus = (widget, text, type) => {
+ const statusEl = widget.querySelector('[data-rating-status]');
+ if (!statusEl) return;
+ statusEl.className = 'flex items-center gap-2 text-xs font-medium';
+ if (type === 'success') {
+ statusEl.classList.add('text-emerald-600');
+ statusEl.innerHTML = '<i class="lucide lucide-check-circle" style="width:0.875em;height:0.875em;"></i>' + (text || '');
+ } else if (type === 'error') {
+ statusEl.classList.add('text-red-500');
+ statusEl.innerHTML = '<i class="lucide lucide-alert-circle" style="width:0.875em;height:0.875em;"></i>' + (text || '');
+ } else if (type === 'muted') {
+ statusEl.classList.add('text-slate-400');
+ statusEl.innerHTML = '<i class="lucide lucide-loader-2 animate-spin" style="width:0.875em;height:0.875em;"></i>' + (text || '');
+ } else {
+ statusEl.textContent = text || '';
+ }
+ };
 
-    const loadSummary = async (widget) => {
-        const contentType = widget.getAttribute('data-content-type');
-        const contentId = widget.getAttribute('data-content-id');
-        const url = '/api/ratings/summary?content_type=' + encodeURIComponent(contentType) + '&content_id=' + encodeURIComponent(contentId);
+ const loadSummary = async (widget) => {
+ const contentType = widget.getAttribute('data-content-type');
+ const contentId = widget.getAttribute('data-content-id');
+ const url = '/api/ratings/summary?content_type=' + encodeURIComponent(contentType) + '&content_id=' + encodeURIComponent(contentId);
 
-        const response = await fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Failed to load ratings');
-        }
-        renderWidget(widget, data);
-    };
+ const response = await fetch(url, {
+ headers: { 'X-Requested-With': 'XMLHttpRequest' }
+ });
+ const data = await response.json();
+ if (!response.ok || !data.success) {
+ throw new Error(data.message || 'Failed to load ratings');
+ }
+ renderWidget(widget, data);
+ };
 
-    const submitRating = async (widget, value) => {
-        const contentType = widget.getAttribute('data-content-type');
-        const contentId = Number(widget.getAttribute('data-content-id') || 0);
+ const submitRating = async (widget, value) => {
+ const contentType = widget.getAttribute('data-content-type');
+ const contentId = Number(widget.getAttribute('data-content-id') || 0);
 
-        const response = await fetch('/api/ratings/submit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                content_type: contentType,
-                content_id: contentId,
-                rating: value
-            })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Failed to submit rating');
-        }
-        return data;
-    };
+ const response = await fetch('/api/ratings/submit', {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'X-Requested-With': 'XMLHttpRequest'
+ },
+ body: JSON.stringify({
+ content_type: contentType,
+ content_id: contentId,
+ rating: value
+ })
+ });
+ const data = await response.json();
+ if (!response.ok || !data.success) {
+ throw new Error(data.message || 'Failed to submit rating');
+ }
+ return data;
+ };
 
-    widgets.forEach((widget) => {
-        widget.setAttribute('data-rating-ready', '1');
-        setStatus(widget, 'Loading rating summary...', 'muted');
+ widgets.forEach((widget) => {
+ widget.setAttribute('data-rating-ready', '1');
+ setStatus(widget, 'Loading...', 'muted');
 
-        loadSummary(widget)
-            .then(() => setStatus(widget, '', 'muted'))
-            .catch((err) => setStatus(widget, err.message, 'error'));
+ loadSummary(widget)
+ .then(() => setStatus(widget, '', ''))
+ .catch((err) => setStatus(widget, err.message, 'error'));
 
-        widget.querySelectorAll('[data-rating-value]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-                const value = Number(btn.getAttribute('data-rating-value') || 0);
-                if (value < 1 || value > 5) return;
+ widget.querySelectorAll('[data-rating-value]').forEach((starBtn) => {
+ starBtn.addEventListener('click', async () => {
+ const value = Number(starBtn.getAttribute('data-rating-value') || 0);
+ if (value < 1 || value > 5) return;
 
-                setStatus(widget, 'Submitting your rating...', 'muted');
-                try {
-                    const data = await submitRating(widget, value);
-                    renderWidget(widget, data);
-                    setStatus(widget, 'Thanks! Your rating has been saved.', 'success');
-                } catch (err) {
-                    setStatus(widget, err.message, 'error');
-                }
-            });
-        });
-    });
+ setStatus(widget, 'Submitting...', 'muted');
+ try {
+ const data = await submitRating(widget, value);
+ renderWidget(widget, data);
+ setStatus(widget, 'Thanks! Your rating has been saved.', 'success');
+ } catch (err) {
+ setStatus(widget, err.message, 'error');
+ }
+ });
+ });
+ });
 })();
 </script>
 {% endif %}

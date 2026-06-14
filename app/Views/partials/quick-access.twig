@@ -1,51 +1,61 @@
 {# Quick Access Navigation - Shows feature links based on context #}
 {% if user.is_authenticated and (context_type == 'post' or context_type == 'page') %}
-<div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-    <i class="bi bi-lightbulb-fill me-2"></i>
-    <strong>Quick Access:</strong>
-    {% if context_type == 'post' %}
-        <a href="#comments-section" class="alert-link ms-2">View Comments</a> •
-        <a href="/admin/comments?post_id={{ context_id }}" class="alert-link">Manage Comments</a> •
-        <a href="/admin/media" class="alert-link">Upload Media</a>
-    {% elseif context_type == 'page' %}
-        <a href="#comments-section" class="alert-link ms-2">View Comments</a> •
-        <a href="/admin/comments?page_id={{ context_id }}" class="alert-link">Manage Comments</a> •
-        <a href="/admin/media" class="alert-link">Upload Media</a>
-    {% endif %}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="rounded-xl border border-sky-200 bg-sky-50 p-4 mb-3" role="alert">
+ <div class="flex items-center gap-2 text-sm">
+ <i class="lucide lucide-lightbulb text-sky-600 flex-shrink-0"></i>
+ <span class="font-semibold text-sky-800">Quick Access:</span>
+ {% if context_type == 'post' %}
+ <a href="#comments-section" class="text-sky-700 hover:text-sky-900 underline underline-offset-2 ml-1">View Comments</a>
+ <span class="text-sky-300">•</span>
+ <a href="/admin/comments?post_id={{ context_id }}" class="text-sky-700 hover:text-sky-900 underline underline-offset-2">Manage Comments</a>
+ <span class="text-sky-300">•</span>
+ <a href="/admin/media" class="text-sky-700 hover:text-sky-900 underline underline-offset-2">Upload Media</a>
+ {% elseif context_type == 'page' %}
+ <a href="#comments-section" class="text-sky-700 hover:text-sky-900 underline underline-offset-2 ml-1">View Comments</a>
+ <span class="text-sky-300">•</span>
+ <a href="/admin/comments?page_id={{ context_id }}" class="text-sky-700 hover:text-sky-900 underline underline-offset-2">Manage Comments</a>
+ <span class="text-sky-300">•</span>
+ <a href="/admin/media" class="text-sky-700 hover:text-sky-900 underline underline-offset-2">Upload Media</a>
+ {% endif %}
+ </div>
 </div>
 {% endif %}
 
 {# Admin Quick Links - Shows in admin context #}
-{% if auth_user.is_authenticated and auth_user.role == 'admin' and show_admin_links %}
-<div class="card border-0 rounded-3 shadow-sm mb-4 bg-primary bg-opacity-10">
-    <div class="card-body">
-        <h6 class="card-title mb-3">
-            <i class="bi bi-lightning-charge-fill text-warning"></i> Admin Quick Links
-        </h6>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="/admin/dashboard" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-speedometer2 me-1"></i>Dashboard
-            </a>
-            <a href="/admin/applications" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-briefcase me-1"></i>Applications
-            </a>
-            <a href="/admin/media" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-image me-1"></i>Media Manager
-            </a>
-            <a href="/admin/comments" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-chat-dots-fill me-1"></i>Comments
-            </a>
-            <a href="/admin/posts" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-pencil-fill me-1"></i>Posts
-            </a>
-            <a href="/admin/pages" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-file-earmark me-1"></i>Pages
-            </a>
-            <a href="/admin/users" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-people-fill me-1"></i>Users
-            </a>
-        </div>
-    </div>
+{% if auth_user.is_authenticated and hasRole('admin') and show_admin_links %}
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm mb-4">
+ <div class="p-4">
+ <h6 class=" mb-3">
+ <i class="lucide lucide-zap text-amber-600"></i> Admin Quick Links
+ </h6>
+ <div class="flex flex-wrap gap-2">
+ <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-gauge mr-1"></i>Dashboard
+ </a>
+ <a href="/admin/applications" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-briefcase mr-1"></i>Applications
+ </a>
+ <a href="/admin/media" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-image mr-1"></i>Media Manager
+ </a>
+ <a href="/admin/comments" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-message-circle mr-1"></i>Comments
+ </a>
+ <a href="/admin/posts" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-pencil mr-1"></i>Posts
+ </a>
+ <a href="/admin/pages" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-file mr-1"></i>Pages
+ </a>
+ <a href="/admin/users" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors shadow-sm">
+ <i class="lucide lucide-users mr-1"></i>Users
+ </a>
+ </div>
+ </div>
 </div>
 {% endif %}
+
+
+
+
+

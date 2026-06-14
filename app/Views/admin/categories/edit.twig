@@ -3,95 +3,72 @@
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block title %}Edit Category{% endblock %}
 {% block content %}
-  <div class="service-form-wrapper">
-    <div class="container service-form-container">
-      <!-- Modern Breadcrumb -->
-      <div class="modern-breadcrumb">
-        <a href="/admin"><i class="bi bi-house-door"></i> Dashboard</a>
-        <span class="separator">›</span>
-        <a href="/admin/categories">Categories</a>
-        <span class="separator">›</span>
-        <span class="active">Edit</span>
-      </div>
-      <!-- Header Glass Card -->
-      <div class="header-glass-card">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="header-icon-badge">
-              <i class="bi bi-tag"></i>
-            </div>
-            <div>
-              <h1 class="page-title">Edit Category</h1>
-              <p class="page-subtitle">Update category details</p>
-            </div>
-          </div>
-          <a href="/admin/categories" class="modern-btn modern-btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Categories
-          </a>
-        </div>
-      </div>
-      <!-- Main Form -->
-      <form id="categoryForm"
-            method="post"
-            action="/admin/categories/edit/{{ category.id }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="id" value="{{ category.id }}">
-        <div class="row g-4">
-          <div class="col-lg-8 offset-lg-2">
-            <div class="admin-panel-card">
-              <div class="admin-panel-card-header">
-                <h5 class="admin-panel-card-header-title">
-                  <i class="bi bi-info-circle-fill"></i>
-                  Category Information
-                </h5>
-              </div>
-              <div class="admin-panel-card-body">
-                <div class="mb-4">
-                  <label class="modern-form-label">
-                    Category Name
-                    <span class="required">*</span>
-                  </label>
-                  <input type="text"
-                         class="modern-input form-control-lg"
-                         name="name"
-                         value="{{ category.name }}"
-                         placeholder="Enter category name"
-                         required>
-                  <div class="form-helper">A clear, descriptive name for your category</div>
-                </div>
-                <div class="mb-4">
-                  <label class="modern-form-label">
-                    URL Slug <span class="required">*</span>
-                  </label>
-                  <div class="modern-input-group">
-                    <span class="modern-input-group-text">
-                      <i class="bi bi-link-45deg"></i>
-                    </span>
-                    <input type="text"
-                           class="modern-input"
-                           name="slug"
-                           value="{{ category.slug }}"
-                           placeholder="category-url-slug"
-                           required>
-                  </div>
-                  <div id="slug-feedback" class="form-helper"></div>
-                </div>
-                <div class="mt-5 d-flex gap-2">
-                  <a href="/admin/categories"
-                     class="modern-btn modern-btn-secondary modern-btn-lg">
-                    <i class="bi bi-x-lg"></i> Cancel
-                  </a>
-                  <button type="submit" class="modern-btn modern-btn-white modern-btn-lg">
-                    <i class="bi bi-save"></i>
-                    Update Category
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4">
+
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-amber-900 via-orange-900 to-slate-900 p-6 text-white shadow-2xl shadow-amber-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-pencil text-xl"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Edit Category</h1>
+     <p class="mt-1 text-sm text-amber-200/80">Update category details.</p>
+    </div>
+   </div>
+   <a href="/admin/categories" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97] self-start sm:self-auto">
+    <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Back to Categories
+   </a>
+  </div>
+ </div>
+
+ {# ── Form Card ── #}
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md max-w-3xl">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+    <i class="lucide lucide-tag" style="width:1em;height:1em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Category: {{ category.name }}</h2>
+    <p class="text-xs text-slate-500">Edit the category name and URL slug</p>
+   </div>
+  </div>
+  <div class="p-5 sm:p-6">
+   <form method="post" action="/admin/categories/edit/{{ category.id }}" class="space-y-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="id" value="{{ category.id }}">
+
+    <div class="space-y-1.5">
+     <label class="block text-sm font-semibold text-slate-700">Category Name <span class="text-red-500">*</span></label>
+     <input type="text" name="name" value="{{ category.name }}" placeholder="Enter category name" required class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm bg-white text-slate-900 transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 hover:border-slate-400">
+     <p class="text-xs text-slate-500 mt-1">A clear, descriptive name for your category.</p>
+    </div>
+
+    <div class="space-y-1.5">
+     <label class="block text-sm font-semibold text-slate-700">URL Slug <span class="text-red-500">*</span></label>
+     <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white transition-all duration-200">
+      <span class="shrink-0 flex items-center px-3 py-2.5 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-link" style="width:1em;height:1em;"></i></span>
+      <input type="text" name="slug" value="{{ category.slug }}" placeholder="category-url-slug" required class="w-full border-0 px-4 py-2.5 text-sm focus:outline-none bg-white">
+     </div>
+     <div id="slug-feedback" class="text-xs text-slate-500 mt-1"></div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 pt-2">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:bg-indigo-700 hover:shadow-md active:scale-95">
+      <i class="lucide lucide-save" style="width:1em;height:1em;"></i> Update Category
+     </button>
+     <a href="/admin/categories" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:bg-slate-50 hover:border-slate-400 active:scale-95">
+      <i class="lucide lucide-x" style="width:1em;height:1em;"></i> Cancel
+     </a>
+    </div>
+   </form>
+  </div>
+ </div>
+</div>
 {% endblock %}
 {% block scripts %}{% endblock %}

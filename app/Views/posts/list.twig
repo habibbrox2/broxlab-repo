@@ -1,136 +1,173 @@
-{% extends "layout.twig" %}
-{% block title %}Latest Articles & Posts - {{ app_settings.site_name|default("Mobile Updates") }}{% endblock %}{% block meta_description %}Browse our latest articles, posts, and tech insights. Stay updated with the newest mobile reviews, technology news, and gadget information.{% endblock %}
-{% block og_type %}website{% endblock %}{% set breadcrumbs = [{"label": "Articles", "url": "/posts", "icon": "newspaper"}] %}
+{% extends"layout.twig" %}
+{% block title %}Latest Articles & Posts - {{ app_settings.site_name|default("Mobile Updates") }}{% endblock %}
+
+{% block extra_scripts %}
+  <script type="module" src="{{ asset('assets/js/dist/feed-discovery.js') }}?v={{ assets_version }}"></script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+{% block meta_description %}Browse our latest articles, posts, and tech insights. Stay updated with the newest mobile reviews, technology news, and gadget information.{% endblock %}
+
+{% block og_type %}website{% endblock %}
+
+{% set breadcrumbs = [{"label":"Articles","url":"/posts","icon":"newspaper"}] %}
+{% set page_schema = {
+ '@context': 'https://schema.org',
+ '@type': 'Blog',
+ 'name': title|default('Articles'),
+ 'description': 'Browse our latest articles, posts, and tech insights',
+ 'url': current_url
+} %}
+{% block schema %}
+ <script type="application/ld+json">
+{{ page_schema|schema_json }}
+ </script>
+{% endblock %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}"></noscript>
+{% endblock %}
+
 {% block content %}
-  {# Structured Data - Collection Page Schema #}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Blog",
-  "name": "{{ title|default('Articles')|json }}",
-  "description": "Browse our latest articles, posts, and tech insights",
-  "url": "{{ current_url }}"
-}
-  </script>
-  {# Hero Section #}
-  <section class="hero-section position-relative py-5 mb-5 overflow-hidden inl-p-0014">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-white mb-3">
-            <i class="bi bi-newspaper me-2"></i>Latest Articles
-          </h1>
-          <p class="lead text-white-50 fs-5">Stay updated with our latest news, insights, and in-depth articles</p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="hero-icon inl-p-0002">📰</div>
-        </div>
-      </div>
-    </div>
-  </section>
-  <div class="container py-5">
-    <!-- Page Header -->
-    <div class="listing-header">
-      <h2>
-        <i class="bi bi-newspaper text-primary me-2"></i>{{ title }}
-      </h2>
-    </div>
-    <!-- Filter Card -->
-    <div class="filter-card">
-      <div class="filter-group">
-        <!-- Search -->
-        <div class="filter-section inl-p-0008">
-          <form method="get" class="inl-p-0009">
-            <input type="text"
-                   name="search"
-                   value="{{ search|default("") }}"
-                   class="search-input"
-                   placeholder="Search posts...">
-            <button type="submit" class="btn-search">
-              <i class="bi bi-search"></i>
-            </button>
-          </form>
-        </div>
-        <!-- Per Page -->
-        <div class="filter-section">
-          <label>Per Page</label>
-          <form method="get">
-            <select name="per_page" class="filter-select" onchange="this.form.submit()">
-              {% for opt in available_per_page|default([6, 12, 18, 24, 36, 60]) %}
-                <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
-              {% endfor %}
-            </select>
-          </form>
-        </div>
-        <!-- Sort -->
-        <div class="filter-section">
-          <label>Sort By</label>
-          <form method="get">
-            <select name="sort" class="filter-select" onchange="this.form.submit()">
-              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-            </select>
-          </form>
-        </div>
-      </div>
-    </div>
-    <!-- Posts Grid -->
-    {% if posts is not empty %}
-      <div class="listing-grid">
-        {% for post in posts %}
-          {% include 'partials/content-card.twig' with { item: {
-          images: post.images|default([]),
-          image: post.image|default(post.thumbnail|default(post.image_path|default(null))),
-          title: post.title|default('Untitled'),
-          subtitle: post.excerpt|default(post.content|default('')|striptags|slice(0, 120) ~ '...'),
-          categories: post.categories|default([]),
-          tags: post.tags|default([]),
-          created_at: post.published_at|default(post.created_at)|default(''),
-          url: post.slug|default(post.slug|default(post.id)),
-          id: post.id,
-          type: 'post'
-          }, index: loop.index } %}
-        {% endfor %}
-      </div>
-      <!-- Pagination -->
-      {% if total_pages > 1 %}
-        {# Set pagination URLs for SEO rel="next" and rel="prev" tags #}
-        {% set pagination_prev_url = current_page > 1 ? ("?page=" ~ (current_page - 1) ~ "&search=" ~ search|default("") ~ "&sort=" ~ sort|default("latest") ~ "&order=" ~ order|default("DESC") ~ "&per_page=" ~ per_page|default(12)) : null %}
-        {% set pagination_next_url = current_page < total_pages ? ("?page=" ~ (current_page + 1) ~ "&search=" ~ search|default("") ~ "&sort=" ~ sort|default("latest") ~ "&order=" ~ order|default("DESC") ~ "&per_page=" ~ per_page|default(12)) : null %}
-        
-        <div class="pagination-container">
-          <div class="pagination">
-            {% if current_page > 1 %}
-              <a class="pagination-link"
-                 href="?page={{ current_page - 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}"
-                 aria-label="Previous">
-                <i class="bi bi-chevron-left"></i>
-              </a>
-            {% else %}
-              <span class="pagination-link disabled"><i class="bi bi-chevron-left"></i></span>
-            {% endif %}
-            {% for p in 1..total_pages %}
-              <a class="pagination-link {% if p == current_page %}active{% endif %}"
-                 href="?page={{ p }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}">{{ p }}</a>
-            {% endfor %}
-            {% if current_page < total_pages %}
-              <a class="pagination-link"
-                 href="?page={{ current_page + 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}"
-                 aria-label="Next">
-                <i class="bi bi-chevron-right"></i>
-              </a>
-            {% else %}
-              <span class="pagination-link disabled"><i class="bi bi-chevron-right"></i></span>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-    {% else %}
-      <div class="empty-state">
-        <i class="bi bi-newspaper"></i>
-        <h3>No posts found</h3>
-        <p>Try adjusting your search criteria</p>
-      </div>
-    {% endif %}
+ {# Hero Section #}
+ <section class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 py-14 md:py-18 mb-8 md:mb-10 shadow-[inset_0_-1px_0_rgba(255,255,255,0.12)]">
+  <div class="pointer-events-none absolute inset-0">
+   <div class="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-cyan-300/15 blur-3xl"></div>
+   <div class="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-purple-400/15 blur-3xl"></div>
+   <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),transparent_50%)]"></div>
   </div>
+  <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+    <div class="max-w-2xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 shadow-lg backdrop-blur-sm">
+      <i class="lucide lucide-book-open w-3.5 h-3.5"></i>
+      <span>Articles Feed</span>
+      <i class="lucide lucide-chevron-right w-3 h-3"></i>
+     </div>
+     <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 tracking-tight">
+      Latest <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-200">Articles</span>
+     </h1>
+     <p class="text-base md:text-lg text-white/70 max-w-xl">Stay updated with our latest news, insights, and in-depth articles on technology and mobile updates.</p>
+    </div>
+    <div class="flex-shrink-0">
+     <div class="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-[1.75rem] bg-white/10 border border-white/20 shadow-2xl backdrop-blur-sm">
+      <i class="lucide lucide-book-open text-white/90 w-10 h-10 md:w-12 md:h-12"></i>
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+ <!-- Page Header -->
+ <div class="mb-4">
+ <h2 class="text-2xl font-bold md:text-3xl">
+ <i class="lucide lucide-book-open inline-block mr-2 text-indigo-600"></i>{{ title }}
+ </h2>
+ </div>   <!-- Filter Toolbar (glassmorphism) -->
+ <form method="get" class="discovery-toolbar mb-4">
+ <div class="toolbar-row">
+ <!-- Search -->
+ <div class="toolbar-search-wrap">
+ <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <circle cx="11" cy="11" r="8"/>
+ <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+ </svg>
+ <input type="search" name="search" value="{{ search|default("") }}" placeholder="Search posts..." autocomplete="off">
+ </div>
+ <!-- Per Page -->
+ <select name="per_page" class="toolbar-select" onchange="this.form.submit()" aria-label="Items per page">
+ {% for opt in available_per_page|default([6, 12, 18, 24, 36, 60]) %}
+ <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+ {% endfor %}
+ </select>
+ <!-- Sort -->
+ <select name="sort" class="toolbar-select" onchange="this.form.submit()" aria-label="Sort posts">
+ <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Newest</option>
+ <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+ </select>
+ </div>
+ </form>
+
+ <!-- Posts Grid with Discovery Cards -->
+ {% if posts is not empty %}
+ <div id="discovery-feed-grid" class="is-grid-view" role="feed" aria-label="Articles feed">
+ {% for post in posts %}
+ {% include 'partials/discovery-card.twig' with { item: {
+ images: post.images|default([]),
+ image: post.image|default(post.thumbnail|default(post.image_path|default(null))),
+ title: post.title|default('Untitled'),
+ subtitle: post.excerpt|default(post.content|default('')|striptags|slice(0, 120) ~ '...'),
+ categories: post.categories|default([]),
+ tags: post.tags|default([]),
+ created_at: post.published_at|default(post.created_at)|default(''),
+ url: post.slug|default(post.slug|default(post.id)),
+ id: post.id,
+ type: 'post'
+ }, index: loop.index } %}
+ {% endfor %}
+ </div>
+ <!-- Pagination -->
+ {% if total_pages > 1 %}
+ {# Set pagination URLs for SEO rel="next" and rel="prev" tags #}
+ {% set pagination_prev_url = current_page > 1 ? ("?page=" ~ (current_page - 1) ~"&search=" ~ search|default("") ~"&sort=" ~ sort|default("latest") ~"&order=" ~ order|default("DESC") ~"&per_page=" ~ per_page|default(12)) : null %}
+ {% set pagination_next_url = current_page < total_pages ? ("?page=" ~ (current_page + 1) ~"&search=" ~ search|default("") ~"&sort=" ~ sort|default("latest") ~"&order=" ~ order|default("DESC") ~"&per_page=" ~ per_page|default(12)) : null %}
+ 
+ <div class="pagination-container">
+ <div class="pagination">
+ {% if current_page > 1 %}
+ <a class="pagination-link"
+ href="?page={{ current_page - 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}"
+ aria-label="Previous">
+ <i class="lucide lucide-chevron-left"></i>
+ </a>
+ {% else %}
+ <span class="pagination-link disabled"><i class="lucide lucide-chevron-left"></i></span>
+ {% endif %}
+ {% set start_page = max(2, current_page - 2) %}
+ {% set end_page = min(total_pages - 1, current_page + 2) %}
+ <a class="pagination-link {% if current_page == 1 %}active{% endif %}"
+ href="?page=1&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}">1</a>
+ {% if start_page > 2 %}
+ <span class="pagination-link disabled" aria-hidden="true">...</span>
+ {% endif %}
+ {% if start_page <= end_page %}
+ {% for p in start_page..end_page %}
+ <a class="pagination-link {% if p == current_page %}active{% endif %}"
+ href="?page={{ p }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}">{{ p }}</a>
+ {% endfor %}
+ {% endif %}
+ {% if end_page < total_pages - 1 %}
+ <span class="pagination-link disabled" aria-hidden="true">...</span>
+ {% endif %}
+ <a class="pagination-link {% if current_page == total_pages %}active{% endif %}"
+ href="?page={{ total_pages }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}">{{ total_pages }}</a>
+ {% if current_page < total_pages %}
+ <a class="pagination-link"
+ href="?page={{ current_page + 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&order={{ order|default("DESC") }}&per_page={{ per_page|default(12) }}"
+ aria-label="Next">
+ <i class="lucide lucide-chevron-right"></i>
+ </a>
+ {% else %}
+ <span class="pagination-link disabled"><i class="lucide lucide-chevron-right"></i></span>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+ {% else %}
+ <div class="empty-state">
+ <i class="lucide lucide-book-open"></i>
+ <h3>No posts found</h3>
+ <p>Try adjusting your search criteria</p>
+ </div>
+ {% endif %}
+ </div>
 {% endblock %}

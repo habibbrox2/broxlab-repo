@@ -1,0 +1,417 @@
+﻿{% extends 'layout.twig' %}
+{% block title %}à¦†à¦®à¦¾à¦° à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="mb-1 h2-accent">
+              <i class="bi bi-bell-fill mr-2 inl-p-0119"></i>à¦†à¦®à¦¾à¦° à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨
+            </h2>
+            <small class="text-muted">à¦†à¦ªà¦¨à¦¾à¦° à¦¸à¦•à¦² à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦à¦–à¦¾à¦¨à§‡ à¦ªà¦¾à¦¬à§‡à¦¨</small>
+          </div>
+          {% if unread_count > 0 %}
+            <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+              <i class="bi bi-check-lg mr-2"></i>à¦¸à¦¬ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <!-- Unread Count Badge -->
+    {% if unread_count > 0 %}
+      <div class="alert alert-info mb-4 d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle mr-2"></i>
+        <span>à¦†à¦ªà¦¨à¦¾à¦° <strong>{{ unread_count }} à¦Ÿà¦¿ à¦…à¦ªà¦¡à¦¼à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</strong> à¦†à¦›à§‡</span>
+      </div>
+    {% endif %}
+    <!-- Notifications List -->
+    <div class="row">
+      <div class="col-lg-8">
+        {% if notifications|length > 0 %}
+          {% for notif in notifications %}
+            <div class="card shadow-sm mb-3 notification-card {% if notif.is_read == 0 %}border-start border-primary border-5{% endif %}"
+                 data-notification-id="{{ notif.id }}"
+                 style="{% if notif.is_read == 0 %}background-color: #f0f7ff;
+                        {% endif %}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <h5 class="mb-0">{{ notif.title }}</h5>
+                      {% if notif.is_read == 0 %}
+                        <span class="badge bg-primary">
+                          <i class="bi bi-circle-fill mr-1"></i>à¦¨à¦¤à§à¦¨
+                        </span>
+                      {% endif %}
+                      <span class="badge bg-secondary text-capitalize">{{ notif.type }}</span>
+                    </div>
+                    <p class="mb-3 text-theme-strong">{{ notif.message }}</p>
+                    <div class="d-flex gap-2 mt-3">
+                      {% if notif.action_url %}
+                        <a href="{{ notif.action_url }}" class="btn btn-sm btn-primary">
+                          <i class="bi bi-arrow-right mr-1"></i>à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤ à¦¦à§‡à¦–à§à¦¨
+                        </a>
+                      {% endif %}
+                      {% if notif.is_read == 0 %}
+                        <button class="btn btn-sm btn-outline-secondary"
+                                onclick="markAsRead({{ notif.id }})">
+                          <i class="bi bi-check-lg mr-1"></i>à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨
+                        </button>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="text-end ml-3">
+                    <small class="text-muted d-block">
+                      <i class="bi bi-calendar3 mr-1"></i>{{ notif.created_at|date("d M Y") }}
+                    </small>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-clock mr-1"></i>{{ notif.created_at|date("H:i") }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+            <nav class="mt-4"
+                 aria-label="à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦ªà§ƒà¦·à§à¦ à¦¾ à¦¨à§‡à¦­à¦¿à¦—à§‡à¦¶à¦¨">
+              <ul class="pagination justify-content-center">
+                {% if current_page > 1 %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page=1"
+                       aria-label="à¦ªà§à¦°à¦¥à¦® à¦ªà§ƒà¦·à§à¦ à¦¾">
+                      <i class="bi bi-chevron-bar-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ current_page - 1 }}"
+                       aria-label="à¦ªà§‚à¦°à§à¦¬à¦¬à¦°à§à¦¤à§€">
+                      <i class="bi bi-chevron-left"></i>
+                    </a>
+                  </li>
+                {% endif %}
+                {% set start_page = max(1, current_page - 2) %}
+                {% set end_page = min(total_pages, current_page + 2) %}
+                {% if start_page > 1 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+                {% for page in range(start_page, end_page + 1) %}
+                  <li class="page-item {% if page == current_page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page }}">{{ page }}</a>
+                  </li>
+                {% endfor %}
+                {% if end_page < total_pages %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+                {% if current_page < total_pages %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ current_page + 1 }}"
+                       aria-label="à¦ªà¦°à¦¬à¦°à§à¦¤à§€">
+                      <i class="bi bi-chevron-right"></i>
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ total_pages }}"
+                       aria-label="à¦¶à§‡à¦· à¦ªà§ƒà¦·à§à¦ à¦¾">
+                      <i class="bi bi-chevron-bar-right"></i>
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+            <div class="text-center text-muted small">
+              à¦ªà§ƒà¦·à§à¦ à¦¾ {{ current_page }} à¦à¦° {{ total_pages }} (à¦ªà§à¦°à¦¤à¦¿ à¦ªà§ƒà¦·à§à¦ à¦¾à¦¯à¦¼ 20 à¦Ÿà¦¿)
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="card text-center py-5 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-inbox display-1 text-muted mb-3 d-block"></i>
+              <h5 class="text-muted">à¦•à§‹à¦¨à§‹ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¨à§‡à¦‡</h5>
+              <p class="text-muted mb-0">
+                à¦†à¦ªà¦¨à¦¾à¦° à¦•à§‹à¦¨à§‹ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¨à§‡à¦‡à¥¤ à¦¨à¦¤à§à¦¨ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡à¦° à¦œà¦¨à§à¦¯ à¦…à¦ªà§‡à¦•à§à¦·à¦¾ à¦•à¦°à§à¦¨à¥¤
+              </p>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Permission Status Card -->
+        <div class="card shadow-sm mb-3" id="permissionCard">
+          <div class="card-header bg-warning text-surface-dark">
+            <h6 class="mb-0">
+              <i class="bi bi-shield-check mr-2"></i>à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨
+            </h6>
+          </div>
+          <div class="card-body small" id="permissionStatus">
+            <div class="text-center">
+              <div class="inline-spinner inline-spinner-sm text-warning mb-2"
+                   role="status">
+                <span class="visually-hidden">à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</span>
+              </div>
+              <p class="text-muted mb-0">à¦¸à§à¦Ÿà§à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦šà§‡à¦• à¦•à¦°à¦¾ à¦¹à¦šà§à¦›à§‡...</p>
+            </div>
+          </div>
+        </div>
+        <!-- Topics Preferences Card -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-tag mr-2"></i>à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦›à¦¨à§à¦¦
+            </h6>
+          </div>
+          <div class="card-body small" id="topicsContainer">
+            <div class="text-center">
+              <div class="inline-spinner inline-spinner-sm text-info mb-2" role="status">
+                <span class="visually-hidden">à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</span>
+              </div>
+              <p class="text-muted mb-0">à¦¬à¦¿à¦·à¦¯à¦¼ à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</p>
+            </div>
+          </div>
+        </div>
+        <!-- Notification Statistics -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-bar-chart mr-2"></i>à¦ªà¦°à¦¿à¦¸à¦‚à¦–à§à¦¯à¦¾à¦¨
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-6">
+                <div class="h4 text-primary mb-0">{{ unread_count }}</div>
+                <small class="text-muted">à¦…à¦ªà¦¡à¦¼à¦¾</small>
+              </div>
+              <div class="col-6">
+                <div class="h4 text-success mb-0">{{ notifications|length }}</div>
+                <small class="text-muted">à¦à¦‡ à¦ªà§ƒà¦·à§à¦ à¦¾à¦¯à¦¼</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Help Section -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0">
+              <i class="bi bi-question-circle mr-2"></i>à¦¸à¦¾à¦¹à¦¾à¦¯à§à¦¯
+            </h6>
+          </div>
+          <div class="card-body small">
+            <p class="mb-2">
+              <strong>à¦¨à§€à¦² à¦¡à¦¾à¦¨à¦¦à¦¿à¦• à¦¸à§€à¦®à¦¾à¦¨à¦¾:</strong>
+              <br>
+              <span class="text-muted">à¦¨à¦¤à§à¦¨ à¦…à¦ªà¦¡à¦¼à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
+            </p>
+            <hr class="my-2">
+            <p class="mb-2">
+              <strong>à¦¨à¦¤à§à¦¨ à¦¬à§à¦¯à¦¾à¦œ:</strong>
+              <br>
+              <span class="text-muted">à¦à¦–à¦¨à¦‡ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿ à¦à¦®à¦¨ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨</span>
+            </p>
+            <hr class="my-2">
+            <p class="mb-0">
+              <strong>à¦Ÿà¦¾à¦‡à¦ª à¦¬à§à¦¯à¦¾à¦œ:</strong>
+              <br>
+              <span class="text-muted">à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡à¦° à¦§à¦°à¦£ à¦¦à§‡à¦–à¦¾à¦¯à¦¼</span>
+            </p>
+          </div>
+        </div>
+        <!-- Tips -->
+        <div class="alert alert-light mt-3 border">
+          <h6 class="mb-2">
+            <i class="bi bi-lightbulb mr-2"></i>à¦Ÿà¦¿à¦ªà¦¸
+          </h6>
+          <ul class="small mb-0">
+            <li>à¦¸à¦¬ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦ªà¦¡à¦¼à¦¾ à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦šà¦¿à¦¹à§à¦¨à¦¿à¦¤ à¦•à¦°à§à¦¨</li>
+            <li>à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦›à¦¨à§à¦¦ à¦…à¦¨à§à¦¯à¦¾à¦¯à¦¼à§€ à¦«à¦¿à¦²à§à¦Ÿà¦¾à¦° à¦•à¦°à§à¦¨</li>
+            <li>à¦ªà§à¦°à¦¤à¦¿à¦Ÿà¦¿ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨à§‡ à¦¬à¦¿à¦¸à§à¦¤à¦¾à¦°à¦¿à¦¤ à¦¬à§‹à¦¤à¦¾à¦® à¦†à¦›à§‡</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+let allTopics = [];
+let userTopics = {};
+
+// Get CSRF token
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+// Load and display permission status
+async function loadPermissionStatus() {
+    try {
+        // Import the permission request module
+        const { getNotificationPermission, requestNotificationPermission } = await import('/assets/firebase/v2/dist/permission-request.js');
+
+        const permission = getNotificationPermission();
+        const statusEl = document.getElementById('permissionStatus');
+
+        let html = '';
+
+        switch (permission) {
+            case 'granted':
+                html = `
+                    <div class="alert alert-success d-flex align-items-center mb-0">
+                        <i class="bi bi-check-circle-fill mr-2"></i>
+                        <span>à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¸à¦•à§à¦·à¦®</span>
+                    </div>
+                `;
+                break;
+
+            case 'denied':
+                html = `
+                    <div class="alert alert-warning d-flex align-items-center mb-0">
+                        <i class="bi bi-exclamation-triangle-fill mr-2"></i>
+                        <div>
+                            <span>à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦…à¦•à§à¦·à¦®</span><br>
+                            <small class="text-muted">à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦° à¦¸à§‡à¦Ÿà¦¿à¦‚à¦¸ à¦ªà¦°à¦¿à¦¬à¦°à§à¦¤à¦¨ à¦•à¦°à§à¦¨ à¦…à¦¥à¦¬à¦¾ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦ªà§à¦¨à¦°à¦¾à¦¯à¦¼ à¦¸à¦•à§à¦·à¦® à¦•à¦°à§à¦¨</small>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'default':
+                html = `
+                    <div>
+                        <p class="mb-3 text-muted">à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦à¦–à¦¨à¦“ à¦¸à¦•à§à¦·à¦® à¦¨à¦¯à¦¼à¥¤ à¦¸à¦¬ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦ªà§‡à¦¤à§‡ à¦¸à¦•à§à¦·à¦® à¦•à¦°à§à¦¨à¥¤</p>
+                        <button class="btn btn-sm btn-primary w-100" onclick="requestPermission()">
+                            <i class="bi bi-bell mr-1"></i>à¦¸à¦•à§à¦·à¦® à¦•à¦°à§à¦¨
+                        </button>
+                    </div>
+                `;
+                break;
+
+            default:
+                html = `
+                    <div class="alert alert-secondary d-flex align-items-center mb-0">
+                        <i class="bi bi-info-circle mr-2"></i>
+                        <span>à¦à¦‡ à¦¬à§à¦°à¦¾à¦‰à¦œà¦¾à¦°à§‡ à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¸à¦®à¦°à§à¦¥à¦¿à¦¤ à¦¨à¦¯à¦¼</span>
+                    </div>
+                `;
+        }
+
+        statusEl.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading permission status:', error);
+    }
+}
+
+// Request permission
+async function requestPermission() {
+    try {
+        const { requestNotificationPermission } = await import('/assets/firebase/v2/dist/permission-request.js');
+        const result = await requestNotificationPermission();
+
+        if (result.success) {
+            showToast('âœ… à¦ªà§à¦¶ à¦¨à§‹à¦Ÿà¦¿à¦«à¦¿à¦•à§‡à¦¶à¦¨ à¦¸à¦•à§à¦·à¦® à¦¹à¦¯à¦¼à§‡à¦›à§‡', 'success');
+            loadPermissionStatus();
+        } else {
+            showToast('âŒ ' + (result.error || 'à¦ªà¦¾à¦°à¦®à¦¿à¦¶à¦¨ à¦¦à§‡à¦“à¦¯à¦¼à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿'), 'danger');
+        }
+    } catch (error) {
+        console.error('Permission request error:', error);
+        showToast('âŒ à¦¸à¦¾à¦°à§à¦­à¦¾à¦° à¦¤à§à¦°à§à¦Ÿà¦¿', 'danger');
+    }
+}
+
+// Load user topic preferences
+async function loadTopicPreferences() {
+    try {
+        // Load all available topics
+        const topicsRes = await fetch('/api/topics/list');
+        const topicsData = await topicsRes.json();
+        allTopics = topicsData.topics || [];
+
+        // Load user's preferences
+        const prefsRes = await fetch('/api/user/notification-preferences', {
+            headers: { 'X-CSRF-Token': getCsrfToken() }
+        });
+        const prefsData = await prefsRes.json();
+        userTopics = prefsData.topics || {};
+
+        // Render toggles
+        const container = document.getElementById('topicsContainer');
+
+        if (allTopics.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center mb-0">à¦•à§‹à¦¨à§‹ à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿</p>';
+            return;
+        }
+
+        const html = allTopics.map(topic => `
+            <div class="form-check mb-2">
+                <input
+                    type="checkbox"
+                    class="form-check-input topic-toggle"
+                    id="topic_${topic.slug}"
+                    data-topic="${topic.slug}"
+                    ${userTopics[topic.slug] ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="topic_${topic.slug}">
+                    <strong>${topic.name}</strong>
+                    ${topic.description ? `<br><small class="text-muted">${topic.description}</small>` : ''}
+                </label>
+            </div>
+        `).join('');
+
+        container.innerHTML = html || '<p class="text-muted text-center mb-0">à¦•à§‹à¦¨à§‹ à¦¬à¦¿à¦·à¦¯à¦¼ à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿</p>';
+
+        // Add event listeners
+        document.querySelectorAll('.topic-toggle').forEach(el => {
+            el.addEventListener('change', toggleTopic);
+        });
+    } catch (e) {
+        console.error('Failed to load topics:', e);
+        document.getElementById('topicsContainer').innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <small>à¦¬à¦¿à¦·à¦¯à¦¼ à¦²à§‹à¦¡ à¦•à¦°à¦¤à§‡ à¦¬à§à¦¯à¦°à§à¦¥: ${e.message}</small>
+            </div>
+        `;
+    }
+}
+
+// Toggle topic subscription
+async function toggleTopic(e) {
+    const topic = e.target.dataset.topic;
+    const shouldSubscribe = e.target.checked;
+    const endpoint = shouldSubscribe ? '/api/topics/subscribe' : '/api/topics/unsubscribe';
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify({ topic })
+        });
+
+        if (!res.ok) {
+            e.target.checked = !shouldSubscribe; // Revert
+            showToast('âŒ à¦¬à¦¿à¦·à¦¯à¦¼ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¬à§à¦¯à¦°à§à¦¥', 'danger');
+        } else {
+            const action = shouldSubscribe ? 'à¦¸à¦¾à¦¬à¦¸à§à¦•à§à¦°à¦¾à¦‡à¦¬' : 'à¦†à¦¨à¦¸à¦¾à¦¬à¦¸à§à¦•à§à¦°à¦¾à¦‡à¦¬';
+            showToast(`âœ… ${topic} à¦¥à§‡à¦•à§‡ ${action} à¦¹à¦¯à¦¼à§‡à¦›à§‡`, 'success');
+        }
+    } catch (err) {
+        e.target.checked = !shouldSubscribe;
+        console.error('Topic toggle error:', err);
+        showToast('âŒ à¦¸à¦¾à¦°à§à¦­à¦¾à¦° à¦¤à§à¦°à§à¦Ÿà¦¿', 'danger');
+    }
+}
+  </script>
+{% endblock %}
+

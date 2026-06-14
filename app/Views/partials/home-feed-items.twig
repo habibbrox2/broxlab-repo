@@ -1,13 +1,73 @@
-{% for item in items %}
-  {% include 'partials/content-card.twig' with {
-    item: item,
-    index: (start_index|default(1)) + loop.index0
-  } %}
-{% else %}
-  <div class="feed-empty-state">
-    <div class="empty-state-content" role="status" aria-label="No content available">
-      <i class="bi bi-box-seam empty-icon" aria-hidden="true"></i>
-      <p class="empty-text">{{ empty_text|default('No content available at the moment.') }}</p>
-    </div>
+{# ============================================================
+   home-feed-items.twig — Modern Feed with Discovery Cards
+   Includes: premium cards, skeleton loading, empty states, error states
+   ============================================================ #}
+
+{% if show_skeleton|default(false) %}
+  {# Skeleton Loading State #}
+  <div class="discovery-skeleton-grid" role="status" aria-label="Loading content">
+    {% for i in range(1, skeleton_count|default(6)) %}
+      <div class="discovery-skeleton" aria-hidden="true">
+        <div class="skeleton-image skeleton-pulse"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line skeleton-pulse" style="width: 30%"></div>
+          <div class="skeleton-line skeleton-pulse" style="width: 85%"></div>
+          <div class="skeleton-line skeleton-pulse" style="width: 65%"></div>
+          <div class="skeleton-line skeleton-pulse" style="width: 40%"></div>
+          <div class="skeleton-btn skeleton-pulse"></div>
+        </div>
+      </div>
+    {% endfor %}
   </div>
-{% endfor %}
+{% elseif has_error|default(false) %}
+  {# Error State #}
+  <div class="feed-state" role="alert">
+    <div class="feed-state__icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <h3 class="feed-state__title">{{ error_title|default('Something went wrong') }}</h3>
+    <p class="feed-state__desc">{{ error_message|default('Failed to load content. Please try again.') }}</p>
+    <button type="button" class="feed-state__action" onclick="window.location.reload()" aria-label="Retry loading content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+      </svg>
+      Try Again
+    </button>
+  </div>
+{% elseif items|length == 0 %}
+  {# Empty State #}
+  <div class="feed-state" role="status">
+    <div class="feed-state__icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    </div>
+    <h3 class="feed-state__title">{{ empty_title|default('No content found') }}</h3>
+    <p class="feed-state__desc">{{ empty_text|default('There are no items to display at the moment. Check back later or adjust your filters.') }}</p>
+    {% if empty_action_url|default(false) %}
+      <a href="{{ empty_action_url }}" class="feed-state__action" aria-label="{{ empty_action_label|default('Browse all content') }}">
+        {{ empty_action_label|default('Browse All') }}
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    {% endif %}
+  </div>
+{% else %}
+  {# Content Cards #}
+  {% for item in items %}
+    {% include 'partials/discovery-card.twig' with {
+      item: item,
+      index: (start_index|default(1)) + loop.index0
+    } %}
+  {% endfor %}
+{% endif %}

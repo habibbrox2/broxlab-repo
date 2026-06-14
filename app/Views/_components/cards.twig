@@ -1,0 +1,92 @@
+{# ============================================================================
+ CARDS — Reusable card component macros
+ Usage: {% import '_components/cards.twig' as cards %}
+ {{ cards.start({ title: 'Stats', class: 'mb-4' }) }}
+ ... content ...
+ {{ cards.end() }}
+ ============================================================================ #}
+
+{# ── Card wrapper start ── #}
+{% macro start(opts) %}
+ {% set class = opts.class|default('') %}
+ {% set padding = opts.padding|default(true) %}
+ {% set hover = opts.hover|default(true) %}
+ {% set border = opts.border|default(true) %}
+ 
+	{% set hoverClass = hover ? 'hover:shadow-lg' : '' %}
+	{% set paddingClass = padding ? 'p-5' : '' %}
+	{% set borderClass = border ? 'border border-slate-200' : 'border-0' %}
+
+	<div class="bg-white rounded-xl shadow-sm {{ hoverClass }} {{ borderClass }} {{ paddingClass }} {{ class }}">
+{% endmacro %}
+
+{# ── Card wrapper end ── #}
+{% macro end() %}
+ </div>
+{% endmacro %}
+
+{# ── Full rounded-xl border border-slate-200 bg-white shadow-sm with header/body/footer ── #}
+{% macro rounded-xl border border-slate-200 bg-white shadow-sm(opts) %}
+ {% set class = opts.class|default('') %}
+ {% set hover = opts.hover|default(true) %}
+ 
+	<div class="bg-white border border-slate-200 rounded-xl shadow-sm {{ hover ? 'hover:shadow-lg transition-shadow duration-200' : '' }} {{ class }}">
+		{% if opts.header %}
+			<div class="px-5 py-4 border-b border-slate-200 font-semibold text-slate-800 {{ opts.headerClass|default('') }}">{{ opts.header|raw }}</div>
+		{% endif %}
+		<div class="p-5 {{ opts.bodyClass|default('') }}">
+			{% if opts.title %}<h3 class="text-lg font-bold mb-2 text-slate-800">{{ opts.title }}</h3>{% endif %}
+			{% if opts.subtitle %}<p class="text-sm text-slate-500 mb-3">{{ opts.subtitle }}</p>{% endif %}
+			{{ opts.content|raw }}
+		</div>
+		{% if opts.footer %}
+			<div class="px-5 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl {{ opts.footerClass|default('') }}">{{ opts.footer|raw }}</div>
+		{% endif %}
+	</div>
+{% endmacro %}
+
+{# ── Stat rounded-xl border border-slate-200 bg-white shadow-sm (admin dashboard variant) ── #}
+{% macro stat(opts) %}
+ {% set label = opts.label|default('') %}
+ {% set value = opts.value|default('') %}
+ {% set icon = opts.icon|default(null) %}
+ {% set color = opts.color|default('primary') %}
+ {% set change = opts.change|default(null) %}
+ {% set class = opts.class|default('') %}
+ 
+ {% set colorMap = {
+ 'primary': 'from-indigo-500 to-indigo-700',
+ 'success': 'from-emerald-500 to-emerald-700',
+ 'warning': 'from-amber-500 to-amber-700',
+ 'danger': 'from-red-500 to-red-700',
+ 'info': 'from-sky-400 to-sky-700',
+ } %}
+ {% set gradient = colorMap[color]|default(colorMap['primary']) %}
+ 
+ <div class="relative rounded-xl p-5 border border-slate-200 bg-white shadow-sm overflow-hidden transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg {{ class }}">
+	 <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r {{ gradient }}"></div>
+	 {% if icon %}<div class="absolute right-5 top-5 text-4xl opacity-10">{{ icon|raw }}</div>{% endif %}
+	 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ label }}</div>
+	 <div class="text-3xl font-bold text-slate-900 m-0">{{ value }}</div>
+	 {% if change is not null %}
+		 <div class="text-sm mt-2 {{ change > 0 ? 'text-emerald-600' : (change < 0 ? 'text-red-600' : 'text-slate-400') }}">
+			 {{ change > 0 ? '+' ~ change : change }}%
+		 </div>
+	 {% endif %}
+ </div>
+{% endmacro %}
+
+{# ── Glass rounded-xl border border-slate-200 bg-white shadow-sm (frosted glass effect) ── #}
+{% macro glass(opts) %}
+ {% set class = opts.class|default('') %}
+ <div class="tw-home-glass-rounded-xl border border-slate-200 bg-white shadow-sm {{ class }}">
+ <div class="p-6">
+ {{ opts.content|raw }}
+ </div>
+ </div>
+{% endmacro %}
+
+
+
+
+

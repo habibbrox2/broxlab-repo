@@ -1,166 +1,212 @@
-{% extends "admin/layout.twig" %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% extends"admin/layout.twig" %}
+{% block stylesheets %}
+ {% include 'admin/partials/_shared-form-styles.twig' %}
+{% endblock %}
 {% block content %}
-  <div class="container-fluid mt-4">
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <h1 class="h3 d-inline-block">Edit Email Template</h1>
-        <p class="text-muted">
-          {{ template.name }} <code class="bg-light">{{ template.slug }}</code>
-        </p>
-      </div>
-      <div class="col-md-4 text-end">
-        <a href="{{ admin_dir }}/email-templates"
-           class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i> Back
-        </a>
-        <button type="button"
-                class="btn btn-info"
-                id="previewBtn"
-                data-bs-toggle="modal"
-                data-bs-target="#previewModal">
-          <i class="bi bi-eye"></i> Preview Template
-        </button>
-      </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+    
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <i class="lucide lucide-mail text-2xl text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold text-white sm:text-3xl">Edit Email Template</h1>
+                        <code class="rounded-lg bg-white/20 px-2 py-0.5 text-xs font-mono text-white/90 backdrop-blur-sm">{{ template.slug }}</code>
+                    </div>
+                    <p class="mt-1 text-sm text-indigo-100">{{ template.name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ admin_dir }}/email-templates"
+                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+                    <i class="lucide lucide-arrow-left"></i> Back
+                </a>
+                <button type="button"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+                        id="previewBtn"
+                        data-brox-toggle="modal"
+                        data-brox-target="#previewModal">
+                    <i class="lucide lucide-eye"></i> Preview Template
+                </button>
+            </div>
+        </div>
     </div>
+
     <form method="POST"
           action="{{ admin_dir }}/email-templates/{{ template.id }}"
           id="emailTemplateForm"
           data-template-id="{{ template.id }}">
-      <div class="row">
-        <div class="col-lg-8">
-          <div class="admin-panel-card mb-4">
-            <div class="admin-panel-card-header">
-              <h5 class="mb-0">Template Content</h5>
-            </div>
-            <div class="admin-panel-card-body">
-              <div class="mb-3">
-                <label for="subject" class="form-label">Email Subject *</label>
-                <input type="text"
-                       class="form-control"
-                       id="subject"
-                       name="subject"
-                       value="{{ template.subject }}"
-                       required>
-                <small class="form-text text-muted">You can use variables like {{'{{'}}VARIABLE{{'}}'}}</small>
-              </div>
-              <div class="mb-3">
-                <label for="body" class="form-label">Email Body *</label>
-                <textarea class="form-control html-editor"
-                          id="body"
-                          name="body"
-                          rows="20"
-                          required>{{ template.body }}</textarea>
-                <small class="form-text text-muted">Supports HTML. Use {{'{{'}}VARIABLE{{'}}'}} for dynamic content.</small>
-              </div>
-              <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control"
-                          id="description"
-                          name="description"
-                          rows="3"
-                          placeholder="Template purpose and notes">{{ template.description|default('') }}</textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="admin-panel-card mb-4">
-            <div class="admin-panel-card-header">
-              <h5 class="mb-0">Settings</h5>
-            </div>
-            <div class="admin-panel-card-body">
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input"
-                       type="checkbox"
-                       id="is_active"
-                       name="is_active"
-                       {% if template.is_active %}checked{% endif %}>
-                <label class="form-check-label" for="is_active">Active</label>
-              </div>
-              <hr>
-              <h6 class="mb-3">Template Variables</h6>
-              {% if variables|length > 0 %}
-                <div class="list-group list-group-sm">
-                  {% for var, val in variables %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                      <code>{{'{{'}}{{ var }}{{'}}'}}</code>
-                      <small class="badge bg-secondary">Dynamic</small>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <!-- Main Content -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Template Content Card -->
+                <div class="card-base">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="lucide lucide-file-text"></i>
+                            Template Content
+                        </h3>
                     </div>
-                  {% endfor %}
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="subject" class="form-label">Email Subject <span class="required">*</span></label>
+                            <input type="text"
+                                   class="form-input"
+                                   id="subject"
+                                   name="subject"
+                                   value="{{ template.subject }}"
+                                   required>
+                            <span class="form-hint">Use {{'{{'}}VARIABLE{{'}}'}} for dynamic content</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="body" class="form-label">Email Body <span class="required">*</span></label>
+                            <textarea class="form-textarea font-mono"
+                                      id="body"
+                                      name="body"
+                                      rows="20"
+                                      required>{{ template.body }}</textarea>
+                            <span class="form-hint">Supports HTML. Use {{'{{'}}VARIABLE{{'}}'}} for dynamic content.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-textarea"
+                                      id="description"
+                                      name="description"
+                                      rows="3"
+                                      placeholder="Template purpose and notes">{{ template.description|default('') }}</textarea>
+                        </div>
+                    </div>
                 </div>
-              {% else %}
-                <p class="text-muted small mb-0">No variables detected in template.</p>
-              {% endif %}
-              <div class="mt-3 p-3 bg-light rounded small">
-                <strong>Usage Tips:</strong>
-                <ul class="mb-0 mt-2">
-                  <li>Add {{'{{'}}VARIABLE{{'}}'}} to your template content</li>
-                  <li>Variables are replaced with actual values when sending</li>
-                  <li>Use descriptive variable names in UPPERCASE</li>
-                </ul>
-              </div>
             </div>
-          </div>
-          <div class="admin-panel-card">
-            <div class="admin-panel-card-header">
-              <h5 class="mb-0">Info</h5>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-4 space-y-4">
+                <!-- Settings Card -->
+                <div class="card-base">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="lucide lucide-sliders-horizontal"></i>
+                            Settings
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                   type="checkbox"
+                                   id="is_active"
+                                   name="is_active"
+                                   {% if template.is_active %}checked{% endif %}>
+                            <span class="text-sm font-medium text-slate-700">Active</span>
+                        </label>
+
+                        <hr class="border-slate-100">
+
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-700 mb-3">Template Variables</h4>
+                            {% if variables|length > 0 %}
+                                <div class="space-y-1">
+                                    {% for var, val in variables %}
+                                        <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                            <code class="text-xs font-mono text-indigo-700">{{'{{'}}{{ var }}{{'}}'}}</code>
+                                            <span class="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">Dynamic</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-slate-500">No variables detected in template.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
+                            <h5 class="text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Usage Tips</h5>
+                            <ul class="space-y-1 text-xs text-slate-600">
+                                <li class="flex items-start gap-1.5">
+                                    <span class="mt-0.5 h-1 w-1 rounded-full bg-slate-400 flex-shrink-0"></span>
+                                    Add {{'{{'}}VARIABLE{{'}}'}} to your template
+                                </li>
+                                <li class="flex items-start gap-1.5">
+                                    <span class="mt-0.5 h-1 w-1 rounded-full bg-slate-400 flex-shrink-0"></span>
+                                    Variables replaced when sending
+                                </li>
+                                <li class="flex items-start gap-1.5">
+                                    <span class="mt-0.5 h-1 w-1 rounded-full bg-slate-400 flex-shrink-0"></span>
+                                    Use UPPERCASE descriptive names
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card-base">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="lucide lucide-info"></i>
+                            Info
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Created</span>
+                            <p class="mt-0.5 text-slate-800">{{ template.created_at|date("M d, Y H:i") }}</p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Last Updated</span>
+                            <p class="mt-0.5 text-slate-800">{{ template.updated_at|date("M d, Y H:i") }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body small">
-              <div class="mb-2">
-                <strong>Created:</strong>
-                <br>
-                <small class="text-muted">{{ template.created_at|date("M d, Y H:i") }}</small>
-              </div>
-              <div class="mb-2">
-                <strong>Last Updated:</strong>
-                <br>
-                <small class="text-muted">{{ template.updated_at|date("M d, Y H:i") }}</small>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-      <div class="row mt-4">
-        <div class="col">
-          <a href="{{ admin_dir }}/email-templates"
-             class="btn btn-outline-secondary">
-            <i class="bi bi-x-lg"></i> Cancel
-          </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-lg"></i> Save Changes
-          </button>
+
+        <!-- Action Buttons -->
+        <div class="card-base flex items-center gap-3 p-4">
+            <a href="{{ admin_dir }}/email-templates" class="btn-outline">
+                <i class="lucide lucide-x"></i> Cancel
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="lucide lucide-check"></i> Save Changes
+            </button>
         </div>
-      </div>
     </form>
-  </div>
-  <!-- Preview Modal -->
-  <div class="modal fade" id="previewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Template Preview</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<!-- Preview Modal -->
+<div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="previewModal" data-brox-modal="true">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" data-brox-dismiss="modal" aria-hidden="true"></div>
+    <div class="relative w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
+        <!-- Modal Header -->
+        <div class="border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-indigo-50/50 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="lucide lucide-eye text-sky-500" style="width:1.125em;height:1.125em;"></i>
+                    <h3 class="text-base font-semibold text-slate-900">Template Preview</h3>
+                </div>
+                <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal">
+                    <i class="lucide lucide-x" style="width:1.125em;height:1.125em;"></i>
+                </button>
+            </div>
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">
-              <strong>Subject:</strong>
-            </label>
-            <div class="alert alert-info" id="previewSubject">Loading...</div>
-          </div>
-          <hr>
-          <div class="mb-3">
-            <label class="form-label">
-              <strong>Email Body:</strong>
-            </label>
-            <div class="border rounded p-3 bg-light inl-a-0013" id="previewBody">Loading...</div>
-          </div>
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Subject</label>
+                <div class="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900" id="previewSubject">Loading...</div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Body</label>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800" id="previewBody">Loading...</div>
+            </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <!-- Modal Footer -->
+        <div class="border-t border-slate-100 bg-slate-50/50 px-6 py-3 flex justify-end">
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95" data-brox-dismiss="modal">Close</button>
         </div>
-      </div>
     </div>
-  </div>
+</div>
 {% endblock %}

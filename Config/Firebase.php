@@ -49,17 +49,23 @@ $isLocalHost = (
 );
 
 $localAuthDomain = $normalizeDomainValue(
-    env('FIREBASE_AUTH_DOMAIN_LOCAL', 'broxlab-dbd2a.firebaseapp.com'),
-    'broxlab-dbd2a.firebaseapp.com'
+    env('FIREBASE_AUTH_DOMAIN_LOCAL', ''),
+    ''
 );
-$liveDomains = [
+
+$appDomain = preg_replace('#^https?://#i', '', trim((string)env('APP_DOMAIN', '')));
+$appUrlHost = parse_url(trim((string)env('APP_URL', '')), PHP_URL_HOST) ?: '';
+
+$liveDomains = array_values(array_filter(array_unique([
+    $appDomain,
+    $appUrlHost,
     'broxlab.online',
     'broxlab.govinpqms.online',
-];
+])));
 
 $resolvedLiveDomain = in_array($host, $liveDomains, true)
     ? $host
-    : 'broxlab.online';
+    : (string)$normalizeDomainValue(env('FIREBASE_AUTH_DOMAIN_LIVE', $appDomain ?: $appUrlHost ?: 'broxlab.online'), 'broxlab.online');
 
 $liveAuthDomain = $normalizeDomainValue(
     env('FIREBASE_AUTH_DOMAIN_LIVE', $resolvedLiveDomain),
@@ -70,14 +76,14 @@ $resolvedAuthDomain = (!$isHttpsRequest && $isLocalHost) ? $localAuthDomain : $l
 
 return [
     // Firebase Project Credentials
-    'projectId' => env('FIREBASE_PROJECT_ID', 'broxlab-dbd2a'),
-    'apiKey' => env('FIREBASE_API_KEY', 'AIzaSyDAyxlElm44gr2Kh5eehb2vgEsQ-RNOFwk'),
+    'projectId' => env('FIREBASE_PROJECT_ID', ''),
+    'apiKey' => env('FIREBASE_API_KEY', ''),
     // Auto-select auth domain:
     // - http + localhost => Firebase default auth domain
     // - otherwise        => custom production domain
     'authDomain' => $resolvedAuthDomain,
     'databaseUrl' => env('FIREBASE_DATABASE_URL', ''), // not provided in JS config
-    'storageBucket' => env('FIREBASE_STORAGE_BUCKET', 'broxlab-dbd2a.firebasestorage.app'),
+    'storageBucket' => env('FIREBASE_STORAGE_BUCKET', ''),
 
     // Service Account Key (credentials for server-side operations)
     // Supports both file path and raw JSON
@@ -87,14 +93,14 @@ return [
     // Firebase Cloud Messaging (FCM) Settings
     'fcm' => [
         'vapidKey' => env('FIREBASE_VAPID_KEY', ''),
-        'messagingSenderId' => env('FIREBASE_MESSAGING_SENDER_ID', '940556742943'),
+        'messagingSenderId' => env('FIREBASE_MESSAGING_SENDER_ID', ''),
         'serverApiKey' => env('FIREBASE_SERVER_API_KEY', ''),
     ],
 
     // Firebase App Settings
     'app' => [
-        'appId' => env('FIREBASE_APP_ID', '1:940556742943:web:b81ba31457cab98d70002a'),
-        'measurementId' => env('FIREBASE_MEASUREMENT_ID', 'G-P76NMZBDQJ'),
+        'appId' => env('FIREBASE_APP_ID', ''),
+        'measurementId' => env('FIREBASE_MEASUREMENT_ID', ''),
     ],
 
     // OAuth provider enable/disable is managed in Firebase Console

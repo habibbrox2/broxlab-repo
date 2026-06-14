@@ -78,7 +78,7 @@ export async function syncIdTokenWithBackend(user, options = {}) {
     // Get browser info for new device notification
     requestBody.browser = navigator.userAgent;
 
-    const { ok, status, data, error: _error, } = await fetchWithTimeout(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -88,7 +88,8 @@ export async function syncIdTokenWithBackend(user, options = {}) {
       body: JSON.stringify(requestBody),
     });
 
-    const payload = (data && typeof data === 'object') ? data : {};
+    const payload = response.ok ? await response.json().catch(() => ({})) : {};
+    const status = response.status;
 
     if (status === 409) {
       return { success: false, conflict: payload?.conflict || null, status: 409, data: payload, };
@@ -114,6 +115,7 @@ export async function syncIdTokenWithBackend(user, options = {}) {
 export async function signInWithGoogle(options = {}) {
   const auth = await _ensureAuth();
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
   try {
     const res = await signInWithPopup(auth, provider);
     DebugUtils.moduleLog('auth', 'Google sign-in successful');
@@ -139,9 +141,16 @@ export async function signInWithGoogle(options = {}) {
 
     if (isPopupClosed) {
       DebugUtils.moduleWarn('auth', 'Google sign-in popup was closed by user');
-    } else {
-      DebugUtils.moduleError('auth', `Google authentication failed: ${err?.message || String(err)}`);
+      throw err;
     }
+    // auth/popup-blocked or other popup errors → fall back to redirect
+    const isPopupBlocked = errCode.includes('popup-blocked');
+    if (isPopupBlocked) {
+      DebugUtils.moduleWarn('auth', 'Google popup blocked, falling back to redirect sign-in');
+      await signInWithRedirect(auth, provider);
+      return { redirectInitiated: true, provider: 'google' };
+    }
+    DebugUtils.moduleError('auth', `Google authentication failed: ${err?.message || String(err)}`);
     throw err;
   }
 }
@@ -149,6 +158,7 @@ export async function signInWithGoogle(options = {}) {
 export async function signInWithFacebook(options = {}) {
   const auth = await _ensureAuth();
   const provider = new FacebookAuthProvider();
+  provider.addScope('email');
   try {
     const res = await signInWithPopup(auth, provider);
     DebugUtils.moduleLog('auth', 'Facebook sign-in successful');
@@ -174,9 +184,15 @@ export async function signInWithFacebook(options = {}) {
 
     if (isPopupClosed) {
       DebugUtils.moduleWarn('auth', 'Facebook sign-in popup was closed by user');
-    } else {
-      DebugUtils.moduleError('auth', `Facebook authentication failed: ${err?.message || String(err)}`);
+      throw err;
     }
+    const isPopupBlocked = errCode.includes('popup-blocked');
+    if (isPopupBlocked) {
+      DebugUtils.moduleWarn('auth', 'Facebook popup blocked, falling back to redirect sign-in');
+      await signInWithRedirect(auth, provider);
+      return { redirectInitiated: true, provider: 'facebook' };
+    }
+    DebugUtils.moduleError('auth', `Facebook authentication failed: ${err?.message || String(err)}`);
     throw err;
   }
 }
@@ -209,9 +225,15 @@ export async function signInWithGithub(options = {}) {
 
     if (isPopupClosed) {
       DebugUtils.moduleWarn('auth', 'GitHub sign-in popup was closed by user');
-    } else {
-      DebugUtils.moduleError('auth', `GitHub authentication failed: ${err?.message || String(err)}`);
+      throw err;
     }
+    const isPopupBlocked = errCode.includes('popup-blocked');
+    if (isPopupBlocked) {
+      DebugUtils.moduleWarn('auth', 'GitHub popup blocked, falling back to redirect sign-in');
+      await signInWithRedirect(auth, provider);
+      return { redirectInitiated: true, provider: 'github' };
+    }
+    DebugUtils.moduleError('auth', `GitHub authentication failed: ${err?.message || String(err)}`);
     throw err;
   }
 }
@@ -252,6 +274,38 @@ export async function getRedirectResult() {
   } catch (err) {
     DebugUtils.moduleError('auth', 'Get redirect result failed');
     throw err;
+  }
+}
+
+/**
+ * Process redirect result after returning from OAuth provider redirect.
+ * If a successful redirect result is found, syncs with backend.
+ * @returns {Promise<{success: boolean, data?: object, error?: string} | null>}
+ */
+export async function handleAuthRedirectResult() {
+  try {
+    const result = await getRedirectResult();
+    if (!result || !result.user) return null;
+
+    DebugUtils.moduleLog('auth', 'Redirect sign-in result found, syncing with backend');
+
+    // Determine provider from credential
+    let provider = 'unknown';
+    if (result._tokenResponse?.providerId) {
+      provider = normalizeProvider(result._tokenResponse.providerId);
+    } else if (result.providerId) {
+      provider = normalizeProvider(result.providerId);
+    } else if (result.user?.providerData?.length) {
+      provider = normalizeProvider(result.user.providerData[0].providerId);
+    }
+
+    const syncResult = await syncIdTokenWithBackend(result.user, { provider, });
+    await _syncFcmTokenAfterBackend(syncResult);
+
+    return syncResult;
+  } catch (err) {
+    DebugUtils.moduleError('auth', 'Redirect result handling failed:', err?.message || err);
+    return { success: false, error: err?.message || 'Redirect result handling failed' };
   }
 }
 
@@ -401,4 +455,7 @@ export default {
   onAuthStateChanged,
   getCurrentUser,
   reauthenticateWithCredential,
+  getRedirectResult,
+  handleAuthRedirectResult,
+  signInWithRedirectProvider,
 };

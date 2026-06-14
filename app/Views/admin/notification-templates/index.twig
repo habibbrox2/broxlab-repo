@@ -2,234 +2,202 @@
 {% block title %}{{ title }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
-        rel="stylesheet">
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="mdi mdi-bell-outline"></i>{{ title }}
-      </div>
-      <div class="admin-page-subtitle">Manage notification templates for multi-channel delivery across your platform</div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+ {# ── Gradient Page Header ── #}
+ <section class="scroll-fade-in relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8">
+  <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
+  <div class="relative flex flex-wrap items-end justify-between gap-4">
+   <div class="flex items-start gap-4">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+     <i class="lucide lucide-bell-ring text-2xl text-white"></i>
     </div>
-    <!-- Filter & Search Section -->
-    <div class="filter-section mb-4">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="filter-label">Search Templates</div>
-          <input type="text"
-                 class="form-control form-control-sm"
-                 placeholder="Search by name or slug..."
-                 id="searchTemplates">
-        </div>
-        <div class="col-md-3">
-          <div class="filter-label">Show Per Page</div>
-          <select class="form-select form-select-sm"
-                  onchange="location.href='?limit=' + this.value">
-            <option value="10" {% if request.get.limit == 10 %}selected{% endif %}>10 per page</option>
-            <option value="20" {% if request.get.limit == 20 %}selected{% endif %}>20 per page</option>
-            <option value="50" {% if request.get.limit == 50 %}selected{% endif %}>50 per page</option>
-          </select>
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-          <a href="/admin/notification-templates/create"
-             class="modern-btn modern-btn-primary w-100">
-            <i class="mdi mdi-plus me-2"></i>Create Template
-          </a>
-        </div>
-      </div>
+    <div>
+     <h1 class="text-2xl font-bold text-white sm:text-3xl">Notification Templates</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Maintain reusable templates for multi-channel delivery.</p>
     </div>
-    <!-- Templates Table Card -->
-    <div class="admin-panel-card">
-      <div class="admin-panel-card-header bg-light d-flex justify-content-between align-items-center">
-        <div>
-          <i class="mdi mdi-list"></i>
-          <strong>Notification Templates</strong>
-          <span class="badge bg-secondary ms-2">{{ pagination.total }} total</span>
-        </div>
-      </div>
-      <div class="table-wrapper table-container notification-templates-table-wrap">
-        <table class="table table-stacked table-hover mb-0 notification-templates-table">
-          <thead class="table-light">
-            <tr>
-              <th width="5%">
-                <i class="mdi mdi-identifier"></i> ID
-              </th>
-              <th width="20%">
-                <i class="mdi mdi-alphabetical"></i> Name
-              </th>
-              <th width="15%">
-                <i class="mdi mdi-label"></i> Slug
-              </th>
-              <th width="20%">
-                <i class="mdi mdi-send-outline"></i> Channels
-              </th>
-              <th width="10%">
-                <i class="mdi mdi-check-circle"></i> Status
-              </th>
-              <th width="20%">
-                <i class="mdi mdi-tools"></i> Actions
-              </th>
-              <th width="10%">
-                <i class="mdi mdi-calendar"></i> Created
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if templates %}
-              {% for template in templates %}
-                <tr>
-                  <td data-label="ID">
-                    <small class="text-muted">#{{ template.id }}</small>
-                  </td>
-                  <td data-label="Name">
-                    <strong>{{ template.name }}</strong>
-                    {% if template.description %}
-                      <br>
-                      <small class="text-muted d-block">{{ template.description|truncate(50) }}</small>
-                    {% endif %}
-                  </td>
-                  <td data-label="Slug">
-                    <code class="bg-light p-1 rounded">{{ template.slug }}</code>
-                  </td>
-                  <td data-label="Channels">
-                    {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
-                    <div class="d-flex gap-1 flex-wrap">
-                      {% for channel in channels %}
-                        <span class="badge bg-info">
-                          {% if channel == 'in_app' %}
-                            <i class="mdi mdi-bell"></i> In-App
-                          {% elseif channel == 'fcm' %}
-                            <i class="mdi mdi-mobile-alert"></i> FCM
-                          {% elseif channel == 'email' %}
-                            <i class="mdi mdi-email"></i> Email
-                          {% elseif channel == 'sms' %}
-                            <i class="mdi mdi-message-text"></i> SMS
-                          {% else %}
-                            {{ channel }}
-                          {% endif %}
-                        </span>
-                      {% endfor %}
-                    </div>
-                  </td>
-                  <td data-label="Status">
-                    {% if template.is_active %}
-                      <span class="badge bg-success"><i class="mdi mdi-check-circle"></i> Active</span>
-                    {% else %}
-                      <span class="badge bg-secondary"><i class="mdi mdi-circle-outline"></i> Inactive</span>
-                    {% endif %}
-                  </td>
-                  <td data-label="Actions">
-                    <div class="d-flex gap-1">
-                      <a href="/admin/notification-templates/{{ template.id }}"
-                         class="modern-btn modern-btn-info modern-btn-sm"
-                         title="View">
-                        <i class="mdi mdi-eye"></i>
-                      </a>
-                      <a href="/admin/notification-templates/{{ template.id }}/edit"
-                         class="modern-btn modern-btn-primary modern-btn-sm"
-                         title="Edit">
-                        <i class="mdi mdi-pencil"></i>
-                      </a>
-                      <button type="button"
-                              class="modern-btn modern-btn-danger modern-btn-sm"
-                              title="Delete"
-                              onclick="deleteTemplate({{ template.id }})"
-                              aria-label="Delete template">
-                        <i class="mdi mdi-delete"></i>
-                      </button>
-                    </div>
-                  </td>
-                  <td data-label="Created">
-                    <small class="text-muted">{{ template.created_at|date("M d, Y") }}</small>
-                  </td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr class="notification-templates-empty-row">
-                <td colspan="7" class="text-center py-5 text-muted">
-                  <i class="mdi mdi-inbox-outline inl-a-0034"></i>
-                  <p class="mt-3">
-                    No templates found. <a href="/admin/notification-templates/create" class="text-primary">Create one now</a>
-                  </p>
-                </td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <!-- Pagination -->
-    {% if pagination.pages > 1 %}
-      <nav class="mt-4" aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-          {% if pagination.offset > 0 %}
-            <li class="page-item">
-              <a class="page-link" href="?offset=0&limit={{ pagination.limit }}"><i class="mdi mdi-chevron-double-left"></i> First</a>
-            </li>
-          {% endif %}
-          {% for i in 0..(pagination.pages - 1) %}
-            {% if loop.index0 * pagination.limit >= pagination.offset - (pagination.limit * 2) and loop.index0 * pagination.limit <= pagination.offset + (pagination.limit * 2) %}
-              <li class="page-item {% if loop.index0 * pagination.limit == pagination.offset %}active{% endif %}">
-                <a class="page-link"
-                   href="?offset={{ loop.index0 * pagination.limit }}&limit={{ pagination.limit }}">
-                  {{ loop.index }}
-                </a>
-              </li>
-            {% endif %}
-          {% endfor %}
-          {% if pagination.offset + pagination.limit < pagination.total %}
-            <li class="page-item">
-              <a class="page-link"
-                 href="?offset={{ (pagination.pages - 1) * pagination.limit }}&limit={{ pagination.limit }}">Last <i class="mdi mdi-chevron-double-right"></i></a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
+   </div>
+   <a href="/admin/notification-templates/create" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+    <i class="lucide lucide-plus-circle"></i> Create Template
+   </a>
   </div>
-  <script>
-function deleteTemplate(id) {
-    Swal.fire({
-        title: 'Delete Template?',
-        text: 'This action can be undone from the admin panel.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Delete',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#dc3545'
-    }).then(result => {
-        if (!result.isConfirmed) return;
+ </section>
 
-        fetch(`/admin/notification-templates/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire('Deleted!', 'Template deleted successfully.', 'success')
-                    .then(() => location.reload());
-            } else {
-                Swal.fire('Error', data.message || 'Failed to delete template.', 'error');
-            }
-        })
-        .catch(e => Swal.fire('Error', e.message, 'error'));
-    });
+ {# ── Filter Card ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+  <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-filter text-sm"></i>
+   </div>
+   <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Filter &amp; Create</h2>
+  </div>
+  <div class="p-5">
+   <form class="grid gap-4 lg:grid-cols-12" method="get">
+    <div class="lg:col-span-6">
+     <label class="block text-sm font-medium text-slate-700 mb-1" for="searchTemplates">Search Templates</label>
+     <div class="flex overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500">
+      <span class="inline-flex items-center border-r border-slate-200 bg-slate-50 px-3 text-slate-400"><i class="lucide lucide-search"></i></span>
+      <input type="text" class="w-full border-0 px-4 py-2.5 text-sm shadow-none focus:ring-0" placeholder="Search by name or slug..." id="searchTemplates" name="search" value="{{ request.get.search|default('') }}">
+     </div>
+    </div>
+    <div class="lg:col-span-3">
+     <label class="block text-sm font-medium text-slate-700 mb-1">Show Per Page</label>
+     <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" onchange="location.href='?limit=' + this.value">
+      <option value="10" {% if request.get.limit == 10 %}selected{% endif %}>10 per page</option>
+      <option value="20" {% if request.get.limit == 20 %}selected{% endif %}>20 per page</option>
+      <option value="50" {% if request.get.limit == 50 %}selected{% endif %}>50 per page</option>
+     </select>
+    </div>
+    <div class="lg:col-span-3 flex items-end">
+     <a href="/admin/notification-templates/create" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 hover:-translate-y-0.5 hover:shadow-md">
+      <i class="lucide lucide-plus"></i> Create Template
+     </a>
+    </div>
+   </form>
+  </div>
+ </section>
+
+ {# ── Templates Table ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+  <div class="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
+   <div class="flex items-center gap-3">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+     <i class="lucide lucide-file-text text-sm"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Notification Templates</h2>
+     <p class="text-xs text-slate-500">{{ pagination.total }} total templates.</p>
+    </div>
+   </div>
+  </div>
+  <div class="p-5">
+   <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+     <thead>
+      <tr class="border-b border-slate-200">
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Name</th>
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Slug</th>
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Channels</th>
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+       <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
+       <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+      </tr>
+     </thead>
+     <tbody>
+      {% if templates %}
+      {% for template in templates %}
+      <tr class="border-b border-slate-100 transition hover:bg-slate-50/50">
+       <td data-label="ID" class="px-3 py-3"><small class="text-slate-500">#{{ template.id }}</small></td>
+       <td data-label="Name" class="px-3 py-3">
+        <strong class="block text-slate-900">{{ template.name }}</strong>
+        {% if template.description %}<small class="mt-0.5 block text-slate-500">{{ template.description|truncate(50) }}</small>{% endif %}
+       </td>
+       <td data-label="Slug" class="px-3 py-3"><code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{{ template.slug }}</code></td>
+       <td data-label="Channels" class="px-3 py-3">
+        {% set channels = template.channels is iterable ? template.channels : template.channels|json_decode %}
+        <div class="flex flex-wrap gap-1.5">
+         {% for channel in channels %}
+         <span class="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
+          {% if channel == 'in_app' %}
+           <i class="lucide lucide-bell mr-1"></i> In-App
+          {% elseif channel == 'fcm' %}
+           <i class="lucide lucide-smartphone mr-1"></i> FCM
+          {% elseif channel == 'email' %}
+           <i class="lucide lucide-mail mr-1"></i> Email
+          {% elseif channel == 'sms' %}
+           <i class="lucide lucide-message-square mr-1"></i> SMS
+          {% else %}
+           {{ channel }}
+          {% endif %}
+         </span>
+         {% endfor %}
+        </div>
+       </td>
+       <td data-label="Status" class="px-3 py-3">
+        {% if template.is_active %}
+         <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"><i class="lucide lucide-check-circle mr-1"></i> Active</span>
+        {% else %}
+         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"><i class="lucide lucide-circle-dot mr-1"></i> Inactive</span>
+        {% endif %}
+       </td>
+       <td data-label="Created" class="px-3 py-3"><small class="text-slate-500">{{ template.created_at|date("M d, Y") }}</small></td>
+       <td class="px-3 py-3 text-right" data-label="Actions">
+        <div class="inline-flex gap-2">
+         <a href="/admin/notification-templates/{{ template.id }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:-translate-y-0.5 hover:shadow-md" title="View"><i class="lucide lucide-eye"></i></a>
+         <a href="/admin/notification-templates/{{ template.id }}/edit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 hover:-translate-y-0.5 hover:shadow-md" title="Edit"><i class="lucide lucide-pencil"></i></a>
+         <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700 hover:-translate-y-0.5 hover:shadow-md" title="Delete" onclick="deleteTemplate({{ template.id }})" aria-label="Delete template"><i class="lucide lucide-trash-2"></i></button>
+        </div>
+       </td>
+      </tr>
+      {% endfor %}
+      {% else %}
+      <tr>
+       <td colspan="7" class="py-8 text-center text-slate-500">
+        <i class="lucide lucide-inbox text-3xl text-slate-300"></i>
+        <p class="mt-3">No templates found. <a href="/admin/notification-templates/create" class="text-indigo-600 hover:underline">Create one now</a></p>
+       </td>
+      </tr>
+      {% endif %}
+     </tbody>
+    </table>
+   </div>
+
+  {# ── Pagination ── #}
+  {% if pagination.pages > 1 %}
+  <div class="mt-6 flex items-center justify-center gap-1">
+   {% if pagination.offset > 0 %}
+   <a href="?offset=0&limit={{ pagination.limit }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">First</a>
+   {% endif %}
+   {% for i in 0..(pagination.pages - 1) %}
+   {% if loop.index0 * pagination.limit >= pagination.offset - (pagination.limit * 2) and loop.index0 * pagination.limit <= pagination.offset + (pagination.limit * 2) %}
+   <a href="?offset={{ loop.index0 * pagination.limit }}&limit={{ pagination.limit }}" class="inline-flex items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold transition {{ loop.index0 * pagination.limit == pagination.offset ? 'bg-indigo-600 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50' }}">{{ loop.index }}</a>
+   {% endif %}
+   {% endfor %}
+   {% if pagination.offset + pagination.limit < pagination.total %}
+   <a href="?offset={{ (pagination.pages - 1) * pagination.limit }}&limit={{ pagination.limit }}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Last</a>
+   {% endif %}
+  </div>
+  {% endif %}
+  </div>
+ </section>
+</div>
+<script>
+function deleteTemplate(id) {
+ Swal.fire({
+  title: 'Delete Template?',
+  text: 'This action can be undone from the admin panel.',
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonText: 'Yes, Delete',
+  cancelButtonText: 'Cancel',
+  confirmButtonColor: '#dc3545'
+ }).then(result => {
+  if (!result.isConfirmed) return;
+
+  fetch(`/admin/notification-templates/${id}`, {
+   method: 'DELETE',
+   headers: { 'Content-Type': 'application/json' }
+  })
+   .then(r => r.json())
+   .then(data => {
+    if (data.success) {
+     Swal.fire('Deleted!', 'Template deleted successfully.', 'success').then(() => location.reload());
+    } else {
+     Swal.fire('Error', data.message || 'Failed to delete template.', 'error');
+    }
+   })
+   .catch(e => Swal.fire('Error', e.message, 'error'));
+ });
 }
 
-// Live search
 document.getElementById('searchTemplates')?.addEventListener('input', function(e) {
-    const searchText = e.target.value.toLowerCase();
-    document.querySelectorAll('table tbody tr').forEach(row => {
-        const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
-        const slug = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
-        row.style.display = (name.includes(searchText) || slug.includes(searchText)) ? '' : 'none';
-    });
+ const searchText = e.target.value.toLowerCase();
+ document.querySelectorAll('.notification-templates-table tbody tr').forEach((row) => {
+  const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+  const slug = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+  row.style.display = (name.includes(searchText) || slug.includes(searchText)) ? '' : 'none';
+ });
 });
-  </script>
+</script>
 {% endblock %}
-
-

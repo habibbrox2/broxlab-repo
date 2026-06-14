@@ -471,24 +471,15 @@ class ContentModel
         }
     }
 
-    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null, $source_url = null)
+    public function createPost($title, $content, $author, $slug, $published = 0, $reader_indexing = null, $published_at = null, $source_url = null, $meta_title = null, $meta_description = null)
     {
         $normalizedPublishedAt = $this->normalizePublishedAtValue($published_at);
 
-        if ($normalizedPublishedAt !== null) {
-            $stmt = $this->mysqli->prepare("
-                INSERT INTO posts (title, content, author, slug, published, reader_indexing, published_at, source_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->bind_param("ssssiiss", $title, $content, $author, $slug, $published, $reader_indexing, $normalizedPublishedAt, $source_url);
-        } else {
-            $stmt = $this->mysqli->prepare("
-                INSERT INTO posts (title, content, author, slug, published, reader_indexing, source_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->bind_param("ssssiss", $title, $content, $author, $slug, $published, $reader_indexing, $source_url);
-        }
-
+        $stmt = $this->mysqli->prepare("
+            INSERT INTO posts (title, content, author, slug, published, reader_indexing, published_at, source_url, meta_title, meta_description)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->bind_param("ssssiissss", $title, $content, $author, $slug, $published, $reader_indexing, $normalizedPublishedAt, $source_url, $meta_title, $meta_description);
         $stmt->execute();
         return $this->mysqli->insert_id;
     }
@@ -530,25 +521,18 @@ class ContentModel
         return (bool)$ok;
     }
 
-    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing, $published_at = null)
+    public function updatePost($id, $title, $content, $slug, $published, $reader_indexing, $published_at = null, $meta_title = null, $meta_description = null)
     {
         $normalizedPublishedAt = $this->normalizePublishedAtValue($published_at);
-        if ($normalizedPublishedAt !== null) {
-            $stmt = $this->mysqli->prepare("
-                UPDATE posts
-                SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?, published_at = ?
-                WHERE id = ?
-            ");
-            $stmt->bind_param("sssiisi", $title, $content, $slug, $published, $reader_indexing, $normalizedPublishedAt, $id);
-            return $stmt->execute();
-        }
-
         $stmt = $this->mysqli->prepare("
             UPDATE posts
-            SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?
+            SET title = ?, content = ?, slug = ?, published = ?, reader_indexing = ?, published_at = ?, meta_title = ?, meta_description = ?
             WHERE id = ?
         ");
-        $stmt->bind_param("sssiii", $title, $content, $slug, $published, $reader_indexing, $id);
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param("sssiisssi", $title, $content, $slug, $published, $reader_indexing, $normalizedPublishedAt, $meta_title, $meta_description, $id);
         return $stmt->execute();
     }
 
@@ -711,13 +695,13 @@ class ContentModel
     }
     public function getAllCategories()
     {
-        $result = $this->mysqli->query("SELECT * FROM categories ORDER BY id DESC");
+        $result = $this->mysqli->query("SELECT id, name, slug FROM categories ORDER BY id DESC");
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     public function getCategoryById($id)
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM categories WHERE id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, name, slug FROM categories WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -726,7 +710,7 @@ class ContentModel
 
     public function getCategoryBySlug($slug)
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM categories WHERE slug = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, name, slug FROM categories WHERE slug = ?");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -751,13 +735,13 @@ class ContentModel
     // ----------------- Tags -----------------
     public function getAllTags()
     {
-        $result = $this->mysqli->query("SELECT * FROM tags ORDER BY id DESC");
+        $result = $this->mysqli->query("SELECT id, name, slug FROM tags ORDER BY id DESC");
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     public function getTagById($id)
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM tags WHERE id = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, name, slug FROM tags WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -766,7 +750,7 @@ class ContentModel
 
     public function getTagBySlug($slug)
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM tags WHERE slug = ?");
+        $stmt = $this->mysqli->prepare("SELECT id, name, slug FROM tags WHERE slug = ?");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -1336,6 +1320,33 @@ class ContentModel
         }
     }
 
+    /**
+     * Get all published pages for sitemap (XML)
+     * Returns: id, slug, title, updated_at
+     */
+    public function getSitemapPages($limit = 500)
+    {
+        try {
+            $sql = "SELECT id, slug, title, updated_at 
+                    FROM pages 
+                    WHERE published = 1 
+                    ORDER BY updated_at DESC 
+                    LIMIT ?";
+
+            $stmt = $this->mysqli->prepare($sql);
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $pages = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            return $pages ?: [];
+        } catch (Exception $e) {
+            logError("ContentModel::getSitemapPages - " . $e->getMessage());
+            return [];
+        }
+    }
+
     // ====================== PAGINATION & SEARCH ======================
 
     /**
@@ -1348,7 +1359,7 @@ class ContentModel
         $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'name';
 
-        $sql = "SELECT * FROM categories WHERE 1=1";
+        $sql = "SELECT id, name, slug, created_at, updated_at FROM categories WHERE 1=1";
         $params = [];
         $types = '';
 
@@ -1402,10 +1413,10 @@ class ContentModel
     {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
-        $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
+        $allowedSorts = ['id', 'name'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'name';
 
-        $sql = "SELECT * FROM tags WHERE 1=1";
+        $sql = "SELECT id, name, slug FROM tags WHERE 1=1";
         $params = [];
         $types = '';
 

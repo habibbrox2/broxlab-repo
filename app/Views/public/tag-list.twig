@@ -1,120 +1,141 @@
-{% extends "layout.twig" %}
+{% extends 'layout.twig' %}
 
 {% block title %}All Tags | Browse Content by Topics | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Tags', url: '/tags', icon: 'tag' }
+ { label: 'Tags', url: '/tags', icon: 'tag' }
 ] %}
 
 {% block content %}
-<link rel="stylesheet" href="/assets/css/modern-listing.css">
-
-<section class="hero-section position-relative py-5 mb-5 overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-  <div class="container">
-    <div class="row align-items-center g-4">
-      <div class="col-lg-8">
-        <h1 class="display-4 fw-bold text-white mb-3">
-          <i class="bi bi-tags me-2"></i>All Tags
-        </h1>
-        <p class="lead text-white-50 fs-5">Discover content organized by topics. {{ total_tags }} tags to explore.</p>
-      </div>
-      <div class="col-lg-4 text-center">
-        <div class="hero-icon" style="font-size: 4rem;">🏷️</div>
-      </div>
+<div class="public-static-page py-6 md:py-10">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="hero-section mb-6 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white">
+   <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+      <i class="lucide lucide-tags h-3.5 w-3.5" aria-hidden="true"></i>
+      Topic tags
+     </div>
+     <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">All Tags</h1>
+     <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+      Discover content organized by topics, then dive into the discussions and articles that match your interest.
+     </p>
     </div>
-  </div>
-</section>
+    <div class="rounded-[1.75rem] border border-white/15 bg-white/10 px-5 py-4 text-center shadow-[0_20px_50px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-white/75">Tags</div>
+     <div class="mt-2 text-3xl font-bold">{{ total_tags }}</div>
+     <div class="mt-1 text-sm text-white/75">topics to explore</div>
+    </div>
+   </div>
+  </section>
 
-<div class="container py-5">
   <div class="listing-header">
-    <h2><i class="bi bi-tags text-primary me-2"></i>Tags</h2>
-    <p class="text-muted">Browse all topic tags</p>
+   <h2><i class="lucide lucide-tags text-indigo-600" aria-hidden="true"></i>Tags</h2>
+   <p>Search, sort, and browse the full tag index.</p>
   </div>
 
-  <div class="filter-card mb-4">
-    <div class="filter-group">
-      <div class="filter-section" style="flex: 2;">
-        <form method="get" style="display: flex; gap: 0.75rem;">
-          <input type="text" name="search" value="{{ search|default('') }}" class="search-input" placeholder="Search tags...">
-          <button type="submit" class="btn-search"><i class="bi bi-search"></i></button>
-        </form>
-      </div>
-
-      <div class="filter-section">
-        <label>Per Page</label>
-        <form method="get">
-          <select name="per_page" class="filter-select" onchange="this.form.submit()">
-            {% for opt in available_per_page|default([6, 12, 18, 24]) %}
-            <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
-            {% endfor %}
-          </select>
-        </form>
-      </div>
-
-      <div class="filter-section">
-        <label>Sort By</label>
-        <form method="get">
-          <select name="sort" class="filter-select" onchange="this.form.submit()">
-            <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-            <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
-          </select>
-        </form>
-      </div>
+  <!-- Filter Toolbar (glassmorphism) -->
+  <form method="get" class="rounded-2xl border border-slate-200/60 bg-white/85 shadow-lg backdrop-blur-xl p-5 mb-6 dark:border-slate-700/60 dark:bg-slate-900/85">
+   <div class="flex flex-wrap items-center gap-3">
+    <!-- Search -->
+    <div class="relative flex-1 min-w-[200px]">
+     <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+     </svg>
+     <input type="search" name="search" value="{{ search|default('') }}" placeholder="Search tags..." class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400">
     </div>
-  </div>
+    <!-- Per Page -->
+    <select name="per_page" onchange="this.form.submit()" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 appearance-none cursor-pointer dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" aria-label="Items per page">
+     {% for opt in available_per_page|default([6, 12, 18, 24]) %}
+     <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
+     {% endfor %}
+    </select>
+    <!-- Sort -->
+    <select name="sort" onchange="this.form.submit()" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 appearance-none cursor-pointer dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" aria-label="Sort tags">
+     <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Newest</option>
+     <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+    </select>
+   </div>
+  </form>
 
   {% if tags|length > 0 %}
-    <div class="listing-grid">
-      {% for tag in tags %}
-        {% include 'partials/content-card.twig' with { item: {
-            title: tag.name,
-            subtitle: tag.description|default('No description'),
-            id: tag.slug,
-            slug: tag.slug,
-            url: tag.slug,
-            type: 'tag',
-            count: tag.count|default(0),
-            categories: [],
-            tags: [],
-            created_at: 'now'|date('Y-m-d H:i:s')
-        }, index: loop.index } %}
-      {% endfor %}
-    </div>
+  <div class="listing-grid">
+   {% for tag in tags %}
+   {% include 'partials/content-card.twig' with { item: {
+    title: tag.name,
+    subtitle: tag.description|default('No description'),
+    id: tag.slug,
+    slug: tag.slug,
+    url: tag.slug,
+    type: 'tag',
+    count: tag.count|default(0),
+    categories: [],
+    tags: [],
+    created_at: 'now'|date('Y-m-d H:i:s')
+   }, index: loop.index } %}
+   {% endfor %}
+  </div>
 
-    {% if total_pages > 1 %}
-      <div class="pagination-container">
-        <div class="pagination">
-          {% if current_page > 1 %}
-            <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">First</a>
-            <a class="pagination-link" href="?page={{ current_page - 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">Previous</a>
-          {% endif %}
-
-          {% set start = max(1, current_page - 2) %}
-          {% set end = min(total_pages, current_page + 2) %}
-          {% for p in start..end %}
-            {% if p == current_page %}
-              <span class="pagination-link active">{{ p }}</span>
-            {% else %}
-              <a class="pagination-link" href="?page={{ p }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ p }}</a>
-            {% endif %}
-          {% endfor %}
-
-          {% if current_page < total_pages %}
-            <a class="pagination-link" href="?page={{ current_page + 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Next">Next</a>
-            <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Last">Last</a>
-          {% endif %}
-        </div>
-      </div>
+  {% if total_pages > 1 %}
+  <div class="pagination-container">
+   <div class="pagination">
+    {% if current_page > 1 %}
+    <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="First page">
+     <i class="lucide lucide-chevrons-left" aria-hidden="true"></i>
+    </a>
+    <a class="pagination-link" href="?page={{ current_page - 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Previous page">
+     <i class="lucide lucide-chevron-left" aria-hidden="true"></i>
+    </a>
     {% endif %}
 
-  {% else %}
-    <div class="empty-state text-center py-5">
-      <i class="bi bi-inbox" style="font-size:3rem"></i>
-      <h4 class="mt-3">No tags found</h4>
-      <p class="text-muted">No tags available</p>
-    </div>
-  {% endif %}
-</div>
+    {% set start = max(1, current_page - 2) %}
+    {% set end = min(total_pages, current_page + 2) %}
 
+    {% if start > 1 %}
+    <a class="pagination-link" href="?page=1&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">1</a>
+    {% if start > 2 %}
+    <span class="pagination-link disabled" aria-hidden="true">...</span>
+    {% endif %}
+    {% endif %}
+
+    {% for p in start..end %}
+    {% if p == current_page %}
+    <span class="pagination-link active" aria-current="page">{{ p }}</span>
+    {% else %}
+    <a class="pagination-link" href="?page={{ p }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ p }}</a>
+    {% endif %}
+    {% endfor %}
+
+    {% if end < total_pages %}
+    {% if end < total_pages - 1 %}
+    <span class="pagination-link disabled" aria-hidden="true">...</span>
+    {% endif %}
+    <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}">{{ total_pages }}</a>
+    {% endif %}
+
+    {% if current_page < total_pages %}
+    <a class="pagination-link" href="?page={{ current_page + 1 }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Next page">
+     <i class="lucide lucide-chevron-right" aria-hidden="true"></i>
+    </a>
+    <a class="pagination-link" href="?page={{ total_pages }}&per_page={{ per_page }}&search={{ search }}&sort={{ sort }}" aria-label="Last page">
+     <i class="lucide lucide-chevrons-right" aria-hidden="true"></i>
+    </a>
+    {% endif %}
+   </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="surface-card text-center">
+   <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    <i class="lucide lucide-inbox h-7 w-7" aria-hidden="true"></i>
+   </div>
+   <h2 class="text-xl font-bold text-slate-900">No tags found</h2>
+   <p class="mt-2 text-sm text-slate-600">
+    No tags are available right now.
+   </p>
+  </div>
+  {% endif %}
+ </div>
+</div>
 {% endblock %}
- 
+

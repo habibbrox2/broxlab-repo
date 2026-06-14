@@ -1,214 +1,252 @@
 {% extends 'admin/layout.twig' %}
 
 {% block title %}Revenue Dashboard – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
-<li class="breadcrumb-item active" aria-current="page">Revenue</li>
-{% endblock %}
+{% block content %}
+<div class="w-full px-4 sm:px-6 py-4">
 
-{% block page_content %}
-<div class="dashboard-page">
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+  </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-circle-dollar-sign" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Revenue Dashboard</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Track donations, ad revenue, and sponsorship performance</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/revenue/settings" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-settings" style="width:0.875em;height:0.875em;"></i> Settings
+    </a>
+   </div>
+  </div>
+ </div>
 
-  {# ── Stats Cards ── #}
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Donations</small>
-              <div class="h3 mb-0 fw-bold text-success">৳{{ donation_total|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-heart-fill text-success"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+ {# ── Stats Cards ── #}
+ <section class="scroll-fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Donations</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+      <i class="lucide lucide-heart" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Ad Revenue</small>
-              <div class="h3 mb-0 fw-bold text-primary">৳{{ ad_revenue|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-megaphone-fill text-primary"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Total</small>
-              <div class="h3 mb-0 fw-bold text-warning">৳{{ total_revenue|default(0)|number_format(0) }}</div>
-            </div>
-            <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-currency-dollar text-warning"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card h-100 border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <small class="text-muted text-uppercase fw-semibold">Donors</small>
-              <div class="h3 mb-0 fw-bold text-info">{{ donation_count|default(0) }}</div>
-            </div>
-            <div class="icon-circle bg-info bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-people-fill text-info"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">৳{{ donation_total|default(0)|number_format(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Total donations received</div>
+   </div>
   </div>
 
-  {# ── Chart ── #}
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">
-        <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Revenue Trend (Last 12 Months)
-      </h5>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Ad Revenue</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+      <i class="lucide lucide-megaphone" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="card-body p-4">
-      <div id="revenue-chart" style="height:300px;"></div>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">৳{{ ad_revenue|default(0)|number_format(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Advertisement earnings</div>
+   </div>
   </div>
 
-  {# ── Quick Links ── #}
-  <div class="row g-3">
-    <div class="col-md-4">
-      <a href="/admin/revenue/donations" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-success bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-heart-fill text-success"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">All Donations</h6>
-              <small class="text-muted">View and manage donations</small>
-            </div>
-          </div>
-        </div>
-      </a>
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Revenue</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+      <i class="lucide lucide-circle-dollar-sign" style="width:1em;height:1em;"></i>
+     </div>
     </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/ads" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-primary bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-megaphone-fill text-primary"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Ad Placements</h6>
-              <small class="text-muted">Manage ad slots across the site</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/sponsored" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-warning bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-award-fill text-warning"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Sponsored Posts</h6>
-              <small class="text-muted">Label and manage sponsorships</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/admin/revenue/settings" class="card border-0 shadow-sm rounded-4 h-100 text-decoration-none hover-shadow">
-        <div class="card-body p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="icon-circle bg-info bg-opacity-15 rounded-circle p-3">
-              <i class="bi bi-gear-fill text-info"></i>
-            </div>
-            <div>
-              <h6 class="fw-bold mb-0">Revenue Settings</h6>
-              <small class="text-muted">Payments, goals &amp; defaults</small>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">৳{{ total_revenue|default(0)|number_format(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Combined total</div>
+   </div>
   </div>
+
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Donors</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+      <i class="lucide lucide-users" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ donation_count|default(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Unique contributors</div>
+   </div>
+  </div>
+ </section>
+
+ {# ── Revenue Trend Chart ── #}
+ <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-trending-up" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Revenue Trend (Last 12 Months)</h2>
+    <p class="text-xs text-slate-500">Monthly donation, ad, and sponsorship revenue</p>
+   </div>
+  </div>
+  <div class="p-5">
+   <div id="revenue-chart" style="height:300px;"></div>
+  </div>
+ </section>
+
+ {# ── Quick Links ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+    <i class="lucide lucide-link" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Quick Links</h2>
+    <p class="text-xs text-slate-500">Revenue management sections</p>
+   </div>
+  </div>
+  <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
+   <a href="/admin/revenue/donations" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+    <div class="p-5">
+     <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+       <i class="lucide lucide-heart" style="width:1.125em;height:1.125em;"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+       <h6 class="text-sm font-bold text-slate-900">All Donations</h6>
+       <p class="mt-0.5 text-xs text-slate-500">View and manage donations</p>
+      </div>
+      <i class="lucide lucide-chevron-right shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+   </a>
+
+   <a href="/admin/revenue/ads" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+    <div class="p-5">
+     <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+       <i class="lucide lucide-megaphone" style="width:1.125em;height:1.125em;"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+       <h6 class="text-sm font-bold text-slate-900">Ad Placements</h6>
+       <p class="mt-0.5 text-xs text-slate-500">Manage ad slots across the site</p>
+      </div>
+      <i class="lucide lucide-chevron-right shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+   </a>
+
+   <a href="/admin/revenue/sponsored" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+    <div class="p-5">
+     <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+       <i class="lucide lucide-award" style="width:1.125em;height:1.125em;"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+       <h6 class="text-sm font-bold text-slate-900">Sponsored Posts</h6>
+       <p class="mt-0.5 text-xs text-slate-500">Label and manage sponsorships</p>
+      </div>
+      <i class="lucide lucide-chevron-right shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+   </a>
+
+   <a href="/admin/revenue/settings" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+    <div class="p-5">
+     <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+       <i class="lucide lucide-settings" style="width:1.125em;height:1.125em;"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+       <h6 class="text-sm font-bold text-slate-900">Revenue Settings</h6>
+       <p class="mt-0.5 text-xs text-slate-500">Payments, goals &amp; defaults</p>
+      </div>
+      <i class="lucide lucide-chevron-right shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+   </a>
+  </div>
+ </section>
 
 </div>
+{% endblock %}
 
-{# ── Chart.js CDN + tiny init ── #}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% block scripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 <script>
-(function () {
-  const months   = {{ chart_months|json_encode|raw }};
-  const don      = {{ donation_series|json_encode|raw }};
-  const ads      = {{ ad_series|default([])|json_encode|raw }};
-  const sponsored= {{ sponsored_series|default([])|json_encode|raw }};
+document.addEventListener('DOMContentLoaded', function () {
+ const months = {{ chart_months|json_encode|raw }};
+ const don = {{ donation_series|json_encode|raw }};
+ const ads = {{ ad_series|default([])|json_encode|raw }};
+ const sponsored = {{ sponsored_series|default([])|json_encode|raw }};
 
-  const ctx = document.getElementById('revenue-chart');
-  if (!ctx) return;
+ const ctx = document.getElementById('revenue-chart');
+ if (!ctx) return;
 
-  const hex = (hex8) => hex8;
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [
-        {
-          label: 'Donations (৳)',
-          data: don,
-          backgroundColor: 'rgba(16,185,129,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-        {
-          label: 'Ads (৳)',
-          data: ads,
-          backgroundColor: 'rgba(99,102,241,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-        {
-          label: 'Sponsored (৳)',
-          data: sponsored,
-          backgroundColor: 'rgba(245,158,11,.65)',
-          borderRadius: 6, stack: 'stack0',
-        },
-      ]
+ new Chart(ctx, {
+  type: 'bar',
+  data: {
+   labels: months,
+   datasets: [
+    {
+     label: 'Donations (৳)',
+     data: don,
+     backgroundColor: 'rgba(16,185,129,.65)',
+     borderRadius: 6,
+     stack: 'stack0',
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          callbacks: {
-            label: ctx => ' ' + ctx.dataset.label + ': ৳' + ctx.raw.toLocaleString()
-          }
-        }
-      },
-      scales: {
-        x: { stacked: true },
-        y: {
-          stacked: true,
-          ticks: { callback: v => '৳' + v.toLocaleString() }
-        }
-      }
+    {
+     label: 'Ads (৳)',
+     data: ads,
+     backgroundColor: 'rgba(99,102,241,.65)',
+     borderRadius: 6,
+     stack: 'stack0',
+    },
+    {
+     label: 'Sponsored (৳)',
+     data: sponsored,
+     backgroundColor: 'rgba(245,158,11,.65)',
+     borderRadius: 6,
+     stack: 'stack0',
+    },
+   ]
+  },
+  options: {
+   responsive: true,
+   maintainAspectRatio: false,
+   plugins: {
+    legend: { position: 'top' },
+    tooltip: {
+     callbacks: {
+      label: ctx => ' ' + ctx.dataset.label + ': ৳' + ctx.raw.toLocaleString()
+     }
     }
-  });
-})();
+   },
+   scales: {
+    x: { stacked: true },
+    y: {
+     stacked: true,
+     ticks: { callback: v => '৳' + v.toLocaleString() }
+    }
+   }
+  }
+ });
+});
 </script>
 {% endblock %}

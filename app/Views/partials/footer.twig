@@ -1,133 +1,160 @@
 {#
-  ============================================================
-  FOOTER TEMPLATE - SEO & CSS OPTIMIZED
-  ============================================================
-  
-  This footer section includes:
-  - Complete CSS class integration from components.css, themes.css, core.css
-  - Schema.org WPFooter microdata
-  - Responsive design support
-  - Dark mode support
-  - Accessibility attributes
-  - Social media integration
-  - Legal links section
-  
-  ============================================================
+ ============================================================
+ FOOTER TEMPLATE - SEO & CSS OPTIMIZED
+ ============================================================
+ 
+ This footer section includes:
+ - Complete CSS class integration from components.css, themes.css, core.css
+ - Schema.org WPFooter microdata
+ - Responsive design support
+ - Dark mode support
+ - Accessibility attributes
+ - Social media integration
+ - Legal links section
+ 
+ ============================================================
 #}
 
-<footer class="footer-custom py-4 py-md-5 border-top" role="contentinfo" itemscope itemtype="https://schema.org/WPFooter">
-    <div class="container">
-        <div class="row mb-4 mb-md-5">
-            
-            {# ===== FOOTER SECTION 1: About Company ===== #}
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h5 class="fw-bold mb-3 text-light" itemprop="name">
-                    <i class="bi bi-phone-fill me-2" aria-hidden="true"></i>{{ app_settings.site_name }}
-                </h5>
-                <p class="small text-light-secondary footer-text" itemprop="description">
-                    {{ app_settings.site_description|default('Your trusted source for mobile reviews, tech insights, and online services. Connect with us on social media for exclusive content and the latest updates.') }}
-                </p>
-                
-                {# Social Media Links #}
-                {% if app_settings.social_twitter or app_settings.social_instagram or app_settings.social_facebook %}
-                <nav aria-label="Social media links">
-                    <div class="d-flex gap-3 footer-social-links">
-                        {% if app_settings.social_twitter %}
-                        <a href="{{ app_settings.social_twitter }}" 
-                           class="footer-social-link hover-text-primary" 
-                           title="Follow us on Twitter/X"
-                           rel="noopener noreferrer" 
-                           target="_blank"
-                           aria-label="Twitter/X">
-                            <i class="bi bi-twitter-x fs-6" aria-hidden="true"></i>
-                        </a>
-                        {% endif %}
-                        
-                        {% if app_settings.social_instagram %}
-                        <a href="{{ app_settings.social_instagram }}" 
-                           class="footer-social-link hover-text-primary" 
-                           title="Follow us on Instagram"
-                           rel="noopener noreferrer" 
-                           target="_blank"
-                           aria-label="Instagram">
-                            <i class="bi bi-instagram fs-6" aria-hidden="true"></i>
-                        </a>
-                        {% endif %}
-                        
-                        {% if app_settings.social_facebook %}
-                        <a href="{{ app_settings.social_facebook }}" 
-                           class="footer-social-link hover-text-primary" 
-                           title="Follow us on Facebook"
-                           rel="noopener noreferrer" 
-                           target="_blank"
-                           aria-label="Facebook">
-                            <i class="bi bi-facebook fs-6" aria-hidden="true"></i>
-                        </a>
-                        {% endif %}
-                    </div>
-                </nav>
-                {% endif %}
-            </div>
+<footer class="relative overflow-hidden border-t border-slate-800/70 bg-slate-950 py-10 text-slate-300 shadow-[0_-18px_60px_rgba(15,23,42,0.18)] md:py-14" role="contentinfo" itemscope itemtype="https://schema.org/WPFooter">
+ <div class="pointer-events-none absolute inset-0">
+ <div class="absolute -top-24 left-1/4 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl"></div>
+ <div class="absolute -bottom-24 right-1/4 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl"></div>
+ </div>
+ <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ <div class="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10 mb-8 md:mb-12">
 
-            {# ===== FOOTER SECTION 2: Quick Links ===== #}
-            <div class="col-md-4 mb-4 mb-md-0">
-                <h6 class="fw-bold mb-3 text-light">Quick Links</h6>
-                <ul class="list-unstyled small footer-links" role="navigation" aria-label="Quick navigation">
-                    <li><a href="/about-us" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>About Us
-                    </a></li>
-                    <li><a href="/contact" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Contact
-                    </a></li>
-                    <li><a href="/newsletter" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Newsletter
-                    </a></li>
-                    <li><a href="/advertise" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Advertise
-                    </a></li>
-                    <li><a href="/faq" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>FAQ
-                    </a></li>
-                </ul>
-            </div>
+ {# ===== FOOTER SECTION 1: About Company ===== #}
+ <div class="md:col-span-1">
+ <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
+ <i class="lucide lucide-sparkles h-3.5 w-3.5" aria-hidden="true"></i> About
+ </div>
+ <div class="mb-3 text-lg font-bold text-white" itemprop="name">
+ <i class="lucide lucide-smartphone mr-2" aria-hidden="true"></i>{{ app_settings.site_name }}
+ </div>
+ <p class="footer-text text-sm leading-7 text-slate-400" itemprop="description">
+ {{ app_settings.site_description|default('Your trusted source for mobile reviews, tech insights, and online services. Connect with us on social media for exclusive content and the latest updates.') }}
+ </p>
 
-            {# ===== FOOTER SECTION 3: Legal & Compliance ===== #}
-            <div class="col-md-4">
-                <h6 class="fw-bold mb-3 text-light">Legal</h6>
-                <ul class="list-unstyled small footer-links" role="navigation" aria-label="Legal navigation">
-                    <li><a href="/terms" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Terms of Service
-                    </a></li>
-                    <li><a href="/privacy" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Privacy Policy
-                    </a></li>
-                    <li><a href="/sitemap" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Sitemap
-                    </a></li>
-                    <li><a href="/sitemap.xml" class="text-decoration-none footer-link hover-footer-link">
-                        <i class="bi bi-chevron-right me-1" aria-hidden="true"></i>XML Sitemap
-                    </a></li>
-                </ul>
-            </div>
-        </div>
+ {# Social Media Links #}
+ {% if app_settings.social_twitter or app_settings.social_instagram or app_settings.social_facebook %}
+ <nav aria-label="Social media links" class="mt-4">
+ <div class="flex gap-4 footer-social-links">
+ {% if app_settings.social_twitter %}
+ <a href="{{ app_settings.social_twitter }}"
+ class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
+ title="Follow us on Twitter/X"
+ rel="noopener noreferrer"
+ target="_blank"
+ aria-label="Twitter/X">
+ <i class="lucide lucide-share-2 text-lg" aria-hidden="true"></i>
+ </a>
+ {% endif %}
 
-        {# ===== FOOTER DIVIDER ===== #}
-        <hr class="opacity-25" role="doc-pagebreak" aria-hidden="true">
+ {% if app_settings.social_instagram %}
+ <a href="{{ app_settings.social_instagram }}"
+ class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
+ title="Follow us on Instagram"
+ rel="noopener noreferrer"
+ target="_blank"
+ aria-label="Instagram">
+ <i class="lucide lucide-instagram text-lg" aria-hidden="true"></i>
+ </a>
+ {% endif %}
 
-        {# ===== FOOTER BOTTOM: Copyright & Contact ===== #}
-        <div class="row">
-            <div class="col-12">
-                <p class="mb-0 small text-light-secondary footer-copyright">
-                    &copy; {{ "now"|date("Y") }} <strong class="text-light">{{ app_settings.site_name }}</strong>. All rights reserved. 
-                    {% if app_settings.contact_email %}
-                    | <a href="mailto:{{ app_settings.contact_email }}" 
-                        class="text-decoration-none footer-link hover-footer-link" 
-                        title="Email us">{{ app_settings.contact_email }}</a>
-                    {% endif %}
-                    <span class="ms-2 d-inline-block footer-tagline">Designed for maximum performance &amp; accessibility.</span>
-                </p>
-            </div>
-        </div>
-    </div>
+ {% if app_settings.social_facebook %}
+ <a href="{{ app_settings.social_facebook }}"
+ class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
+ title="Follow us on Facebook"
+ rel="noopener noreferrer"
+ target="_blank"
+ aria-label="Facebook">
+ <i class="lucide lucide-share-2 text-lg" aria-hidden="true"></i>
+ </a>
+ {% endif %}
+ </div>
+ </nav>
+ {% endif %}
+ </div>
+
+ {# ===== FOOTER SECTION 2: Quick Links ===== #}
+ <div class="md:col-span-1">
+ <div class="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-white">Quick Links</div>
+ <ul class="space-y-3 text-sm" role="navigation" aria-label="Quick navigation">
+ <li class="list-none">
+ <a href="/about-us" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="About Us">About Us</span>
+                    </a>
+                   </li>
+                   <li class="list-none">
+                    <a href="/contact" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+                     <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
+                     <span data-i18n="Contact">Contact</span>
+ </a>
+ </li>
+ <li class="list-none">
+ <a href="/newsletter" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="Newsletter">Newsletter</span>
+                    </a>
+                   </li>
+                   <li class="list-none">
+                    <a href="/advertise" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+                     <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
+                     <span data-i18n="Advertise">Advertise</span>
+ </a>
+ </li>
+ <li class="list-none">
+ <a href="/faq" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="FAQ">FAQ</span>
+ </a>
+ </li>
+ </ul>
+ </div>
+
+ {# ===== FOOTER SECTION 3: Legal & Compliance ===== #}
+ <div class="md:col-span-1">
+ <div class="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-white">Legal</div>
+ <ul class="space-y-3 text-sm" role="navigation" aria-label="Legal navigation">
+ <li class="list-none">
+ <a href="/terms" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="Terms of Service">Terms of Service</span>
+ </a>
+ </li>
+ <li class="list-none">
+ <a href="/privacy" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="Privacy Policy">Privacy Policy</span>
+ </a>
+ </li>
+ <li class="list-none">
+ <a href="/sitemap" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+ <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>                     <span data-i18n="Sitemap">Sitemap</span>
+                    </a>
+                   </li>
+                   <li class="list-none">
+                    <a href="/sitemap.xml" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
+                     <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
+                     <span data-i18n="XML Sitemap">XML Sitemap</span>
+ </a>
+ </li>
+ </ul>
+ </div>
+ </div>
+
+ {# ===== FOOTER DIVIDER ===== #}
+ <hr class="border-slate-700/50 opacity-50" role="doc-pagebreak" aria-hidden="true">
+
+ {# ===== FOOTER BOTTOM: Copyright & Contact ===== #}
+ <div class="mt-6 text-center md:text-left">
+ <p class="footer-copyright text-sm text-slate-400">
+ &copy; {{"now"|date("Y") }} <strong class="text-white">{{ app_settings.site_name }}</strong>. All rights reserved.
+ {% if app_settings.contact_email %}
+ | <a href="mailto:{{ app_settings.contact_email }}"
+ class="text-slate-400 hover:text-white transition-colors"
+ title="Email us">{{ app_settings.contact_email }}</a>
+ {% endif %}
+ <span class="footer-tagline ml-2 inline-block text-slate-500">Designed for maximum performance &amp; accessibility.</span>
+ </p>
+ </div>
+ </div>
 </footer>
+
 

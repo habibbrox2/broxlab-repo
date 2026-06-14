@@ -24,7 +24,7 @@ export const PASSWORD_REQUIREMENTS = {
     label: 'One number',
   },
   special: {
-    pattern: new RegExp("[!@#$%^&*\\-_=+\\[\\]{};:'\",.<>?/\\\\|`~]"),
+    pattern: /[!@#$%^&*()_+\-=[\]{};:'",.<>?/\\|`~]/,
     label: 'One special character',
   },
 };
@@ -98,9 +98,9 @@ export function validateConfirmation(elements) {
     let html = '';
     if (pwd && conf) {
       if (isValid) {
-        html = '<small class="text-success"><i class="bi bi-check-circle"></i> Passwords match</small>';
+        html = '<small class="text-emerald-600"><i class="lucide lucide-check-circle w-4 h-4 inline-block"></i> Passwords match</small>';
       } else {
-        html = '<small class="text-danger"><i class="bi bi-x-circle"></i> Passwords do not match</small>';
+        html = '<small class="text-red-600"><i class="lucide lucide-x-circle w-4 h-4 inline-block"></i> Passwords do not match</small>';
       }
     }
     elements.confirmFeedback.innerHTML = html;

@@ -1,110 +1,104 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
+{% block title %}Edit Role{% endblock %}
+{% block stylesheets %}
+ {% include 'admin/partials/_shared-form-styles.twig' %}
+{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="service-form-wrapper">
-    <div class="container service-form-container">
-      <div class="modern-breadcrumb">
-        <a href="/admin"><i class="bi bi-house-door"></i> Dashboard</a>
-        <span class="separator">›</span>
-        <a href="/admin/roles">Roles</a>
-        <span class="separator">›</span>
-        <span class="active">Edit</span>
-      </div>
-      <div class="header-glass-card mb-4">
-        <div class="d-flex align-items-center justify-content-between gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="header-icon-badge">
-              <i class="bi bi-shield-lock"></i>
-            </div>
-            <div>
-              <h1 class="page-title">Edit: {{ role.name|upper }}</h1>
-              <p class="page-subtitle">Manage role details and permissions</p>
-            </div>
-          </div>
-          <a href="/admin/roles" class="modern-btn modern-btn-secondary">Back to Roles</a>
-        </div>
-      </div>
-      <div class="row g-4">
-        <div class="col-lg-6 mx-auto">
-          <div class="admin-panel-card">
-            <div class="admin-panel-card-header">
-              <h5 class="admin-panel-card-header-title">
-                <i class="bi bi-info-circle-fill"></i> Role Information
-              </h5>
-            </div>
-            <div class="admin-panel-card-body">
-              <form method="POST" action="/admin/roles/{{ role.id }}/update">
-                <div class="mb-3">
-                  <label for="name" class="form-label">Role Name *</label>
-                  <input type="text"
-                         class="form-control"
-                         id="name"
-                         name="name"
-                         value="{{ role.name }}"
-                         placeholder="e.g., moderator"
-                         required>
-                  <small class="text-muted">Use lowercase with underscores</small>
-                </div>
-                <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control"
-                            id="description"
-                            name="description"
-                            rows="3"
-                            placeholder="Brief description of this role">{{ role.description }}</textarea>
-                </div>
-                <div class="card mt-4 bg-light border">
-                  <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="mb-0">Assign Permissions</h6>
-                      <div>
-                        <button type="button"
-                                class="btn btn-sm btn-primary-outline"
-                                onclick="selectAll()">Select All</button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-secondary"
-                                onclick="deselectAll()">Clear</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="admin-panel-card-body">
-                    {% for module, perms in permissions %}
-                      <div class="mb-3">
-                        <h6 class="text-uppercase fw-bold text-primary module-header-sm">{{ module }}</h6>
-                        <div class="permission-group">
-                          {% for perm in perms %}
-                            <div class="form-check">
-                              <input class="form-check-input permission-checkbox"
-                                     type="checkbox"
-                                     name="permissions[]"
-                                     value="{{ perm.id }}"
-                                     id="perm_{{ perm.id }}"
-                                     {% if perm.id in rolePermissionIds %}checked{% endif %}>
-                              <label class="form-check-label" for="perm_{{ perm.id }}">
-                                <strong>{{ perm.name }}</strong>
-                                <br>
-                                <small class="text-muted">{{ perm.description }}</small>
-                              </label>
-                            </div>
-                          {% endfor %}
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
-                <div class="mt-4 d-flex gap-2">
-                  <button type="submit" class="modern-btn modern-btn-white">
-                    <i class="bi bi-check-circle me-2"></i>Update Role
-                  </button>
-                  <a href="/admin/roles" class="modern-btn modern-btn-secondary">
-                    <i class="bi bi-x-circle me-2"></i>Cancel
-                  </a>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-6">
+
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-amber-900 to-orange-900 p-6 text-white shadow-2xl shadow-amber-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-shield-edit" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Edit: {{ role.name|upper }}</h1>
+     <p class="mt-1 text-sm text-amber-200/80">Manage role details and permissions.</p>
+    </div>
+   </div>
+   <a href="/admin/roles" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+    <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Back to Roles
+   </a>
+  </div>
+ </div>
+
+ {# ── Edit Role Form Card ── #}
+ <section class="scroll-fade-in max-w-3xl card-base">
+  <div class="card-header">
+   <h3 class="card-title">
+    <i class="lucide lucide-shield"></i>
+    Role Details
+   </h3>
+  </div>
+  <div class="card-body">
+   <form method="POST" action="/admin/roles/{{ role.id }}/update">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="form-group">
+     <label for="name" class="form-label">Role Name <span class="required">*</span></label>
+     <div class="relative">
+      <i class="lucide lucide-tag absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" class="form-input pl-10" id="name" name="name" value="{{ role.name }}" placeholder="e.g., moderator" required>
+     </div>
+    </div>
+
+    <div class="form-group">
+     <label for="description" class="form-label">Description</label>
+     <textarea class="form-textarea" id="description" name="description" rows="3" placeholder="Brief description of this role">{{ role.description }}</textarea>
+    </div>
+
+    {# ── Permissions Assignment Card ── #}
+    <div class="card-base">
+     <div class="card-header">
+      <div class="flex flex-1 items-center justify-between">
+       <h3 class="card-title !m-0">
+        <i class="lucide lucide-key"></i>
+        Assign Permissions
+       </h3>
+       <div class="flex gap-1.5">
+        <button type="button" class="btn-sm btn-primary" onclick="document.querySelectorAll('.permission-checkbox').forEach(c=>c.checked=true)">Select All</button>
+        <button type="button" class="btn-sm btn-outline" onclick="document.querySelectorAll('.permission-checkbox').forEach(c=>c.checked=false)">Clear</button>
+       </div>
+      </div>
+     </div>
+     <div class="card-body">
+      {% for module, perms in permissions %}
+      <div class="mb-5 last:mb-0">
+       <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-indigo-600">{{ module }}</h3>
+       <div class="space-y-3">
+        {% for perm in perms %}
+        <label class="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-indigo-200 hover:shadow-sm cursor-pointer">
+         <input class="permission-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="permissions[]" value="{{ perm.id }}" id="perm_{{ perm.id }}" {% if perm.id in rolePermissionIds %}checked{% endif %}>
+         <span>
+          <strong class="block text-sm text-slate-900">{{ perm.name }}</strong>
+          <small class="text-slate-500">{{ perm.description }}</small>
+         </span>
+        </label>
+        {% endfor %}
+       </div>
+      </div>
+      {% endfor %}
+     </div>
+    </div>
+
+    {# ── Actions ── #}
+    <div class="flex flex-wrap gap-2 pt-4">
+     <button type="submit" class="btn-primary bg-amber-600 hover:bg-amber-700">
+      <i class="lucide lucide-check-circle"></i> Update Role
+     </button>
+     <a href="/admin/roles" class="btn-outline">
+      <i class="lucide lucide-x-circle"></i> Cancel
+     </a>
+    </div>
+   </form>
+  </div>
+ </section>
+</div>
 {% endblock %}

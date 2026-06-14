@@ -1,322 +1,348 @@
-﻿{% extends "layout.twig" %}
+{% extends "layout.twig" %}
 
 {# ===== SEO Meta Tags ===== #}
 {% block title %}{{ app_settings.meta_title ?: app_settings.site_name ~ ' | Official Website' }}{% endblock %}
 {% block og_type %}website{% endblock %}
 
 {% block extra_styles %}
-  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css">
-  <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}">
+  {# Non-critical page-specific styles (deferred) #}
+  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css"></noscript>
+  <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}"></noscript>
+  <link rel="stylesheet" href="{{ asset('assets/css/home.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/home.css') }}?v={{ assets_version }}"></noscript>
+  <link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}"></noscript>
+{% endblock %}
+
+{% set page_image = app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url %}
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  '@id': canonical_url|default(url),
+  'url': url,
+  'name': app_settings.meta_title ?: app_settings.site_name,
+  'description': app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name,
+  'image': page_image,
+  'isPartOf': {
+    '@type': 'WebSite',
+    '@id': url,
+    'name': app_settings.site_name
+  },
+  'datePublished': 'now'|date('c'),
+  'dateModified': 'now'|date('c')
+} %}
+{% block schema %}
+  <script type="application/ld+json">
+{{ page_schema|schema_json }}
+  </script>
 {% endblock %}
 
 {% block content %}
 
-{# ===== JSON-LD: HomePage Schema ===== #}
-{# Helps Google understand this is the homepage and improves featured snippet chances #}
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "@id": {{ canonical_url|default(url)|json_encode }},
-    "name": {{ (app_settings.meta_title ?: app_settings.site_name)|json_encode }},
-    "description": {{ (app_settings.meta_description ?: 'Welcome to ' ~ app_settings.site_name)|json_encode }},
-    "url": {{ url|json_encode }},
-     "image": {{ app_settings.site_logo|json_encode }},
-    "isPartOf": {
-        "@type": "WebSite",
-        "@id": {{ url|json_encode }},
-        "name": {{ app_settings.site_name|json_encode }}
-    },
-    "datePublished": "{{ 'now'|date('c') }}",
-    "dateModified": "{{ 'now'|date('c') }}"
-}
-</script>
+{# ==================== HERO SECTION — Modern SaaS Design ==================== #}
+<section class="home-hero" aria-labelledby="hero-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
 
-{# ==================== HERO SECTION ==================== #}
-<section class="hero home-hero position-relative text-center text-white py-5 mb-5 overflow-hidden"
-        
-         aria-labelledby="hero-title">
-
-  {# Animated Background Elements #}
-  <div class="position-absolute top-0 start-0 w-100 h-100" aria-hidden="true">
-    {# Floating Shapes #}
-    <div class="floating-shape shape-1"></div>
-    <div class="floating-shape shape-2"></div>
-    <div class="floating-shape shape-3"></div>
-    <div class="floating-shape shape-4"></div>
-    <div class="floating-shape shape-5"></div>
-
-    {# Gradient Orbs #}
-    <div class="hero-orb orb-1"></div>
-    <div class="hero-orb orb-2"></div>
-    <div class="hero-orb orb-3"></div>
-
-    {# Mesh Gradient Overlay #}
-    <div class="mesh-overlay"></div>
-  </div>
-
-  <div class="container py-5 position-relative" style="z-index: 2;">
-    <div class="row justify-content-center">
-      <div class="col-lg-10">
+      {# ── Hero Content ── #}
+      <div class="relative z-10 text-center lg:text-left">
         {# Hero Badge #}
-        <div class="hero-badge mb-4">
-          <span class="badge bg-white bg-opacity-20 text-primary px-4 py-2 rounded-pill border border-white border-opacity-40 tw-backdrop-blur-sm">
-            <i class="bi bi-lightning-charge-fill me-2" aria-hidden="true"></i>
+        <div class="hero-badge">
+          <span>
+            <i class="lucide lucide-sparkles" aria-hidden="true"></i>
             Explore What's New
-            <i class="bi bi-rocket-takeoff-fill ms-2" aria-hidden="true"></i>
           </span>
         </div>
 
-        <h1 id="hero-title" class="display-2 fw-extrabold mb-4 text-uppercase tracking-wider hero-title">
-          <span class="text-shadow-lg">
-            Latest Updates
-          </span>
+        <h1 id="hero-title" class="hero-title">
+          Discover the <span class="hero-gradient-text">Future</span> of Mobile Technology
         </h1>
 
-        <p class="lead mb-5 opacity-90 fs-5 hero-subtitle">
-          Discover the future of mobile technology with our curated latest updates, insights, and exclusive services that keeps you ahead of the curve.
+        <p class="hero-subtitle">
+          Curated latest updates, in-depth insights, and exclusive services that keep you ahead of the curve.
         </p>
 
-        {# Action Buttons #}
-        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mb-4">
-          <a href="#latest-updates" class="btn btn-lg btn-light rounded-pill px-5 py-3 shadow-lg fw-bold transition-all hover-scale hero-cta-primary position-relative overflow-hidden">
-            <span class="position-relative z-index-1">
-              <i class="bi bi-rocket-takeoff-fill me-2" aria-hidden="true"></i>
-              Explore Now
-            </span>
-            <div class="btn-shine"></div>
+        {# CTA Buttons #}
+        <div class="mb-4 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+          <a href="#latest-updates" class="hero-cta-primary">
+            <i class="lucide lucide-rocket" aria-hidden="true"></i>
+            Explore Now
           </a>
-
-          <a href="/services" class="btn btn-lg btn-outline-light rounded-pill px-5 py-3 fw-bold transition-all hover-glow hero-cta-secondary">
-            <i class="bi bi-award-fill me-2" aria-hidden="true"></i>
+          <a href="/services" class="hero-cta-secondary">
+            <i class="lucide lucide-award" aria-hidden="true"></i>
             Browse Services
           </a>
-
         </div>
 
         {# Quick Stats #}
-        <div class="row justify-content-center mt-5 home-hero-stats g-3">
-          <div class="col-auto">
-            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
-              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
-                <i class="bi bi-phone-fill fs-4 text-primary" aria-hidden="true"></i>
-              </div>
-              <div class="text-start">
-                <div class="fw-bold fs-4 text-white">1200+</div>
-                <div class="small opacity-75">Devices</div>
-              </div>
+        <div class="home-hero-stats">
+          <div class="hero-stat">
+            <div class="stat-icon">
+              <i class="lucide lucide-smartphone" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="stat-value">1200+</div>
+              <div class="stat-label">Devices</div>
             </div>
           </div>
-
-          <div class="col-auto mx-4">
-            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
-              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
-                <i class="bi bi-newspaper fs-4 text-success" aria-hidden="true"></i>
-              </div>
-              <div class="text-start">
-                <div class="fw-bold fs-4 text-white">850+</div>
-                <div class="small opacity-75">Articles</div>
-              </div>
+          <div class="hero-stat">
+            <div class="stat-icon">
+              <i class="lucide lucide-book-open" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="stat-value">850+</div>
+              <div class="stat-label">Articles</div>
             </div>
           </div>
-
-          <div class="col-auto">
-            <div class="hero-stat d-flex align-items-center gap-3 text-white-50">
-              <div class="stat-icon bg-white bg-opacity-20 rounded-circle p-3">
-                <i class="bi bi-award-fill fs-4 text-warning" aria-hidden="true"></i>
-              </div>
-              <div class="text-start">
-                <div class="fw-bold fs-4 text-white">150+</div>
-                <div class="small opacity-75">Services</div>
-              </div>
+          <div class="hero-stat">
+            <div class="stat-icon">
+              <i class="lucide lucide-award" aria-hidden="true"></i>
+            </div>
+            <div>
+              <div class="stat-value">150+</div>
+              <div class="stat-label">Services</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  {# Scroll Indicator #}
-  <div class="scroll-indicator position-absolute bottom-0 start-50 translate-middle-x mb-4">
-    <div class="d-flex flex-column align-items-center text-white-50">
-      <span class="small mb-2">Scroll to explore</span>
-      <div class="scroll-mouse">
-        <div class="scroll-wheel"></div>
+      {# ── Hero Visual Section: Floating Glassmorphism Cards ── #}
+      <div class="hero-visual-section">
+        {# Dashboard Preview Card #}
+        <div class="hero-dashboard-preview">
+          <div class="dp-header">
+            <div class="flex items-center gap-2">
+              <div class="dp-dots">
+                <span class="dp-dot red"></span>
+                <span class="dp-dot yellow"></span>
+                <span class="dp-dot green"></span>
+              </div>
+              <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-left:0.5rem;">Platform Overview</span>
+            </div>
+          </div>
+          <div class="dp-grid">
+            <div class="dp-item">
+              <div class="dp-item-label">Active Users</div>
+              <div class="dp-item-value">2,847</div>
+              <div class="dp-item-change">+12.5%</div>
+            </div>
+            <div class="dp-item">
+              <div class="dp-item-label">Page Views</div>
+              <div class="dp-item-value">18.2K</div>
+              <div class="dp-item-change">+8.3%</div>
+            </div>
+            <div class="dp-item">
+              <div class="dp-item-label">Avg. Session</div>
+              <div class="dp-item-value">4m 32s</div>
+              <div class="dp-item-change">+5.1%</div>
+            </div>
+            <div class="dp-item">
+              <div class="dp-item-label">Bounce Rate</div>
+              <div class="dp-item-value">24.8%</div>
+              <div class="dp-item-change" style="color:#ef4444;">-2.1%</div>
+            </div>
+          </div>
+        </div>
+
+        {# Floating Card 1 — Latest Devices #}
+        <div class="hero-floating-card card-1" style="top:0;right:10%;">
+          <div class="fc-icon" style="background:rgba(99,102,241,0.12);color:var(--brand-indigo);">
+            <i class="lucide lucide-smartphone" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="fc-title">New Devices Added</div>
+          <div class="fc-desc">Latest smartphone models this week</div>
+          <div class="fc-value">+24 this week</div>
+        </div>
+
+        {# Floating Card 2 — Trending #}
+        <div class="hero-floating-card card-2" style="bottom:5%;left:5%;">
+          <div class="fc-icon" style="background:rgba(245,158,11,0.12);color:#d97706;">
+            <i class="lucide lucide-trending-up" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="fc-title">Trending Articles</div>
+          <div class="fc-desc">Most read tech news today</div>
+          <div class="fc-value" style="color:#d97706;">Top 5 picks</div>
+        </div>
+
+        {# Floating Card 3 — Live Updates #}
+        <div class="hero-floating-card card-3" style="bottom:30%;right:-5%;">
+          <div class="fc-icon" style="background:rgba(34,197,94,0.12);color:#16a34a;">
+            <i class="lucide lucide-bell-ring" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="fc-title">Live Updates</div>
+          <div class="fc-desc">Real-time notifications enabled</div>
+          <div class="fc-value" style="color:#16a34a;">Active</div>
+        </div>
       </div>
+
     </div>
   </div>
 </section>
 
-<section class="container mb-5">
-  <div class="row align-items-center g-4">
-    <div class="col-lg-6">
-      <div class="p-4 rounded-4 shadow-sm border border-1 border-light h-100 bg-white">
-        <span class="badge bg-primary bg-opacity-10 text-primary mb-3">Calculator categories</span>
-        <h2 class="display-6 fw-bold">Quick access to calculators and converters</h2>
-        <p class="text-muted mb-4">Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.</p>
-        <a href="/calculators" class="btn btn-primary btn-lg">
-          <i class="bi bi-calculator-fill me-2"></i>Browse all calculators
-        </a>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="row g-3">
-        <div class="col-6">
-          <div class="card h-100 border-0 shadow-sm rounded-4">
-            <div class="card-body">
-              <div class="mb-3">
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill p-2">
-                  <i class="bi bi-calculator fs-5"></i>
-                </span>
+<section class="mx-auto mb-5 max-w-7xl px-4 sm:px-6 lg:px-8 home-calculator-section">
+   <div class="grid items-center gap-4 lg:grid-cols-2">
+     <div>
+       <div class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+         <span class="mb-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-primary">Calculator categories</span>
+         <h2 class="text-3xl font-bold sm:text-4xl">Quick access to calculators and converters</h2>
+         <p class="mb-4 text-slate-500">Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.</p>
+         <a href="/calculators" class="inline-flex w-fit items-center justify-center rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+           <i class="lucide lucide-calculator mr-2"></i>Browse all calculators
+         </a>
+       </div>
+     </div>
+     <div>
+       <div class="grid grid-cols-2 gap-3">
+         <div>
+           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+             <div class="p-4">
+               <div class="mb-3">
+                 <span class="inline-flex rounded-full bg-primary/10 p-2 text-primary">
+                   <i class="lucide lucide-calculator"></i>
+                 </span>
+               </div>
+<h3 class="font-semibold text-base">Math Calculators</h3>
+                <p class="text-sm text-slate-500">Standard, scientific, graphing, and programmer tools.</p>
               </div>
-              <h3 class="h6 fw-semibold">Math Calculators</h3>
-              <p class="text-muted small mb-0">Standard, scientific, graphing, and programmer tools.</p>
             </div>
           </div>
-        </div>
-        <div class="col-6">
-          <div class="card h-100 border-0 shadow-sm rounded-4">
-            <div class="card-body">
-              <div class="mb-3">
-                <span class="badge bg-success bg-opacity-10 text-success rounded-pill p-2">
-                  <i class="bi bi-currency-dollar fs-5"></i>
-                </span>
+          <div>
+            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="p-4">
+                <div class="mb-3">
+                  <span class="inline-flex rounded-full bg-emerald-500/10 p-2 text-emerald-600">
+                    <i class="lucide lucide-dollar-sign"></i>
+                  </span>
+                </div>
+                <h3 class="font-semibold text-base">Finance Tools</h3>
+                <p class="text-sm text-slate-500">Loans, interest, mortgage, percentage, and GPA calculators.</p>
               </div>
-              <h3 class="h6 fw-semibold">Finance Tools</h3>
-              <p class="text-muted small mb-0">Loans, interest, mortgage, percentage, and GPA calculators.</p>
             </div>
           </div>
-        </div>
-        <div class="col-6">
-          <div class="card h-100 border-0 shadow-sm rounded-4">
-            <div class="card-body">
-              <div class="mb-3">
-                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill p-2">
-                  <i class="bi bi-heart-pulse fs-5"></i>
-                </span>
-              </div>
-              <h3 class="h6 fw-semibold">Health &amp; Lifestyle</h3>
-              <p class="text-muted small mb-0">BMI, date calculations, and personal planning tools.</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="card h-100 border-0 shadow-sm rounded-4">
-            <div class="card-body">
-              <div class="mb-3">
-                <span class="badge bg-info bg-opacity-10 text-info rounded-pill p-2">
-                  <i class="bi bi-arrows-angle-expand fs-5"></i>
-                </span>
-              </div>
-              <h3 class="h6 fw-semibold">Converters</h3>
-              <p class="text-muted small mb-0">Currency, length, weight, temperature and more unit conversions.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+          <div>
+            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="p-4">
+                <div class="mb-3">
+                  <span class="inline-flex rounded-full bg-amber-500/10 p-2 text-amber-500">
+                    <i class="lucide lucide-heart-pulse"></i>
+                  </span>
+                </div>
+                <h3 class="font-semibold text-base">Health &amp; Lifestyle</h3>
+                <p class="text-sm text-slate-500">BMI, date calculations, and personal planning tools.</p>
+             </div>
+           </div>
+         </div>
+         <div>
+           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+             <div class="p-4">
+               <div class="mb-3">
+                 <span class="inline-flex rounded-full bg-sky-500/10 p-2 text-sky-600">
+                   <i class="lucide lucide-expand mr-2 opacity-75"></i>
+                 </span>
+               </div>
+<h3 class="font-semibold text-base">Converters</h3>
+                <p class="text-sm text-slate-500">Currency, length, weight, temperature and more unit conversions.</p>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
 </section>
 
 {# ==================== DATE & TIME WIDGET ==================== #}
-<section class="container home-datetime-wrap mb-5">
-  <div class="home-datetime-card position-relative overflow-hidden rounded-4 shadow-lg"
-       style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
-              backdrop-filter: blur(20px);
-              border: 1px solid rgba(255,255,255,0.2);
-              box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.1);">
+<section class="mx-auto mb-5 max-w-7xl px-4 sm:px-6 lg:px-8 home-datetime-wrap">
+   <div class="home-datetime-card relative overflow-hidden rounded-2xl border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.9)_100%)] shadow-[0_20px_40px_rgba(0,0,0,0.1),0_0_0_1px_rgba(255,255,255,0.1)] backdrop-blur-[20px]">
 
     {# Animated Background Elements #}
-    <div class="position-absolute top-0 end-0 opacity-25" style="transform: translate(20%, -20%);">
-      <div class="bg-primary rounded-circle" style="width: 120px; height: 120px; filter: blur(40px);"></div>
+    <div class="absolute right-0 top-0 opacity-25" style="transform: translate(20%, -20%);">
+      <div class="h-[120px] w-[120px] rounded-full bg-primary blur-[40px]"></div>
     </div>
-    <div class="position-absolute bottom-0 start-0 opacity-25" style="transform: translate(-20%, 20%);">
-      <div class="bg-success rounded-circle" style="width: 100px; height: 100px; filter: blur(35px);"></div>
+    <div class="absolute bottom-0 left-0 opacity-25" style="transform: translate(-20%, 20%);">
+      <div class="h-[100px] w-[100px] rounded-full bg-emerald-500 blur-[35px]"></div>
     </div>
 
-    <div class="p-4 p-lg-5 position-relative" style="z-index: 2;">
-      <div class="row g-4">
-        {# Bengali Date & Time #}
-        <div class="col-lg-6">
-          <div class="datetime-section p-4 rounded-3 h-100 transition-all duration-300 hover-scale"
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
-                      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
-            <div class="d-flex align-items-center mb-3">
-              <div class="datetime-icon me-3">
-                <i class="bi bi-calendar-event-fill fs-4"></i>
+<div class="relative p-4 lg:p-5" style="z-index: 2;">
+        <div class="grid gap-4 lg:grid-cols-2">
+          {# Bengali Date & Time #}
+          <div>
+            <div class="datetime-section rounded-2xl p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+              <div class="mb-3 flex items-center">
+<div class="datetime-icon me-3">
+                   <i class="lucide lucide-calendar-days" aria-hidden="true"></i>
+                 </div>
+                 <h3 class="mb-0 text-lg font-bold">বাংলা তারিখ ও সময়</h3>
               </div>
-              <h3 class="h5 fw-bold mb-0">বাংলা তারিখ ও সময়</h3>
+
+              <div class="datetime-content">
+                <div class="mb-3">
+                  <div class="mb-2 flex items-center">
+                    <i class="lucide lucide-calendar-range mr-2 opacity-75"></i>
+                    <small class="font-semibold text-white/50">বাংলা তারিখ</small>
+                  </div>
+                  <div id="bengali-date" class="font-bold" style="font-family: 'Noto Sans Bengali', sans-serif;">
+                    লোড হচ্ছে...
+                  </div>
+                </div>
+
+                <div class="mb-0">
+                  <div class="mb-2 flex items-center">
+                    <i class="lucide lucide-clock mr-2 opacity-75"></i>
+                    <small class="font-semibold text-white/50">বাংলা সময়</small>
+                  </div>
+                  <div id="bengali-time" class="font-bold font-mono" style="font-family: 'JetBrains Mono', monospace;">
+                    লোড হচ্ছে...
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div class="datetime-content">
-              <div class="mb-3">
-                <div class="d-flex align-items-center mb-2">
-                  <i class="bi bi-calendar-date me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">বাংলা তারিখ</small>
-                </div>
-                <div class="fs-6 fw-bold" id="bengali-date" style="font-family: 'Noto Sans Bengali', sans-serif;">
-                  লোড হচ্ছে...
-                </div>
+          {# English Date & Time #}
+          <div>
+            <div class="datetime-section rounded-2xl p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
+                 style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);">
+              <div class="mb-3 flex items-center">
+<div class="datetime-icon me-3">
+                   <i class="lucide lucide-calendar-days" aria-hidden="true"></i>
+                 </div>
+                 <h3 class="mb-0 text-lg font-bold">English Date & Time</h3>
               </div>
 
-              <div class="mb-0">
-                <div class="d-flex align-items-center mb-2">
-                  <i class="bi bi-clock-fill me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">বাংলা সময়</small>
+              <div class="datetime-content">
+                <div class="mb-3">
+                  <div class="mb-2 flex items-center">
+                    <i class="lucide lucide-calendar-range mr-2 opacity-75"></i>
+                    <small class="font-semibold text-white/50">Date</small>
+                  </div>
+                  <div id="english-date" class="font-bold">
+                    Loading...
+                  </div>
                 </div>
-                <div class="fs-5 fw-bold font-monospace" id="bengali-time" style="font-family: 'JetBrains Mono', monospace;">
-                  লোড হচ্ছে...
+
+<div class="mb-0">
+                   <div class="mb-2 flex items-center">
+                     <i class="lucide lucide-clock mr-2 opacity-75"></i>
+                     <small class="font-semibold text-white/50">Time</small>
+                  </div>
+                  <div id="english-time" class="font-bold font-mono" style="font-family: 'JetBrains Mono', monospace;">
+                    Loading...
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {# English Date & Time #}
-        <div class="col-lg-6">
-          <div class="datetime-section p-4 rounded-3 h-100 transition-all duration-300 hover-scale"
-               style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                      color: white;
-                      box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);">
-            <div class="d-flex align-items-center mb-3">
-              <div class="datetime-icon me-3">
-                <i class="bi bi-calendar-event-fill fs-4"></i>
-              </div>
-              <h3 class="h5 fw-bold mb-0">English Date & Time</h3>
-            </div>
-
-            <div class="datetime-content">
-              <div class="mb-3">
-                <div class="d-flex align-items-center mb-2">
-                  <i class="bi bi-calendar-date me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">Date</small>
-                </div>
-                <div class="fs-6 fw-bold" id="english-date">
-                  Loading...
-                </div>
-              </div>
-
-              <div class="mb-0">
-                <div class="d-flex align-items-center mb-2">
-                  <i class="bi bi-clock-fill me-2 opacity-75"></i>
-                  <small class="text-white-50 fw-semibold">Time</small>
-                </div>
-                <div class="fs-5 fw-bold font-monospace" id="english-time">
-                  Loading...
-                </div>
-              </div>
-            </div>
+        {# Live Indicator #}
+        <div class="mt-4 text-center">
+          <div class="inline-flex items-center rounded-full bg-white/20 px-3 py-2 backdrop-blur-[10px]">
+            <div class="live-dot me-2 h-2 w-2 rounded-full bg-rose-500 animate-pulse"></div>
+            <small class="font-semibold text-white/75">Live Update</small>
           </div>
-        </div>
-      </div>
-
-      {# Live Indicator #}
-      <div class="text-center mt-4">
-        <div class="d-inline-flex align-items-center px-3 py-2 rounded-pill"
-             style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
-          <div class="live-dot me-2" style="width: 8px; height: 8px; background: #ff4757; border-radius: 50%; animation: pulse 2s infinite;"></div>
-          <small class="text-white-75 fw-semibold">Live Update</small>
         </div>
       </div>
     </div>
@@ -328,14 +354,14 @@
 
 
 <style>
-@keyframes pulse {
+@keyframes home-pulse {
   0% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(1.1); }
   100% { opacity: 1; transform: scale(1); }
 }
 
 .live-dot {
-  animation: pulse 2s infinite;
+  animation: home-pulse 2s infinite;
 }
 
 .hover-scale {
@@ -414,548 +440,399 @@
   setInterval(updateHomeDateTime, 1000);
 </script>
 
-{# ==================== LATEST UPDATES SECTION ==================== #}
-<div class="container py-4 home-latest-section" id="latest-updates">
-    {# ==================== TOP POSTS & SERVICES SLIDER ==================== #}
-    <section class="home-top-slider mb-5" aria-labelledby="home-top-slider-title">
-      <div class="home-top-slider__head">
-        <div>
-          <h3 id="home-top-slider-title" class="home-top-slider__title mb-1">Top Posts & Services</h3>
-          <p class="home-top-slider__subtitle mb-0">Most viewed content picked from posts and services.</p>
-        </div>
-        <div class="home-top-slider__controls" aria-label="Top slider controls">
-          <button type="button" class="home-top-slider__btn" data-top-prev aria-label="Previous slide">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-          <button type="button" class="home-top-slider__btn" data-top-next aria-label="Next slide">
-            <i class="bi bi-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="home-top-slider__viewport">
-        <div class="home-top-slider__track" data-top-track role="list" aria-label="Top posts and services">
-          {% for p in top_posts|default([]) %}
-            <a href="{{ ('/posts/' ~ p.id ~ '/' ~ (('' ~ (p.slug|default(p.id)))|url_encode))|absolute_url }}" class="home-top-card is-post" role="listitem" aria-label="Top post: {{ p.title }}">
-              <div class="home-top-card__media">
-                {% if p.image %}
-                  <img src="{{ p.image|absolute_url }}" alt="{{ p.title|striptags }}" loading="lazy" decoding="async">
-                {% else %}
-                  <span class="home-top-card__placeholder"><i class="bi bi-newspaper"></i></span>
-                {% endif %}
-              </div>
-              <div class="home-top-card__body">
-                <span class="home-top-card__type">Post</span>
-                <h4 class="home-top-card__title">{{ p.title }}</h4>
-                <div class="home-top-card__meta">
-                  <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ p.rating_average|default(0)|number_format(1) }} <small>({{ p.rating_total|default(0)|number_format }})</small></span>
-                  {% if p.published_at is defined and p.published_at %}
-                    <span><i class="bi bi-clock-history"></i> {{ p.published_at|time_ago }}</span>
-                  {% endif %}
-                </div>
-              </div>
-            </a>
-          {% endfor %}
-
-          {% for s in top_services|default([]) %}
-            <a href="/services/{{ s.slug }}" class="home-top-card is-service" role="listitem" aria-label="Top service: {{ s.title|default(s.name) }}">
-              <div class="home-top-card__media">
-                {% if s.image %}
-                  <img src="{{ s.image }}" alt="{{ s.title|default(s.name) }}" loading="lazy" decoding="async">
-                {% else %}
-                  <span class="home-top-card__placeholder"><i class="bi bi-award-fill"></i></span>
-                {% endif %}
-              </div>
-              <div class="home-top-card__body">
-                <span class="home-top-card__type">Service</span>
-                <h4 class="home-top-card__title">{{ s.title|default(s.name) }}</h4>
-                <div class="home-top-card__meta">
-                  <span class="home-top-card__rating"><i class="bi bi-star-fill"></i> {{ s.rating_average|default(0)|number_format(1) }} <small>({{ s.rating_total|default(0)|number_format }})</small></span>
-                  {% if s.published_at is defined and s.published_at %}
-                    <span><i class="bi bi-clock-history"></i> {{ s.published_at|time_ago }}</span>
-                  {% endif %}
-                </div>
-              </div>
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-
-      {% if (top_posts|default([])|length == 0) and (top_services|default([])|length == 0) %}
-        <div class="home-top-slider__empty">Top content not available right now.</div>
-      {% endif %}
-    </section>
-
-    {# ==================== HEADER WITH TAB NAVIGATION ==================== #}
-    <div class="latest-updates-header mb-4">
-      {# Section Title #}
-      <div class="section-title-wrapper mb-3 mb-md-0">
-        <h2 class="fw-bold m-0 display-6 display-md-5">
-          <span class="text-primary border-bottom border-3 border-primary pb-2">Recent</span> Feed
+{# ==================== TOP POSTS & SERVICES CAROUSEL ==================== #}
+<section class="top-carousel-section py-5 scroll-fade-in" aria-labelledby="top-carousel-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {# Section Header #}
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 id="top-carousel-title">
+          <span>Top</span> Picks
         </h2>
+        <p class="mt-1 text-slate-500">Highest-rated posts and services curated for you</p>
       </div>
-      
-      {# Modern Tab Navigation #}
-      <nav class="modern-tab-nav" role="tablist" aria-label="Feed tabs">
-        <div class="tab-buttons-wrapper">
-          <button class="tab-btn active" 
-                  id="recent-tab" 
-                  role="tab" 
-                  aria-selected="true" 
-                  aria-controls="latest-feed"
-                  data-tab="recent">
-            <i class="bi bi-clock-history" aria-hidden="true"></i>
-            <span class="tab-label">Recent</span>
-          </button>
-          
-          <button class="tab-btn" 
-                  id="services-tab" 
-                  role="tab" 
-                  aria-selected="false" 
-                  aria-controls="services-feed"
-                  data-tab="services">
-            <i class="bi bi-briefcase" aria-hidden="true"></i>
-            <span class="tab-label">Services</span>
-          </button>
+      {# Tab Switcher #}
+      <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="Switch between top posts and top services">
+        <button type="button"
+                class="top-carousel-tab active rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
+                role="tab"
+                id="tab-posts"
+                aria-selected="true"
+                aria-controls="panel-posts"
+                onclick="(function(b) { var p = b.closest('.top-carousel-section'); p.querySelectorAll('.top-carousel-tab').forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected','false'); }); b.classList.add('active'); b.setAttribute('aria-selected','true'); p.querySelectorAll('.top-carousel-panel').forEach(function(pan) { pan.classList.add('hidden'); }); document.getElementById('panel-posts').classList.remove('hidden'); })(this)">
+<i class="lucide lucide-file-text inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
+          Top Posts
+        </button>
+        <button type="button"
+                class="top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
+                role="tab"
+                id="tab-services"
+                aria-selected="false"
+                aria-controls="panel-services"
+                onclick="(function(b) { var p = b.closest('.top-carousel-section'); p.querySelectorAll('.top-carousel-tab').forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected','false'); }); b.classList.add('active'); b.setAttribute('aria-selected','true'); p.querySelectorAll('.top-carousel-panel').forEach(function(pan) { pan.classList.add('hidden'); }); document.getElementById('panel-services').classList.remove('hidden'); })(this)">
+<i class="lucide lucide-star inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
+          Top Services
+        </button>
+      </div>
+    </div>
+
+    {# ==================== TOP POSTS PANEL ==================== #}
+    <div id="panel-posts" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-posts">
+      {% if top_posts is defined and top_posts|length > 0 %}
+        <div class="top-carousel-track" role="list" aria-label="Top posts">
+          {% for post in top_posts %}
+            <article class="top-carousel-card" role="listitem">
+              <div class="top-carousel-card__inner">
+                {# Image #}
+                <div class="top-carousel-card__image-wrap">
+                  {% if post.image %}
+                    <img src="{{ post.image|absolute_url }}" alt="{{ post.title|striptags }}" loading="lazy" width="280" height="180">
+                  {% else %}
+                    <div class="top-carousel-card__image-placeholder">
+<i class="lucide lucide-file-text" style="width:32px;height:32px" aria-hidden="true"></i>
+                    </div>
+                  {% endif %}
+                  {# Rating Badge #}
+                  {% if post.rating_average is defined and post.rating_average > 0 %}
+                    <span class="top-carousel-card__rating">
+<i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
+                      {{ post.rating_average }}
+                    </span>
+                  {% endif %}
+                </div>
+                {# Body #}
+                <div class="top-carousel-card__body">
+                  <h3 class="top-carousel-card__title">
+                    <a href="/posts/{{ post.id }}/{{ post.slug|url_encode }}">{{ post.title }}</a>
+                  </h3>
+                  <p class="top-carousel-card__excerpt">{{ post.content|striptags|slice(0, 100) ~ '...' }}</p>
+                  <div class="top-carousel-card__footer">
+                    <span class="top-carousel-card__meta">
+<i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
+                      {{ post.rating_total|default(0) }} reviews
+                    </span>
+                    <a href="/posts/{{ post.id }}/{{ post.slug|url_encode }}" class="top-carousel-card__cta" aria-label="Read {{ post.title|striptags }}">
+                      Read
+<i class="lucide lucide-arrow-right" style="width:14px;height:14px" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
         </div>
-        
-        {# Auto-rotate Timer #}
-        <div class="tab-timer-wrapper">
-          <small class="timer-text" id="auto-rotate-indicator">
-            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
-            <span class="d-none d-sm-inline">Auto: </span>
-            <span id="rotate-timer">15</span>s
-          </small>
+        {# Scroll hint #}
+        <div class="top-carousel-scroll-hint">
+<i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
+          Scroll for more
+<i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
         </div>
-      </nav>
+      {% else %}
+        <div class="feed-state">
+          <div class="feed-state__icon">
+<i class="lucide lucide-file-text" style="width:28px;height:28px" aria-hidden="true"></i>
+          </div>
+          <h3 class="feed-state__title">No top posts yet</h3>
+          <p class="feed-state__desc">Top posts will appear here once they receive ratings.</p>
+        </div>
+      {% endif %}
     </div>
 
-    {# ==================== CONTENT CARDS SECTION ==================== #}
-    <div id="latest-feed" class="feed-grid" role="feed" aria-label="Latest content feed">
-      {% include 'partials/home-feed-items.twig' with {
-        items: contents,
-        start_index: ((current_page - 1) * homepage_feed_limit) + 1,
-        empty_text: 'No content available at the moment.'
-      } %}
+    {# ==================== TOP SERVICES PANEL ==================== #}
+    <div id="panel-services" class="top-carousel-panel hidden" role="tabpanel" aria-labelledby="tab-services">
+      {% if top_services is defined and top_services|length > 0 %}
+        <div class="top-carousel-track" role="list" aria-label="Top services">
+          {% for svc in top_services %}
+            <article class="top-carousel-card" role="listitem">
+              <div class="top-carousel-card__inner">
+                {# Image #}
+                <div class="top-carousel-card__image-wrap">
+                  {% if svc.image %}
+                    <img src="{{ svc.image|absolute_url }}" alt="{{ svc.title|striptags }}" loading="lazy" width="280" height="180">
+                  {% else %}
+                    <div class="top-carousel-card__image-placeholder" style="background: linear-gradient(135deg, #EEF2FF, #C7D2FE);">
+<i class="lucide lucide-star" style="width:32px;height:32px;color:#6366F1" aria-hidden="true"></i>
+                    </div>
+                  {% endif %}
+                  {# Status Badge #}
+                  <span class="top-carousel-card__status top-carousel-card__status--{{ svc.status|default('active') }}">
+                    {{ svc.status|default('Active')|capitalize }}
+                  </span>
+                  {# Rating Badge #}
+                  {% if svc.rating_average is defined and svc.rating_average > 0 %}
+                    <span class="top-carousel-card__rating">
+<i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
+                      {{ svc.rating_average }}
+                    </span>
+                  {% endif %}
+                </div>
+                {# Body #}
+                <div class="top-carousel-card__body">
+                  <h3 class="top-carousel-card__title">
+                    <a href="/services/view/{{ svc.slug }}">{{ svc.title }}</a>
+                  </h3>
+                  <p class="top-carousel-card__excerpt">{{ svc.description|striptags|slice(0, 100) ~ '...' }}</p>
+                  <div class="top-carousel-card__footer">
+                    <span class="top-carousel-card__meta">
+<i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
+                      {{ svc.rating_total|default(0) }} reviews
+                    </span>
+                    <a href="/services/view/{{ svc.slug }}" class="top-carousel-card__cta" aria-label="View {{ svc.title|striptags }}">
+                      View
+<i class="lucide lucide-arrow-right" style="width:14px;height:14px" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <div class="top-carousel-scroll-hint">
+<i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
+          Scroll for more
+<i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
+        </div>
+      {% else %}
+        <div class="feed-state">
+          <div class="feed-state__icon">
+<i class="lucide lucide-star" style="width:28px;height:28px" aria-hidden="true"></i>
+          </div>
+          <h3 class="feed-state__title">No services yet</h3>
+          <p class="feed-state__desc">Top services will appear here once they receive ratings.</p>
+        </div>
+      {% endif %}
     </div>
-
-    {# ==================== SERVICES FEED (AJAX) ==================== #}
-    <div id="services-feed" class="feed-grid d-none" role="feed" aria-label="Services feed">
-      <!-- Populated via JavaScript -->
-    </div>
-
-    {# ==================== SHARED LOAD MORE PAGINATION ==================== #}
-    <div id="feed-loading-section" class="mt-5 text-center">
-      <button id="load-more-btn"
-              type="button"
-              class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg fw-bold">
-        <i class="bi bi-arrow-down-circle me-2"></i>
-        <span id="load-more-btn-text">Load More Items</span>
-      </button>
-      <div class="mt-3 text-muted small">
-        <i class="bi bi-info-circle me-2"></i>
-        <span id="feed-page-status">Page {{ current_page }} of {{ total_pages }}</span>
-      </div>
-      <div id="feed-end-message" class="mt-3 text-center text-muted d-none">
-        <i class="bi bi-check-circle fs-3 text-success mb-2 d-block"></i>
-        <span>You've reached the end!</span>
-      </div>
-    </div>
-</div>
+  </div>
+</section>
 
 
-
-{# ==================== JAVASCRIPT ==================== #}
-<script>
-(function(){
-  const servicesTabBtn = document.getElementById('services-tab');
-  const recentTabBtn = document.getElementById('recent-tab');
-  const latestFeed = document.getElementById('latest-feed');
-  const servicesFeed = document.getElementById('services-feed');
-  const rotateTimerEl = document.getElementById('rotate-timer');
-  const loadMoreSection = document.getElementById('feed-loading-section');
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  const loadMoreBtnText = document.getElementById('load-more-btn-text');
-  const feedPageStatus = document.getElementById('feed-page-status');
-  const feedEndMessage = document.getElementById('feed-end-message');
-
-  let currentFeed = 'recent';
-  let countdownTimer = null;
-  let countdownValue = 15;
-  let isTransitioning = false;
-  const rotateAfterSeconds = 15;
-
-  const feedStates = {
-    recent: {
-      name: 'recent',
-      endpoint: '/api/feed/load-more?sort={{ sort|default('latest')|url_encode }}',
-      container: latestFeed,
-      buttonLabel: 'Load More Items',
-      loadingLabel: 'Loading recent items...',
-      currentPage: {{ current_page|default(1) }},
-      totalPages: {{ total_pages|default(1) }},
-      loadedOnce: true,
-      isLoading: false
-    },
-    services: {
-      name: 'services',
-      endpoint: '/api/services/html',
-      container: servicesFeed,
-      buttonLabel: 'Load More Services',
-      loadingLabel: 'Loading services...',
-      currentPage: 0,
-      totalPages: 1,
-      loadedOnce: false,
-      isLoading: false
-    }
-  };
-
-  function setActiveTab(tabName) {
-    if (tabName === 'recent') {
-      recentTabBtn.classList.add('active');
-      servicesTabBtn.classList.remove('active');
-      recentTabBtn.setAttribute('aria-selected', 'true');
-      servicesTabBtn.setAttribute('aria-selected', 'false');
-    } else {
-      servicesTabBtn.classList.add('active');
-      recentTabBtn.classList.remove('active');
-      servicesTabBtn.setAttribute('aria-selected', 'true');
-      recentTabBtn.setAttribute('aria-selected', 'false');
-    }
-  }
-
-  function getActiveState() {
-    return feedStates[currentFeed];
-  }
-
-  function setButtonLoading(isLoading, label) {
-    if (!loadMoreBtn || !loadMoreBtnText) return;
-
-    loadMoreBtn.disabled = !!isLoading;
-    loadMoreBtnText.textContent = label;
-  }
-
-  function updateLoadMoreUi() {
-    const state = getActiveState();
-    if (!state || !loadMoreSection || !loadMoreBtn || !feedPageStatus || !feedEndMessage) {
-      return;
-    }
-
-    const hasMore = state.currentPage < state.totalPages;
-    const showButton = state.isLoading || hasMore;
-
-    loadMoreSection.classList.remove('d-none');
-    loadMoreBtn.classList.toggle('d-none', !showButton);
-    feedPageStatus.classList.toggle('d-none', !state.loadedOnce);
-    feedEndMessage.classList.toggle('d-none', showButton || !state.loadedOnce);
-
-    if (state.loadedOnce) {
-      feedPageStatus.textContent = 'Page ' + Math.max(state.currentPage, 1) + ' of ' + Math.max(state.totalPages, 1);
-    } else {
-      feedPageStatus.textContent = 'Preparing feed...';
-    }
-
-    setButtonLoading(state.isLoading, state.isLoading ? state.loadingLabel : state.buttonLabel);
-  }
-
-  function setFeedLoading(feedName, isLoading) {
-    const state = feedStates[feedName];
-    if (!state) return;
-
-    state.isLoading = isLoading;
-    if (currentFeed === feedName) {
-      updateLoadMoreUi();
-    }
-  }
-
-  async function fetchFeedPage(feedName, page, options = {}) {
-    const state = feedStates[feedName];
-    if (!state || state.isLoading) return;
-
-    const shouldReplace = options.replace === true;
-    setFeedLoading(feedName, true);
-
-    if (shouldReplace && state.container) {
-      state.container.innerHTML = '<div class="loading-spinner" aria-live="polite"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"><span class="visually-hidden">Loading</span></div>' + escapeHtml(state.loadingLabel) + '</div>';
-    }
-
-    try {
-      const separator = state.endpoint.includes('?') ? '&' : '?';
-      const res = await fetch(state.endpoint + separator + 'page=' + page, {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-      if (!res.ok) throw new Error('Failed to load ' + feedName + ' feed');
-
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || ('Failed to load ' + feedName + ' feed'));
-
-      if (shouldReplace) {
-        state.container.innerHTML = data.html || '';
-      } else {
-        state.container.insertAdjacentHTML('beforeend', data.html || '');
-      }
-
-      state.currentPage = Number(data.current_page || page);
-      state.totalPages = Number(data.total_pages || 1);
-      state.loadedOnce = true;
-    } catch (err) {
-      if (shouldReplace && state.container) {
-        state.container.innerHTML = '<div class="feed-empty-state"><div class="empty-state-content text-danger">' + escapeHtml(err.message || 'Failed to load feed.') + '</div></div>';
-      }
-      console.error(err);
-    } finally {
-      setFeedLoading(feedName, false);
-    }
-  }
-
-  function resetCountdown() {
-    countdownValue = rotateAfterSeconds;
-    if (rotateTimerEl) rotateTimerEl.textContent = countdownValue;
-  }
-
-  function startCountdown() {
-    resetCountdown();
-    if (countdownTimer) clearInterval(countdownTimer);
-    
-    countdownTimer = setInterval(() => {
-      countdownValue--;
-      if (rotateTimerEl) rotateTimerEl.textContent = countdownValue;
-      
-      if (countdownValue <= 0) {
-        clearInterval(countdownTimer);
-        rotateFeeds();
-      }
-    }, 1000);
-  }
-
-  function stopCountdown() {
-    if (countdownTimer) clearInterval(countdownTimer);
-  }
-
-  function rotateFeeds() {
-    if (isTransitioning) return;
-    
-    if (currentFeed === 'recent') {
-      showFeed('services');
-    } else {
-      showFeed('recent');
-    }
-  }
-
-  function showFeed(feedName) {
-    if (isTransitioning || currentFeed === feedName) return;
-
-    const currentState = getActiveState();
-    const nextState = feedStates[feedName];
-    if (!currentState || !nextState) return;
-
-    isTransitioning = true;
-    currentState.container.classList.add('fade-out');
-
-    setTimeout(async () => {
-      currentState.container.classList.add('d-none');
-      currentState.container.classList.remove('fade-out');
-      nextState.container.classList.remove('d-none');
-      currentFeed = feedName;
-      setActiveTab(feedName);
-      updateLoadMoreUi();
-
-      if (!nextState.loadedOnce) {
-        await fetchFeedPage(feedName, 1, { replace: true });
-      }
-
-      updateLoadMoreUi();
-      startCountdown();
-      isTransitioning = false;
-    }, 600);
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, function(ch){
-      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]);
-    });
-  }
-
-  // Event listeners
-  if (servicesTabBtn) {
-    servicesTabBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      stopCountdown();
-      if (currentFeed !== 'services') {
-        showFeed('services');
-      } else {
-        startCountdown();
-      }
-    });
-  }
-
-  if (recentTabBtn) {
-    recentTabBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      stopCountdown();
-      if (currentFeed !== 'recent') {
-        showFeed('recent');
-      } else {
-        startCountdown();
-      }
-    });
-  }
-
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', function() {
-      const state = getActiveState();
-      if (!state || state.isLoading || state.currentPage >= state.totalPages) {
-        updateLoadMoreUi();
-        return;
-      }
-
-      stopCountdown();
-      fetchFeedPage(currentFeed, state.currentPage + 1).finally(() => {
-        updateLoadMoreUi();
-        startCountdown();
-      });
-    });
-  }
-
-  // Start auto-rotate
-  window.addEventListener('load', function() {
-    updateLoadMoreUi();
-    setTimeout(() => startCountdown(), 1000);
-  });
-})();
-
-(function(){
-  const sliderRoot = document.querySelector('.home-top-slider');
-  if (!sliderRoot) return;
-
-  const track = sliderRoot.querySelector('[data-top-track]');
-  const prevBtn = sliderRoot.querySelector('[data-top-prev]');
-  const nextBtn = sliderRoot.querySelector('[data-top-next]');
-  if (!track || !prevBtn || !nextBtn) return;
-
-  const getStep = () => {
-    const firstCard = track.querySelector('.home-top-card');
-    if (!firstCard) return 320;
-    const styles = window.getComputedStyle(track);
-    const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
-    return Math.round(firstCard.getBoundingClientRect().width + gap);
-  };
-
-  const goNext = () => {
-    const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
-    if (track.scrollLeft >= maxScrollLeft - 5) {
-      track.scrollTo({ left: 0, behavior: 'smooth' });
-      return;
-    }
-    track.scrollBy({ left: getStep(), behavior: 'smooth' });
-  };
-
-  const goPrev = () => {
-    if (track.scrollLeft <= 5) {
-      track.scrollTo({ left: Math.max(0, track.scrollWidth - track.clientWidth), behavior: 'smooth' });
-      return;
-    }
-    track.scrollBy({ left: -getStep(), behavior: 'smooth' });
-  };
-
-  prevBtn.addEventListener('click', goPrev);
-  nextBtn.addEventListener('click', goNext);
-
-  let autoTimer = null;
-  const startAuto = () => {
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = setInterval(goNext, 5000);
-  };
-  const stopAuto = () => {
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = null;
-  };
-
-  sliderRoot.addEventListener('mouseenter', stopAuto);
-  sliderRoot.addEventListener('mouseleave', startAuto);
-  sliderRoot.addEventListener('touchstart', stopAuto, { passive: true });
-  sliderRoot.addEventListener('touchend', startAuto, { passive: true });
-
-  startAuto();
-})();
-</script>
-
-<section class="py-5 bg-light home-featured-section" aria-labelledby="featured-title">
-  <div class="container home-feed-surface">
-    <div class="text-center mb-5">
-      <h2 id="featured-title" class="fw-bold display-5 mb-3">
-        <span class="text-primary">Featured</span> Highlights
+{# ==================== LATEST UPDATES — MODERN DISCOVERY DASHBOARD ==================== #}
+<section class="discovery-feed-section py-5" id="latest-updates" aria-labelledby="discovery-feed-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {# Section Header #}
+    <div class="mb-5">
+      <h2 id="discovery-feed-title">
+        <span>Content</span> Discovery
       </h2>
-      <p class="lead text-muted">Hand-picked content curated just for you</p>
+      <p class="mt-2 text-slate-500">Explore our latest posts, articles, and services</p>
     </div>
-    
-    <div class="row g-4" role="region" aria-label="Featured content highlights">
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
-          <div class="position-relative bg-primary bg-opacity-10 p-5 text-center">
-            <i class="bi bi-phone-fill fs-1 text-primary" aria-hidden="true"></i>
+
+    {# ==================== FEED TOOLBAR ==================== #}
+    <div id="discovery-feed" class="discovery-feed-container">
+      <div class="discovery-toolbar" role="toolbar" aria-label="Feed controls">
+        {# Row 1: Search + Filters #}
+        <div class="toolbar-row">
+          {# Search #}
+          <div class="toolbar-search-wrap">
+<i class="lucide lucide-search search-icon" style="width:18px;height:18px" aria-hidden="true"></i>
+            <input type="search" id="feed-search" placeholder="Search content..." aria-label="Search content" autocomplete="off">
+            <button type="button" class="search-clear-btn" id="feed-search-clear" aria-label="Clear search">
+<i class="lucide lucide-x" style="width:16px;height:16px" aria-hidden="true"></i>
+            </button>
           </div>
-          <div class="card-body">
-            <h3 class="card-title fw-bold h5">Latest Phones</h3>
-            <p class="card-text text-muted small">Explore the newest smartphones and their specifications</p>
-            <a href="/mobiles" class="btn btn-primary btn-sm rounded-pill" aria-label="Browse latest phones">
-              Browse Phones
-            </a>
+
+          {# Category Filter #}
+          <select id="feed-category" class="toolbar-select" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            {% for cat in categories|default([]) %}
+              <option value="{{ cat.slug }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+
+          {# Sort #}
+          <select id="feed-sort" class="toolbar-select" aria-label="Sort content">
+            <option value="latest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="popular">Most Viewed</option>
+            <option value="trending">Trending</option>
+          </select>
+        </div>
+
+        {# Row 2: Actions #}
+        <div class="toolbar-row">
+          <div class="toolbar-row-actions" style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
+            {# View Toggle #}
+            <button type="button" id="feed-view-toggle" class="toolbar-btn active" aria-label="Toggle grid/list view" title="Toggle view">
+<i class="lucide lucide-grid-3x3" style="width:18px;height:18px" aria-hidden="true"></i>
+              <span class="btn-label">Grid</span>
+            </button>
+
+            {# Auto-Refresh Toggle #}
+            <div class="toolbar-toggle-wrap">
+              <label class="toggle-switch">
+                <input type="checkbox" id="feed-auto-refresh" aria-label="Toggle auto-refresh">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="hidden sm:inline" id="feed-auto-refresh-label">Auto-refresh off</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
-          <div class="position-relative bg-success bg-opacity-10 p-5 text-center">
-            <i class="bi bi-newspaper fs-1 text-success" aria-hidden="true"></i>
-          </div>
-          <div class="card-body">
-            <h3 class="card-title fw-bold h5">Tech News</h3>
-            <p class="card-text text-muted small">Stay updated with the latest technology news and trends</p>
-            <a href="/category/news" class="btn btn-success btn-sm rounded-pill" aria-label="Read tech news">
-              Read News
-            </a>
-          </div>
-        </div>
+      {# Active Filter Badges #}
+      <div id="feed-filter-badges" role="status" aria-live="polite" aria-label="Active filters"></div>
+
+      {# ==================== FEED GRID ==================== #}
+      <div id="discovery-feed-grid" class="is-grid-view" role="feed" aria-label="Content feed">
+        {# Initial content rendered server-side #}
+        {% include 'partials/home-feed-items.twig' with {
+          items: contents,
+          start_index: ((current_page - 1) * homepage_feed_limit) + 1,
+          empty_text: 'No content available at the moment. Adjust your filters or check back later.',
+          empty_title: 'No content found'
+        } %}
       </div>
 
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm hover-shadow-lg rounded-4 overflow-hidden" role="article">
-          <div class="position-relative bg-warning bg-opacity-10 p-5 text-center">
-            <i class="bi bi-briefcase-fill fs-1 text-warning" aria-hidden="true"></i>
+      {# Skeleton Loading (hidden by default, shown by JS) #}
+      <div id="feed-skeleton" class="hidden discovery-skeleton-grid" aria-hidden="true">
+        {% for i in 1..6 %}
+          <div class="discovery-skeleton">
+            <div class="skeleton-image skeleton-pulse"></div>
+            <div class="skeleton-body">
+              <div class="skeleton-line skeleton-pulse" style="width: 30%"></div>
+              <div class="skeleton-line skeleton-pulse" style="width: 85%"></div>
+              <div class="skeleton-line skeleton-pulse" style="width: 65%"></div>
+              <div class="skeleton-line skeleton-pulse" style="width: 40%"></div>
+              <div class="skeleton-btn skeleton-pulse"></div>
+            </div>
           </div>
-          <div class="card-body">
-            <h3 class="card-title fw-bold h5">Job Opportunities</h3>
-            <p class="card-text text-muted small">Find exciting career opportunities in tech industry</p>
-            <a href="/category/chakribd" class="btn btn-warning btn-sm rounded-pill" aria-label="View job opportunities">
-              View Jobs
-            </a>
-          </div>
+        {% endfor %}
+      </div>
+
+      {# Error State (hidden) #}
+      <div id="feed-error" class="feed-state hidden" role="alert">
+        <div class="feed-state__icon">
+<i class="lucide lucide-alert-circle" style="width:28px;height:28px" aria-hidden="true"></i>
+        </div>
+        <h3 class="feed-state__title">Something went wrong</h3>
+        <p class="feed-state__desc" data-error-message>Failed to load content. Please try again.</p>
+        <button type="button" class="feed-state__action" onclick="window.location.reload()" aria-label="Retry">
+<i class="lucide lucide-refresh-ccw" style="width:16px;height:16px" aria-hidden="true"></i>
+          Try Again
+        </button>
+      </div>
+
+      {# Empty State (hidden, shown when no results) #}
+      <div id="feed-empty" class="feed-state hidden" role="status">
+        <div class="feed-state__icon">
+<i class="lucide lucide-file-text" style="width:28px;height:28px" aria-hidden="true"></i>
+        </div>
+        <h3 class="feed-state__title">No results found</h3>
+        <p class="feed-state__desc" data-empty-message>Try adjusting your search or filter criteria.</p>
+        <button type="button" class="feed-state__action" onclick="window.FeedDiscovery && FeedDiscovery.resetFeed()" aria-label="Reset filters">
+          Reset Filters
+        </button>
+      </div>
+
+      {# ==================== LOAD MORE / INFINITE SCROLL ==================== #}
+      <div class="mt-6 text-center">
+        <div id="feed-scroll-sentinel" class="h-4" aria-hidden="true"></div>
+        <button type="button" id="feed-load-more" class="toolbar-btn" aria-label="Load more content">
+<i class="lucide lucide-arrow-down" style="width:16px;height:16px" aria-hidden="true"></i>
+          <span id="feed-load-more-text">Load More</span>
+        </button>
+        <div id="feed-status" class="mt-2 text-sm text-slate-500">
+          {% if contents|length > 0 %}
+            Showing <span id="feed-total-count">{{ contents|length }}</span> items
+          {% endif %}
+        </div>
+        <div id="feed-end" class="mt-3 hidden text-sm text-slate-500">
+<i class="lucide lucide-check inline-block mr-1" style="width:16px;height:16px" aria-hidden="true"></i>
+          You've viewed all available content
         </div>
       </div>
     </div>
   </div>
 </section>
 
-{# ==================== LATEST MOBILES SECTION ==================== #}
-<section class="py-5 home-latest-mobiles-section" aria-labelledby="latest-mobiles-title">
-  <div class="container home-feed-surface">
-    <div class="section-header mb-5">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-          <h2 id="latest-mobiles-title" class="fw-bold display-6 display-md-5 mb-2">
-            <span class="text-primary border-bottom border-3 border-primary pb-2">Latest</span> Mobile Phones
-          </h2>
-          <p class="text-muted lead mb-0">Discover the newest smartphones with detailed specifications and pricing</p>
-        </div>
-        <a href="/mobiles" class="btn btn-primary btn-lg rounded-pill px-5" aria-label="View all mobile phones">
-          <i class="bi bi-arrow-right me-2"></i>View All
-        </a>
+{# ==================== SHARE MODAL ==================== #}
+<div id="discovery-share-modal" class="discovery-modal" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true">
+  <div class="discovery-modal__backdrop" onclick="FeedDiscovery && FeedDiscovery.closeModal()"></div>
+  <div class="discovery-modal__content">
+    <button type="button" class="discovery-modal__close" onclick="FeedDiscovery && FeedDiscovery.closeModal()" aria-label="Close">
+<i class="lucide lucide-x" style="width:18px;height:18px" aria-hidden="true"></i>
+    </button>
+    <h3 id="share-modal-title" class="discovery-modal__title" data-share-title>Share</h3>
+    <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm" data-share-url readonly onclick="this.select()">
+    <button type="button" class="mt-3 feed-state__action" onclick="var u=document.querySelector('[data-share-url]'); FeedDiscovery && FeedDiscovery.copyToClipboard(u.value, this)">
+      Copy Link
+    </button>
+  </div>
+</div>
+
+
+
+<section class="py-12 home-featured-section" aria-labelledby="featured-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
+    <div class="mb-12 text-center">
+      <h2 id="featured-title">
+        Featured Highlights
+      </h2>
+      <p class="text-lg text-slate-500">Hand-picked content curated just for you</p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Featured content highlights">
+      <div>
+        <article class="home-featured-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article">
+          <div class="relative bg-primary/10 p-8 text-center">
+            <i class="lucide lucide-smartphone text-5xl text-primary" aria-hidden="true"></i>
+          </div>
+          <div class="flex flex-1 flex-col p-6">
+            <h3 class="mb-2 text-lg font-bold">Latest Phones</h3>
+            <p class="mb-4 flex-1 text-sm text-slate-500">Explore the newest smartphones and their specifications</p>
+            <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="Browse latest phones">
+              Browse Phones
+            </a>
+          </div>
+        </article>
       </div>
+
+      <div>
+        <article class="home-featured-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article">
+          <div class="relative bg-emerald-100 p-8 text-center">
+            <i class="lucide lucide-book-open text-5xl text-emerald-600" aria-hidden="true"></i>
+          </div>
+          <div class="flex flex-1 flex-col p-6">
+            <h3 class="mb-2 text-lg font-bold">Tech News</h3>
+            <p class="mb-4 flex-1 text-sm text-slate-500">Stay updated with the latest technology news and trends</p>
+            <a href="/category/news" class="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700" aria-label="Read tech news">
+              Read News
+            </a>
+          </div>
+        </article>
+      </div>
+
+      <div>
+        <article class="home-featured-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article">
+          <div class="relative bg-amber-100 p-8 text-center">
+            <i class="lucide lucide-briefcase text-5xl text-amber-600" aria-hidden="true"></i>
+          </div>
+          <div class="flex flex-1 flex-col p-6">
+            <h3 class="mb-2 text-lg font-bold">Job Opportunities</h3>
+            <p class="mb-4 flex-1 text-sm text-slate-500">Find exciting career opportunities in tech industry</p>
+            <a href="/category/chakribd" class="inline-flex items-center justify-center gap-2 rounded-full bg-amber-500 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600" aria-label="View job opportunities">
+              View Jobs
+            </a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ==================== LATEST MOBILES SECTION ==================== #}
+<section class="py-12 home-latest-mobiles-section" aria-labelledby="latest-mobiles-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
+    <div class="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 id="latest-mobiles-title">
+          <span>Latest</span> Mobile Phones
+        </h2>
+        <p class="text-slate-500">Discover the newest smartphones with detailed specifications and pricing</p>
+      </div>
+      <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="View all mobile phones">
+        <i class="lucide lucide-arrow-right mr-2"></i>View All
+      </a>
     </div>
 
     <div class="feed-grid" role="feed" aria-label="Latest mobiles feed">
@@ -969,81 +846,67 @@
 </section>
 
 {# ==================== SERVICES SECTION ==================== #}
-<section class="py-5 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
-  <div class="container home-feed-surface">
-    <div class="text-center mb-5">
-      <h2 id="services-title" class="fw-bold display-5 mb-3">
-        Explore Our <span class="text-primary">Services</span>
+<section class="py-12 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
+    <div class="mb-12 text-center">
+      <h2 id="services-title">
+        Explore Our Services
       </h2>
-      <p class="lead text-muted">Discover and apply for exclusive services tailored to your needs</p>
+      <p class="text-lg text-slate-500">Discover and apply for exclusive services tailored to your needs</p>
     </div>
-    
-    <div class="row g-4 align-items-center">
-      <div class="col-lg-6">
-        <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden services-card-left tw-transition tw-duration-300 hover:-tw-translate-y-1">
-          <div class="card-body p-5 text-white">
-            <div class="mb-4 d-inline-block bg-white bg-opacity-20 rounded-3 p-3">
-              <i class="bi bi-award-fill text-white" style="font-size: 2.5rem; display: block;"></i>
-            </div>
-            <h3 class="card-title fw-bold h4 mb-3 text-white">Professional Services</h3>
-            <p class="card-text text-white-50 mb-4">Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes.</p>
-            <ul class="list-unstyled mb-4">
-              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Easy Application Process</strong></li>
-              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Real-time Status Tracking</strong></li>
-              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Expert Support Team</strong></li>
-              <li class="mb-3 text-white-50"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Quick Approval Process</strong></li>
-            </ul>
-            <a href="/services" class="btn btn-light btn-lg rounded-pill px-5 fw-bold" aria-label="Browse available services">
-              <i class="bi bi-arrow-right me-2"></i>Explore Services
-            </a>
+
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
+      <div class="w-full lg:w-1/2">
+        <div class="services-card-left flex h-full flex-col justify-between rounded-2xl border border-white/20 bg-gradient-to-br from-indigo-600 to-purple-700 p-6 text-white shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="mb-4 inline-flex rounded-2xl bg-white/20 p-4">
+            <i class="lucide lucide-award text-4xl text-white"></i>
           </div>
+          <h3 class="mb-3 text-xl font-bold">Professional Services</h3>
+          <p class="mb-4 text-white/80">Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes.</p>
+          <ul class="mb-4 space-y-2 text-white/80">
+            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Easy Application Process</strong></li>
+            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Real-time Status Tracking</strong></li>
+            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Expert Support Team</strong></li>
+            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Quick Approval Process</strong></li>
+          </ul>
+          <a href="/services" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            <i class="lucide lucide-arrow-right mr-2"></i>Explore Services
+          </a>
         </div>
       </div>
-      
-      <div class="col-lg-6">
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right blue tw-transition tw-duration-300 hover:-tw-translate-y-1">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start">
-                  <div class="bg-primary bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
-                    <i class="bi bi-search text-primary fs-5"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title fw-bold mb-2">Browse Services</h5>
-                    <p class="card-text text-muted small mb-0">Explore all available services by category and filter by your preferences</p>
-                  </div>
-                </div>
+
+      <div class="w-full lg:w-1/2">
+        <div class="flex flex-col gap-4">
+          <div class="card border-0 bg-white rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 services-card-right blue">
+            <div class="flex items-start gap-4 p-4">
+              <div class="flex-shrink-0 rounded-2xl bg-primary/15 p-3">
+                <i class="lucide lucide-search text-primary text-lg"></i>
+              </div>
+              <div>
+                <h5 class="mb-1 font-bold">Browse Services</h5>
+                <p class="mb-0 text-sm text-slate-500">Explore all available services by category and filter by your preferences</p>
               </div>
             </div>
           </div>
-          <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right green tw-transition tw-duration-300 hover:-tw-translate-y-1">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start">
-                  <div class="bg-success bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
-                    <i class="bi bi-clipboard-check text-success fs-5"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title fw-bold mb-2">Apply Easily</h5>
-                    <p class="card-text text-muted small mb-0">Submit applications with simple forms and instant confirmation</p>
-                  </div>
-                </div>
+          <div class="card border-0 bg-white rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 services-card-right green">
+            <div class="flex items-start gap-4 p-4">
+              <div class="flex-shrink-0 rounded-2xl bg-emerald-100 p-3">
+                <i class="lucide lucide-clipboard-check text-emerald-600 text-lg"></i>
+              </div>
+              <div>
+                <h5 class="mb-1 font-bold">Apply Easily</h5>
+                <p class="mb-0 text-sm text-slate-500">Submit applications with simple forms and instant confirmation</p>
               </div>
             </div>
           </div>
-          <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow-lg transition-all services-card-right yellow tw-transition tw-duration-300 hover:-tw-translate-y-1">
-              <div class="card-body p-4">
-                <div class="d-flex align-items-start">
-                  <div class="bg-warning bg-opacity-15 rounded-3 p-3 me-3 flex-shrink-0">
-                    <i class="bi bi-clock-history text-warning fs-5"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title fw-bold mb-2">Track Status</h5>
-                    <p class="card-text text-muted small mb-0">Monitor progress with real-time status updates and notifications</p>
-                  </div>
-                </div>
+          <div class="card border-0 bg-white rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 services-card-right yellow">
+            <div class="flex items-start gap-4 p-4">
+              <div class="flex-shrink-0 rounded-2xl bg-amber-100 p-3">
+                <i class="lucide lucide-history text-amber-600 text-lg"></i>
+              </div>
+              <div>
+                <h5 class="mb-1 font-bold">Track Status</h5>
+                <p class="mb-0 text-sm text-slate-500">Monitor progress with real-time status updates and notifications</p>
               </div>
             </div>
           </div>
@@ -1052,15 +915,13 @@
     </div>
 
     {% if auth_user.is_authenticated %}
-    <div class="row mt-5">
-      <div class="col-12">
-        <div class="alert alert-info border-0 rounded-4 shadow-sm" role="alert">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-info-circle-fill me-3 fs-5"></i>
-            <div>
-              <h6 class="alert-heading mb-1">Logged In User</h6>
-              <p class="mb-0 small">You can view <a href="/services/my-applications" class="alert-link fw-bold">your applications</a> and apply for new services anytime.</p>
-            </div>
+    <div class="mt-12">
+      <div class="rounded-2xl bg-sky-500/10 p-6">
+        <div class="flex items-center gap-4">
+          <i class="lucide lucide-info text-2xl text-sky-600"></i>
+          <div>
+            <h6 class="mb-1 font-bold text-sky-800">Logged In User</h6>
+            <p class="text-sm text-sky-700">You can view <a href="/services/my-applications" class="font-bold text-sky-600 underline">your applications</a> and apply for new services anytime.</p>
           </div>
         </div>
       </div>
@@ -1070,322 +931,258 @@
 </section>
 
 {# ==================== CATEGORIES SECTION ==================== #}
-<section class="py-5 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-from-slate-900/20" id="categories" aria-labelledby="categories-title">
-  <div class="container home-feed-surface">
-    <div class="text-center mb-5">
-      <h2 id="categories-title" class="fw-bold display-5 mb-3">
-        Browse by <span class="text-primary">Category</span>
+<section class="py-12 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-bg-slate-900/20" id="categories" aria-labelledby="categories-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
+    <div class="mb-12 text-center">
+      <h2 id="categories-title">
+        Browse by Category
       </h2>
-      <p class="lead text-muted">Explore content across different categories</p>
+      <p class="text-lg text-slate-500">Explore content across different categories</p>
     </div>
 
-    <div class="row g-3" role="region" aria-label="Content categories">
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/news" class="text-decoration-none" aria-label="Browse breaking news category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card news"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-fire fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Breaking News</h3>
-            <p class="small mb-0 opacity-75">Latest updates from the tech world</p>
-          </div>
-        </a>
-      </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Content categories">
+      <a href="/category/news" class="text-decoration-none" aria-label="Browse breaking news category">
+        <div class="home-category-card news rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-flame mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Breaking News</h3>
+          <p class="text-sm opacity-75">Latest updates from the tech world</p>
+        </div>
+      </a>
 
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/reviews" class="text-decoration-none" aria-label="Browse reviews category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card reviews"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-star-fill fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Reviews</h3>
-            <p class="small mb-0 opacity-75">In-depth product reviews and analysis</p>
-          </div>
-        </a>
-      </div>
+      <a href="/category/reviews" class="text-decoration-none" aria-label="Browse reviews category">
+        <div class="home-category-card reviews rounded-2xl bg-gradient-to-br from-amber-500 to-pink-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-star mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Reviews</h3>
+          <p class="text-sm opacity-75">In-depth product reviews and analysis</p>
+        </div>
+      </a>
 
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/tips" class="text-decoration-none" aria-label="Browse tips and tricks category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card tips"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-lightbulb-fill fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Tips & Tricks</h3>
-            <p class="small mb-0 opacity-75">Helpful tips to maximize your devices</p>
-          </div>
-        </a>
-      </div>
+      <a href="/category/tips" class="text-decoration-none" aria-label="Browse tips and tricks category">
+        <div class="home-category-card tips rounded-2xl bg-gradient-to-br from-lime-500 to-emerald-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-lightbulb mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Tips & Tricks</h3>
+          <p class="text-sm opacity-75">Helpful tips to maximize your devices</p>
+        </div>
+      </a>
 
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/tutorials" class="text-decoration-none" aria-label="Browse tutorials category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card tutorials"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-mortarboard-fill fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Tutorials</h3>
-            <p class="small mb-0 opacity-75">Step-by-step guides and tutorials</p>
-          </div>
-        </a>
-      </div>
+      <a href="/category/tutorials" class="text-decoration-none" aria-label="Browse tutorials category">
+        <div class="home-category-card tutorials rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-graduation-cap mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Tutorials</h3>
+          <p class="text-sm opacity-75">Step-by-step guides and tutorials</p>
+        </div>
+      </a>
 
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/comparison" class="text-decoration-none" aria-label="Browse comparison category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card comparison"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-code-slash fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Comparison</h3>
-            <p class="small mb-0 opacity-75">Compare devices side by side</p>
-          </div>
-        </a>
-      </div>
+      <a href="/category/comparison" class="text-decoration-none" aria-label="Browse comparison category">
+        <div class="home-category-card comparison rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-code mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Comparison</h3>
+          <p class="text-sm opacity-75">Compare devices side by side</p>
+        </div>
+      </a>
 
-      <div class="col-md-6 col-lg-4">
-        <a href="/category/trending" class="text-decoration-none" aria-label="Browse trending category">
-          <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card trending"
-               role="button"
-               tabindex="0">
-            <i class="bi bi-graph-up-arrow fs-2 mb-3" aria-hidden="true"></i>
-            <h3 class="fw-bold mb-2 h5">Trending</h3>
-            <p class="small mb-0 opacity-75">What's trending in the mobile world</p>
-          </div>
-        </a>
-      </div>
+      <a href="/category/trending" class="text-decoration-none" aria-label="Browse trending category">
+        <div class="home-category-card trending rounded-2xl bg-gradient-to-br from-fuchsia-600 to-pink-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+             role="button"
+             tabindex="0">
+          <i class="lucide lucide-trending-up mb-2 text-3xl" aria-hidden="true"></i>
+          <h3 class="mb-2 font-bold text-lg">Trending</h3>
+          <p class="text-sm opacity-75">What's trending in the mobile world</p>
+        </div>
+      </a>
     </div>
   </div>
 </section>
 
 {# ==================== STATS SECTION ==================== #}
-<section class="py-5 bg-primary text-white position-relative overflow-hidden" aria-labelledby="stats-title">
-  <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" aria-hidden="true">
-    <div class="position-absolute" style="width: 400px; height: 400px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -100px; right: -100px;"></div>
-    <div class="position-absolute" style="width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -50px; left: -50px;"></div>
+<section class="py-12 bg-primary text-white relative overflow-hidden" aria-labelledby="stats-title">
+  <div class="absolute inset-0 opacity-10" aria-hidden="true">
+    <div class="absolute -top-16 -right-16 h-96 w-96 rounded-full bg-white/10"></div>
+    <div class="absolute -bottom-8 -left-8 h-72 w-72 rounded-full bg-white/10"></div>
   </div>
-  
-  <div class="container position-relative">
-    <h2 id="stats-title" class="visually-hidden">Platform Statistics</h2>
-    <div class="row text-center g-4" role="region" aria-label="Platform statistics">
-      <div class="col-md-3">
-        <div class="stat-item">
-          <p class="display-4 fw-bold mb-2" aria-label="Active users">{{ stats.active_users|default('500') }}+</p>
-          <p class="mb-0 opacity-75">Active Users</p>
-        </div>
+
+  <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <h2 id="stats-title" class="sr-only">Platform Statistics</h2>
+    <div class="grid gap-6 text-center md:grid-cols-4" role="region" aria-label="Platform statistics">
+      <div class="stat-item">
+        <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Active users">{{ stats.active_users|default('500') }}+</p>
+        <p class="mb-0 opacity-75">Active Users</p>
       </div>
-      <div class="col-md-3">
-        <div class="stat-item">
-          <p class="display-4 fw-bold mb-2" aria-label="Device specifications">{{ stats.device_specs|default('1200') }}+</p>
-          <p class="mb-0 opacity-75">Device Specs</p>
-        </div>
+      <div class="stat-item">
+        <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Device specifications">{{ stats.device_specs|default('1200') }}+</p>
+        <p class="mb-0 opacity-75">Device Specs</p>
       </div>
-      <div class="col-md-3">
-        <div class="stat-item">
-          <p class="display-4 fw-bold mb-2" aria-label="Published articles">{{ stats.articles|default('850') }}+</p>
-          <p class="mb-0 opacity-75">Articles</p>
-        </div>
+      <div class="stat-item">
+        <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Published articles">{{ stats.articles|default('850') }}+</p>
+        <p class="mb-0 opacity-75">Articles</p>
       </div>
-      <div class="col-md-3">
-        <div class="stat-item">
-          <p class="display-4 fw-bold mb-2" aria-label="Job postings">{{ stats.job_posts|default('320') }}+</p>
-          <p class="mb-0 opacity-75">Job Posts</p>
-        </div>
+      <div class="stat-item">
+        <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Job postings">{{ stats.job_posts|default('320') }}+</p>
+        <p class="mb-0 opacity-75">Job Posts</p>
       </div>
     </div>
   </div>
 </section>
 
 {# ==================== SHARE SECTION ==================== #}
-<section class="py-5" aria-labelledby="share-title">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-10">
-        <div class="card border-0 rounded-4 shadow-sm p-5 mb-5 home-share-card">
-          <h2 id="share-title" class="fw-bold mb-4 text-center h3">
-            <i class="bi bi-share-fill me-2 text-primary" aria-hidden="true"></i>Share This Page
-          </h2>
-          
-          <div class="share-buttons d-flex flex-wrap justify-content-center gap-3 mb-4" role="group" aria-label="Share on social media">
-            {# Twitter Share #}
-            <a href="https://twitter.com/intent/tweet?url={{ url|url_encode|default('') }}&text={{ 'Check out this amazing content!'|url_encode }}" 
-               target="_blank"
-               rel="noopener noreferrer"
-               class="btn btn-sm rounded-pill shadow-sm transition-all"
-               style="background-color: #1DA1F2; color: white; padding: 0.5rem 1.2rem;"
-               aria-label="Share on Twitter/X">
-                <i class="bi bi-twitter-x me-2" aria-hidden="true"></i>Twitter/X
-            </a>
+<section class="py-12" aria-labelledby="share-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-center">
+      <div class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl home-share-card">
+        <h2 id="share-title">
+          <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>Share This Page
+        </h2>
 
-            {# LinkedIn Share #}
-            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|url_encode|default('') }}" 
-               target="_blank"
-               rel="noopener noreferrer"
-               class="btn btn-sm rounded-pill shadow-sm transition-all"
-               style="background-color: #0077B5; color: white; padding: 0.5rem 1.2rem;"
-               aria-label="Share on LinkedIn">
-                <i class="bi bi-linkedin me-2" aria-hidden="true"></i>LinkedIn
-            </a>
+        <div class="flex flex-wrap justify-center gap-3 mb-4" role="group" aria-label="Share on social media">
+          {# Twitter Share #}
+          <a href="https://twitter.com/intent/tweet?url={{ url|url_encode|default('') }}&text={{ 'Check out this amazing content!'|url_encode }}"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="rounded-full bg-[#1DA1F2] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+             aria-label="Share on Twitter/X">
+            <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>Twitter/X
+          </a>
 
-            {# WhatsApp Share #}
-            <a href="https://wa.me/?text={{ 'Check out this amazing content'|url_encode }}%20{{ url|url_encode|default('') }}" 
-               target="_blank"
-               rel="noopener noreferrer"
-               class="btn btn-sm rounded-pill shadow-sm transition-all"
-               style="background-color: #25D366; color: white; padding: 0.5rem 1.2rem;"
-               aria-label="Share on WhatsApp">
-                <i class="bi bi-whatsapp me-2" aria-hidden="true"></i>WhatsApp
-            </a>
+          {# LinkedIn Share #}
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|url_encode|default('') }}"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="rounded-full bg-[#0077B5] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+             aria-label="Share on LinkedIn">
+            <i class="lucide lucide-briefcase mr-2" aria-hidden="true"></i>LinkedIn
+          </a>
 
-            {# Email Share #}
-            <a href="mailto:?subject={{ 'Check out this amazing website'|url_encode }}&body={{ 'I found this amazing website that you might like:'|url_encode }}%0D%0A{{ url|url_encode|default('') }}" 
-               class="btn btn-sm rounded-pill shadow-sm transition-all"
-               style="background-color: #EA4335; color: white; padding: 0.5rem 1.2rem;"
-               aria-label="Share via Email">
-                <i class="bi bi-envelope-fill me-2" aria-hidden="true"></i>Email
-            </a>
+          {# WhatsApp Share #}
+          <a href="https://wa.me/?text={{ 'Check out this amazing content'|url_encode }}%20{{ url|url_encode|default('') }}"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="rounded-full bg-[#25D366] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+             aria-label="Share on WhatsApp">
+            <i class="lucide lucide-message-circle mr-2" aria-hidden="true"></i>WhatsApp
+          </a>
 
-            {# Copy Link #}
-            <button type="button" 
-                    class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm transition-all"
-                    style="padding: 0.5rem 1.2rem;"
-                    id="copyLinkBtnHome"
-                    aria-label="Copy link to clipboard"
-                    onclick="copyToClipboardHome()">
-                <i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Copy Link
-            </button>
-          </div>
-          
-          <p class="text-center text-muted small">
-            <i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>Help us spread the word by sharing this page with your friends and followers
-          </p>
+          {# Email Share #}
+          <a href="mailto:?subject={{ 'Check out this amazing website'|url_encode }}&body={{ 'I found this amazing website that you might like:'|url_encode }}%0D%0A{{ url|url_encode|default('') }}"
+             class="rounded-full bg-[#EA4335] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+             aria-label="Share via Email">
+            <i class="lucide lucide-mail mr-2" aria-hidden="true"></i>Email
+          </a>
+
+          {# Copy Link #}
+          <button type="button"
+                  class="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50"
+                  id="copyLinkBtnHome"
+                  aria-label="Copy link to clipboard"
+                  onclick="copyToClipboardHome()">
+            <i class="lucide lucide-link mr-2" aria-hidden="true"></i>Copy Link
+          </button>
         </div>
+
+        <p class="text-center text-sm text-slate-500">
+          <i class="lucide lucide-info mr-1" aria-hidden="true"></i>Help us spread the word by sharing this page with your friends and followers
+        </p>
       </div>
     </div>
   </div>
 </section>
 
 {# ==================== NEWSLETTER SECTION ==================== #}
-<section class="py-5 bg-light" aria-labelledby="newsletter-title">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-7">
-        <div class="card border-0 shadow-lg rounded-4 p-5 newsletter-card home-newsletter-card text-center">
-          <div class="mb-4">
-            <span class="bg-primary bg-gradient rounded-circle p-3 mb-3 d-inline-block">
-              <i class="bi bi-envelope-paper-fill text-white fs-1" aria-hidden="true"></i>
-            </span>
-            <h2 id="newsletter-title" class="fw-bold display-6 mb-2">Get Latest Updates</h2>
-            <p class="lead text-muted">Subscribe for the latest news, reviews, and exclusive offers</p>
-          </div>
-          <form id="home-newsletter-form" class="row g-2 justify-content-center" aria-label="Newsletter subscription form">
-            <div class="col-md-10">
-              <label for="newsletter-email" class="visually-hidden">Email address</label>
-              <input type="email" 
-                     id="newsletter-email"
-                     name="email"
-                     class="form-control rounded-pill px-4 py-3 shadow-sm" 
-                     placeholder="Your email address" 
-                     aria-label="Enter your email address"
-                     required>
-            </div>
-            <div class="col-md-6">
-              <button type="submit" class="btn btn-primary rounded-pill fw-bold" aria-label="Subscribe to newsletter">
-                <i class="bi bi-send-fill me-2" aria-hidden="true"></i>Subscribe
-              </button>
-            </div>
-          </form>
-          
-          <script>
-          document.getElementById('home-newsletter-form').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              
-              try {
-                  const response = await fetch('/newsletter/subscribe', {
-                      method: 'POST',
-                      body: formData
-                  });
-                  const data = await response.json();
-                  
-                  if (data.success) {
-                      showMessage(data.message || 'Successfully subscribed to our newsletter', 'success');
-                      e.target.reset();
-                  } else {
-                      showMessage(data.error || 'An error occurred', 'error');
-                  }
-              } catch (err) {
-                  showMessage('Error: ' + err.message, 'error');
-              }
-          });
-          </script>
+<section class="py-12 bg-slate-50" aria-labelledby="newsletter-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-center">
+      <div class="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl newsletter-card home-newsletter-card text-center">
+        <div class="mb-4 inline-flex rounded-full bg-primary p-4">
+          <i class="lucide lucide-mail-plus text-3xl text-white" aria-hidden="true"></i>
         </div>
+        <h2 id="newsletter-title" class="mb-2 text-2xl font-bold">Get Latest Updates</h2>
+        <p class="mb-6 text-slate-500">Subscribe for the latest news, reviews, and exclusive offers</p>
+        <form id="home-newsletter-form" class="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-2" aria-label="Newsletter subscription form">
+          <div class="flex-1 sm:max-w-md">
+            <label for="newsletter-email" class="sr-only">Email address</label>
+            <input type="email"
+                   id="newsletter-email"
+                   name="email"
+                   class="w-full rounded-full border border-slate-300 px-5 py-3 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                   placeholder="Your email address"
+                   aria-label="Enter your email address"
+                   required>
+          </div>
+          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
+            <i class="lucide lucide-send mr-2" aria-hidden="true"></i>Subscribe
+          </button>
+        </form>
       </div>
     </div>
   </div>
 </section>
 
 {# ==================== RECOMMENDED SECTION ==================== #}
-<section class="py-5 bg-gradient bg-light home-recommended-section" aria-labelledby="recommended-title">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 id="recommended-title" class="fw-bold display-5 mb-3">
+<section class="py-12 home-recommended-section" aria-labelledby="recommended-title">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mb-12 text-center">
+      <h2 id="recommended-title" class="mb-3 text-4xl font-bold md:text-5xl">
         <span class="text-primary">Recommended</span> for You
       </h2>
-      <p class="lead text-muted">Hand-picked content just for your interests</p>
+      <p class="text-lg text-slate-500">Hand-picked content just for your interests</p>
     </div>
-    <div class="row g-4 justify-content-center" role="region" aria-label="Recommended content">
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Recommended content">
       {% if featured_content %}
         {% for item in featured_content|slice(0, 3) %}
-        <div class="col-md-6 col-lg-4">
-          <article class="card h-100 border-0 shadow-lg hover-shadow-lg rounded-4 overflow-hidden recommended-card" role="article" aria-label="Recommended item: {{ item.title }}">
-            {% if item.image %}
-            <div class="ratio ratio-16x9 overflow-hidden recommended-card-img">
-              <img src="{{ item.image }}" 
-                   class="object-fit-cover w-100 h-100" 
-                   alt="{{ item.title }}"
-                   loading="lazy"
-                   decoding="async">
+        <article class="recommended-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article" aria-label="Recommended item: {{ item.title }}">
+          {% if item.image %}
+          <div class="relative aspect-video overflow-hidden rounded-t-2xl">
+            <img src="{{ item.image }}"
+                 class="absolute inset-0 h-full w-full object-cover"
+                 alt="{{ item.title }}"
+                 loading="lazy"
+                 decoding="async"
+                 width="400" height="225">
+          </div>
+          {% endif %}
+          <div class="flex flex-1 flex-col p-5">
+            <div class="mb-2">
+              <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{{ item.category|default('Featured') }}</span>
             </div>
-            {% endif %}
-            <div class="card-body">
-              <div class="mb-2">
-                <span class="badge bg-gradient bg-primary rounded-pill small">{{ item.category|default('Featured') }}</span>
-              </div>
-              <h3 class="card-title fw-bold line-clamp-2 h5">{{ item.title }}</h3>
-              <p class="card-text text-muted small line-clamp-2">{{ item.description|striptags|default('') }}</p>
-              <a href="{{ item.link|default('#') }}" 
-                 class="btn btn-primary btn-sm rounded-pill mt-3"
-                 aria-label="Read more about {{ item.title }}">
-                Read More
-              </a>
-            </div>
-          </article>
-        </div>
+            <h3 class="mb-2 line-clamp-2 text-lg font-bold">{{ item.title|striptags|raw }}</h3>
+            <p class="mb-0 line-clamp-2 flex-1 text-sm text-slate-500">{{ item.description|striptags|raw|default('') }}</p>
+            <a href="{{ item.link|default('#') }}"
+               class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 mt-4 w-fit"
+               aria-label="Read more about {{ item.title|striptags }}">
+              Read More
+            </a>
+          </div>
+        </article>
         {% endfor %}
       {% else %}
         {# Fallback Categories Display #}
-        <div class="col-12">
-          <div class="row g-4 justify-content-center">
-            {% set default_categories = [
-              {name: 'News', slug: 'news', icon: 'bi bi-newspaper', gradient: '#667eea, #764ba2', description: 'Latest tech news'},
-              {name: 'Reviews', slug: 'reviews', icon: 'bi bi-star-fill', gradient: '#f093fb, #f5576c', description: 'Product reviews'},
-              {name: 'Tutorials', slug: 'tutorials', icon: 'bi bi-mortarboard-fill', gradient: '#4facfe, #00f2fe', description: 'Learn new skills'}
-            ] %}
-            
-            {% for cat in categories|default(default_categories) %}
-            <div class="col-md-6 col-lg-4">
-              <a href="/category/{{ cat.slug }}" class="text-decoration-none" aria-label="Browse {{ cat.name }} category">
-                <div class="p-4 rounded-4 text-white hover-shadow-lg transition-all category-card" 
-                     style="background: linear-gradient(135deg, {{ cat.gradient|default('#6366f1, #a855f7') }});"
-                     role="button"
-                     tabindex="0">
-                  <i class="{{ cat.icon|default('bi bi-folder-fill') }} fs-2 mb-3" aria-hidden="true"></i>
-                  <h3 class="fw-bold mb-2 h5">{{ cat.name }}</h3>
-                  <p class="small mb-0 opacity-75">{{ cat.description|default('Explore this category') }}</p>
-                </div>
-              </a>
-            </div>
-            {% endfor %}
+        {% set default_categories = [
+          {name: 'News', slug: 'news', icon: 'lucide lucide-book-open', gradient: 'from-indigo-600 to-purple-700', description: 'Latest tech news'},
+          {name: 'Reviews', slug: 'reviews', icon: 'lucide lucide-star', gradient: 'from-pink-500 to-rose-500', description: 'Product reviews'},
+          {name: 'Tutorials', slug: 'tutorials', icon: 'lucide lucide-graduation-cap', gradient: 'from-sky-500 to-blue-600', description: 'Learn new skills'}
+        ] %}
+        {% set cat_gradients = ['from-indigo-600 to-purple-700', 'from-pink-500 to-rose-500', 'from-sky-500 to-blue-600'] %}
+
+        {% for cat in categories|default(default_categories) %}
+        <a href="/category/{{ cat.slug }}" class="text-decoration-none" aria-label="Browse {{ cat.name }} category">
+          <div class="rounded-2xl bg-gradient-to-br p-5 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg {{ cat_gradients[loop.index0 % cat_gradients|length] }}"
+               role="button"
+               tabindex="0">
+            <i class="{{ cat.icon|default('lucide lucide-folder') }} mb-3 text-3xl" aria-hidden="true"></i>
+            <h3 class="mb-2 font-bold text-lg">{{ cat.name }}</h3>
+            <p class="text-sm opacity-75">{{ cat.description|default('Explore this category') }}</p>
           </div>
-        </div>
+        </a>
+        {% endfor %}
       {% endif %}
     </div>
   </div>
@@ -1393,6 +1190,39 @@
 
 {# ==================== JAVASCRIPT ==================== #}
 <script>
+
+  // Auto-switch Top Picks between posts and services
+  function initTopPicksAutoSwitch() {
+    const topCarouselSection = document.querySelector('.top-carousel-section');
+    if (!topCarouselSection) return;
+
+    const tabPosts = document.getElementById('tab-posts');
+    const tabServices = document.getElementById('tab-services');
+    
+    if (!tabPosts || !tabServices) return;
+
+    let isShowingPosts = true;
+    const switchInterval = 6000; // Switch every 6 seconds
+
+    setInterval(function() {
+      if (isShowingPosts) {
+        // Switch to services
+        tabServices.click();
+        isShowingPosts = false;
+      } else {
+        // Switch to posts
+        tabPosts.click();
+        isShowingPosts = true;
+      }
+    }, switchInterval);
+  }
+
+  // Initialize auto-switch when page is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTopPicksAutoSwitch);
+  } else {
+    initTopPicksAutoSwitch();
+  }
 
   // Copy to clipboard function
   function copyToClipboardHome() {
@@ -1437,7 +1267,7 @@
     const originalBg = btn.style.backgroundColor;
     const originalBorder = btn.style.borderColor;
     
-    btn.innerHTML = '<i class="bi bi-check-lg me-2" aria-hidden="true"></i>Copied!';
+    btn.innerHTML = '<i class="lucide lucide-check mr-2" aria-hidden="true"></i>Copied!';
     btn.style.backgroundColor = '#28a745';
     btn.style.borderColor = '#28a745';
     btn.style.color = '#fff';
@@ -1451,10 +1281,12 @@
       btn.setAttribute('aria-label', 'Copy link to clipboard');
     }, 2000);
   }
-
-    </script>
+ </script>
 
 {% endblock %}
 
 {% block extra_scripts %}
+  <script type="module" src="{{ asset('assets/js/dist/feed-discovery.js') }}?v={{ assets_version }}"></script>
+
 {% endblock %}
+

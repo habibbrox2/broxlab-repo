@@ -1,0 +1,518 @@
+﻿{% extends "admin/layout.twig" %}
+
+{% block title %}Failed Pipeline Logs - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+  .failed-logs-shell {
+    --failed-ink: #0f172a;
+    --failed-muted: #64748b;
+    --failed-line: #e2e8f0;
+    --failed-soft: #f8fafc;
+    --failed-accent: #dc2626;
+    --failed-accent-soft: #fee2e2;
+  }
+  .failed-logs-shell .logs-hero {
+    border: 1px solid var(--failed-line);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1rem;
+  }
+  .failed-logs-shell .logs-hero h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--failed-ink);
+    margin-bottom: 0.35rem;
+  }
+  .failed-logs-shell .logs-hero p {
+    color: var(--failed-muted);
+    margin: 0;
+  }
+  .failed-logs-shell .stat-card {
+    border: 1px solid var(--failed-line);
+    border-radius: 0.9rem;
+    background: #fff;
+  }
+  .failed-logs-shell .stat-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.7rem;
+    background: var(--failed-accent-soft);
+    color: var(--failed-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .failed-logs-shell .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--failed-ink);
+    line-height: 1.1;
+  }
+  .failed-logs-shell .stat-label {
+    color: var(--failed-muted);
+    font-size: 0.8rem;
+  }
+  .failed-logs-shell .filter-card {
+    border: 1px solid var(--failed-line);
+    border-radius: 0.95rem;
+  }
+  .failed-logs-shell .filter-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--failed-ink);
+  }
+  .failed-logs-shell .log-row {
+    border: 1px solid var(--failed-line);
+    border-radius: 0.95rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: #fff;
+  }
+  .failed-logs-shell .log-row.selected {
+    background: #fee2e2;
+    border: 2px solid var(--failed-accent);
+  }
+  .failed-logs-shell .log-status-failed {
+    color: #dc2626;
+    font-weight: 700;
+  }
+  .failed-logs-shell .bulk-actions {
+    background: #fee2e2;
+    border: 1px solid var(--failed-accent);
+    border-radius: 0.95rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .failed-logs-shell .bulk-actions.show {
+    display: block;
+  }
+  .failed-logs-shell .checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="failed-logs-shell">
+  <div class="logs-hero">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <h1>Failed Pipeline Logs</h1>
+        <p>View and manage scraper pipeline runs that encountered errors.</p>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" href="/admin/scrap-control-center">Back to Control Center</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-3 col-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2">
+            <span class="stat-icon"><i class="bi bi-exclamation-triangle"></i></span>
+            <div>
+              <div class="stat-value">{{ total_failed_items|default(0) }}</div>
+              <div class="stat-label">Failed Items</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2">
+            <span class="stat-icon"><i class="bi bi-hourglass-split"></i></span>
+            <div>
+              <div class="stat-value">{{ total_runs|default(0) }}</div>
+              <div class="stat-label">Total Runs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card stat-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2">
+            <span class="stat-icon"><i class="bi bi-collection"></i></span>
+            <div>
+              <div class="stat-value">{{ failed_runs|length|default(0) }}</div>
+              <div class="stat-label">Failed Runs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border: 1px solid #e2e8f0; border-radius: 0.95rem; margin-bottom: 1rem;">
+    <div class="card-body">
+      <div style="font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">Quick Navigation</div>
+      <div class="row g-2">
+        <div class="col-md-3">
+          <a href="/admin/scrap-control-center/all-pipeline-logs" class="btn btn-outline-info btn-sm w-100">
+            <i class="bi bi-file-text"></i> All Logs
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/admin/scrap-control-center/pipeline-runs" class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-play-circle"></i> Pipeline Runs
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/admin/scrap-control-center/failed-pipeline-logs" class="btn btn-danger btn-sm w-100" style="pointer-events: none;">
+            <i class="bi bi-exclamation-circle"></i> Failed Logs
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/admin/scrap-control-center/incoming" class="btn btn-outline-success btn-sm w-100">
+            <i class="bi bi-inbox"></i> Incoming Items
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card filter-card mb-4">
+    <div class="card-body">
+      <div class="filter-title mb-3">Filters</div>
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Action</label>
+          <select name="action" class="form-control">
+            <option value="">All Actions</option>
+            <option value="run-pipeline" {{ action_filter == 'run-pipeline' ? 'selected' }}>Run Pipeline</option>
+            <option value="auto-run-pipeline" {{ action_filter == 'auto-run-pipeline' ? 'selected' }}>Auto Run Pipeline</option>
+            <option value="cron-run-pipeline" {{ action_filter == 'cron-run-pipeline' ? 'selected' }}>Cron Run Pipeline</option>
+            <option value="publish-pending" {{ action_filter == 'publish-pending' ? 'selected' }}>Publish Pending</option>
+            <option value="retry-failed" {{ action_filter == 'retry-failed' ? 'selected' }}>Retry Failed</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date Range</label>
+          <select name="range" class="form-control">
+            <option value="">All Time</option>
+            <option value="today" {{ range_filter == 'today' ? 'selected' }}>Today</option>
+            <option value="yesterday" {{ range_filter == 'yesterday' ? 'selected' }}>Yesterday</option>
+            <option value="week" {{ range_filter == 'week' ? 'selected' }}>This Week</option>
+            <option value="month" {{ range_filter == 'month' ? 'selected' }}>This Month</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" type="submit">Apply Filters</button>
+        </div>
+        <div class="col-md-2">
+          <a class="btn btn-outline-secondary w-100" href="/admin/scrap-control-center/failed-pipeline-logs">Reset</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if failed_runs|length > 0 %}
+    <div class="bulk-actions" id="bulkActionsBar">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <label class="form-check-label">
+            <input type="checkbox" id="selectAllCheckbox" class="checkbox form-check-input">
+            <span><span id="selectedCount">0</span> runs selected</span>
+          </label>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-danger" id="bulkRetryBtn" disabled>
+            <i class="bi bi-arrow-clockwise"></i> Retry Selected
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" disabled>
+            <i class="bi bi-trash"></i> Delete Selected
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="cancelBulkBtn">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% for run in failed_runs %}
+      <div class="log-row" data-run-id="{{ run.id }}">
+        <div class="row align-items-start">
+          <div class="col-md-1 d-flex align-items-center">
+            <input type="checkbox" class="checkbox form-check-input run-checkbox" data-run-id="{{ run.id }}">
+          </div>
+          <div class="col-md-11">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="fw-bold">
+                  Run #{{ run.id }} - {{ run.action_name|default('Unknown Action') }}
+                  <span class="log-status-failed ml-2"><i class="bi bi-x-circle"></i> Failed</span>
+                </div>
+                <div class="text-muted small">
+                  Started: {{ run.started_at|default('N/A')|date('M d, Y H:i:s') }}
+                  â€¢ Duration: {{ run.duration_ms|default(0) }}ms
+                  â€¢ Trigger: {{ run.trigger_source|default('manual') }}
+                </div>
+              </div>
+              <a class="btn btn-sm btn-outline-primary" href="/admin/scrap-control-center/pipeline-runs/{{ run.id }}">
+                View Details <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+            
+            {% if run.error_message %}
+              <div class="alert alert-danger mb-2" style="font-size: 0.85rem;">
+                <strong>Error:</strong> {{ run.error_message|slice(0, 200) }}{% if run.error_message|length > 200 %}...{% endif %}
+              </div>
+            {% endif %}
+
+            <div class="row g-3" style="font-size: 0.85rem;">
+              <div class="col-sm-2">
+                <div class="text-muted">Fetched</div>
+                <div class="fw-bold">{{ run.fetched_count|default(0) }}</div>
+              </div>
+              <div class="col-sm-2">
+                <div class="text-muted">Published</div>
+                <div class="fw-bold">{{ run.published_count|default(0) }}</div>
+              </div>
+              <div class="col-sm-2">
+                <div class="text-muted">Failed</div>
+                <div class="fw-bold text-danger">{{ run.failed_count|default(0) }}</div>
+              </div>
+              <div class="col-sm-2">
+                <div class="text-muted">Skipped</div>
+                <div class="fw-bold">{{ run.skipped_duplicates|default(0) }}</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="text-muted">Scope</div>
+                <div class="fw-bold">{{ run.scope_type|default('all') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if total_pages > 1 %}
+      <nav aria-label="pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+          {% if current_page_number > 1 %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ current_page_number - 1 }}&action={{ action_filter }}&range={{ range_filter }}">&laquo;</a>
+            </li>
+          {% endif %}
+          {% for p in 1..total_pages %}
+            {% if p == current_page_number or p == 1 or p == total_pages or (p >= current_page_number - 2 and p <= current_page_number + 2) %}
+              <li class="page-item {{ p == current_page_number ? 'active' }}">
+                <a class="page-link" href="?page={{ p }}&action={{ action_filter }}&range={{ range_filter }}">{{ p }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if current_page_number < total_pages %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ current_page_number + 1 }}&action={{ action_filter }}&range={{ range_filter }}">&raquo;</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center">
+        <div class="text-muted">No failed pipeline runs found.</div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const bulkActionsBar = document.getElementById("bulkActionsBar");
+    const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+    const bulkRetryBtn = document.getElementById("bulkRetryBtn");
+    const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+    const cancelBulkBtn = document.getElementById("cancelBulkBtn");
+    const selectedCountSpan = document.getElementById("selectedCount");
+    const runCheckboxes = document.querySelectorAll(".run-checkbox");
+    const logRows = document.querySelectorAll(".log-row");
+    
+    function updateBulkActionsBar() {
+        const selectedRuns = Array.from(runCheckboxes).filter(cb => cb.checked);
+        const selectedCount = selectedRuns.length;
+        
+        if (selectedCount > 0) {
+            bulkActionsBar.classList.add("show");
+            selectedCountSpan.textContent = selectedCount;
+            bulkRetryBtn.disabled = false;
+            bulkDeleteBtn.disabled = false;
+        } else {
+            bulkActionsBar.classList.remove("show");
+            selectedCountSpan.textContent = "0";
+            bulkRetryBtn.disabled = true;
+            bulkDeleteBtn.disabled = true;
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        
+        logRows.forEach(row => {
+            const checkbox = row.querySelector(".run-checkbox");
+            if (checkbox && checkbox.checked) {
+                row.classList.add("selected");
+            } else {
+                row.classList.remove("selected");
+            }
+        });
+    }
+    
+    runCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener("change", function() {
+            updateBulkActionsBar();
+            updateSelectAllCheckbox();
+        });
+    });
+    
+    function updateSelectAllCheckbox() {
+        const totalCheckboxes = runCheckboxes.length;
+        const checkedCheckboxes = Array.from(runCheckboxes).filter(cb => cb.checked).length;
+        
+        if (checkedCheckboxes === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+    
+    selectAllCheckbox.addEventListener("change", function() {
+        runCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionsBar();
+    });
+    
+    bulkRetryBtn.addEventListener("click", function() {
+        const selectedRuns = Array.from(runCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.getAttribute("data-run-id"));
+        
+        if (selectedRuns.length === 0) return;
+        
+        const runText = selectedRuns.length === 1 ? "1 run" : selectedRuns.length + " runs";
+        if (!confirm(`Retry ${runText}? This will attempt to re-process the failed items.`)) {
+            return;
+        }
+        
+        bulkRetryBtn.disabled = true;
+        bulkRetryBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Retrying...';
+        
+        Promise.all(selectedRuns.map(runId =>
+            fetch(`/admin/api/scrap-control-center/pipeline-runs/${runId}/retry`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    _csrf: document.querySelector("meta[name=\"csrf-token\"]")?.getAttribute("content") || ""
+                })
+            }).then(r => r.json())
+        ))
+        .then(results => {
+            const successCount = results.filter(r => r.ok).length;
+            bulkRetryBtn.disabled = false;
+            bulkRetryBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Retry Selected';
+            showAlert(`${successCount} run(s) queued for retry`, "success");
+            updateBulkActionsBar();
+        })
+        .catch(error => {
+            bulkRetryBtn.disabled = false;
+            bulkRetryBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Retry Selected';
+            showAlert("Failed to retry runs", "danger");
+            console.error("Retry error:", error);
+        });
+    });
+    
+    bulkDeleteBtn.addEventListener("click", function() {
+        const selectedRuns = Array.from(runCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.getAttribute("data-run-id"));
+        
+        if (selectedRuns.length === 0) return;
+        
+        const runText = selectedRuns.length === 1 ? "1 run" : selectedRuns.length + " runs";
+        if (!confirm(`Delete ${runText}? This action cannot be undone.`)) {
+            return;
+        }
+        
+        bulkDeleteBtn.disabled = true;
+        bulkDeleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+        
+        let completed = 0;
+        selectedRuns.forEach(runId => {
+            fetch(`/admin/api/scrap-control-center/pipeline-runs/${runId}/delete`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    _csrf: document.querySelector("meta[name=\"csrf-token\"]")?.getAttribute("content") || ""
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                completed++;
+                if (data.ok) {
+                    const row = document.querySelector(`.log-row[data-run-id="${runId}"]`);
+                    if (row) {
+                        row.remove();
+                    }
+                }
+                
+                if (completed === selectedRuns.length) {
+                    bulkDeleteBtn.disabled = false;
+                    bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+                    updateBulkActionsBar();
+                    showAlert(`${completed} run(s) deleted`, "success");
+                }
+            })
+            .catch(error => {
+                completed++;
+                if (completed === selectedRuns.length) {
+                    bulkDeleteBtn.disabled = false;
+                    bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+                    showAlert("Failed to delete some runs", "danger");
+                }
+            });
+        });
+    });
+    
+    cancelBulkBtn.addEventListener("click", function() {
+        runCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateBulkActionsBar();
+    });
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement("div");
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
+

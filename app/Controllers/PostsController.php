@@ -123,6 +123,8 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $published = $status === 'published' ? 1 : 0;
             $sendPushNotification = isset($_POST['send_push_notification']) && (string)$_POST['send_push_notification'] === '1';
 
+            $metaTitle = sanitize_input($_POST['meta_title'] ?? '');
+            $metaDescription = sanitize_input($_POST['meta_description'] ?? '');
             $published_at = null;
             if ($published) {
                 $published_at = date('Y-m-d H:i:s');
@@ -135,7 +137,10 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 $slug,
                 $published,
                 $reader_indexing,
-                $published_at
+                $published_at,
+                null,
+                $metaTitle,
+                $metaDescription
             );
             if (!$postId) {
                 logActivity("Post Creation Failed", "post", 0, ['title' => $title], 'failure');
@@ -288,6 +293,8 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
             $wasPublished = $previousPost ? ($previousPost['published'] ?? false) : false;
             $previousStatus = $previousPost ? ($previousPost['published'] ? 'published' : 'draft') : 'draft';
 
+            $metaTitle = sanitize_input($_POST['meta_title'] ?? '');
+            $metaDescription = sanitize_input($_POST['meta_description'] ?? '');
             $published_at = null;
             if ($published && !$wasPublished) {
                 $published_at = date('Y-m-d H:i:s');
@@ -300,7 +307,9 @@ $router->group('/admin', ['middleware' => ['auth', 'admin_only']], function ($ro
                 $slug,
                 $published,
                 $reader_indexing,
-                $published_at
+                $published_at,
+                $metaTitle,
+                $metaDescription
             );
             if (!$result) {
                 logActivity("Post Update Failed", "post", $id, ['title' => $title], 'failure');
@@ -443,13 +452,19 @@ $router->post('/api/posts/autosave', ['middleware' => ['auth', 'admin_only']], f
     $content = $purifier->purify($_POST['content'] ?? '');
     $content = watermarkContentImages($content);
     $slug = sanitize_input($_POST['slug'] ?? '');
+    $metaTitle = sanitize_input($_POST['meta_title'] ?? '');
+    $metaDescription = sanitize_input($_POST['meta_description'] ?? '');
     $status = sanitize_input($_POST['status'] ?? 'draft');
     $published = $status === 'published' ? 1 : 0;
 
     if ($id) {
         // Update existing post
-        $contentModel->updatePost($id, $title, $content, $slug, $published, null, null);
-        $response = ['success' => true, 'message' => 'Post auto-saved', 'id' => (int)$id, 'status' => $status, 'published' => $published, 'is_new' => false];
+        $updated = $contentModel->updatePost($id, $title, $content, $slug, $published, null, null, $metaTitle, $metaDescription);
+        if ($updated) {
+            $response = ['success' => true, 'message' => 'Post auto-saved', 'id' => (int)$id, 'status' => $status, 'published' => $published, 'is_new' => false];
+        } else {
+            $response = ['success' => false, 'message' => 'Failed to auto-save post', 'error' => 'Database update failed'];
+        }
     } else {
         // Create new draft post
         if (empty($slug)) {
@@ -459,11 +474,11 @@ $router->post('/api/posts/autosave', ['middleware' => ['auth', 'admin_only']], f
         if (class_exists('AuthManager') && method_exists('AuthManager', 'getCurrentUsername')) {
             $author = AuthManager::getCurrentUsername();
         }
-        $newId = $contentModel->createPost($title, $content, $author, $slug, 0, null, null);
+        $newId = $contentModel->createPost($title, $content, $author, $slug, 0, null, null, null, $metaTitle, $metaDescription);
         if ($newId) {
             $response = ['success' => true, 'message' => 'Draft post created', 'id' => (int)$newId, 'status' => 'draft', 'published' => 0, 'is_new' => true];
         } else {
-            $response = ['success' => false, 'message' => 'Failed to create draft post'];
+            $response = ['success' => false, 'message' => 'Failed to create draft post', 'error' => 'Database insert failed'];
         }
     }
 

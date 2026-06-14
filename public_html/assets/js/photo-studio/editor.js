@@ -1514,7 +1514,7 @@ class PhotoStudio {
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'tray-item-remove';
-      removeButton.innerHTML = '<i class="bi bi-x"></i>';
+      removeButton.innerHTML = '<i class="lucide lucide-x" style="width:1rem;height:1rem;"></i>';
       removeButton.addEventListener('click', (event) => {
         event.stopPropagation();
         void this.deleteTrayImage(index);
@@ -1763,7 +1763,7 @@ class PhotoStudio {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+    toast.innerHTML = `<i class="lucide lucide-${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'} mr-2" style="width:1rem;height:1rem;"></i> ${message}`;
     container.appendChild(toast);
     window.setTimeout(() => toast.remove(), 3200);
   }
@@ -1803,3 +1803,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.toggleGuides = () => window.studioInstance.toggleGuides();
   window.applyCrop = () => void window.studioInstance.applyRectCrop();
 });
+
+// ES module export (window compat already set up above)
+export { PhotoStudio };
+export default PhotoStudio;

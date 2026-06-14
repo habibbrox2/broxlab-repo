@@ -1,302 +1,180 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set skip_auto_breadcrumb = true %}
 {% block title %}Service Application Receipts - Admin Panel{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-receipt me-2"></i>
-        Service Application Receipts
-      </div>
-      <div class="admin-page-subtitle">Paid/submitted application receipts with payment details</div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                <i class="lucide lucide-receipt text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-white sm:text-3xl">Service Application Receipts</h1>
+                <p class="mt-1 text-sm text-indigo-100">Paid and submitted application receipts with payment details.</p>
+            </div>
+        </div>
     </div>
-    <div class="admin-panel-card mb-3">
-      <div class="admin-panel-card-body">
-        <form method="GET" class="row g-3 align-items-end" role="search">
-          <div class="col-lg-4 col-md-6">
-            <label class="form-label">Search</label>
-            <input type="text"
-                   name="q"
-                   class="form-control"
-                   placeholder="Transaction ID, user, email, service or app ID"
-                   value="{{ filters.q|default("") }}">
-          </div>
-          <div class="col-lg-2 col-md-3">
-            <label class="form-label">From</label>
-            <input type="date"
-                   name="date_from"
-                   class="form-control"
-                   value="{{ filters.date_from|default("") }}">
-          </div>
-          <div class="col-lg-2 col-md-3">
-            <label class="form-label">To</label>
-            <input type="date"
-                   name="date_to"
-                   class="form-control"
-                   value="{{ filters.date_to|default("") }}">
-          </div>
-          <div class="col-lg-2 col-md-4">
-            <label class="form-label">Payment Status</label>
-            <select name="payment_status" class="form-select">
-              <option value="">All</option>
-              <option value="paid"
-                      {% if filters.payment_status|default('') == 'paid' %}selected{% endif %}>Paid</option>
-              <option value="submitted"
-                      {% if filters.payment_status|default('') == 'submitted' %}selected{% endif %}>Submitted</option>
-              <option value="initiated"
-                      {% if filters.payment_status|default('') == 'initiated' %}selected{% endif %}>Initiated</option>
-              <option value="pending"
-                      {% if filters.payment_status|default('') == 'pending' %}selected{% endif %}>Pending</option>
-              <option value="failed"
-                      {% if filters.payment_status|default('') == 'failed' %}selected{% endif %}>Failed</option>
-            </select>
-          </div>
-          <div class="col-lg-2 col-md-8 d-flex gap-2">
-            <button class="modern-btn modern-btn-primary flex-grow-1" type="submit">
-              <i class="bi bi-search"></i> Search
-            </button>
-            <a href="/admin/applications/receipts"
-               class="modern-btn modern-btn-white">Reset</a>
-          </div>
-        </form>
-      </div>
+
+    <!-- Filter Card -->
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-filter text-amber-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Search & Filters</h2>
+            </div>
+        </div>
+        <div class="p-5">
+            <form method="GET" class="grid grid-cols-1 gap-4 md:grid-cols-12" role="search">
+                <div class="lg:col-span-4 md:col-span-6">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                    <input type="text" name="q" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Transaction ID, user, email, service or app ID" value="{{ filters.q|default('') }}">
+                </div>
+                <div class="lg:col-span-2 md:col-span-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">From</label>
+                    <input type="date" name="date_from" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ filters.date_from|default('') }}">
+                </div>
+                <div class="lg:col-span-2 md:col-span-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">To</label>
+                    <input type="date" name="date_to" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" value="{{ filters.date_to|default('') }}">
+                </div>
+                <div class="lg:col-span-2 md:col-span-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Payment Status</label>
+                    <select name="payment_status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                        <option value="">All</option>
+                        <option value="paid" {% if filters.payment_status|default('') == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="submitted" {% if filters.payment_status|default('') == 'submitted' %}selected{% endif %}>Submitted</option>
+                        <option value="initiated" {% if filters.payment_status|default('') == 'initiated' %}selected{% endif %}>Initiated</option>
+                        <option value="pending" {% if filters.payment_status|default('') == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="failed" {% if filters.payment_status|default('') == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-2 md:col-span-8 flex items-end gap-2">
+                    <button class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700" type="submit">
+                        <i class="lucide lucide-search"></i> Search
+                    </button>
+                    <a href="/admin/applications/receipts" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Reset</a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Totals & Export -->
+    <div class="flex items-center justify-between">
+        <span class="text-sm text-slate-500">Total: {{ total|default(0) }}</span>
+        <div>
+            {% set export_params = [] %}
+            {% if filters.q is defined and filters.q %}{% set export_params = export_params|merge([('q=' ~ (filters.q|url_encode))]) %}{% endif %}
+            {% if filters.date_from is defined and filters.date_from %}{% set export_params = export_params|merge([('date_from=' ~ (filters.date_from|url_encode))]) %}{% endif %}
+            {% if filters.date_to is defined and filters.date_to %}{% set export_params = export_params|merge([('date_to=' ~ (filters.date_to|url_encode))]) %}{% endif %}
+            {% if filters.payment_status is defined and filters.payment_status %}{% set export_params = export_params|merge([('payment_status=' ~ (filters.payment_status|url_encode))]) %}{% endif %}
+            {% set export_query = export_params|join('&') %}
+            <a href="/admin/applications/receipts/export/csv{% if export_query %}?{{ export_query }}{% endif %}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:-translate-y-0.5">
+                <i class="lucide lucide-download"></i> Export CSV
+            </a>
+        </div>
     </div>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <small class="text-muted">Total: {{ total|default(0) }}</small>
-      <div>
-        {% set export_params = [] %}
-        {% if filters.q is defined and filters.q %}
-          {% set export_params = export_params|merge([('q=' ~ (filters.q|url_encode))]) %}
-        {% endif %}
-        {% if filters.date_from is defined and filters.date_from %}
-          {% set export_params = export_params|merge([('date_from=' ~ (filters.date_from|url_encode))]) %}
-        {% endif %}
-        {% if filters.date_to is defined and filters.date_to %}
-          {% set export_params = export_params|merge([('date_to=' ~ (filters.date_to|url_encode))]) %}
-        {% endif %}
-        {% if filters.payment_status is defined and filters.payment_status %}
-          {% set export_params = export_params|merge([('payment_status=' ~ (filters.payment_status|url_encode))]) %}
-        {% endif %}
-        {% set export_query = export_params|join('&') %}
-        <a href="/admin/applications/receipts/export/csv{% if export_query %}?{{ export_query }}{% endif %}"
-           class="modern-btn modern-btn-outline-secondary">
-          <i class="bi bi-download"></i> Export CSV
-        </a>
-      </div>
-    </div>
+
     {% set return_params = [] %}
-    {% if filters.q is defined and filters.q %}
-      {% set return_params = return_params|merge([('q=' ~ (filters.q|url_encode))]) %}
-    {% endif %}
-    {% if filters.date_from is defined and filters.date_from %}
-      {% set return_params = return_params|merge([('date_from=' ~ (filters.date_from|url_encode))]) %}
-    {% endif %}
-    {% if filters.date_to is defined and filters.date_to %}
-      {% set return_params = return_params|merge([('date_to=' ~ (filters.date_to|url_encode))]) %}
-    {% endif %}
-    {% if filters.payment_status is defined and filters.payment_status %}
-      {% set return_params = return_params|merge([('payment_status=' ~ (filters.payment_status|url_encode))]) %}
-    {% endif %}
-    {% if page is defined and page > 1 %}
-      {% set return_params = return_params|merge([('page=' ~ page)]) %}
-    {% endif %}
+    {% if filters.q is defined and filters.q %}{% set return_params = return_params|merge([('q=' ~ (filters.q|url_encode))]) %}{% endif %}
+    {% if filters.date_from is defined and filters.date_from %}{% set return_params = return_params|merge([('date_from=' ~ (filters.date_from|url_encode))]) %}{% endif %}
+    {% if filters.date_to is defined and filters.date_to %}{% set return_params = return_params|merge([('date_to=' ~ (filters.date_to|url_encode))]) %}{% endif %}
+    {% if filters.payment_status is defined and filters.payment_status %}{% set return_params = return_params|merge([('payment_status=' ~ (filters.payment_status|url_encode))]) %}{% endif %}
+    {% if page is defined and page > 1 %}{% set return_params = return_params|merge([('page=' ~ page)]) %}{% endif %}
     {% set return_query = return_params|join('&') %}
     {% set return_to = '/admin/applications/receipts' ~ (return_query ? '?' ~ return_query : '') %}
-    <div class="admin-panel-card">
-      <div class="table-responsive">
-        <table class="table table-stacked table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Transaction</th>
-              <th>User</th>
-              <th>Service</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for app in applications %}
-              <tr>
-                {% set p = app.application_data._payment
-                                  ?? app.application_data['_payment']
-                                  ?? app.application_data._Payment
-                                  ?? app.application_data['_Payment']
-                                  ?? app.application_data.payment
-                                  ?? app.application_data['payment']
-                                  ?? app.application_data.Payment
-                                  ?? app.application_data['Payment']
-                                  ?? app.application_data.payment_info
-                                  ?? app.application_data['payment_info']
-                                ?? null %}
-                {% set tx_id = app.payment_transaction_id ?? p.transaction_id ?? p.paymentID ?? p.payment_id ?? '' %}
-                {% set gateway_name = app.payment_gateway ?? app.payment_method ?? p.gateway ?? p.method ?? '' %}
-                {% set payment_mode = (app.payment_mode ?? p.mode ?? '')|lower %}
-                {% set payment_amount = app.payment_amount ?? (p.amount ?? null) %}
-                {% set payment_currency = app.payment_currency ?? (p.currency ?? 'BDT') %}
-                {% set payment_status = (app.payment_status ?? p.status ?? app.status ?? 'unknown')|lower %}
-                <td data-label="ID">
-                  <strong>#{{ app.id }}</strong>
-                </td>
-                <td data-label="Transaction">
-                  {% if tx_id %}
-                    <div>
-                      <strong>{{ tx_id }}</strong>
-                    </div>
-                    <small class="text-muted">{{ gateway_name|default("") |upper }}</small>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td data-label="User">
-                  {{ app.user_name }}
-                  <br>
-                  <small class="text-muted">{{ app.user_email }}</small>
-                </td>
-                <td data-label="Service">
-                  <strong>{{ app.service_name }}</strong>
-                </td>
-                <td data-label="Amount">
-                  {% if payment_amount is not same as(null) and payment_amount is not same as('') %}
-                    {{ payment_amount }} {{ payment_currency }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-                <td data-label="Status">
-                  {% if payment_status in ['paid', 'completed', 'success', 'succeeded'] %}
-                    <span class="badge bg-success">{{ payment_status|title }}</span>
-                  {% elseif payment_status in ['submitted', 'pending', 'initiated', 'processing'] %}
-                    <span class="badge bg-warning text-surface-dark">{{ payment_status|title }}</span>
-                  {% elseif payment_status in ['failed', 'cancelled', 'canceled', 'rejected'] %}
-                    <span class="badge bg-danger">{{ payment_status|title }}</span>
-                  {% else %}
-                    <span class="badge bg-secondary">{{ payment_status|title }}</span>
-                  {% endif %}
-                </td>
-                <td data-label="Submitted">
-                  <small>{{ app.created_at|date("M d, Y H:i") }}</small>
-                </td>
-                <td data-label="Actions">
-                  <div class="d-flex flex-wrap gap-1">
-                    <a href="/admin/applications/{{ app.id }}"
-                       class="modern-btn modern-btn-white btn-sm"
-                       title="View Application">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                    <a href="/admin/services/details/{{ app.service_id }}"
-                       class="modern-btn modern-btn-white btn-sm"
-                       title="View Service">
-                      <i class="bi bi-box-arrow-up-right"></i>
-                    </a>
-                    <a href="/admin/applications/receipts/{{ app.id }}/download"
-                       target="_blank"
-                       rel="noopener"
-                       class="modern-btn modern-btn-white btn-sm"
-                       title="Preview PDF Receipt"
-                       aria-label="Preview PDF Receipt">
-                      <i class="bi bi-file-earmark-pdf"></i>
-                    </a>
-                    <a href="/admin/applications/receipts/{{ app.id }}/download?output=download"
-                       class="modern-btn modern-btn-white btn-sm"
-                       title="Download PDF Receipt"
-                       aria-label="Download PDF Receipt">
-                      <i class="bi bi-download"></i>
-                    </a>
-                  </div>
-                  {% if payment_mode == 'manual' and payment_status in ['submitted', 'pending', 'pending_gateway', 'initiated', 'processing', 'unknown'] %}
-                    <form method="POST"
-                          action="/admin/applications/receipts/{{ app.id }}/confirm"
-                          class="d-flex mt-1">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                      <input type="hidden" name="return_to" value="{{ return_to }}">
-                      <button type="submit" class="modern-btn modern-btn-primary btn-sm w-100">
-                        <i class="bi bi-check2-circle"></i> Confirm Manual
-                      </button>
-                    </form>
-                  {% endif %}
-                  <form method="POST"
-                        action="/admin/applications/receipts/{{ app.id }}/payment-status"
-                        class="d-flex gap-1 mt-1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="return_to" value="{{ return_to }}">
-                    <select name="payment_status" class="form-select form-select-sm">
-                      {% set status_options = [
-                        "pending",
-                        "pending_gateway",
-                        "initiated",
-                        "submitted",
-                        "processing",
-                        "paid",
-                        "completed",
-                        "failed",
-                        "cancelled",
-                        "canceled",
-                        "rejected",
-                        "refunded",
-                        "unknown"
-                      ] %}
-                      {% for status_option in status_options %}
-                        <option value="{{ status_option }}"
-                                {% if payment_status == status_option %}selected{% endif %}>
-                          {{ status_option|title }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit" class="modern-btn modern-btn-secondary btn-sm">Update</button>
-                  </form>
-                </td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="8" class="text-center py-4 text-muted">
-                  <i class="bi bi-inbox fs-2 mb-2"></i>
-                  <p>No receipts found</p>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% if total_pages > 1 %}
-        {% set paging_params = [] %}
-        {% if filters.q is defined and filters.q %}
-          {% set paging_params = paging_params|merge([('q=' ~ (filters.q|url_encode))]) %}
-        {% endif %}
-        {% if filters.date_from is defined and filters.date_from %}
-          {% set paging_params = paging_params|merge([('date_from=' ~ (filters.date_from|url_encode))]) %}
-        {% endif %}
-        {% if filters.date_to is defined and filters.date_to %}
-          {% set paging_params = paging_params|merge([('date_to=' ~ (filters.date_to|url_encode))]) %}
-        {% endif %}
-        {% if filters.payment_status is defined and filters.payment_status %}
-          {% set paging_params = paging_params|merge([('payment_status=' ~ (filters.payment_status|url_encode))]) %}
-        {% endif %}
-        {% set paging_suffix = paging_params ? '&' ~ (paging_params|join('&')) : '' %}
-        <nav aria-label="Page navigation" class="admin-panel-card-footer">
-          <ul class="pagination justify-content-center mb-0">
-            {% if page > 1 %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page - 1 }}{{ paging_suffix }}">Previous</a>
-              </li>
-            {% endif %}
-            {% for p in range(max(1, page - 2), min(total_pages, page + 2) + 1) %}
-              <li class="page-item {% if p == page %}active{% endif %}">
-                <a class="page-link" href="?page={{ p }}{{ paging_suffix }}">{{ p }}</a>
-              </li>
-            {% endfor %}
-            {% if page < total_pages %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page + 1 }}{{ paging_suffix }}">Next</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
-    </div>
-  </div>
+
+    <!-- Receipts Table Card -->
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-receipt text-indigo-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Receipts</h2>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/50">
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">ID</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Transaction</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Service</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Amount</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Submitted</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr class="border-b border-slate-50 transition hover:bg-indigo-50/30">
+                        {% set p = app.application_data._payment ?? app.application_data['_payment'] ?? app.application_data._Payment ?? app.application_data['_Payment'] ?? app.application_data.payment ?? app.application_data['payment'] ?? app.application_data.Payment ?? app.application_data['Payment'] ?? app.application_data.payment_info ?? app.application_data['payment_info'] ?? null %}
+                        {% set tx_id = app.payment_transaction_id ?? p.transaction_id ?? p.paymentID ?? p.payment_id ?? '' %}
+                        {% set gateway_name = app.payment_gateway ?? app.payment_method ?? p.gateway ?? p.method ?? '' %}
+                        {% set payment_mode = (app.payment_mode ?? p.mode ?? '')|lower %}
+                        {% set payment_amount = app.payment_amount ?? (p.amount ?? null) %}
+                        {% set payment_currency = app.payment_currency ?? (p.currency ?? 'BDT') %}
+                        {% set payment_status = (app.payment_status ?? p.status ?? app.status ?? 'unknown')|lower %}
+                        <td class="px-5 py-3"><strong>#{{ app.id }}</strong></td>
+                        <td class="px-5 py-3">
+                            {% if tx_id %}
+                            <div><strong>{{ tx_id }}</strong></div>
+                            <small class="text-slate-500">{{ gateway_name|default('')|upper }}</small>
+                            {% else %}
+                            <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3">{{ app.user_name }}<br><small class="text-slate-500">{{ app.user_email }}</small></td>
+                        <td class="px-5 py-3"><strong>{{ app.service_name }}</strong></td>
+                        <td class="px-5 py-3">{% if payment_amount is not same as(null) and payment_amount is not same as('') %}{{ payment_amount }} {{ payment_currency }}{% else %}-{% endif %}</td>
+                        <td class="px-5 py-3">
+                            {% if payment_status in ['paid', 'completed', 'success', 'succeeded'] %}
+                            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">{{ payment_status|title }}</span>
+                            {% elseif payment_status in ['submitted', 'pending', 'initiated', 'processing'] %}
+                            <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">{{ payment_status|title }}</span>
+                            {% elseif payment_status in ['failed', 'cancelled', 'canceled', 'rejected'] %}
+                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700">{{ payment_status|title }}</span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ payment_status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3 text-sm text-slate-500">{{ app.created_at|date("M d, Y H:i") }}</td>
+                        <td class="px-5 py-3">
+                            <div class="flex flex-wrap gap-1.5">
+                                <a href="/admin/applications/{{ app.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:-translate-y-0.5" title="View Application"><i class="lucide lucide-eye"></i></a>
+                                <a href="/admin/services/details/{{ app.service_id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:-translate-y-0.5" title="View Service"><i class="lucide lucide-external-link"></i></a>
+                                <a href="/admin/applications/receipts/{{ app.id }}/download" target="_blank" rel="noopener" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:-translate-y-0.5" title="Preview PDF Receipt" aria-label="Preview PDF Receipt"><i class="lucide lucide-file-text"></i></a>
+                                <a href="/admin/applications/receipts/{{ app.id }}/download?output=download" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:-translate-y-0.5" title="Download PDF Receipt" aria-label="Download PDF Receipt"><i class="lucide lucide-download"></i></a>
+                            </div>
+                            {% if payment_mode == 'manual' and payment_status in ['submitted', 'pending', 'pending_gateway', 'initiated', 'processing', 'unknown'] %}
+                            <form method="POST" action="/admin/applications/receipts/{{ app.id }}/confirm" class="mt-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="return_to" value="{{ return_to }}">
+                                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">
+                                    <i class="lucide lucide-check-circle"></i> Confirm Manual
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" action="/admin/applications/receipts/{{ app.id }}/void" class="mt-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="return_to" value="{{ return_to }}">
+                                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
+                                    <i class="lucide lucide-x-circle"></i> Mark Void
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-5 py-10 text-center text-slate-500">No receipt records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 {% endblock %}
-
-

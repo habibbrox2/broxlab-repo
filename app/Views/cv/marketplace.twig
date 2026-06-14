@@ -1,0 +1,256 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ page_title|default('CV Template Marketplace') }}{% endblock %}
+{% block extra_styles %}
+<style>
+:root{--mkt-primary:#6366f1;--mkt-secondary:#8b5cf6;--mkt-success:#10b981;--mkt-gray-50:#f9fafb;--mkt-gray-100:#f3f4f6;--mkt-gray-200:#e5e7eb;--mkt-gray-500:#6b7280;--mkt-gray-600:#4b5563;--mkt-gray-700:#374151;--mkt-gray-800:#1f2937}
+.mkt-hero{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:4rem 1rem 3rem;text-align:center;position:relative;overflow:hidden}
+.mkt-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(255,255,255,0.08) 0%,transparent 50%),radial-gradient(circle at 70% 50%,rgba(255,255,255,0.05) 0%,transparent 50%);pointer-events:none}
+.mkt-hero h1{font-size:2.75rem;font-weight:800;color:white;margin-bottom:0.75rem;text-shadow:0 2px 8px rgba(0,0,0,0.15);position:relative;z-index:1}
+.mkt-hero p{font-size:1.15rem;color:rgba(255,255,255,0.9);max-width:600px;margin:0 auto 1.5rem;position:relative;z-index:1;line-height:1.6}
+.mkt-hero-stats{display:flex;justify-content:center;gap:2.5rem;position:relative;z-index:1}
+.mkt-hero-stat{text-align:center}
+.mkt-hero-stat-num{font-size:1.75rem;font-weight:700;color:white;display:block}
+.mkt-hero-stat-label{font-size:0.85rem;color:rgba(255,255,255,0.75)}
+.mkt-main{max-width:1200px;margin:0 auto;padding:2rem 1rem 4rem}
+.mkt-controls{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;align-items:center}
+.mkt-search{flex:1;min-width:250px;position:relative}
+.mkt-search input{width:100%;padding:0.75rem 1rem 0.75rem 2.75rem;border:2px solid var(--mkt-gray-200);border-radius:12px;font-size:0.95rem;transition:all 0.2s;background:white}
+.mkt-search input:focus{outline:none;border-color:var(--mkt-primary);box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+.mkt-search i{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--mkt-gray-500)}
+.mkt-filters{display:flex;gap:0.5rem;flex-wrap:wrap}
+.mkt-filter-btn{padding:0.5rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:25px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.2s;background:white;color:var(--mkt-gray-600)}
+.mkt-filter-btn:hover{border-color:var(--mkt-primary);color:var(--mkt-primary)}
+.mkt-filter-btn.active{background:var(--mkt-primary);color:white;border-color:var(--mkt-primary)}
+.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:1.5rem}
+.mkt-card{background:white;border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);transition:all 0.3s;border:1px solid var(--mkt-gray-200);display:flex;flex-direction:column}
+.mkt-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,0,0,0.12)}
+.mkt-card-preview{height:200px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.mkt-card-preview i{font-size:5rem;color:rgba(255,255,255,0.35)}
+.mkt-card-badge{position:absolute;top:1rem;right:1rem;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:600;text-transform:uppercase;background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);color:white}
+.mkt-card-body{padding:1.5rem;flex:1;display:flex;flex-direction:column}
+.mkt-card-name{font-size:1.25rem;font-weight:700;color:var(--mkt-gray-800);margin-bottom:0.35rem}
+.mkt-card-category{font-size:0.8rem;color:var(--mkt-primary);font-weight:600;margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.5px}
+.mkt-card-desc{font-size:0.9rem;color:var(--mkt-gray-500);line-height:1.5;margin-bottom:1rem;flex:1}
+.mkt-card-features{display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1.25rem}
+.mkt-card-feature{padding:0.2rem 0.5rem;font-size:0.75rem;font-weight:500;background:var(--mkt-gray-100);color:var(--mkt-gray-600);border-radius:4px}
+.mkt-card-actions{display:flex;gap:0.5rem}
+.mkt-card-btn{flex:1;padding:0.625rem;border-radius:10px;font-size:0.85rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.35rem}
+.mkt-btn-preview{background:var(--mkt-gray-100);color:var(--mkt-gray-700)}
+.mkt-btn-preview:hover{background:var(--mkt-gray-200)}
+.mkt-btn-select{background:linear-gradient(135deg,var(--mkt-primary),var(--mkt-secondary));color:white}
+.mkt-btn-select:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.mkt-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
+.mkt-modal-overlay.open{display:flex}
+.mkt-modal{background:white;border-radius:20px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 80px rgba(0,0,0,0.3);position:relative}
+.mkt-modal-preview{height:300px;position:relative}
+.mkt-modal-preview i{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:6rem;color:rgba(255,255,255,0.4)}
+.mkt-modal-close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);border:none;color:white;font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:2}
+.mkt-modal-close:hover{background:rgba(255,255,255,0.3);transform:scale(1.1)}
+.mkt-modal-body{padding:2rem}
+.mkt-modal-name{font-size:1.5rem;font-weight:700;color:var(--mkt-gray-800);margin-bottom:0.25rem}
+.mkt-modal-category{font-size:0.85rem;color:var(--mkt-primary);font-weight:600;margin-bottom:1rem;text-transform:uppercase}
+.mkt-modal-desc{font-size:1rem;color:var(--mkt-gray-500);line-height:1.6;margin-bottom:1.5rem}
+.mkt-modal-features h4{font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem}
+.mkt-modal-feature-list{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1.5rem}
+.mkt-modal-feature-item{display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;color:var(--mkt-gray-600)}
+.mkt-modal-feature-item i{color:var(--mkt-success);flex-shrink:0}
+.mkt-modal-best{background:var(--mkt-gray-50);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.5rem;font-size:0.9rem;color:var(--mkt-gray-600)}
+.mkt-modal-best strong{color:var(--mkt-gray-800)}
+.mkt-modal-actions{display:flex;gap:0.75rem}
+.mkt-modal-btn{flex:1;padding:0.875rem;border-radius:12px;font-size:1rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem}
+.mkt-modal-btn-primary{background:linear-gradient(135deg,var(--mkt-primary),var(--mkt-secondary));color:white}
+.mkt-modal-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(99,102,241,0.3)}
+.mkt-modal-btn-secondary{background:var(--mkt-gray-100);color:var(--mkt-gray-700)}
+.mkt-modal-btn-secondary:hover{background:var(--mkt-gray-200)}
+.mkt-quick-start{background:white;border-radius:16px;padding:1.5rem;margin-bottom:2rem;border:1px solid var(--mkt-gray-200);box-shadow:0 2px 10px rgba(0,0,0,0.04)}
+.mkt-quick-start h3{font-size:1rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.mkt-quick-start h3 i{color:var(--mkt-primary)}
+.mkt-quick-options{display:flex;gap:0.5rem;flex-wrap:wrap}
+.mkt-quick-option{padding:0.5rem 1rem;border:1px solid var(--mkt-gray-200);border-radius:8px;font-size:0.85rem;cursor:pointer;transition:all 0.2s;background:white;color:var(--mkt-gray-600);text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem}
+.mkt-quick-option:hover{border-color:var(--mkt-primary);color:var(--mkt-primary);background:rgba(99,102,241,0.05)}
+.mkt-empty{text-align:center;padding:4rem 2rem}
+.mkt-empty i{font-size:3rem;color:var(--mkt-gray-300);margin-bottom:1rem;display:block}
+.mkt-empty h3{font-size:1.25rem;color:var(--mkt-gray-600);margin-bottom:0.5rem}
+.mkt-empty p{color:var(--mkt-gray-400)}
+@media(max-width:768px){
+.mkt-hero{padding:3rem 1rem 2rem}
+.mkt-hero h1{font-size:2rem}
+.mkt-grid{grid-template-columns:1fr}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mkt-hero">
+  <h1>Choose Your CV Template</h1>
+  <p>Start with a professionally designed template and customize it with our step-by-step builder. All templates are ATS-friendly and print-optimized.</p>
+  <div class="mkt-hero-stats">
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">4</span>
+      <span class="mkt-hero-stat-label">Pro Templates</span>
+    </div>
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">100%</span>
+      <span class="mkt-hero-stat-label">ATS Friendly</span>
+    </div>
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">PDF</span>
+      <span class="mkt-hero-stat-label">Export Ready</span>
+    </div>
+  </div>
+</div>
+
+<div class="mkt-main">
+  {% if job_positions is defined and job_positions|length > 0 %}
+  <div class="mkt-quick-start">
+    <h3><i class="lucide lucide-zap" style="width:1em;height:1em;"></i> Quick Start — Select Your Profession</h3>
+    <div class="mkt-quick-options">
+      {% for pos in job_positions %}
+      <a href="/cv/new?profession={{ pos.slug }}" class="mkt-quick-option">
+        <i class="lucide lucide-briefcase" style="width:1em;height:1em;"></i> {{ pos.title }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mkt-controls">
+    <div class="mkt-search">
+      <i class="lucide lucide-search" style="width:1em;height:1em;"></i>
+      <input type="text" id="mkt-search-input" placeholder="Search templates..." oninput="window.mktFilterTemplates()">
+    </div>
+    <div class="mkt-filters" id="mkt-filters">
+      <button class="mkt-filter-btn active" data-filter="all" onclick="window.mktSetFilter('all', this)">All</button>
+      <button class="mkt-filter-btn" data-filter="Modern" onclick="window.mktSetFilter('Modern', this)">Modern</button>
+      <button class="mkt-filter-btn" data-filter="Minimal" onclick="window.mktSetFilter('Minimal', this)">Minimal</button>
+      <button class="mkt-filter-btn" data-filter="ATS Friendly" onclick="window.mktSetFilter('ATS Friendly', this)">ATS</button>
+      <button class="mkt-filter-btn" data-filter="Professional" onclick="window.mktSetFilter('Professional', this)">Professional</button>
+    </div>
+  </div>
+
+  <div class="mkt-grid" id="mkt-grid">
+    {% for slug, tmpl in templates %}
+    <div class="mkt-card" data-category="{{ tmpl.category }}" data-name="{{ tmpl.name|lower }}">
+      <div class="mkt-card-preview" style="background:{{ tmpl.gradient }};">
+        <i class="lucide lucide-{{ tmpl.icon }}" style="width:5rem;height:5rem;"></i>
+        <span class="mkt-card-badge">{{ tmpl.category }}</span>
+      </div>
+      <div class="mkt-card-body">
+        <h3 class="mkt-card-name">{{ tmpl.name }}</h3>
+        <div class="mkt-card-category">{{ tmpl.category }}</div>
+        <p class="mkt-card-desc">{{ tmpl.description }}</p>
+        <div class="mkt-card-features">
+          {% for feature in tmpl.features %}
+          <span class="mkt-card-feature">{{ feature }}</span>
+          {% endfor %}
+        </div>
+        <div class="mkt-card-actions">
+          <button class="mkt-card-btn mkt-btn-preview" onclick="window.mktOpenPreview('{{ slug }}')">
+            <i class="lucide lucide-eye" style="width:1em;height:1em;"></i> Preview
+          </button>
+          <a href="/cv/new?template={{ slug }}" class="mkt-card-btn mkt-btn-select" style="text-decoration:none;">
+            <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Select
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mkt-empty" id="mkt-empty" style="display:none;">
+    <i class="lucide lucide-search-x" style="width:3rem;height:3rem;"></i>
+    <h3>No templates found</h3>
+    <p>Try adjusting your search or filter to find what you're looking for.</p>
+  </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="mkt-modal-overlay" id="mkt-modal">
+  <div class="mkt-modal">
+    <button class="mkt-modal-close" onclick="window.mktClosePreview()">
+      <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+    <div class="mkt-modal-preview" id="mkt-modal-preview" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+      <i class="lucide lucide-file-text" style="width:6rem;height:6rem;"></i>
+    </div>
+    <div class="mkt-modal-body">
+      <h2 class="mkt-modal-name" id="mkt-modal-name">Template Name</h2>
+      <div class="mkt-modal-category" id="mkt-modal-category">Category</div>
+      <p class="mkt-modal-desc" id="mkt-modal-desc">Description</p>
+      <div class="mkt-modal-features">
+        <h4>Features</h4>
+        <div class="mkt-modal-feature-list" id="mkt-modal-features"></div>
+      </div>
+      <div class="mkt-modal-best" id="mkt-modal-best">
+        <strong>Best for:</strong> <span id="mkt-modal-best-for">All professionals</span>
+      </div>
+      <div class="mkt-modal-actions">
+        <a href="/cv/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn">
+          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create with This Template
+        </a>
+        <button class="mkt-modal-btn mkt-modal-btn-secondary" onclick="window.mktClosePreview()">
+          <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.__mktTemplates = {{ templates|json_encode|raw }};
+window.mktSetFilter = function(category, btn) {
+  document.querySelectorAll('.mkt-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var cards = document.querySelectorAll('.mkt-card');
+  var visible = 0;
+  cards.forEach(function(card) {
+    if (category === 'all' || card.getAttribute('data-category') === category) {
+      card.style.display = '';
+      visible++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  document.getElementById('mkt-empty').style.display = visible === 0 ? '' : 'none';
+};
+window.mktFilterTemplates = function() {
+  var query = document.getElementById('mkt-search-input').value.toLowerCase();
+  var cards = document.querySelectorAll('.mkt-card');
+  var visible = 0;
+  cards.forEach(function(card) {
+    if (card.getAttribute('data-name').indexOf(query) !== -1) {
+      card.style.display = '';
+      visible++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  document.getElementById('mkt-empty').style.display = visible === 0 ? '' : 'none';
+};
+window.mktOpenPreview = function(slug) {
+  var tmpl = window.__mktTemplates[slug];
+  if (!tmpl) return;
+  document.getElementById('mkt-modal-name').textContent = tmpl.name;
+  document.getElementById('mkt-modal-category').textContent = tmpl.category;
+  document.getElementById('mkt-modal-desc').textContent = tmpl.description;
+  document.getElementById('mkt-modal-best-for').textContent = tmpl.best_for;
+  document.getElementById('mkt-modal-preview').style.background = tmpl.gradient;
+  var featuresEl = document.getElementById('mkt-modal-features');
+  featuresEl.innerHTML = '';
+  tmpl.features.forEach(function(f) {
+    var item = document.createElement('div');
+    item.className = 'mkt-modal-feature-item';
+    item.innerHTML = '<i class="lucide lucide-check" style="width:1em;height:1em;"></i> ' + f;
+    featuresEl.appendChild(item);
+  });
+  document.getElementById('mkt-modal-select-btn').href = '/cv/new?template=' + slug;
+  document.getElementById('mkt-modal').classList.add('open');
+};
+window.mktClosePreview = function() {
+  document.getElementById('mkt-modal').classList.remove('open');
+};
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') window.mktClosePreview();
+});
+</script>
+{% endblock %}

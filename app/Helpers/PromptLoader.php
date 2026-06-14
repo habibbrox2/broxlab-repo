@@ -541,9 +541,9 @@ class PromptLoader
     {
         return [
             'site_name' => 'BroxBhai',
-            'site_url' => 'https://broxlab.online',
+            'site_url' => self::getDefaultSiteUrl(),
             'site_logo' => '',
-            'contact_email' => 'info@broxlab.online',
+            'contact_email' => self::getDefaultContactEmail(),
             'contact_phone' => '',
             'contact_address' => '',
             'meta_title' => 'BroxBhai - Bengali Tech Platform',
@@ -567,13 +567,54 @@ class PromptLoader
             return $settings['site_url'];
         }
 
+        // Use app URL from environment if configured
+        $appUrl = trim((string)($_ENV['APP_URL'] ?? getenv('APP_URL') ?: ''));
+        if ($appUrl !== '') {
+            return rtrim($appUrl, '/');
+        }
+
         // Try to determine from request if available
         if (!empty($_SERVER['HTTP_HOST'])) {
             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            return $protocol . '://' . $_SERVER['HTTP_HOST'];
+            return $protocol . '://' . preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST']);
+        }
+
+        return self::getDefaultSiteUrl();
+    }
+
+    private static function getDefaultSiteUrl(): string
+    {
+        $appUrl = trim((string)($_ENV['APP_URL'] ?? getenv('APP_URL') ?: ''));
+        if ($appUrl !== '') {
+            return rtrim($appUrl, '/');
+        }
+
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            return $protocol . '://' . preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST']);
         }
 
         return 'https://broxlab.online';
+    }
+
+    private static function getDefaultContactEmail(): string
+    {
+        $mailFrom = trim((string)($_ENV['MAIL_FROM_ADDRESS'] ?? getenv('MAIL_FROM_ADDRESS') ?: ''));
+        if ($mailFrom !== '') {
+            return $mailFrom;
+        }
+
+        $appDomain = trim((string)($_ENV['APP_DOMAIN'] ?? getenv('APP_DOMAIN') ?: ''));
+        if ($appDomain !== '') {
+            $appDomain = preg_replace('#^https?://#i', '', $appDomain);
+            return 'info@' . $appDomain;
+        }
+
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            return 'info@' . preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST']);
+        }
+
+        return 'info@broxlab.online';
     }
 
     /**

@@ -505,10 +505,23 @@ if (!function_exists('sendNotiUser')) {
                 $stmt->close();
             }
 
-            // TODO: implement email sending if 'email' channel requested
-            if (in_array('email', $channels, true)) {
-                // Placeholder: Email integrations should be handled by Email templates and queued jobs
-                $details[] = ['channel' => 'email', 'status' => 'skipped', 'reason' => 'email-not-implemented'];
+            // Send Email
+            if (in_array('email', $channels, true) && !empty($user['email'])) {
+                $htmlBody = "<h2>" . htmlspecialchars($title) . "</h2><p>" . nl2br(htmlspecialchars($message)) . "</p>";
+                if (!empty($data['action_url'])) {
+                    $htmlBody .= '<p><a href="' . htmlspecialchars($data['action_url']) . '">View details</a></p>';
+                }
+                $displayName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? '');
+                $ok = sendEmail($user['email'], $title, $htmlBody, $displayName);
+                if ($ok) {
+                    $success++;
+                    $notificationModel->logDelivery($notificationId, $userId, 'sent', null, $user['email'], 'sent', 'email');
+                    $details[] = ['channel' => 'email', 'status' => 'sent'];
+                } else {
+                    $failed++;
+                    $notificationModel->logDelivery($notificationId, $userId, 'failed', null, $user['email'], 'failed', 'email');
+                    $details[] = ['channel' => 'email', 'status' => 'failed', 'reason' => 'sendEmail returned false'];
+                }
             }
 
             return ['success' => $success, 'failed' => $failed, 'details' => $details];

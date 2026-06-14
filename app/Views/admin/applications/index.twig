@@ -1,209 +1,198 @@
-{# templates/admin/applications/index.twig #}
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% set skip_auto_breadcrumb = true %}
 {% block title %}Service Applications - Admin Panel{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-earmark me-2"></i>
-        Service Applications
-      </div>
-      <div class="admin-page-subtitle">Manage service applications</div>
-    </div>
-    <div class="d-flex justify-content-end mb-4">
-      <a href="/admin/applications/export/csv"
-         class="modern-btn modern-btn-white">
-        <i class="bi bi-download"></i> Export CSV
-      </a>
-    </div>
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-primary">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-primary">Total</h6>
-                <h3>{{ stats.total }}</h3>
-              </div>
-              <i class="bi bi-file-earmark-text fs-1 text-primary opacity-50"></i>
+<div class="w-full px-4 sm:px-6 py-4 space-y-5">
+
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <i class="lucide lucide-file text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white sm:text-3xl">Service Applications</h1>
+                    <p class="mt-1 text-sm text-indigo-100">Review, filter, and approve submissions from one place.</p>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-warning">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-warning">Pending</h6>
-                <h3>{{ stats.pending }}</h3>
-              </div>
-              <i class="bi bi-hourglass-split fs-1 text-warning opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-info">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-info">Processing</h6>
-                <h3>{{ stats.processing }}</h3>
-              </div>
-              <i class="bi bi-gear fs-1 text-info opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card border-left-success">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="text-success">Approved</h6>
-                <h3>{{ stats.approved }}</h3>
-              </div>
-              <i class="bi bi-check-circle fs-1 text-success opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Filters -->
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">
-        <form method="GET" class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-select">
-              <option value="">All Statuses</option>
-              <option value="pending"
-                      {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
-              <option value="processing"
-                      {% if filters.status == 'processing' %}selected{% endif %}>Processing</option>
-              <option value="approved"
-                      {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
-              <option value="rejected"
-                      {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">From</label>
-            <input type="date"
-                   name="date_from"
-                   class="form-control"
-                   value="{{ filters.date_from ?? '' }}">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">To</label>
-            <input type="date"
-                   name="date_to"
-                   class="form-control"
-                   value="{{ filters.date_to ?? '' }}">
-          </div>
-          <div class="col-12">
-            <button type="submit" class="modern-btn modern-btn-primary">
-              <i class="bi bi-funnel"></i> Filter
-            </button>
-            <a href="/admin/applications" class="modern-btn modern-btn-white">
-              <i class="bi bi-arrow-clockwise"></i> Reset
+            <a href="/admin/applications/export/csv" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+                <i class="lucide lucide-download"></i> Export CSV
             </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+         <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+         <div class="p-4">
+          <div class="flex items-center justify-between">
+           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total</span>
+           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+            <i class="lucide lucide-file-text" style="width:1em;height:1em;"></i>
+           </div>
           </div>
-        </form>
-      </div>
-    </div>
-    <!-- Applications Table -->
-    <div class="admin-panel-card">
-      <div class="table-responsive">
-        <table class="table table-stacked table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>User</th>
-              <th>Service</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Approver</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for app in applications %}
-              <tr>
-                <td data-label="ID">
-                  <strong>#{{ app.id }}</strong>
-                </td>
-                <td data-label="User">
-                  {{ app.user_name }}
-                  <br>
-                  <small class="text-muted">{{ app.user_email }}</small>
-                </td>
-                <td data-label="Service">
-                  <strong>{{ app.service_name }}</strong>
-                </td>
-                <td data-label="Status">
-                  {% set status_colors = {"pending": "warning", "processing": "info", "approved": "success", "rejected": "danger"} %}
-                  <span class="badge bg-{{ status_colors[app.status] }}">{{ app.status|title }}</span>
-                </td>
-                <td data-label="Submitted">
-                  <small>{{ app.created_at|date("M d, Y") }}</small>
-                </td>
-                <td data-label="Approver">
-                  {% if app.approved_by_name %}
-                    <small>{{ app.approved_by_name }}</small>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td data-label="Actions">
-                  <div class="modern-btn-group btn-group-sm" role="group">
-                    <a href="/admin/applications/{{ app.id }}"
-                       class="modern-btn modern-btn-white"
-                       title="View">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <i class="bi bi-inbox fs-2 mb-2"></i>
-                  <p>No applications found</p>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <!-- Pagination -->
-      {% if total_pages > 1 %}
-        <nav aria-label="Page navigation" class="admin-panel-card-footer">
-          <ul class="pagination justify-content-center mb-0">
-            {% if page > 1 %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page - 1 }}">Previous</a>
-              </li>
-            {% endif %}
-            {% for p in range(max(1, page - 2), min(total_pages, page + 2) + 1) %}
-              <li class="page-item {% if p == page %}active{% endif %}">
-                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
-              </li>
-            {% endfor %}
-            {% if page < total_pages %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page + 1 }}">Next</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
-    </div>
-  </div>
+          <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.total }}</div>
+         </div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+         <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+         <div class="p-4">
+          <div class="flex items-center justify-between">
+           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending</span>
+           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+            <i class="lucide lucide-hourglass" style="width:1em;height:1em;"></i>
+           </div>
+          </div>
+          <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.pending }}</div>
+         </div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+         <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+         <div class="p-4">
+          <div class="flex items-center justify-between">
+           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Processing</span>
+           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+            <i class="lucide lucide-settings" style="width:1em;height:1em;"></i>
+           </div>
+          </div>
+          <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.processing }}</div>
+         </div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+         <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+         <div class="p-4">
+          <div class="flex items-center justify-between">
+           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved</span>
+           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+            <i class="lucide lucide-check-circle" style="width:1em;height:1em;"></i>
+           </div>
+          </div>
+          <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ stats.approved }}</div>
+         </div>
+        </div>
+    </section>
+
+    <!-- Filter Card -->
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-filter text-amber-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Filters</h2>
+            </div>
+        </div>
+        <div class="p-5">
+            <form method="GET" class="flex flex-wrap items-end gap-3">
+                <div class="min-w-[10rem]">
+                    <label for="filter-status" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Status</label>
+                    <select id="filter-status" name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="processing" {% if filters.status == 'processing' %}selected{% endif %}>Processing</option>
+                        <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="min-w-[10rem]">
+                    <label for="filter-from" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">From</label>
+                    <input type="date" id="filter-from" name="date_from" value="{{ filters.date_from ?? '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+                <div class="min-w-[10rem]">
+                    <label for="filter-to" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">To</label>
+                    <input type="date" id="filter-to" name="date_to" value="{{ filters.date_to ?? '' }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"><i class="lucide lucide-filter" style="width:0.875rem;height:0.875rem"></i> Filter</button>
+                    <a href="/admin/applications" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"><i class="lucide lucide-refresh-cw" style="width:0.875rem;height:0.875rem"></i> Reset</a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Table Card -->
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-list text-indigo-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Applications</h2>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table-modern w-full" data-listing>
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50/50">
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600" style="width:3rem">ID</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Service</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Submitted</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Approver</th>
+                        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600 text-center" style="width:4rem">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr data-id="{{ app.id }}" class="border-b border-slate-50 transition hover:bg-indigo-50/30">
+                        <td class="px-5 py-3"><span class="font-mono text-xs font-semibold text-slate-900">#{{ app.id }}</span></td>
+                        <td class="px-5 py-3">
+                            <div class="font-medium text-slate-900">{{ app.user_name }}</div>
+                            <div class="text-xs text-slate-500">{{ app.user_email }}</div>
+                        </td>
+                        <td class="px-5 py-3"><span class="font-medium text-slate-900">{{ app.service_name }}</span></td>
+                        <td class="px-5 py-3">
+                            {% set status_map = {'pending':'amber','processing':'sky','approved':'emerald','rejected':'rose'} %}
+                            {% set status_colors = {'amber':'bg-amber-50 text-amber-700','sky':'bg-sky-50 text-sky-700','emerald':'bg-emerald-50 text-emerald-700','rose':'bg-rose-50 text-rose-700'} %}
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ status_colors[status_map[app.status]|default('slate')]|default('bg-slate-100 text-slate-600') }}">{{ app.status|title }}</span>
+                        </td>
+                        <td class="px-5 py-3 text-sm text-slate-500">{{ app.created_at|date("M d, Y") }}</td>
+                        <td class="px-5 py-3 text-sm text-slate-500">{% if app.approved_by_name %}{{ app.approved_by_name }}{% else %}—{% endif %}</td>
+                        <td class="px-5 py-3 text-center">
+                            <a href="/admin/applications/{{ app.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:-translate-y-0.5" title="View"><i class="lucide lucide-eye" style="width:0.875rem;height:0.875rem"></i></a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-10">
+                         <div class="flex flex-col items-center justify-center gap-3 text-center">
+                          <i class="lucide lucide-file-text text-3xl text-slate-300"></i>
+                          <div class="text-sm font-semibold text-slate-700">No Applications Found</div>
+                          <div class="text-xs text-slate-500">Applications submitted by users will appear here.</div>
+                          <a href="/admin/services" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 mt-1">
+                           Browse Services
+                          </a>
+                         </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if total_pages > 1 %}
+        <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3">
+            <div class="flex items-center gap-2">
+                {% if page > 1 %}
+                <a href="?page={{ page - 1 }}" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100">
+                    <i class="lucide lucide-chevron-left" style="width:0.875em;height:0.875em;"></i> Prev
+                </a>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300"><i class="lucide lucide-chevron-left" style="width:0.875em;height:0.875em;"></i> Prev</span>
+                {% endif %}
+            </div>
+            <span class="text-sm text-slate-500">Page {{ page }} of {{ total_pages }}</span>
+            <div class="flex items-center gap-2">
+                {% if page < total_pages %}
+                <a href="?page={{ page + 1 }}" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100">
+                    Next <i class="lucide lucide-chevron-right" style="width:0.875em;height:0.875em;"></i>
+                </a>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300">Next <i class="lucide lucide-chevron-right" style="width:0.875em;height:0.875em;"></i></span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}
-
-

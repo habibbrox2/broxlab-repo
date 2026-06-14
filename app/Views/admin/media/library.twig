@@ -1,219 +1,224 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Media Manager - Admin{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-image me-2"></i>
-        Media Library
-      </div>
-      <div class="admin-page-subtitle">Manage media files</div>
-    </div>
-    <!-- Header -->
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <h1>
-          <i class="bi bi-image-fill"></i> Media Manager
-        </h1>
-        <small class="text-muted">Manage all your media files (images, videos, audio, documents)</small>
-      </div>
-      <div class="col-md-4 text-end">
-        <a href="/admin/media/upload"
-           class="modern-btn modern-btn-primary btn-sm">
-          <i class="bi bi-cloud-upload"></i> Upload Media
-        </a>
-      </div>
-    </div>
-    <!-- Statistics -->
-    {% if stats %}
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <div class="admin-panel-card">
-            <div class="admin-panel-card-body">
-              <h6 class="admin-panel-card-title opacity-75">Total Media Files</h6>
-              <h2 class="mb-0">{{ stats.total_files }}</h2>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="admin-panel-card border-0 bg-gradient-success text-white">
-            <div class="admin-panel-card-body">
-              <h6 class="admin-panel-card-title opacity-75">Storage Used</h6>
-              <h2 class="mb-0">{{ stats.total_size_formatted }}</h2>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="admin-panel-card">
-            <div class="admin-panel-card-body">
-              <h6 class="admin-panel-card-title opacity-75">Media Types</h6>
-              <h2 class="mb-0">{{ type_stats|length }}</h2>
-            </div>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-    <!-- Search & Filter -->
-    <div class="row mb-4">
-      <div class="col-md-12">
-        <form method="GET" class="admin-panel-card p-3">
-          <div class="row g-2">
-            <div class="col-md-5">
-              <input type="text"
-                     name="search"
-                     class="form-control"
-                     placeholder="Search by title or filename..."
-                     {% if filters.search %}value="{{ filters.search }}"{% endif %}>
-            </div>
-            <div class="col-md-3">
-              <select name="type" class="form-select">
-                <option value="">All Media Types</option>
-                <option value="image" {% if filters.type == 'image' %}selected{% endif %}>📸 Images</option>
-                <option value="video" {% if filters.type == 'video' %}selected{% endif %}>🎬 Videos</option>
-                <option value="audio" {% if filters.type == 'audio' %}selected{% endif %}>🎵 Audio</option>
-                <option value="document"
-                        {% if filters.type == 'document' %}selected{% endif %}>📄 Documents</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button type="submit" class="modern-btn modern-btn-primary w-100">
-                <i class="bi bi-search"></i> Search
-              </button>
-            </div>
-            <div class="col-md-2">
-              <a href="/admin/media" class="modern-btn modern-btn-white w-100">
-                <i class="bi bi-arrow-clockwise"></i> Reset
-              </a>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-    <!-- Media Grid -->
-    <div class="row g-3">
-      {% if media %}
-        {% for item in media %}
-          <div class="col-md-6 col-lg-4">
-            <div class="admin-panel-card h-100 hover-card">
-              <!-- Media Preview -->
-              <div class="position-relative bg-light inl-a-0017">
-                {% if item.media_type == 'image' and item.thumbnail_path %}
-                  <img src="{{ thumbnail_url(item.thumbnail_path) }}"
-                       alt="{{ item.title }}"
-                       class="img-fluid w-100 h-100 inl-a-0018">
-                {% elseif item.media_type == 'image' %}
-                  <img src="{{ media_url(item.file_path) }}"
-                       alt="{{ item.title }}"
-                       class="img-fluid w-100 h-100 inl-a-0018">
-                {% elseif item.media_type == 'video' %}
-                  <div class="d-flex align-items-center justify-content-center h-100 bg-dark text-white">
-                    <i class="bi bi-play-circle inl-a-0012"></i>
-                  </div>
-                {% elseif item.media_type == 'audio' %}
-                  <div class="d-flex align-items-center justify-content-center h-100 bg-dark text-white">
-                    <i class="bi bi-music-note-beamed inl-a-0012"></i>
-                  </div>
-                {% else %}
-                  <div class="d-flex align-items-center justify-content-center h-100 bg-light text-muted">
-                    <i class="bi bi-file-earmark inl-a-0012"></i>
-                  </div>
-                {% endif %}
-                <!-- Media Type Badge -->
-                <span class="badge bg-primary position-absolute top-2 start-2 text-uppercase">{{ item.media_type }}</span>
-              </div>
-              <!-- Card Body -->
-              <div class="admin-panel-card-body">
-                <h5 class="admin-panel-card-title text-truncate" title="{{ item.title }}">{{ item.title }}</h5>
-                <p class="admin-panel-card-text small text-muted text-truncate"
-                   title="{{ item.original_name }}">{{ item.original_name }}</p>
-                <!-- Meta Info -->
-                <div class="small text-muted mb-3">
-                  <div>
-                    <strong>Size:</strong> {{ item.file_size|filesizeformat }}
-                  </div>
-                  {% if item.width and item.height %}
-                    <div>
-                      <strong>Dimensions:</strong> {{ item.width }}x{{ item.height }}px
-                    </div>
-                  {% endif %}
-                  <div>
-                    <strong>Uploaded:</strong> {{ item.created_at|date("d M Y H:i") }}
-                  </div>
-                </div>
-                {% if item.description %}
-                  <div class="bg-light p-2 rounded small mb-3 inl-a-0019">{{ item.description }}</div>
-                {% endif %}
-              </div>
-              <!-- Card Footer - Actions -->
-              <div class="admin-panel-card-footer">
-                <div class="modern-btn-group w-100" role="group">
-                  <a href="/admin/media/{{ item.id }}"
-                     class="modern-btn btn-sm btn-primary-outline">
-                    <i class="bi bi-eye"></i> View
-                  </a>
-                  <form method="POST"
-                        action="/admin/media/{{ item.id }}/delete"
-                        class="d-inline w-100"
-                        onsubmit="return confirm('Delete this media? This action can be reversed from trash.');">
-                    <button type="submit" class="modern-btn btn-sm btn-outline-danger w-100">
-                      <i class="bi bi-trash"></i> Delete
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="col-12">
-          <div class="alert alert-info text-center py-5">
-            <i class="bi bi-inbox inl-a-0020"></i>
-            <p class="mb-0">
-              No media found. <a href="/admin/media/upload">Upload your first media file</a>
-            </p>
-          </div>
-        </div>
-      {% endif %}
-    </div>
-    <!-- Pagination -->
-    {% if pagination.total > 1 %}
-      <nav aria-label="Pagination" class="mt-5">
-        <ul class="pagination justify-content-center">
-          {% if pagination.current > 1 %}
-            <li class="page-item">
-              <a class="page-link" href="/admin/media?page=1">
-                <i class="bi bi-chevron-double-left"></i> First
-              </a>
-            </li>
-            <li class="page-item">
-              <a class="page-link"
-                 href="/admin/media?page={{ pagination.current - 1 }}">
-                <i class="bi bi-chevron-left"></i> Previous
-              </a>
-            </li>
-          {% endif %}
-          {% for p in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
-            <li class="page-item {% if p == pagination.current %}active{% endif %}">
-              <a class="page-link" href="/admin/media?page={{ p }}">{{ p }}</a>
-            </li>
-          {% endfor %}
-          {% if pagination.current < pagination.total %}
-            <li class="page-item">
-              <a class="page-link"
-                 href="/admin/media?page={{ pagination.current + 1 }}">
-                Next <i class="bi bi-chevron-right"></i>
-              </a>
-            </li>
-            <li class="page-item">
-              <a class="page-link" href="/admin/media?page={{ pagination.total }}">
-                Last <i class="bi bi-chevron-double-right"></i>
-              </a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
-  </div>
+ <div class="w-full px-4 sm:px-6 py-4">
+ <!-- Page Header -->
+ <div class=" mb-4">
+ <div>
+ <i class="lucide lucide-image mr-2"></i>
+ Media Library
+ </div>
+ <div>Manage media files</div>
+ </div>
+ <!-- Header -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-8">
+ <h1>
+ <i class="lucide lucide-image"></i> Media Manager
+ </h1>
+ <small class="text-slate-500">Manage all your media files (images, videos, audio, documents)</small>
+ </div>
+ <div class="md:col-span-4 text-right">
+ <a href="/admin/media/upload"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1.5 text-xs">
+ <i class="lucide lucide-cloud-upload"></i> Upload Media
+ </a>
+ </div>
+ </div>
+ <!-- Statistics -->
+ {% if stats %}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-4">
+ <div class=" border border-slate-200 bg-white shadow-sm">
+ <div class="p-4">
+ <h6 class=" opacity-75">Total Media Files</h6>
+ <h2 class="mb-0">{{ stats.total_files }}</h2>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class=" border border-slate-200 bg-white shadow-sm border-0 bg--success text-white">
+ <div class="p-4">
+ <h6 class=" opacity-75">Storage Used</h6>
+ <h2 class="mb-0">{{ stats.total_size_formatted }}</h2>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-4">
+ <div class=" border border-slate-200 bg-white shadow-sm">
+ <div class="p-4">
+ <h6 class=" opacity-75">Media Types</h6>
+ <h2 class="mb-0">{{ type_stats|length }}</h2>
+ </div>
+ </div>
+ </div>
+ </div>
+ {% endif %}
+ <!-- Search & Filter -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="md:col-span-12">
+ <form method="GET" class=" border border-slate-200 bg-white shadow-sm p-3">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2">
+ <div class="md:col-span-5">
+ <input type="text"
+ name="search"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ placeholder="Search by title or filename..."
+ {% if filters.search %}value="{{ filters.search }}"{% endif %}>
+ </div>
+ <div class="md:col-span-3">
+ <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="">All Media Types</option>
+ <option value="image" {% if filters.type == 'image' %}selected{% endif %}>📸 Images</option>
+ <option value="video" {% if filters.type == 'video' %}selected{% endif %}>🎬 Videos</option>
+ <option value="audio" {% if filters.type == 'audio' %}selected{% endif %}>🎵 Audio</option>
+ <option value="document"
+ {% if filters.type == 'document' %}selected{% endif %}>📄 Documents</option>
+ </select>
+ </div>
+ <div class="md:col-span-2">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
+ <i class="lucide lucide-search"></i> Search
+ </button>
+ </div>
+ <div class="md:col-span-2">
+ <a href="/admin/media" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200 w-full">
+ <i class="lucide lucide-refresh-cw"></i> Reset
+ </a>
+ </div>
+ </div>
+ </form>
+ </div>
+ </div>
+ <!-- Media Grid -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
+ {% if media %}
+ {% for item in media %}
+ <div class="md:col-span-6 lg:col-span-4">
+ <div class=" border border-slate-200 bg-white shadow-sm h-full hover-rounded-xl">
+ <!-- Media Preview -->
+ <div class="relative bg-slate-100 ">
+ {% if item.media_type == 'image' and item.thumbnail_path %}
+ <img src="{{ thumbnail_url(item.thumbnail_path) }}"
+ alt="{{ item.title|striptags }}"
+ class="max-w-full h-auto w-full h-full ">
+ {% elseif item.media_type == 'image' %}
+ <img src="{{ media_url(item.file_path) }}"
+ alt="{{ item.title|striptags }}"
+ class="max-w-full h-auto w-full h-full ">
+ {% elseif item.media_type == 'video' %}
+ <div class="flex items-center justify-center h-full bg-slate-900 text-white">
+ <i class="lucide lucide-play-circle "></i>
+ </div>
+ {% elseif item.media_type == 'audio' %}
+ <div class="flex items-center justify-center h-full bg-slate-900 text-white">
+ <i class="lucide lucide-music "></i>
+ </div>
+ {% else %}
+ <div class="flex items-center justify-center h-full bg-slate-100 text-slate-500">
+ <i class="lucide lucide-file "></i>
+ </div>
+ {% endif %}
+ <!-- Media Type Badge -->
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600 absolute top-2 left-2 uppercase">{{ item.media_type }}</span>
+ </div>
+ <!-- Card Body -->
+ <div class="p-4">
+ <h5 class=" truncate" title="{{ item.title|striptags }}">{{ item.title|striptags|raw }}</h5>
+ <p class=" small text-slate-500 truncate"
+ title="{{ item.original_name }}">{{ item.original_name }}</p>
+ <!-- Meta Info -->
+ <div class="small text-slate-500 mb-3">
+ <div>
+ <strong>Size:</strong> {{ item.file_size|filesizeformat }}
+ </div>
+ {% if item.width and item.height %}
+ <div>
+ <strong>Dimensions:</strong> {{ item.width }}x{{ item.height }}px
+ </div>
+ {% endif %}
+ <div>
+ <strong>Uploaded:</strong> {{ item.created_at|date("d M Y H:i") }}
+ </div>
+ </div>
+ {% if item.description %}
+ <div class="bg-slate-100 p-2 rounded small mb-3 ">{{ item.description }}</div>
+ {% endif %}
+ </div>
+ <!-- Card Footer - Actions -->
+ <div class=" border border-slate-200 bg-white shadow-sm-footer">
+ <div class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-group w-full" role="group">
+ <a href="/admin/media/{{ item.id }}"
+ class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-700-outline">
+ <i class="lucide lucide-eye"></i> View
+ </a>
+ <form method="POST"
+ action="/admin/media/{{ item.id }}/delete"
+ class="inline w-full"
+ onsubmit="return confirm('Delete this media? This action can be reversed from trash.');">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-red-600 hover:bg-red-100 w-full">
+ <i class="lucide lucide-trash-2"></i> Delete
+ </button>
+ </form>
+ </div>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ {% else %}
+ <div class="col-span-12">
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-center py-5">
+ <i class="lucide lucide-inbox "></i>
+ <p class="mb-0">
+ No media found. <a href="/admin/media/upload">Upload your first media file</a>
+ </p>
+ </div>
+ </div>
+ {% endif %}
+ </div>
+ <!-- Pagination -->
+ {% if pagination.total > 1 %}
+ <nav aria-label="Pagination" class="mt-5">
+ <ul class="pagination justify-center">
+ {% if pagination.current > 1 %}
+ <li class="page-item">
+ <a class="page-link" href="/admin/media?page=1">
+ <i class="lucide lucide-chevrons-left"></i> First
+ </a>
+ </li>
+ <li class="page-item">
+ <a class="page-link"
+ href="/admin/media?page={{ pagination.current - 1 }}">
+ <i class="lucide lucide-chevron-left"></i> Previous
+ </a>
+ </li>
+ {% endif %}
+ {% for p in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
+ <li class="page-item {% if p == pagination.current %}active{% endif %}">
+ <a class="page-link" href="/admin/media?page={{ p }}">{{ p }}</a>
+ </li>
+ {% endfor %}
+ {% if pagination.current < pagination.total %}
+ <li class="page-item">
+ <a class="page-link"
+ href="/admin/media?page={{ pagination.current + 1 }}">
+ Next <i class="lucide lucide-chevron-right"></i>
+ </a>
+ </li>
+ <li class="page-item">
+ <a class="page-link" href="/admin/media?page={{ pagination.total }}">
+ Last <i class="lucide lucide-chevrons-right"></i>
+ </a>
+ </li>
+ {% endif %}
+ </ul>
+ </nav>
+ {% endif %}
+ </div>
 {% endblock %}
+
+
+
+
+

@@ -1,4 +1,11 @@
-﻿<?php
+<?php
+
+// If executed via a browser, instruct to use the new frontend collector UI.
+if (PHP_SAPI !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<h1>MedEx Detailed Scraper</h1><p>This CLI tool has been replaced by the browser-based collector: <a href=\"/medex-collector.html\">/medex-collector.html</a></p>";
+    exit;
+}
 
 /**
  * MedEx Scraper - Detailed Medicine Information Extractor
@@ -54,23 +61,25 @@ function getMedexUploadsDir(): string
 // Constants
 define("UPLOADS_MEDEX_DIR", getMedexUploadsDir());
 define("INPUT_FILE", UPLOADS_MEDEX_DIR . "/medex_herbal_companies.json");
-define("PROGRESS_FILE", "medex_detailed_progress.json");
+define("PROGRESS_FILE", UPLOADS_MEDEX_DIR . "/medex_detailed_progress.json");
 define("BASE_URL", "https://medex.com.bd");
 define("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
+require_once __DIR__ . '/medex-cloudflare-helper.php';
+
 // Bengali section key mappings
 $bnSectionKeys = [
-    "indications" => "নির্দেশনা",
-    "pharmacology" => "ফার্মাকোলজি",
-    "dosage" => "মাত্রা_ও_সেবনবিধি",
-    "interactions" => "ঔষধের_মিঠস্ক্রিয়া",
-    "contraindications" => "প্রতিনির্দেশনা",
-    "side_effects" => "পার্শ্ব_প্রতিক্রিয়া",
-    "pregnancy" => "গর্ভাবস্থায়_ও_স্টন্যদানকালে",
-    "precautions" => "সতর্কতা",
-    "overdose" => "মাত্রাধিক্যতা",
-    "therapeutic_class" => "থেরাপিউটিক_ক্লাস",
-    "storage" => "সংরক্ষণ",
+    "indications" => "?????????",
+    "pharmacology" => "???????????",
+    "dosage" => "??????_?_????????",
+    "interactions" => "?????_????????????",
+    "contraindications" => "??????????????",
+    "side_effects" => "???????_????????????",
+    "pregnancy" => "????????????_?_?????????????",
+    "precautions" => "???????",
+    "overdose" => "?????????????",
+    "therapeutic_class" => "??????????_?????",
+    "storage" => "???????",
 ];
 
 // Main execution
@@ -98,7 +107,12 @@ function parse_command_line_arguments(array &$options): void
         } elseif (strpos($arg, "--brands-limit=") === 0) {
             $options["brands_limit"] = (int)substr($arg, 14);
         } elseif (strpos($arg, "--output=") === 0) {
-            $options["output"] = substr($arg, 8);
+            $value = substr($arg, 8);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            if (strpos($value, "=") === 0) {
+                $value = ltrim($value, "=");
+            }
+            $options["output"] = $value;
         } elseif (strpos($arg, "--rate=") === 0) {
             $options["rate"] = (float)substr($arg, 6);
         } elseif ($arg === "--resume") {
@@ -362,7 +376,8 @@ function process_brand(array $brandLink, array $bnSectionKeys): ?array
 
     return [
         "brand_name" => $brandLink["name"] ?? $detailsEn["brand_name"] ?? "",
-        "generic_name" => $brandLink["generic"] ?? $detailsEn["generic_name"] ?? "",
+        "generic_listing" => $brandLink["generic"] ?? "",
+        "generic_name" => $detailsEn["generic_name"] ?? "",
         "strength" => $detailsEn["strength"] ?? "",
         "dosage_form" => $detailsEn["dosage_form"] ?? "",
         "unit_price" => $detailsEn["unit_price"] ?? "",
@@ -379,44 +394,7 @@ function process_brand(array $brandLink, array $bnSectionKeys): ?array
  */
 function fetch_page(string $url, int $maxRetries = 3): string|false
 {
-    $attempt = 0;
-
-    while ($attempt < $maxRetries) {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_USERAGENT => USER_AGENT,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_HTTPHEADER => [
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language: en-US,en;q=0.9,bn;q=0.8",
-            ],
-        ]);
-
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response !== false && $code >= 200 && $code < 300) {
-            return $response;
-        }
-
-        $attempt++;
-        if ($attempt < $maxRetries) {
-            $wait = pow(2, $attempt); // Exponential backoff
-            sleep($wait);
-        }
-    }
-
-    error_log("Fetch failed after {$maxRetries} attempts: {$url} (HTTP {$code})");
-    return false;
+    return medex_fetch_page($url, $maxRetries);
 }
 
 /**
@@ -441,6 +419,9 @@ function extract_all_brand_links(string $html, string $baseUrl): array
         $nameNode = $xpath->query(".//h3", $node)->item(0);
         $name = $nameNode ? trim($nameNode->textContent) : "";
         $genericNode = $xpath->query('.//span[contains(@class,"text-muted")]', $node)->item(0);
+        if (!$genericNode) {
+            $genericNode = $xpath->query('.//div[contains(@class,"text-muted")]', $node)->item(0);
+        }
         $generic = $genericNode ? trim($genericNode->textContent) : "";
 
         if ($href && $name) {
@@ -551,7 +532,11 @@ function parse_brand_detail_page(string $html): array
         $data["strip_price"] = $pkgNode ? clean_text($pkgNode->textContent) : "";
     }
 
-    // Detailed sections
+    // Detailed sections � dual-strategy extraction.
+    // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
+    //   (e.g., <div id="indications" class="ac"><div class="ac-body">...</div></div>)
+    // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div
+    //   (e.g., <div id="indications">...</div><div class="ac-body">...</div>)
     $sectionMap = [
         "indications" => "indications",
         "mode_of_action" => "pharmacology",
@@ -567,8 +552,26 @@ function parse_brand_detail_page(string $html): array
     ];
 
     foreach ($sectionMap as $sectionId => $field) {
-        $sectionNode = $xpath->query('//div[@id="' . $sectionId . '"]//div[contains(@class,"ac-body")]')->item(0);
-        $data[$field] = $sectionNode ? clean_text($sectionNode->textContent) : "";
+        $idDiv = $xpath->query('//div[@id="' . $sectionId . '"]')->item(0);
+        $content = '';
+        if ($idDiv) {
+            // Strategy 1: descendant .ac-body (preferred)
+            $acBody = $xpath->query('.//div[contains(@class,"ac-body")]', $idDiv)->item(0);
+            if ($acBody instanceof DOMElement) {
+                $content = clean_text($acBody->textContent);
+            } else {
+                // Strategy 2: following sibling .ac-body
+                $next = $idDiv->nextSibling;
+                while ($next) {
+                    if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
+                        $content = clean_text($next->textContent);
+                        break;
+                    }
+                    $next = $next->nextSibling;
+                }
+            }
+        }
+        $data[$field] = $content;
     }
 
     return $data;
@@ -619,6 +622,10 @@ function save_progress(int $lastIndex, array $progress): void
  */
 function save_output(array $data, string $filename): void
 {
+    $dir = dirname($filename);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
     file_put_contents($filename, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 

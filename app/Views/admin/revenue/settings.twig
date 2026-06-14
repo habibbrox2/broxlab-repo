@@ -1,58 +1,85 @@
 {% extends 'admin/layout.twig' %}
 
 {% block title %}Revenue Settings – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
-<li class="breadcrumb-item"><a href="/admin/revenue">Revenue</a></li>
-<li class="breadcrumb-item active" aria-current="page">Settings</li>
-{% endblock %}
+{% block content %}
+<div class="w-full px-4 sm:px-6 py-4">
 
-{% block page_content %}
-<div class="dashboard-page">
-  <form method="POST" action="/admin/revenue/settings">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-    {% set cats = [
-      {id:'donation', icon:'bi-heart-fill', color:'text-danger'},
-      {id:'advertisement', icon:'bi-megaphone-fill', color:'text-primary'},
-      {id:'sponsorship', icon:'bi-award-fill', color:'text-warning'},
-      {id:'general', icon:'bi-gear-fill', color:'text-secondary'},
-    ] %}
-
-    {% for cat in cats %}
-    {% if settings[cat.id]|default(settings|keys|column(0)) %}
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-      <div class="card-header bg-white border-0 py-3">
-        <h5 class="mb-0 fw-bold"><i class="bi {{ cat.icon }} {{ cat.color }} me-2"></i>{{ cat.id|capitalize }} Settings</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          {% for key, row in settings[cat.id]|default({}) %}
-          <div class="col-md-6 col-lg-4">
-            <label class="form-label fw-semibold small">{{ row.label ?? key }}</label>
-            <input type="text" class="form-control"
-                   name="setting_key[]" value="{{ key }}" hidden>
-            <input type="text" class="form-control"
-                   name="setting_value[]" value="{{ row.setting_value ?? '' }}">
-            <input type="hidden" name="setting_type[]" value="{{ row.setting_type ?? 'text' }}">
-            <input type="hidden" name="category[]" value="{{ cat.id }}">
-            {% if row.description %}
-            <small class="text-muted d-block mt-1">{{ row.description }}</small>
-            {% endif %}
-          </div>
-          {% endfor %}
-        </div>
-      </div>
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+  </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-settings" style="width:1.5em;height:1.5em;"></i>
     </div>
-    {% endif %}
-    {% endfor %}
-
-    <div class="text-end">
-      <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold px-5">
-        <i class="bi bi-check-lg me-2"></i>Save Settings
-      </button>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Revenue Settings</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Configure donation, ad, and sponsorship preferences</p>
     </div>
-  </form>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/revenue" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-arrow-left" style="width:0.875em;height:0.875em;"></i> Revenue Dashboard
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Settings Form ── #}
+ <form method="POST" action="/admin/revenue/settings">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  {% set cats = [
+   {id:'donation', icon:'lucide lucide-heart', color:'text-rose-600'},
+   {id:'advertisement', icon:'lucide lucide-megaphone', color:'text-indigo-600'},
+   {id:'sponsorship', icon:'lucide lucide-award', color:'text-amber-600'},
+   {id:'general', icon:'lucide lucide-settings', color:'text-slate-600'},
+  ] %}
+
+  {% for cat in cats %}
+  {% if settings[cat.id] is defined %}
+  <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+   <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 {{ cat.color }}">
+     <i class="{{ cat.icon }}" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">{{ cat.id|capitalize }} Settings</h2>
+     <p class="text-xs text-slate-500">Configure {{ cat.id }}-related preferences</p>
+    </div>
+   </div>
+   <div class="p-5">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+     {% for key, setting in settings[cat.id]|default({}) %}
+     <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">{{ setting.label ?? key }}</label>
+      <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+       name="setting_key[]" value="{{ key }}" hidden>
+      <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+       name="setting_value[]" value="{{ setting.setting_value ?? '' }}">
+      <input type="hidden" name="setting_type[]" value="{{ setting.setting_type ?? 'text' }}">
+      <input type="hidden" name="category[]" value="{{ cat.id }}">
+      {% if setting.description is defined %}
+      <p class="mt-1 text-xs text-slate-500">{{ setting.description }}</p>
+      {% endif %}
+     </div>
+     {% endfor %}
+    </div>
+   </div>
+  </section>
+  {% endif %}
+  {% endfor %}
+
+  <div class="flex justify-end">
+   <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]">
+    <i class="lucide lucide-save" style="width:1.125em;height:1.125em;"></i> Save Settings
+   </button>
+  </div>
+ </form>
 </div>
 {% endblock %}

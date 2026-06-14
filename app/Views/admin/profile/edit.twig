@@ -1,303 +1,330 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Edit Admin Profile{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <h1 class="admin-page-title">
-        <i class="bi bi-person-circle"></i> Edit Admin Profile
-      </h1>
-      <p class="admin-page-subtitle">Update your profile information and settings</p>
-    </div>
-    <!-- Tab Navigation -->
-    <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active"
-                id="edit-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#edit"
-                type="button"
-                role="tab"
-                aria-controls="edit"
-                aria-selected="true">
-          <i class="bi bi-pencil-square me-1"></i> Edit Profile
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link"
-                id="password-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#password"
-                type="button"
-                role="tab"
-                aria-controls="password"
-                aria-selected="false">
-          <i class="bi bi-key me-1"></i> Change Password
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link"
-                id="security-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#security"
-                type="button"
-                role="tab"
-                aria-controls="security"
-                aria-selected="false">
-          <i class="bi bi-shield-lock me-1"></i> 2FA Settings
-        </button>
-      </li>
-    </ul>
-    <!-- Tab Content -->
-    <div class="tab-content" id="profileTabContent">
-      <!-- Edit Profile Tab -->
-      <div class="tab-pane fade show active"
-           id="edit"
-           role="tabpanel"
-           aria-labelledby="edit-tab">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header border-primary">
-            <h5 class="mb-0">
-              <i class="bi bi-pencil"></i> Profile Information
-            </h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <form method="POST"
-                  action="/admin/profile/edit"
-                  enctype="multipart/form-data">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <!-- Username & Email -->
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label for="username" class="form-label">Username</label>
-                  <input type="text"
-                         class="form-control"
-                         id="username"
-                         name="username"
-                         value="{{ user.username }}"
-                         placeholder="Enter username"
-                         required>
-                </div>
-                <div class="col-md-6">
-                  <label for="email" class="form-label">Email</label>
-                  <input type="email"
-                         class="form-control"
-                         id="email"
-                         name="email"
-                         value="{{ user.email }}"
-                         placeholder="Enter email"
-                         required>
-                </div>
-              </div>
-              <!-- First Name & Last Name -->
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label for="first_name" class="form-label">First Name</label>
-                  <input type="text"
-                         class="form-control"
-                         id="first_name"
-                         name="first_name"
-                         value="{{ user.first_name }}"
-                         placeholder="Enter first name">
-                </div>
-                <div class="col-md-6">
-                  <label for="last_name" class="form-label">Last Name</label>
-                  <input type="text"
-                         class="form-control"
-                         id="last_name"
-                         name="last_name"
-                         value="{{ user.last_name }}"
-                         placeholder="Enter last name">
-                </div>
-              </div>
-              <!-- Gender, DOB & Phone -->
-              <div class="row mb-3">
-                <div class="col-md-4">
-                  <label for="gender" class="form-label">Gender</label>
-                  <select id="gender" name="gender" class="form-select">
-                    <option value="" {% if not user.gender %}selected{% endif %}>Select</option>
-                    <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
-                    <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
-                    <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label for="dob" class="form-label">Date of Birth</label>
-                  <input type="text"
-                         class="form-control datepicker"
-                         id="dob"
-                         name="dob"
-                         value="{{ user.dob ? user.dob|date("d-m-Y") : '' }}"
-                         placeholder="DD-MM-YYYY"
-                         autocomplete="off">
-                </div>
-                <div class="col-md-4">
-                  <label for="phone" class="form-label">Phone</label>
-                  <input type="text"
-                         class="form-control"
-                         id="phone"
-                         name="phone"
-                         value="{{ user.phone }}"
-                         placeholder="Enter phone number">
-                </div>
-              </div>
-              <!-- Alternate Phone & Address -->
-              <div class="mb-3">
-                <label for="alternate_phone" class="form-label">Alternate Phone</label>
-                <input type="text"
-                       class="form-control"
-                       id="alternate_phone"
-                       name="alternate_phone"
-                       value="{{ user.alternate_phone }}"
-                       placeholder="Enter alternate phone number">
-              </div>
-              <div class="mb-3">
-                <label for="address" class="form-label">Address</label>
-                <textarea class="form-control" id="address" name="address" rows="2">{{ user.address }}</textarea>
-              </div>
-              <!-- City, State & Zipcode -->
-              <div class="row mb-3">
-                <div class="col-md-4">
-                  <label for="city" class="form-label">City</label>
-                  <input type="text"
-                         class="form-control"
-                         id="city"
-                         name="city"
-                         value="{{ user.city }}"
-                         placeholder="Enter city">
-                </div>
-                <div class="col-md-4">
-                  <label for="state" class="form-label">State</label>
-                  <input type="text"
-                         class="form-control"
-                         id="state"
-                         name="state"
-                         value="{{ user.state }}"
-                         placeholder="Enter state">
-                </div>
-                <div class="col-md-4">
-                  <label for="zipcode" class="form-label">Zipcode</label>
-                  <input type="text"
-                         class="form-control"
-                         id="zipcode"
-                         name="zipcode"
-                         value="{{ user.zipcode }}"
-                         placeholder="Enter zipcode">
-                </div>
-              </div>
-              <!-- Country -->
-              <div class="mb-3">
-                <label for="country" class="form-label">Country</label>
-                <input type="text"
-                       class="form-control"
-                       id="country"
-                       name="country"
-                       value="{{ user.country }}"
-                       placeholder="Enter country">
-              </div>
-              <!-- Social Links -->
-              <h5 class="mt-4 mb-3">
-                <i class="bi bi-share me-2 text-info"></i>Social Links
-              </h5>
-              <div class="row mb-3">
-                <div class="col-md-6 mb-2">
-                  <label for="facebook_url" class="form-label">Facebook</label>
-                  <input type="url"
-                         class="form-control"
-                         id="facebook_url"
-                         name="facebook_url"
-                         value="{{ user.facebook_url|default("") }}"
-                         placeholder="Enter Facebook profile URL">
-                </div>
-                <div class="col-md-6 mb-2">
-                  <label for="twitter_url" class="form-label">Twitter</label>
-                  <input type="url"
-                         class="form-control"
-                         id="twitter_url"
-                         name="twitter_url"
-                         value="{{ user.twitter_url|default("") }}"
-                         placeholder="Enter Twitter profile URL">
-                </div>
-                <div class="col-md-6 mb-2">
-                  <label for="instagram_url" class="form-label">Instagram</label>
-                  <input type="url"
-                         class="form-control"
-                         id="instagram_url"
-                         name="instagram_url"
-                         value="{{ user.instagram_url|default("") }}"
-                         placeholder="Enter Instagram profile URL">
-                </div>
-                <div class="col-md-6 mb-2">
-                  <label for="linkedin_url" class="form-label">LinkedIn</label>
-                  <input type="url"
-                         class="form-control"
-                         id="linkedin_url"
-                         name="linkedin_url"
-                         value="{{ user.linkedin_url|default("") }}"
-                         placeholder="Enter LinkedIn profile URL">
-                </div>
-              </div>
-              <!-- Profile Picture -->
-              <div class="mb-3">
-                <label for="profile_pic" class="form-label">Profile Picture</label>
-                {% if user.profile_pic %}
-                  <div class="mb-2">
-                    <img src="{{ user.profile_pic }}"
-                         alt="Profile Picture"
-                         class="img-thumbnail"
-                         width="120">
-                  </div>
-                {% endif %}
-                <input type="file"
-                       class="form-control"
-                       id="profile_pic"
-                       name="profile_pic"
-                       accept="image/*">
-              </div>
-              <!-- Submit & Cancel Buttons -->
-              <div class="d-flex justify-content-start gap-2 mt-3">
-                <button type="submit" class="btn btn-success">
-                  <i class="bi bi-check-circle me-1"></i> Update Profile
-                </button>
-                <a href="/admin/profile" class="btn btn-outline-secondary">
-                  <i class="bi bi-x-circle me-1"></i> Cancel
-                </a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <!-- Change Password Tab -->
-      <div class="tab-pane fade"
-           id="password"
-           role="tabpanel"
-           aria-labelledby="password-tab">
-        <div class="admin-panel-card shadow-sm rounded-4 p-4">
-          <h5 class="mb-3">
-            <i class="bi bi-key me-1"></i> Change Password
-          </h5>
-          <p class="text-muted mb-4">Update your password to keep your admin account secure.</p>
-          <a href="/admin/profile/password" class="btn btn-primary">
-            <i class="bi bi-arrow-right me-1"></i> Go to Change Password
-          </a>
-        </div>
-      </div>
-      <!-- 2FA Settings Tab -->
-      <div class="tab-pane fade"
-           id="security"
-           role="tabpanel"
-           aria-labelledby="security-tab">
-        <div class="admin-panel-card shadow-sm rounded-4 p-4">
-          <h5 class="mb-3">
-            <i class="bi bi-shield-lock me-1"></i> Two-Factor Authentication (2FA)
-          </h5>
-          <p class="text-muted mb-4">Add an extra layer of security to your admin account using two-factor authentication.</p>
-          <a href="/admin/security/2fa" class="btn btn-success">
-            <i class="bi bi-shield-check me-1"></i> Manage 2FA Settings
-          </a>
-        </div>
-      </div>
-    </div>
+<style>.tab-pane:not(.active){display:none}.tab-pane.active{display:block}</style>
+ <div class="w-full px-4 sm:px-6 py-4">
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex items-center gap-3">
+   <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+    <i class="lucide lucide-user-circle" style="width:1.5em;height:1.5em;"></i>
+   </div>
+   <div>
+    <h1 class="text-xl font-black tracking-tight sm:text-2xl">Edit Admin Profile</h1>
+    <p class="mt-1 text-sm text-indigo-200/80">Update your profile information and settings</p>
+   </div>
+  </div>
+ </div>
+ <!-- Tab Navigation -->
+ <ul class="mb-4 flex flex-wrap gap-1 border-b border-slate-200 pb-0" id="profileTabs" role="tablist">
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-indigo-600 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition"
+ id="edit-tab"
+ data-brox-toggle="tab"
+ data-brox-target="#edit"
+ type="button"
+ role="tab"
+ aria-controls="edit"
+ aria-selected="true">
+ <i class="lucide lucide-pencil"></i> Edit Profile
+ </button>
+ </li>
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+ id="password-tab"
+ data-brox-toggle="tab"
+ data-brox-target="#password"
+ type="button"
+ role="tab"
+ aria-controls="password"
+ aria-selected="false">
+ <i class="lucide lucide-key"></i> Change Password
+ </button>
+ </li>
+ <li role="presentation">
+ <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+ id="security-tab"
+ data-brox-toggle="tab"
+ data-brox-target="#security"
+ type="button"
+ role="tab"
+ aria-controls="security"
+ aria-selected="false">
+ <i class="lucide lucide-shield"></i> 2FA Settings
+ </button>
+ </li>
+ </ul>
+ <!-- Tab Content -->
+ <div class="tab-content" id="profileTabContent">
+ <!-- Edit Profile Tab --><div class="tab-pane active"
+     id="edit"
+ role="tabpanel"
+ aria-labelledby="edit-tab">
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+   <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+     <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Profile Information</h2>
+   </div>
+ <div class="p-4">
+ <form method="POST"
+ action="/admin/profile/edit"
+ enctype="multipart/form-data">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+ <!-- Username & Email -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-6">
+ <label for="username" class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="username"
+ name="username"
+ value="{{ user.username }}"
+ placeholder="Enter username"
+ required>
+ </div>
+ <div class="md:col-span-6">
+ <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+ <input type="email"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="email"
+ name="email"
+ value="{{ user.email }}"
+ placeholder="Enter email"
+ required>
+ </div>
+ </div>
+ <!-- First Name & Last Name -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-6">
+ <label for="first_name" class="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="first_name"
+ name="first_name"
+ value="{{ user.first_name }}"
+ placeholder="Enter first name">
+ </div>
+ <div class="md:col-span-6">
+ <label for="last_name" class="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="last_name"
+ name="last_name"
+ value="{{ user.last_name }}"
+ placeholder="Enter last name">
+ </div>
+ </div>
+ <!-- Gender, DOB & Phone -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-4">
+ <label for="gender" class="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+ <select id="gender" name="gender" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+ <option value="" {% if not user.gender %}selected{% endif %}>Select</option>
+ <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
+ <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+ <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
+ </select>
+ </div>
+ <div class="md:col-span-4">
+ <label for="dob" class="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 datepicker"
+ id="dob"
+ name="dob"
+ value="{{ user.dob ? user.dob|date("d-m-Y") : '' }}"
+ placeholder="DD-MM-YYYY"
+ autocomplete="off">
+ </div>
+ <div class="md:col-span-4">
+ <label for="phone" class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="phone"
+ name="phone"
+ value="{{ user.phone }}"
+ placeholder="Enter phone number">
+ </div>
+ </div>
+ <!-- Alternate Phone & Address -->
+ <div class="mb-3">
+ <label for="alternate_phone" class="block text-sm font-medium text-slate-700 mb-1">Alternate Phone</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="alternate_phone"
+ name="alternate_phone"
+ value="{{ user.alternate_phone }}"
+ placeholder="Enter alternate phone number">
+ </div>
+ <div class="mb-3">
+ <label for="address" class="block text-sm font-medium text-slate-700 mb-1">Address</label>
+ <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="address" name="address" rows="2">{{ user.address }}</textarea>
+ </div>
+ <!-- City, State & Zipcode -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-4">
+ <label for="city" class="block text-sm font-medium text-slate-700 mb-1">City</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="city"
+ name="city"
+ value="{{ user.city }}"
+ placeholder="Enter city">
+ </div>
+ <div class="md:col-span-4">
+ <label for="state" class="block text-sm font-medium text-slate-700 mb-1">State</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="state"
+ name="state"
+ value="{{ user.state }}"
+ placeholder="Enter state">
+ </div>
+ <div class="md:col-span-4">
+ <label for="zipcode" class="block text-sm font-medium text-slate-700 mb-1">Zipcode</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="zipcode"
+ name="zipcode"
+ value="{{ user.zipcode }}"
+ placeholder="Enter zipcode">
+ </div>
+ </div>
+ <!-- Country -->
+ <div class="mb-3">
+ <label for="country" class="block text-sm font-medium text-slate-700 mb-1">Country</label>
+ <input type="text"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="country"
+ name="country"
+ value="{{ user.country }}"
+ placeholder="Enter country">
+ </div>
+ <!-- Social Links -->
+ <h5 class="mt-4 mb-3">
+ <i class="lucide lucide-share-2 mr-2 text-sky-600"></i>Social Links
+ </h5>
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+ <div class="md:col-span-6 mb-2">
+ <label for="facebook_url" class="block text-sm font-medium text-slate-700 mb-1">Facebook</label>
+ <input type="url"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="facebook_url"
+ name="facebook_url"
+ value="{{ user.facebook_url|default("") }}"
+ placeholder="Enter Facebook profile URL">
+ </div>
+ <div class="md:col-span-6 mb-2">
+ <label for="twitter_url" class="block text-sm font-medium text-slate-700 mb-1">Twitter</label>
+ <input type="url"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="twitter_url"
+ name="twitter_url"
+ value="{{ user.twitter_url|default("") }}"
+ placeholder="Enter Twitter profile URL">
+ </div>
+ <div class="md:col-span-6 mb-2">
+ <label for="instagram_url" class="block text-sm font-medium text-slate-700 mb-1">Instagram</label>
+ <input type="url"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="instagram_url"
+ name="instagram_url"
+ value="{{ user.instagram_url|default("") }}"
+ placeholder="Enter Instagram profile URL">
+ </div>
+ <div class="md:col-span-6 mb-2">
+ <label for="linkedin_url" class="block text-sm font-medium text-slate-700 mb-1">LinkedIn</label>
+ <input type="url"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="linkedin_url"
+ name="linkedin_url"
+ value="{{ user.linkedin_url|default("") }}"
+ placeholder="Enter LinkedIn profile URL">
+ </div>
+ </div>
+ <!-- Profile Picture -->
+ <div class="mb-3">
+ <label for="profile_pic" class="block text-sm font-medium text-slate-700 mb-1">Profile Picture</label>
+ {% if user.profile_pic %}
+ <div class="mb-2">
+ <img src="{{ user.profile_pic }}"
+ alt="Profile Picture"
+ class="border border-slate-300 rounded-lg p-1 max-w-full h-auto"
+ width="120">
+ </div>
+ {% endif %}
+ <input type="file"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ id="profile_pic"
+ name="profile_pic"
+ accept="image/*">
+ </div>
+ <!-- Submit & Cancel Buttons -->
+ <div class="flex justify-start gap-2 mt-3">
+ <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700">
+ <i class="lucide lucide-check-circle" style="width:1em;height:1em;"></i> Update Profile
+ </button>
+ <a href="/admin/profile" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 active:scale-[0.97]">
+ <i class="lucide lucide-x-circle" style="width:1em;height:1em;"></i> Cancel
+ </a>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
+ <!-- Change Password Tab --><div class="tab-pane"
+     id="password"
+ role="tabpanel"
+ aria-labelledby="password-tab">
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+   <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+     <i class="lucide lucide-key" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Change Password</h2>
+     <p class="text-xs text-slate-500 m-0">Keep your account secure</p>
+    </div>
+   </div>
+   <div class="p-5">
+    <p class="text-sm text-slate-500 mb-4">Update your password to keep your admin account secure.</p>
+    <a href="/admin/profile/password" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]">
+     <i class="lucide lucide-arrow-right" style="width:1em;height:1em;"></i> Go to Change Password
+    </a>
+   </div>
+ </div>
+ <!-- 2FA Settings Tab --><div class="tab-pane"
+     id="security"
+ role="tabpanel"
+ aria-labelledby="security-tab">
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+   <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+     <i class="lucide lucide-shield" style="width:0.875em;height:0.875em;"></i>
+    </div>
+    <div>
+     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Two-Factor Authentication (2FA)</h2>
+     <p class="text-xs text-slate-500 m-0">Add an extra layer of security</p>
+    </div>
+   </div>
+   <div class="p-5">
+    <p class="text-sm text-slate-500 mb-4">Add an extra layer of security to your admin account using two-factor authentication.</p>
+    <a href="/admin/security/2fa" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md active:scale-[0.97]">
+     <i class="lucide lucide-shield-check" style="width:1em;height:1em;"></i> Manage 2FA Settings
+    </a>
+   </div>
+ </div>
+ </div>
+ </div>
 {% endblock %}
+
+
+
+
+

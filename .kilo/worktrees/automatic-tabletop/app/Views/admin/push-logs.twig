@@ -1,0 +1,910 @@
+﻿{% extends "admin/layout.twig" %}
+
+{% block title %}Scrap Control Center - {{ parent() }}{% endblock %}
+
+{% block content %}
+<style>
+.push-shell {
+    --push-accent: #0f766e;
+    --push-accent-soft: #ccfbf1;
+    --push-ink: #0f172a;
+    --push-muted: #64748b;
+}
+.push-shell .push-hero {
+    background: radial-gradient(circle at 15% 20%, #134e4a 0%, #0f766e 40%, #0f172a 100%);
+    color: #fff;
+    border-radius: 1.1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
+}
+.push-shell .push-hero h1 {
+    font-size: 1.6rem;
+    margin: 0;
+    font-weight: 700;
+}
+.push-shell .push-hero p {
+    margin: 0.35rem 0 0;
+    color: rgba(255, 255, 255, 0.86);
+}
+.push-shell .push-stat {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.9rem;
+    background: #fff;
+    height: 100%;
+}
+.push-shell .push-stat .card-body {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+.push-shell .push-icon {
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.7rem;
+    background: var(--push-accent-soft);
+    color: var(--push-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.push-shell .push-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--push-ink);
+    line-height: 1.2;
+}
+.push-shell .push-label {
+    font-size: 0.8rem;
+    color: var(--push-muted);
+}
+.push-shell .push-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+.push-shell .push-panel .card-body {
+    padding: 1.15rem;
+}
+.push-shell .push-panel-title {
+    font-weight: 700;
+    color: var(--push-ink);
+    margin-bottom: 0.25rem;
+}
+.push-shell .push-note {
+    font-size: 0.85rem;
+    color: var(--push-muted);
+}
+.push-shell .push-form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+}
+.push-shell .push-table th {
+    white-space: nowrap;
+    font-size: 0.78rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.push-shell .push-table td {
+    vertical-align: middle;
+    color: #0f172a;
+}
+.push-shell .push-chip {
+    padding: 0.15rem 0.48rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.push-shell .push-chip-articles {
+    background: #dcfce7;
+    color: #166534;
+}
+.push-shell .push-chip-mobiles {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+@media (max-width: 767.98px) {
+    .push-shell .push-hero {
+        padding: 1.1rem;
+    }
+    .push-shell .push-hero h1 {
+        font-size: 1.35rem;
+    }
+}
+</style>
+
+<div class="push-shell">
+    <div class="push-hero">
+        <h1>Scrap Control Center</h1>
+        <p>Monitor incoming push events, manage connection headers, and copy endpoint URLs for your scraper clients.</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-journal-arrow-down"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_logs }}</div>
+                        <div class="push-label">Total Logs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-file-earmark-text"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_articles }}</div>
+                        <div class="push-label">Article Batches</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-phone"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.total_mobiles }}</div>
+                        <div class="push-label">Mobile Batches</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="card push-stat">
+                <div class="card-body">
+                    <span class="push-icon"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                        <div class="push-value">{{ stats.last_received ? stats.last_received|date('M d, H:i') : 'N/A' }}</div>
+                        <div class="push-label">Last Received</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <h5 class="push-panel-title">Scraper Push Config</h5>
+            <p class="push-note">Configure your remote scraper server headers and copy the inbound endpoint URLs from here.</p>
+
+            <form id="scraperPushConfigForm" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushArticlesEndpointUrl">Articles Push URL</label>
+                    <div class="input-group">
+                        <input id="pushArticlesEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushArticlesEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushMobilesEndpointUrl">Mobiles Push URL</label>
+                    <div class="input-group">
+                        <input id="pushMobilesEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushMobilesEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushLogsEndpointUrl">Combined Push URL</label>
+                    <div class="input-group">
+                        <input id="pushLogsEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushLogsEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="pushLegacyEndpointUrl">Combined/Batch Push URL</label>
+                    <div class="input-group">
+                        <input id="pushLegacyEndpointUrl" type="text" class="form-control" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="pushLegacyEndpointUrl">Copy</button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="scraperBaseUrl">Scraper Base URL</label>
+                    <input id="scraperBaseUrl" type="url" class="form-control" placeholder="https://scrap.example.com" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label push-form-label" for="scraperBearerToken">Authorization Bearer Token</label>
+                    <div class="input-group">
+                        <input id="scraperBearerToken" type="text" class="form-control" placeholder="brox_scraper_push_xxx">
+                        <button id="generateScraperTokenBtn" class="btn btn-outline-secondary" type="button">Generate</button>
+                        <button class="btn btn-outline-secondary copy-btn" type="button" data-copy-target="scraperBearerToken">Copy</button>
+                    </div>
+                    <div class="form-text">When token changes, headers JSON is auto-updated.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label push-form-label" for="scraperHeadersJson">Push Headers (JSON)</label>
+                    <textarea id="scraperHeadersJson" class="form-control" rows="3" placeholder='{"Authorization":"Bearer brox_scraper_push_xxx"}'></textarea>
+                </div>
+                <div class="col-12 form-check ml-2">
+                    <input id="scraperRequireAuth" class="form-check-input" type="checkbox">
+                    <label class="form-check-label" for="scraperRequireAuth">Require Bearer token for incoming push APIs</label>
+                </div>
+                <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+                    <button id="scraperPushConfigSaveBtn" type="submit" class="btn btn-primary">Save Config</button>
+                    <span id="scraperPushConfigStatus" class="text-muted"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <form method="get" action="" id="scrapControlListingForm" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label push-form-label">Type</label>
+                    <select name="type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="articles" {{ filter_type == 'articles' ? 'selected' }}>Articles</option>
+                        <option value="mobiles" {{ filter_type == 'mobiles' ? 'selected' }}>Mobiles</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label push-form-label">Per Page</label>
+                    <select name="limit" class="form-control">
+                        {% for l in [20, 50, 100, 200] %}
+                            <option value="{{ l }}" {{ limit == l ? 'selected' }}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">Apply Filter</button>
+                </div>
+            </form>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 small text-muted">
+                <span>Showing {{ logs|length }} of {{ total }} record(s)</span>
+                <span>Page {{ current_page_number }} of {{ total_pages }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <h5 class="push-panel-title mb-3">Pipeline Logs & Execution</h5>
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <a href="{{ route_base|default('/admin/scrap-control-center') }}/all-pipeline-logs" class="btn btn-outline-info w-100">
+                        <i class="bi bi-file-text"></i> All Pipeline Logs
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route_base|default('/admin/scrap-control-center') }}/pipeline-runs" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-play-circle"></i> Pipeline Runs
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route_base|default('/admin/scrap-control-center') }}/failed-pipeline-logs" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-exclamation-circle"></i> Failed Logs
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route_base|default('/admin/scrap-control-center') }}/incoming" class="btn btn-outline-success w-100">
+                        <i class="bi bi-inbox"></i> Incoming Items
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="push-panel-title mb-1">Incoming Staging Queue</h5>
+                    <p class="push-note mb-0">`push_incoming_items` queue monitor and publish controls.</p>
+                </div>
+                <a href="{{ route_base|default('/admin/scrap-control-center') }}/incoming" class="btn btn-outline-primary btn-sm">Open Incoming Items</a>
+            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label push-form-label" for="publishTypeFilter">Type</label>
+                    <select id="publishTypeFilter" class="form-control">
+                        <option value="">All</option>
+                        <option value="articles">Articles</option>
+                        <option value="mobiles">Mobiles</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label push-form-label" for="publishLimit">Batch Limit</label>
+                    <input id="publishLimit" type="number" class="form-control" min="1" max="200" value="20">
+                </div>
+                <div class="col-md-7 d-flex gap-2 flex-wrap">
+                    <button id="runPipelineBtn" type="button" class="btn btn-success">Run Pipeline</button>
+                    <button id="publishPendingBtn" type="button" class="btn btn-primary">Publish Pending</button>
+                    <button id="retryFailedBtn" type="button" class="btn btn-outline-danger">Retry Failed</button>
+                    <span id="publishActionStatus" class="small text-muted align-self-center"></span>
+                </div>
+            </div>
+            <div class="row g-2 mt-3 small">
+                <div class="col-auto"><span class="badge text-bg-secondary">Pending: <span id="incomingPendingCount">{{ incoming_stats.pending|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-success">Published: <span id="incomingPublishedCount">{{ incoming_stats.published|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-danger">Failed: <span id="incomingFailedCount">{{ incoming_stats.failed|default(0) }}</span></span></div>
+                <div class="col-auto"><span class="badge text-bg-dark">Total: <span id="incomingTotalCount">{{ incoming_stats.total|default(0) }}</span></span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card push-panel">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="push-panel-title mb-0">Received Push Logs ({{ total }})</h5>
+            </div>
+            {% if logs|length > 0 %}
+            <div class="alert alert-info alert-dismissible fade show mb-3" id="pushLogsBulkActionsBar" role="alert" style="display: none;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <label class="form-check-label mb-0">
+                        <input type="checkbox" id="pushLogsSelectAllCheckbox" class="form-check-input">
+                        <span><span id="pushLogsSelectedCount">0</span> logs selected</span>
+                    </label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-danger" id="pushLogsBulkDeleteBtn" disabled>
+                            <i class="bi bi-trash"></i> Delete Selected
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="pushLogsCancelBtn">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover push-table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="pushLogsTableSelectAll" class="form-check-input"></th>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Items</th>
+                            <th>IP Address</th>
+                            <th>Received At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        {% set logType = (log.data_type|default('')|lower) %}
+                        {% set isMobileLog = logType == 'mobiles' or logType == 'mobile' %}
+                        <tr class="push-log-row" data-log-id="{{ log.id }}">
+                            <td><input type="checkbox" class="form-check-input push-log-checkbox" data-log-id="{{ log.id }}"></td>
+                            <td><a href="{{ route_base|default('/admin/scrap-control-center') }}/logs/{{ log.id }}" class="text-decoration-none fw-semibold">#{{ log.id }}</a></td>
+                            <td>
+                                <span class="push-chip {{ isMobileLog ? 'push-chip-mobiles' : 'push-chip-articles' }}">{{ log.data_type|default('-') }}</span>
+                            </td>
+                            <td>{{ log.item_count }} item(s)</td>
+                            <td>{{ log.ip_address|default('-') }}</td>
+                            <td>{{ log.received_at }}</td>
+                            <td>
+                                <a href="{{ route_base|default('/admin/scrap-control-center') }}/logs/{{ log.id }}" class="btn btn-sm btn-outline-primary">Open</a>
+                                <button class="btn btn-sm btn-outline-danger delete-push-log-btn" data-log-id="{{ log.id }}" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages > 1 %}
+            <nav aria-label="Push logs page navigation">
+                <ul class="pagination justify-content-center mt-2">
+                    {% if current_page_number > 1 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ current_page_number - 1 }}&type={{ filter_type }}&limit={{ limit }}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in 1..total_pages %}
+                        {% if p == current_page_number or (p >= current_page_number - 2 and p <= current_page_number + 2) or p == 1 or p == total_pages %}
+                        <li class="page-item {% if p == current_page_number %}active{% endif %}"><a class="page-link" href="?page={{ p }}&type={{ filter_type }}&limit={{ limit }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if current_page_number < total_pages %}
+                    <li class="page-item"><a class="page-link" href="?page={{ current_page_number + 1 }}&type={{ filter_type }}&limit={{ limit }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">No push logs received yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const form = document.getElementById('scraperPushConfigForm');
+    if (!form) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const baseUrlInput = document.getElementById('scraperBaseUrl');
+    const tokenInput = document.getElementById('scraperBearerToken');
+    const headersInput = document.getElementById('scraperHeadersJson');
+    const requireAuthInput = document.getElementById('scraperRequireAuth');
+    const pushArticlesEndpointUrlInput = document.getElementById('pushArticlesEndpointUrl');
+    const pushMobilesEndpointUrlInput = document.getElementById('pushMobilesEndpointUrl');
+    const pushLogsEndpointUrlInput = document.getElementById('pushLogsEndpointUrl');
+    const pushLegacyEndpointUrlInput = document.getElementById('pushLegacyEndpointUrl');
+    const statusEl = document.getElementById('scraperPushConfigStatus');
+    const publishStatusEl = document.getElementById('publishActionStatus');
+    const saveBtn = document.getElementById('scraperPushConfigSaveBtn');
+    const generateTokenBtn = document.getElementById('generateScraperTokenBtn');
+    const publishPendingBtn = document.getElementById('publishPendingBtn');
+    const retryFailedBtn = document.getElementById('retryFailedBtn');
+    const runPipelineBtn = document.getElementById('runPipelineBtn');
+    const publishTypeFilter = document.getElementById('publishTypeFilter');
+    const publishLimitInput = document.getElementById('publishLimit');
+    const listingForm = document.getElementById('scrapControlListingForm');
+    const listingTypeSelect = listingForm ? listingForm.querySelector('select[name="type"]') : null;
+    const listingLimitSelect = listingForm ? listingForm.querySelector('select[name="limit"]') : null;
+    const autoRunIntervalMs = 60000;
+    let publishActionInFlight = false;
+
+    const setStatus = (message, isError = false) => {
+        statusEl.textContent = message;
+        statusEl.classList.toggle('text-danger', isError);
+        statusEl.classList.toggle('text-success', !isError);
+    };
+
+    const setPublishStatus = (message, isError = false) => {
+        if (!publishStatusEl) return;
+        publishStatusEl.textContent = message;
+        publishStatusEl.classList.toggle('text-danger', isError);
+        publishStatusEl.classList.toggle('text-success', !isError);
+    };
+
+    const updateIncomingStats = (stats) => {
+        if (!stats) return;
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(val ?? 0);
+        };
+        set('incomingPendingCount', stats.pending);
+        set('incomingPublishedCount', stats.published);
+        set('incomingFailedCount', stats.failed);
+        set('incomingTotalCount', stats.total);
+    };
+
+    const loadIncomingStats = async () => {
+        try {
+            const res = await fetch('/admin/api/scrap-control-center/publish-stats');
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                const stats = data.data || {};
+                updateIncomingStats(stats);
+                return stats;
+            }
+        } catch (_) {}
+        return null;
+    };
+
+    const buildPublishPayload = () => {
+        const limit = Number.parseInt(publishLimitInput?.value || '20', 10);
+        const type = (publishTypeFilter?.value || '').trim();
+        const payload = { limit: Number.isNaN(limit) ? 20 : Math.min(200, Math.max(1, limit)) };
+        if (type === 'articles' || type === 'mobiles') {
+            payload.type = type;
+        }
+        return payload;
+    };
+
+    const runPublishAction = async (endpoint, button, startMessage, options = {}) => {
+        const { silent = false, isAuto = false } = options;
+        if (publishActionInFlight) return;
+        publishActionInFlight = true;
+        if (button) {
+            button.disabled = true;
+        }
+        if (!silent) {
+            setPublishStatus(startMessage);
+        }
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    ...buildPublishPayload(),
+                    auto: Boolean(isAuto)
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || data.message || 'Operation failed');
+            }
+            if (data.stats) {
+                updateIncomingStats(data.stats);
+            } else if (data.data && data.data.stats) {
+                updateIncomingStats(data.data.stats);
+            }
+            if (!silent) {
+                setPublishStatus(data.message || 'Completed');
+            }
+        } catch (error) {
+            setPublishStatus(error.message || 'Operation failed', true);
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+            publishActionInFlight = false;
+        }
+    };
+
+    const autoRunPipelineIfPending = async () => {
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+        if (publishActionInFlight) {
+            return;
+        }
+
+        const stats = await loadIncomingStats();
+        const pending = Number(stats?.pending ?? 0);
+        if (pending <= 0) {
+            return;
+        }
+
+        await runPublishAction(
+            '/admin/api/scrap-control-center/run-pipeline',
+            runPipelineBtn,
+            'Running pipeline now...',
+            { silent: true, isAuto: true }
+        );
+        await loadIncomingStats();
+    };
+
+    const loadConfig = async () => {
+        try {
+            const res = await fetch('/admin/api/scraper-push-config');
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || 'Failed to load config');
+            }
+
+            const cfg = data.data || {};
+            baseUrlInput.value = cfg.scraper_base_url || '';
+            tokenInput.value = cfg.scraper_push_bearer_token || '';
+            headersInput.value = cfg.scraper_push_headers_json || '';
+            requireAuthInput.checked = String(cfg.scraper_push_require_auth) === '1' || String(cfg.scraper_push_require_auth).toLowerCase() === 'true';
+            setStatus('Config loaded');
+        } catch (error) {
+            setStatus(error.message || 'Failed to load config', true);
+        }
+    };
+
+    const buildHeadersJsonFromToken = (token) => {
+        if (!token) return '{}';
+        return JSON.stringify({ Authorization: `Bearer ${token}` });
+    };
+
+    const setInboundPushEndpointUrls = () => {
+        const base = window.location.origin;
+        pushArticlesEndpointUrlInput.value = `${base}/api/push/articles`;
+        pushMobilesEndpointUrlInput.value = `${base}/api/push/mobiles`;
+        pushLogsEndpointUrlInput.value = `${base}/api/push/logs`;
+        pushLegacyEndpointUrlInput.value = `${base}/api/push/data`;
+    };
+
+    const copyText = async (value) => {
+        if (!value) return false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(value);
+                return true;
+            }
+        } catch (_) {}
+
+        const temp = document.createElement('textarea');
+        temp.value = value;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'absolute';
+        temp.style.left = '-9999px';
+        document.body.appendChild(temp);
+        temp.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(temp);
+        return ok;
+    };
+
+    const generateToken = () => {
+        const randomBytes = new Uint8Array(16);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(randomBytes);
+        } else {
+            for (let i = 0; i < randomBytes.length; i += 1) {
+                randomBytes[i] = Math.floor(Math.random() * 256);
+            }
+        }
+        const randomPart = Array.from(randomBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+        return `brox_scraper_push_${randomPart}`;
+    };
+
+    if (generateTokenBtn) {
+        generateTokenBtn.addEventListener('click', () => {
+            const token = generateToken();
+            tokenInput.value = token;
+            headersInput.value = buildHeadersJsonFromToken(token);
+            requireAuthInput.checked = true;
+            setStatus('New token generated and headers updated');
+        });
+    }
+
+    tokenInput.addEventListener('change', () => {
+        const token = tokenInput.value.trim();
+        headersInput.value = buildHeadersJsonFromToken(token);
+        if (token) {
+            requireAuthInput.checked = true;
+        }
+    });
+
+    document.querySelectorAll('.copy-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const targetId = btn.getAttribute('data-copy-target');
+            const target = targetId ? document.getElementById(targetId) : null;
+            const value = target ? target.value.trim() : '';
+            const ok = await copyText(value);
+            setStatus(ok ? 'Copied to clipboard' : 'Copy failed', !ok);
+        });
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const payload = {
+            scraper_base_url: baseUrlInput.value.trim(),
+            scraper_push_bearer_token: tokenInput.value.trim(),
+            scraper_push_headers_json: headersInput.value.trim(),
+            scraper_push_require_auth: requireAuthInput.checked
+        };
+
+        saveBtn.disabled = true;
+        setStatus('Saving...');
+
+        try {
+            const res = await fetch('/admin/api/scraper-push-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || 'Save failed');
+            }
+
+            setStatus(data.message || 'Saved successfully');
+        } catch (error) {
+            setStatus(error.message || 'Save failed', true);
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    if (publishPendingBtn) {
+        publishPendingBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/scrap-control-center/publish-pending', publishPendingBtn, 'Publishing pending items...');
+        });
+    }
+
+    if (runPipelineBtn) {
+        runPipelineBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/scrap-control-center/run-pipeline', runPipelineBtn, 'Running pipeline now...');
+        });
+    }
+
+    if (retryFailedBtn) {
+        retryFailedBtn.addEventListener('click', () => {
+            runPublishAction('/admin/api/push-publish-retry-failed', retryFailedBtn, 'Retrying failed items...');
+        });
+    }
+
+    if (listingTypeSelect) {
+        listingTypeSelect.addEventListener('change', () => {
+            listingForm?.querySelector('input[name="page"]')?.remove();
+            listingForm?.submit();
+        });
+    }
+
+    if (listingLimitSelect) {
+        listingLimitSelect.addEventListener('change', () => {
+            const pageInput = listingForm?.querySelector('input[name="page"]') || document.createElement('input');
+            pageInput.type = 'hidden';
+            pageInput.name = 'page';
+            pageInput.value = '1';
+            if (!pageInput.isConnected) {
+                listingForm?.appendChild(pageInput);
+            }
+            listingForm?.submit();
+        });
+    }
+
+    setInboundPushEndpointUrls();
+    loadConfig();
+    loadIncomingStats();
+    autoRunPipelineIfPending();
+    window.setInterval(autoRunPipelineIfPending, autoRunIntervalMs);
+})();
+
+// Bulk operations for push logs
+document.addEventListener('DOMContentLoaded', function() {
+    const bulkActionsBar = document.getElementById('pushLogsBulkActionsBar');
+    const selectAllCheckbox = document.getElementById('pushLogsTableSelectAll');
+    const selectAllCheckboxInBar = document.getElementById('pushLogsSelectAllCheckbox');
+    const bulkDeleteBtn = document.getElementById('pushLogsBulkDeleteBtn');
+    const cancelBtn = document.getElementById('pushLogsCancelBtn');
+    const selectedCountSpan = document.getElementById('pushLogsSelectedCount');
+    const logCheckboxes = document.querySelectorAll('.push-log-checkbox');
+    const logRows = document.querySelectorAll('.push-log-row');
+    const deleteLogBtns = document.querySelectorAll('.delete-push-log-btn');
+
+    function updateBulkActionsBar() {
+        const selectedLogs = Array.from(logCheckboxes).filter(cb => cb.checked);
+        const selectedCount = selectedLogs.length;
+
+        if (selectedCount > 0) {
+            bulkActionsBar.style.display = 'block';
+            selectedCountSpan.textContent = selectedCount;
+            bulkDeleteBtn.disabled = false;
+        } else {
+            bulkActionsBar.style.display = 'none';
+            selectedCountSpan.textContent = '0';
+            bulkDeleteBtn.disabled = true;
+            selectAllCheckbox.checked = false;
+            selectAllCheckboxInBar.checked = false;
+        }
+
+        logRows.forEach(row => {
+            const checkbox = row.querySelector('.push-log-checkbox');
+            if (checkbox && checkbox.checked) {
+                row.style.backgroundColor = '#e7f3ff';
+            } else {
+                row.style.backgroundColor = '';
+            }
+        });
+    }
+
+    logCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkActionsBar();
+            updateSelectAllCheckboxes();
+        });
+    });
+
+    function updateSelectAllCheckboxes() {
+        const totalCheckboxes = logCheckboxes.length;
+        const checkedCheckboxes = Array.from(logCheckboxes).filter(cb => cb.checked).length;
+
+        const isAllChecked = checkedCheckboxes === totalCheckboxes && totalCheckboxes > 0;
+        selectAllCheckbox.checked = isAllChecked;
+        selectAllCheckboxInBar.checked = isAllChecked;
+    }
+
+    selectAllCheckbox.addEventListener('change', function() {
+        logCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionsBar();
+    });
+
+    selectAllCheckboxInBar.addEventListener('change', function() {
+        logCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionsBar();
+    });
+
+    bulkDeleteBtn.addEventListener('click', function() {
+        const selectedLogs = Array.from(logCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.getAttribute('data-log-id'));
+
+        if (selectedLogs.length === 0) return;
+
+        const logText = selectedLogs.length === 1 ? '1 log' : selectedLogs.length + ' logs';
+        if (!confirm(`Delete ${logText}? This action cannot be undone.`)) {
+            return;
+        }
+
+        bulkDeleteBtn.disabled = true;
+        const originalText = bulkDeleteBtn.innerHTML;
+        bulkDeleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+
+        let completed = 0;
+        selectedLogs.forEach(logId => {
+            fetch(`/admin/api/scrap-control-center/push-logs/${logId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    const row = document.querySelector(`.push-log-row[data-log-id="${logId}"]`);
+                    if (row) {
+                        row.style.opacity = '0';
+                        row.style.transition = 'opacity 0.3s ease';
+                        setTimeout(() => row.remove(), 300);
+                    }
+                }
+                completed++;
+                if (completed === selectedLogs.length) {
+                    bulkDeleteBtn.disabled = false;
+                    bulkDeleteBtn.innerHTML = originalText;
+                    updateBulkActionsBar();
+                    setTimeout(() => location.reload(), 500);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting log:', error);
+                completed++;
+                if (completed === selectedLogs.length) {
+                    bulkDeleteBtn.disabled = false;
+                    bulkDeleteBtn.innerHTML = originalText;
+                }
+            });
+        });
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        logCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateBulkActionsBar();
+    });
+
+    deleteLogBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const logId = this.getAttribute('data-log-id');
+            const row = document.querySelector(`.push-log-row[data-log-id="${logId}"]`);
+
+            if (!confirm('Delete this log? This action cannot be undone.')) {
+                return;
+            }
+
+            const originalHTML = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+            fetch(`/admin/api/scrap-control-center/push-logs/${logId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    row.style.opacity = '0';
+                    row.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        row.remove();
+                        location.reload();
+                    }, 300);
+                } else {
+                    this.disabled = false;
+                    this.innerHTML = originalHTML;
+                    alert('Failed to delete log');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting log:', error);
+                this.disabled = false;
+                this.innerHTML = originalHTML;
+                alert('Error: ' + error.message);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+

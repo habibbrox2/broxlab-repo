@@ -3,10 +3,10 @@ import { byId, resolveNumericId, getRecordIdFromForm } from './core.js';
 function setSlugFeedback(feedbackEl, message = '', state = '') {
   if (!feedbackEl) return;
   feedbackEl.textContent = message;
-  feedbackEl.classList.remove('text-success', 'text-danger', 'text-muted');
-  if (state === 'ok') feedbackEl.classList.add('text-success');
-  else if (state === 'bad') feedbackEl.classList.add('text-danger');
-  else feedbackEl.classList.add('text-muted');
+  feedbackEl.classList.remove('text-emerald-600', 'text-red-600', 'text-slate-500');
+  if (state === 'ok') feedbackEl.classList.add('text-emerald-600');
+  else if (state === 'bad') feedbackEl.classList.add('text-red-600');
+  else feedbackEl.classList.add('text-slate-500');
 }
 
 async function checkSlugAvailability({ slug, checkUrl, excludeId = null, slugParam = 'slug', signal, }) {

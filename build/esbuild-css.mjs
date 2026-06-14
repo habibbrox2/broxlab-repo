@@ -1,112 +1,84 @@
 /**
  * esbuild-css.mjs
  * ===================================================
- * CSS bundling and minification build script
- * 
- * Combines multiple CSS files into a single bundled file
- * for improved page load performance
+ * CSS build script (Tailwind-first)
+ *
+ * 1. Generates Tailwind output from tailwind-input.css
+ * 2. Copies output into dist bundles (new names + legacy aliases)
  */
 
-import * as esbuild from 'esbuild';
-import { promises as fs } from 'fs';
+import fs from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuration
 const args = process.argv.slice(2);
-const isWatch = args.includes('--watch');
 const isMinify = !args.includes('--dev');
 
 const OUTDIR = 'public_html/assets/css/dist';
+const TAILWIND_INPUT = 'public_html/assets/css/tailwind-input.css';
+const TAILWIND_OUTPUT = 'public_html/assets/css/tailwind-output.css';
 
 async function ensureDir(dir) {
-    try {
-        await fs.mkdir(dir, { recursive: true });
-    } catch (e) {
-        if (e.code !== 'EEXIST') throw e;
-    }
+  await fs.promises.mkdir(path.resolve(__dirname, '..', dir), { recursive: true });
 }
 
-async function buildCSSBundle(name, cssFiles) {
-    // Create entry file with @import statements
-    const entryImports = cssFiles.map(f => {
-        const relPath = path.relative(OUTDIR, f);
-        return `@import "./${relPath.replace(/\\/g, '/')}";`;
-    }).join('\n');
+function runTailwind() {
+  console.log('\nGenerating Tailwind CSS utilities...');
+  try {
+    const cmd = `npx @tailwindcss/cli -i ${TAILWIND_INPUT} -o ${TAILWIND_OUTPUT}${isMinify ? ' --minify' : ''}`;
+    execSync(cmd, { stdio: 'inherit', cwd: path.resolve(__dirname, '..') });
 
-    const entryPath = `${OUTDIR}/${name}-entry.css`;
-    await fs.writeFile(entryPath, entryImports);
+    const outputPath = path.resolve(__dirname, '..', TAILWIND_OUTPUT);
+    const canonicalPath = path.resolve(__dirname, '..', 'public_html/assets/css/tailwind.css');
+    fs.copyFileSync(outputPath, canonicalPath);
 
-    const cfg = {
-        entryPoints: [entryPath],
-        outdir: OUTDIR,
-        bundle: true,
-        minify: isMinify,
-        sourcemap: isWatch ? 'inline' : false,
-        target: ['es2020'],
-        platform: 'browser',
-        logLevel: 'info',
-        loader: {
-            '.css': 'css'
-        },
-        entryNames: name,
-        mainFields: ['module', 'main'],
-    };
+    const sizeKB = (fs.statSync(outputPath).size / 1024).toFixed(2);
+    console.log(`Tailwind output generated: ${sizeKB} KB`);
+  } catch (err) {
+    console.error('Tailwind generation failed:', err.message);
+    throw err;
+  }
+}
 
-    console.log(`Building ${name} CSS bundle (${isMinify ? 'minified' : 'dev'})...`);
-
-    try {
-        const result = await esbuild.build(cfg);
-        if (result.errors && result.errors.length > 0) {
-            console.error('Errors:', result.errors);
-            process.exit(1);
-        }
-
-        const outFile = `${OUTDIR}/${name}.css`;
-        try {
-            const stats = await fs.stat(outFile);
-            const sizeKB = (stats.size / 1024).toFixed(2);
-            console.log(`✓ ${name} bundle: ${sizeKB} KB`);
-        } catch (e) {
-            console.log(`✓ ${name} bundle created`);
-        }
-
-        return true;
-    } catch (err) {
-        console.error(`Failed to build ${name}:`, err);
-        return false;
-    }
+async function copyBundle(targetName) {
+  const source = path.resolve(__dirname, '..', TAILWIND_OUTPUT);
+  const target = path.resolve(__dirname, '..', OUTDIR, `${targetName}.css`);
+  await fs.promises.copyFile(source, target);
+  const sizeKB = (await fs.promises.stat(target)).size / 1024;
+  console.log(`Created ${targetName}.css (${sizeKB.toFixed(2)} KB)`);
 }
 
 async function buildAll() {
-    const publicFiles = [
-        'public_html/assets/css/1-variables.css',
-        'public_html/assets/css/2-base.css',
-        'public_html/assets/css/3-navbar.css',
-        'public_html/assets/css/4-components.css',
-        'public_html/assets/css/5-feed.css',
-        'public_html/assets/css/6-pages.css',
-        'public_html/assets/css/7-dark-mode.css',
-    ];
+  await ensureDir(OUTDIR);
+  runTailwind();
 
-    const adminFiles = [
-        'public_html/assets/css/1-variables.css',
-        'public_html/assets/css/2-base.css',
-        'public_html/assets/css/7-dark-mode.css',
-        'public_html/assets/css/admin.css',
-    ];
+  await copyBundle('tailwind-public');
+  await copyBundle('tailwind-admin');
 
-    await ensureDir(OUTDIR);
+  // Backward compatibility
+  await copyBundle('public-bundle');
+  await copyBundle('admin-bundle');
 
-    await buildCSSBundle('public-bundle', publicFiles);
-    await buildCSSBundle('admin-bundle', adminFiles);
+  const legacyEntries = ['public-bundle-entry.css', 'admin-bundle-entry.css'];
+  for (const file of legacyEntries) {
+    const filePath = path.resolve(__dirname, '..', OUTDIR, file);
+    if (fs.existsSync(filePath)) {
+      try {
+        await fs.promises.unlink(filePath);
+      } catch {
+        // Ignore locked legacy artifacts in local/dev environments.
+      }
+    }
+  }
 
-    console.log('\n✅ CSS bundling complete!');
-    console.log(`   Output directory: ${OUTDIR}`);
-    console.log('   Files created: public-bundle.css, admin-bundle.css');
+  console.log('\nCSS build complete.');
 }
 
-buildAll().catch(console.error);
+buildAll().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

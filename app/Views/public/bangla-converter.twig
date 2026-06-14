@@ -1,165 +1,171 @@
-﻿{% extends 'layout.twig' %}
+{% extends 'layout.twig' %}
 
 {% block title %}Bangla Converter - Unicode to Bijoy | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Bangla Converter', url: '/bangla-converter', icon: 'translate' }
+ { label: 'Bangla Converter', url: '/bangla-converter', icon: 'translate' }
 ] %}
 
 {% block content %}
 <div class="page-bangla-converter public-static-page">
-  <section class="hero-section public-page-hero public-hero--converter position-relative py-5 mb-4 overflow-hidden">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-theme-strong mb-3">
-            <i class="bi bi-translate me-2"></i>Bangla Converter
-          </h1>
-          <p class="lead text-theme-strong fs-5 mb-0">
-            Convert Bangla text between Unicode and Bijoy formats instantly.
-          </p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="public-hero-icon text-theme-strong" aria-hidden="true">
-            <i class="bi bi-arrow-left-right"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+ <section class="hero-section public-page-hero public-hero--converter relative py-5 mb-4 overflow-hidden">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
+ <div class="lg:col-span-8">
+ <h1 class="text-4xl font-bold text-slate-900 mb-3">
+ <i class="lucide lucide-languages mr-2"></i>Bangla Converter
+ </h1>
+ <p class="text-lg text-slate-900 mb-0">
+ Convert Bangla text between Unicode and Bijoy formats instantly.
+ </p>
+ </div>
+ <div class="lg:col-span-4 text-center">
+ <div class="public-hero-icon text-slate-900" aria-hidden="true">
+ <i class="lucide lucide-arrow-left-right"></i>
+ </div>
+ </div>
+ </div>
+ </div>
+ </section>
 
-  <div class="container py-4 py-lg-5">
-    <div class="row">
-      <div class="col-lg-10 mx-auto">
-        <div class="card public-surface-card border-0 shadow-sm">
-          <div class="card-header bg-primary text-white">
-            <h2 class="h4 mb-0">
-              <i class="bi bi-arrow-left-right me-2"></i>Bangla Text Converter
-            </h2>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-4">
-              <!-- Unicode Input -->
-              <div class="col-md-6">
-                <h5 class="fw-bold mb-3 text-primary">
-                  <i class="bi bi-input-cursor me-2"></i>Unicode Input
-                </h5>
-                <textarea
-                  id="unicode-input"
-                  class="form-control"
-                  rows="8"
-                  placeholder="আপনার ইউনিকোড বাংলা টেক্সট এখানে লিখুন... (Unicode Bangla text here...)"
-                  style="font-family: 'Noto Sans Bengali', Arial, sans-serif; font-size: 16px;"
-                ></textarea>
-                <div class="mt-2">
-                  <button id="unicode-to-bijoy" class="btn btn-primary me-2">
-                    <i class="bi bi-arrow-right me-1"></i>Convert to Bijoy
-                  </button>
-                  <button id="clear-unicode" class="btn btn-outline-secondary">
-                    <i class="bi bi-trash me-1"></i>Clear
-                  </button>
-                </div>
-              </div>
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 py-lg-5">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="lg:col-span-10 mx-auto">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0">
+ <div class="border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
+ <h2 class="h4 mb-0">
+ <i class="lucide lucide-arrow-left-right mr-2"></i>Bangla Text Converter
+ </h2>
+ </div>
+ <div class="p-4">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <!-- Unicode Input -->
+ <div class="md:col-span-6">
+ <h5 class="font-bold mb-3 text-indigo-600">
+ <i class="lucide lucide-cursor mr-2"></i>Unicode Input
+ </h5>
+ <textarea
+ id="unicode-input"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ rows="8"
+ placeholder="????? ??????? ????? ?????? ????? ?????... (Unicode Bangla text here...)"
+ style="font-family: 'Noto Sans Bengali', Arial, sans-serif; font-size: 16px;"
+ ></textarea>
+ <div class="mt-2">
+ <button id="unicode-to-bijoy" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 mr-2">
+ <i class="lucide lucide-arrow-right mr-1"></i>Convert to Bijoy
+ </button>
+ <button id="clear-unicode" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
+ <i class="lucide lucide-trash-2 mr-1"></i>Clear
+ </button>
+ </div>
+ </div>
 
-              <!-- Bijoy Output -->
-              <div class="col-md-6">
-                <h5 class="fw-bold mb-3 text-success">
-                  <i class="bi bi-output me-2"></i>Bijoy Output
-                </h5>
-                <textarea
-                  id="bijoy-output"
-                  class="form-control"
-                  rows="8"
-                  placeholder="বিজয় টেক্সট এখানে লিখুন... (Bijoy text here...)"
-                  style="font-family: 'SutonnyMJ', monospace; font-size: 16px;"
-                ></textarea>
-                <div class="mt-2">
-                  <button id="bijoy-to-unicode" class="btn btn-success me-2">
-                    <i class="bi bi-arrow-left me-1"></i>Convert to Unicode
-                  </button>
-                  <button id="clear-bijoy" class="btn btn-outline-secondary">
-                    <i class="bi bi-trash me-1"></i>Clear
-                  </button>
-                </div>
-              </div>
-            </div>
+ <!-- Bijoy Output -->
+ <div class="md:col-span-6">
+ <h5 class="font-bold mb-3 text-emerald-600">
+ <i class="lucide lucide-log-out mr-2"></i>Bijoy Output
+ </h5>
+ <textarea
+ id="bijoy-output"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ rows="8"
+ placeholder="????? ?????? ????? ?????... (Bijoy text here...)"
+ style="font-family: 'SutonnyMJ', monospace; font-size: 16px;"
+ ></textarea>
+ <div class="mt-2">
+ <button id="bijoy-to-unicode" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 mr-2">
+ <i class="lucide lucide-arrow-left mr-1"></i>Convert to Unicode
+ </button>
+ <button id="clear-bijoy" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
+ <i class="lucide lucide-trash-2 mr-1"></i>Clear
+ </button>
+ </div>
+ </div>
+ </div>
 
-            <hr class="my-4">
+ <hr class="my-4">
 
-            <!-- Instructions -->
-            <div class="row">
-              <div class="col-12">
-                <h5 class="fw-bold mb-3">
-                  <i class="bi bi-info-circle me-2"></i>How to Use
-                </h5>
-                <div class="alert alert-info">
-                  <ul class="mb-0">
-                    <li><strong>Unicode to Bijoy:</strong> Paste your Unicode Bangla text in the left box and click "Convert to Bijoy"</li>
-                    <li><strong>Bijoy to Unicode:</strong> Paste your Bijoy text in the right box and click "Convert to Unicode"</li>
-                    <li><strong>Note:</strong> Bijoy output may not display correctly without Bijoy fonts installed</li>
-                    <li><strong>Tip:</strong> Use SutonnyMJ font for proper Bijoy text display</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+ <!-- Instructions -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="col-span-12">
+ <h5 class="font-bold mb-3">
+ <i class="lucide lucide-info mr-2"></i>How to Use
+ </h5>
+ <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+ <ul class="mb-0">
+ <li><strong>Unicode to Bijoy:</strong> Paste your Unicode Bangla text in the left box and click"Convert to Bijoy"</li>
+ <li><strong>Bijoy to Unicode:</strong> Paste your Bijoy text in the right box and click"Convert to Unicode"</li>
+ <li><strong>Note:</strong> Bijoy output may not display correctly without Bijoy fonts installed</li>
+ <li><strong>Tip:</strong> Use SutonnyMJ font for proper Bijoy text display</li>
+ </ul>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
-        <!-- Info Cards -->
-        <div class="row mt-4 g-3">
-          <div class="col-md-6">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body text-center p-4">
-                <div class="text-primary mb-3">
-                  <i class="bi bi-globe display-4"></i>
-                </div>
-                <h6 class="fw-bold">Unicode (UTF-8)</h6>
-                <p class="text-muted small mb-0">
-                  Modern standard used on websites, mobile apps, and modern software.
-                  Compatible with all platforms and devices.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body text-center p-4">
-                <div class="text-success mb-3">
-                  <i class="bi bi-fonts display-4"></i>
-                </div>
-                <h6 class="fw-bold">Bijoy (ANSI)</h6>
-                <p class="text-muted small mb-0">
-                  Legacy encoding used in printing presses, newspapers, and older
-                  Bangladeshi software. Requires specific fonts to display correctly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <!-- Info Cards -->
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mt-4 gap-3">
+ <div class="md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full border-0">
+ <div class="p-4 text-center">
+ <div class="text-indigo-600 mb-3">
+ <i class="lucide lucide-globe text-5xl"></i>
+ </div>
+ <h6 class="font-bold">Unicode (UTF-8)</h6>
+ <p class="text-slate-500 text-xs mb-0">
+ Modern standard used on websites, mobile apps, and modern software.
+ Compatible with all platforms and devices.
+ </p>
+ </div>
+ </div>
+ </div>
+ <div class="md:col-span-6">
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full border-0">
+ <div class="p-4 text-center">
+ <div class="text-emerald-600 mb-3">
+ <i class="lucide lucide-type text-5xl"></i>
+ </div>
+ <h6 class="font-bold">Bijoy (ANSI)</h6>
+ <p class="text-slate-500 text-xs mb-0">
+ Legacy encoding used in printing presses, newspapers, and older
+ Bangladeshi software. Requires specific fonts to display correctly.
+ </p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <!-- Include converter JavaScript -->
-<script src="/assets/js/bangla-converter.js"></script>
+<script type="module" src="/assets/js/dist/bangla-converter.js"></script>
 
 <style>
 /* Custom styles for converter */
 #unicode-input, #bijoy-output {
-  resize: vertical;
-  min-height: 200px;
+ resize: vertical;
+ min-height: 200px;
 }
 
 .public-hero--converter .public-hero-icon {
-  font-size: 4rem;
-  opacity: 0.8;
+ font-size: 4rem;
+ opacity: 0.8;
 }
 
 @media (max-width: 768px) {
-  .display-4 {
-    font-size: 2rem;
-  }
+ h1.text-4xl {
+ font-size: 2rem;
+ }
 }
 </style>
 {% endblock %}
+
+
+
+
+
+

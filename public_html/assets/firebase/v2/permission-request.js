@@ -81,55 +81,55 @@ export function showPermissionModal(options = {}) {
 
   // Create modal HTML
   const modalHtml = `
-    <div class="modal fade" id="permissionRequestModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade" id="permissionRequestModal" tabindex="-1" data-brox-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header border-0 pb-0">
-            <h5 class="modal-title d-flex align-items-center gap-2">
-              <i class="bi bi-bell-fill" style="color: #0d6efd; font-size: 1.5rem;"></i>
+            <h5 class="modal-title flex items-center gap-2">
+              <i class="bi icon-bell" style="color: #0d6efd; font-size: 1.5rem;"></i>
               পুশ নোটিফিকেশন সক্ষম করুন
             </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" id="dismissModalBtn" aria-label="Close"></button>
+            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="modal" id="dismissModalBtn" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <p class="lead">আমাদের সর্বশেষ আপডেট এবং গুরুত্বপূর্ণ বিজ্ঞপ্তি সরাসরি পান।</p>
             
-            <div class="alert alert-info d-flex gap-3 mb-3">
-              <i class="bi bi-info-circle-fill flex-shrink-0" style="font-size: 1.2rem;"></i>
+            <div class="p-4 rounded-lg bg-info-light text-blue-700 border border-blue-200 flex gap-3 mb-3">
+              <i class="bi icon-info flex-shrink-0" style="font-size: 1.2rem;"></i>
               <div>
                 <strong>আপনি নিয়ন্ত্রণে আছেন</strong><br>
-                <small class="text-muted">যেকোনো সময় নোটিফিকেশন বন্ধ করতে পারবেন</small>
+                <small class="text-slate-500">যেকোনো সময় নোটিফিকেশন বন্ধ করতে পারবেন</small>
               </div>
             </div>
 
             <div class="row g-3 mb-3">
               <div class="col-md-6">
-                <div class="card border text-center p-3 h-100">
-                  <i class="bi bi-bell-fill text-primary mb-2" style="font-size: 2rem;"></i>
+                <div class="rounded-xl border border-slate-200 text-center p-3 h-100 bg-white">
+                  <i class="bi icon-bell text-primary mb-2" style="font-size: 2rem;"></i>
                   <h6 class="mb-1">গুরুত্বপূর্ণ আপডেট</h6>
-                  <small class="text-muted">নতুন ফিচার এবং পরিবর্তন সম্পর্কে জানুন</small>
+                  <small class="text-slate-500">নতুন ফিচার এবং পরিবর্তন সম্পর্কে জানুন</small>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="card border text-center p-3 h-100">
-                  <i class="bi bi-megaphone-fill text-success mb-2" style="font-size: 2rem;"></i>
+                <div class="rounded-xl border border-slate-200 text-center p-3 h-100 bg-white">
+                  <i class="bi icon-megaphone text-success mb-2" style="font-size: 2rem;"></i>
                   <h6 class="mb-1">ঘোষণা</h6>
-                  <small class="text-muted">গুরুত্বপূর্ণ ঘোষণা মিস করবেন না</small>
+                  <small class="text-slate-500">গুরুত্বপূর্ণ ঘোষণা মিস করবেন না</small>
                 </div>
               </div>
             </div>
 
-            <div class="alert alert-light border mb-0">
+            <div class="p-4 rounded-lg bg-neutral-50 text-neutral-600 border border-neutral-200 border mb-0">
               <small>
-                <i class="bi bi-shield-check me-2"></i>
+                <i class="bi icon-shield-check mr-2"></i>
                 আপনার ব্রাউজার আপনার অনুমতি ছাড়া নোটিফিকেশন পাঠাতে পারবে না
               </small>
             </div>
           </div>
           <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-light" id="laterBtn" data-bs-dismiss="modal">পরে জিজ্ঞাসা করবেন</button>
-            <button type="button" class="btn btn-primary" id="enableBtn">
-              <i class="bi bi-check-lg me-2"></i>সক্ষম করুন
+            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-white text-slate-700 text-sm font-medium border border-slate-300 hover:bg-slate-50 transition-colors" id="laterBtn" data-brox-dismiss="modal">পরে জিজ্ঞাসা করবেন</button>
+            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" id="enableBtn">
+              <i class="bi icon-check mr-2"></i>সক্ষম করুন
             </button>
           </div>
         </div>
@@ -146,7 +146,7 @@ export function showPermissionModal(options = {}) {
 
   // Get modal element
   const modalEl = document.getElementById('permissionRequestModal');
-  const modal = new bootstrap.Modal(modalEl);
+  const modal = new broxUI.Modal(modalEl);
 
   // Event listeners
   document.getElementById('enableBtn').addEventListener('click', async () => {
@@ -185,11 +185,11 @@ export function showPermissionModal(options = {}) {
 function showSuccessNotification() {
   // Create toast element
   const toastHtml = `
-    <div class="toast position-fixed bottom-0 end-0 m-3" role="alert" id="permissionSuccessToast">
+    <div class="toast fixed bottom-0 end-0 m-3" role="alert" id="permissionSuccessToast">
       <div class="toast-header bg-success text-white">
-        <i class="bi bi-check-circle-fill me-2"></i>
+        <i class="bi icon-check-circle mr-2"></i>
         <strong class="me-auto">সফল</strong>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors" data-brox-dismiss="toast"></button>
       </div>
       <div class="toast-body">
         পুশ নোটিফিকেশন সক্ষম হয়েছে। আপনি এখন সব আপডেট পাবেন।
@@ -201,11 +201,11 @@ function showSuccessNotification() {
   container.innerHTML = toastHtml;
   document.body.appendChild(container.firstElementChild);
 
-  const toast = new bootstrap.Toast(document.getElementById('permissionSuccessToast'));
+  const toast = new broxUI.Toast(document.getElementById('permissionSuccessToast'));
   toast.show();
 
   // Remove after hide
-  document.getElementById('permissionSuccessToast').addEventListener('hidden.bs.toast', () => {
+  document.getElementById('permissionSuccessToast').addEventListener('brox:hidden', () => {
     document.getElementById('permissionSuccessToast').remove();
   });
 }
@@ -338,7 +338,7 @@ export function showPermissionBanner(options = {}) {
   banner.className = 'permission-banner';
   banner.innerHTML = `
     <div class="permission-banner__text">
-      <i class="bi bi-bell-fill" style="color:#38bdf8;font-size:18px;"></i>
+      <i class="bi icon-bell" style="color:#38bdf8;font-size:18px;"></i>
       <div>
         <div style="font-weight:700;">নোটিফিকেশন অন করুন</div>
         <div style="opacity:.8;">গুরুত্বপূর্ণ আপডেট ও নতুন ফিচার সম্পর্কে জানুন।</div>
@@ -397,7 +397,7 @@ export function autoInitializePermissionBanner(options = {}) {
 export function createPermissionButton() {
   const btn = document.createElement('button');
   btn.className = 'btn btn-outline-primary';
-  btn.innerHTML = '<i class="bi bi-bell me-2"></i>পুশ নোটিফিকেশন সক্ষম করুন';
+  btn.innerHTML = '<i class="bi icon-bell mr-2"></i>পুশ নোটিফিকেশন সক্ষম করুন';
   btn.addEventListener('click', () => {
     showPermissionModal({ autoShow: false, });
   });
@@ -418,8 +418,8 @@ export function updatePermissionStatus() {
   switch (permission) {
   case 'granted':
     html = `
-        <div class="alert alert-success d-flex align-items-center mb-0">
-          <i class="bi bi-check-circle-fill me-2"></i>
+        <div class="p-4 rounded-lg bg-success-light text-emerald-700 border border-emerald-200 flex items-center mb-0">
+          <i class="bi icon-check-circle mr-2"></i>
           <span>পুশ নোটিফিকেশন সক্ষম</span>
         </div>
       `;
@@ -427,8 +427,8 @@ export function updatePermissionStatus() {
 
   case 'denied':
     html = `
-        <div class="alert alert-warning d-flex align-items-center mb-0">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div class="p-4 rounded-lg bg-warning-light text-amber-700 border border-amber-200 flex items-center mb-0">
+          <i class="bi icon-alert-triangle mr-2"></i>
           <span>পুশ নোটিফিকেশন অক্ষম (ব্রাউজার সেটিংস পরিবর্তন করুন)</span>
         </div>
       `;
@@ -436,16 +436,16 @@ export function updatePermissionStatus() {
 
   case 'default':
     html = `
-        <button id="permissionEnableBtn" class="btn btn-sm btn-outline-primary w-100" type="button">
-          <i class="bi bi-bell me-1"></i>সক্ষম করুন
+        <button id="permissionEnableBtn" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-primary w-100" type="button">
+          <i class="bi icon-bell mr-1"></i>সক্ষম করুন
         </button>
       `;
     break;
 
   default:
     html = `
-        <div class="alert alert-secondary d-flex align-items-center mb-0">
-          <i class="bi bi-info-circle me-2"></i>
+        <div class="p-4 rounded-lg bg-neutral-100 text-neutral-700 border border-neutral-200 flex items-center mb-0">
+          <i class="bi icon-info mr-2"></i>
           <span>এই ব্রাউজারে পুশ নোটিফিকেশন সমর্থিত নয়</span>
         </div>
       `;

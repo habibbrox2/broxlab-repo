@@ -5,7 +5,7 @@ const parseJsonDefault = (value, fallback) => {
   if (!value) return fallback;
   try {
     return JSON.parse(value);
-  } catch (error) {
+  } catch {
     return fallback;
   }
 };
@@ -63,16 +63,16 @@ export function initMobileFormShared(options = {}) {
 
   window.addSpec = function (key = '', value = '') {
     const row = document.createElement('div');
-    row.className = 'row g-2 mb-2 spec-row align-items-center';
+    row.className = 'flex gap-2 mb-2 spec-row items-center';
     row.innerHTML = `
-            <div class="col-md-5">
-                <input list="spec_keys" name="specifications[key][]" class="form-control spec-input" placeholder="Select or type key" value="${escapeHtml(key)}">
+            <div class="flex-1">
+                <input list="spec_keys" name="specifications[key][]" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Select or type key" value="${escapeHtml(key)}">
             </div>
-            <div class="col-md-6">
-                <input type="text" name="specifications[value][]" class="form-control" placeholder="Value" value="${escapeHtml(value)}">
+            <div class="flex-1">
+                <input type="text" name="specifications[value][]" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Value" value="${escapeHtml(value)}">
             </div>
-            <div class="col-md-1">
-                <button type="button" class="modern-btn modern-btn-danger btn-sm remove-spec" title="Remove"><i class="bi bi-x-lg"></i></button>
+            <div class="w-10">
+                <button type="button" class="modern-btn modern-btn-danger btn-sm remove-spec" title="Remove"><i class="lucide lucide-x" style="width:1rem;height:1rem;"></i></button>
             </div>
         `;
     specsContainer.appendChild(row);
@@ -169,11 +169,11 @@ export function initMobileFormShared(options = {}) {
         const reader = new FileReader();
         reader.onload = function (event) {
           const container = document.createElement('div');
-          container.className = 'position-relative image-container-100';
+          container.className = 'relative image-container-100';
           container.dataset.fileName = file.name;
           container.innerHTML = `
-                        <img src="${event.target.result}" class="img-thumbnail image-thumbnail-full">
-                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 remove-image"><i class="bi bi-x-lg"></i></button>
+                        <img src="${event.target.result}" class="object-cover w-full h-full rounded-lg">
+                        <button type="button" class="rounded-lg px-2 py-1 text-xs bg-red-600 text-white hover:bg-red-700 absolute top-0 end-0 remove-image"><i class="lucide lucide-x" style="width:1rem;height:1rem;"></i></button>
                     `;
 
           imagesPreview.appendChild(container);
@@ -201,9 +201,9 @@ export function initMobileFormShared(options = {}) {
 
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
-    button.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
-    button.classList.remove('btn-danger');
-    button.classList.add('btn-outline-secondary');
+    button.innerHTML = '<i class="lucide lucide-rotate-ccw" style="width:1rem;height:1rem;"></i>';
+    button.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700');
+    button.classList.add('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
     button.title = 'Undo delete';
     button.onclick = function () {
       window.undoImageDeletion(imageId);
@@ -224,9 +224,9 @@ export function initMobileFormShared(options = {}) {
 
     const button = container.querySelector('.remove-existing-image');
     if (!button) return;
-    button.innerHTML = '<i class="bi bi-x-lg"></i>';
-    button.classList.remove('btn-outline-secondary');
-    button.classList.add('btn-danger');
+    button.innerHTML = '<i class="lucide lucide-x" style="width:1rem;height:1rem;"></i>';
+    button.classList.remove('border-slate-300', 'text-slate-600', 'hover:bg-slate-50');
+    button.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
     button.title = 'Remove';
     button.onclick = function () {
       window.markImageForDeletion(imageId);

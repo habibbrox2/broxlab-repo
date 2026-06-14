@@ -8,7 +8,7 @@ async function initNotificationModuleHelpers() {
     const notificationSystem = await import('/assets/firebase/v2/dist/notification-system.js');
     const analytics = await import('/assets/firebase/v2/dist/analytics.js');
     return { notificationSystem, analytics, };
-  } catch (e) {
+  } catch {
     return { notificationSystem: null, analytics: null, };
   }
 }
@@ -37,7 +37,7 @@ export async function initNotificationsSend() {
     try {
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -127,7 +127,7 @@ export async function initNotificationsSend() {
 
       applyChannelsFromTemplate(data.channels || []);
       return true;
-    } catch (error) {
+    } catch {
       showWarning?.('Template preview failed. Notification will use template during send.');
       return false;
     }
@@ -155,7 +155,7 @@ export async function initNotificationsSend() {
       break;
     }
     if (info && infoEl) {
-      infoEl.innerHTML = `<small class="text-success d-block mt-2"><i class="bi bi-check-circle"></i> ${ info }</small>`;
+      infoEl.innerHTML = `<small class="text-emerald-600 block mt-2"><i class="lucide lucide-check-circle" style="width:0.875rem;height:0.875rem;"></i> ${info}</small>`;
     }
   }
 
@@ -207,7 +207,7 @@ export async function initNotificationsSend() {
         const perm = byId('permissionSelect')?.value;
         if (perm) params.set('permission', perm);
       }
-      const response = await fetch(`/api/notification/count-recipients?${ params.toString()}`);
+      const response = await fetch(`/api/notification/count-recipients?${params.toString()}`);
       const data = await response.json();
       byId('recipientCount').textContent = data.count;
       const totalUsers = byId('totalUsers');
@@ -318,13 +318,13 @@ export async function initNotificationsSend() {
       wordCountEl.textContent = `${count} chars / ${val.split(/\s+/).filter(w => w).length} words`;
 
       // Visual indicators for length
-      wordCountEl.className = 'small fw-bold ';
+      wordCountEl.className = 'text-sm font-bold text-slate-900 ';
       if (count > 450) {
-        wordCountEl.classList.add('text-danger');
+        wordCountEl.classList.add('text-red-600');
       } else if (count > 350) {
-        wordCountEl.classList.add('text-warning');
+        wordCountEl.classList.add('text-amber-600');
       } else {
-        wordCountEl.classList.add('text-muted');
+        wordCountEl.classList.add('text-slate-500');
       }
     }
 
@@ -349,7 +349,7 @@ export async function initNotificationsSend() {
       'warning': 'Warning',
       'urgent': 'Urgent',
     };
-    byId('previewType').textContent = `Type: ${ typeLabels[this.value] || this.value}`;
+    byId('previewType').textContent = `Type: ${typeLabels[this.value] || this.value}`;
   });
 
   form.addEventListener('submit', async (e) => {
@@ -376,7 +376,7 @@ export async function initNotificationsSend() {
       }
     }
 
-    let recipientCount = 0;
+    let recipientCount;
     if (recipientTypeVal === 'specific') {
       recipientCount = specificIds.length;
     } else {
@@ -408,7 +408,7 @@ export async function initNotificationsSend() {
 
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+      submitBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Sending...';
     }
 
     try {
@@ -423,18 +423,18 @@ export async function initNotificationsSend() {
         showSuccess?.(data.message || 'Notification sent successfully');
         setTimeout(() => window.location.href = '/admin/notifications', 1500);
       } else {
-        showError?.(`Error: ${ data.error || 'Unknown error'}`);
+        showError?.(`Error: ${data.error || 'Unknown error'}`);
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Send Notification';
+          submitBtn.innerHTML = '<i class="lucide lucide-check mr-2" style="width:1rem;height:1rem;"></i>Send Notification';
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      showError?.(`Notification sending failed: ${ error.message}`);
+      showError?.(`Notification sending failed: ${error.message}`);
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Send Notification';
+        submitBtn.innerHTML = '<i class="lucide lucide-check mr-2" style="width:1rem;height:1rem;"></i>Send Notification';
       }
     }
   });
@@ -448,7 +448,7 @@ export async function initNotificationsSend() {
       data.users?.forEach(user => {
         const option = document.createElement('option');
         option.value = user.id;
-        option.textContent = `${user.username } (${ user.email })`;
+        option.textContent = `${user.username} (${user.email})`;
         select.appendChild(option);
       });
     });
@@ -499,7 +499,7 @@ export async function initNotificationsSend() {
       emptyState = document.createElement('div');
       emptyState.id = 'recipientFilterEmptyState';
       emptyState.className = 'recipient-empty-filter';
-      emptyState.innerHTML = '<i class="bi bi-search me-1"></i>No recipients matched the selected filters';
+      emptyState.innerHTML = '<i class="lucide lucide-search mr-1" style="width:1rem;height:1rem;"></i>No recipients matched the selected filters';
       container.appendChild(emptyState);
     }
   }
@@ -525,11 +525,11 @@ export async function initNotificationsSend() {
       const deviceCategory = normalizeText(card.dataset.recipientDeviceCategory);
 
       const textMatched = !searchQuery
-                || name.includes(searchQuery)
-                || email.includes(searchQuery);
+        || name.includes(searchQuery)
+        || email.includes(searchQuery);
       const deviceMatched = !deviceQuery
-                || deviceCategory === deviceQuery
-                || device.includes(deviceQuery);
+        || deviceCategory === deviceQuery
+        || device.includes(deviceQuery);
 
       const visible = textMatched && deviceMatched;
       card.classList.toggle('is-hidden', !visible);
@@ -586,15 +586,15 @@ export async function initNotificationsSend() {
       }
       params.set('permission', perm);
     }
-    const modal = new bootstrap.Modal(byId('recipientModal'));
+    const modal = new broxUI.Modal(byId('recipientModal'));
     try {
-      const response = await fetch(`/api/notification/preview-recipients?${ params.toString()}`);
+      const response = await fetch(`/api/notification/preview-recipients?${params.toString()}`);
       const text = await response.text();
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Invalid response from server: ${ text.substring(0, 100)}`);
+      } catch {
+        throw new Error(`Invalid response from server: ${text.substring(0, 100)}`);
       }
 
       const list = byId('recipientList');
@@ -603,19 +603,19 @@ export async function initNotificationsSend() {
 
       if (data.error) {
         if (totalCountEl) totalCountEl.textContent = '0';
-        list.innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>Recipient load error: ${ data.error }</div>`;
+        list.innerHTML = `<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-0"><i class="lucide lucide-alert-circle mr-2" style="width:1rem;height:1rem;"></i>Recipient load error: ${data.error}</div>`;
         updateFilteredMeta(0, 0);
       } else if (!data.recipients || data.recipients.length === 0) {
         if (totalCountEl) totalCountEl.textContent = '0';
-        const warning = data.warning ? `<div class="alert alert-warning mb-2"><i class="bi bi-exclamation-triangle me-2"></i>${data.warning}</div>` : '';
-        list.innerHTML = `${warning }<div class="alert alert-info text-center mb-0"><i class="bi bi-info-circle me-2"></i>No recipients found for this selection</div>`;
+        const warning = data.warning ? `<div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 mb-2"><i class="lucide lucide-alert-triangle mr-2" style="width:1rem;height:1rem;"></i>${data.warning}</div>` : '';
+        list.innerHTML = `${warning}<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-center mb-0"><i class="lucide lucide-info mr-2" style="width:1rem;height:1rem;"></i>No recipients found for this selection</div>`;
         updateFilteredMeta(0, 0);
       } else {
         const actualTotal = data.count ?? data.recipients.length;
         if (totalCountEl) totalCountEl.textContent = String(actualTotal);
         if (data.recipients.length < actualTotal) {
           const notice = document.createElement('div');
-          notice.className = 'text-end text-muted small mt-2';
+          notice.className = 'text-end text-slate-500 text-sm mt-2';
           notice.textContent = `Showing first ${data.recipients.length} of ${actualTotal}`;
           list.parentElement?.appendChild(notice);
         }
@@ -629,47 +629,47 @@ export async function initNotificationsSend() {
           const rawDeviceInfo = String(recipient.device_info || 'Web');
           const deviceCategory = escapeHtml(getDeviceCategory(rawDeviceInfo));
           return `
-                        <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="w-full md:w-1/2 lg:w-1/3 px-3 mb-3">
                             <div class="recipient-card h-100"
                                 data-recipient-name="${username}"
                                 data-recipient-email="${email}"
                                 data-recipient-device="${deviceInfo}"
                                 data-recipient-device-category="${deviceCategory}">
                                 <div class="recipient-header">
-                                    <div class="flex-grow-1">
+                                    <div class="flex-1">
                                         <div class="text-truncate">
-                                            <strong class="d-block text-dark text-truncate">${username}</strong>
-                                            ${email ? `<small class="text-muted text-truncate">${email}</small>` : ''}
+                                            <strong class="block text-slate-900 truncate">${username}</strong>
+                                            ${email ? `<small class="text-slate-500 truncate">${email}</small>` : ''}
                                         </div>
                                     </div>
-                                    <span class="badge bg-primary ms-2">${index + 1}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 ml-2">${index + 1}</span>
                                 </div>
                                 <div class="recipient-body">
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-device-type"></i>
+                                            <i class="lucide lucide-smartphone" style="width:1rem;height:1rem;"></i>
                                             Device
                                         </div>
-                                        <div class="flex-grow-1 text-end">
-                                            <small class="badge bg-light text-dark">${deviceInfo}</small>
+                                        <div class="flex-1 text-end">
+                                            <small class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-700">${deviceInfo}</small>
                                         </div>
                                     </div>
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-calendar-event"></i>
+                                            <i class="lucide lucide-calendar-clock" style="width:1rem;height:1rem;"></i>
                                             Date
                                         </div>
-                                        <div class="flex-grow-1 text-end">
-                                            <small class="text-muted">${formattedDate}</small>
+                                        <div class="flex-1 text-end">
+                                            <small class="text-slate-500">${formattedDate}</small>
                                         </div>
                                     </div>
                                     <div class="recipient-info-item">
                                         <div class="recipient-info-label">
-                                            <i class="bi bi-clock"></i>
+                                            <i class="lucide lucide-clock" style="width:1rem;height:1rem;"></i>
                                             Time
                                         </div>
-                                        <div class="flex-grow-1 text-end">
-                                            <small class="text-muted">${formattedTime}</small>
+                                        <div class="flex-1 text-end">
+                                            <small class="text-slate-500">${formattedTime}</small>
                                         </div>
                                     </div>
                                 </div>
@@ -685,7 +685,7 @@ export async function initNotificationsSend() {
       const totalCountEl = byId('recipientTotalCount');
       if (totalCountEl) totalCountEl.textContent = '0';
       updateFilteredMeta(0, 0);
-      byId('recipientList').innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Error: ${ error.message }</div>`;
+      byId('recipientList').innerHTML = `<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200 mb-0"><i class="lucide lucide-alert-triangle mr-2" style="width:1rem;height:1rem;"></i>Error: ${error.message}</div>`;
     }
 
     modal.show();
@@ -708,7 +708,7 @@ export async function initNotificationsScheduled() {
   }
 
   const scheduleModalEl = byId('scheduleModal');
-  const scheduleModal = scheduleModalEl ? new bootstrap.Modal(scheduleModalEl) : null;
+  const scheduleModal = scheduleModalEl ? new broxUI.Modal(scheduleModalEl) : null;
 
   function openScheduleModal() {
     const form = byId('scheduleForm');
@@ -728,7 +728,7 @@ export async function initNotificationsScheduled() {
     const submitBtn = byId('submitBtn');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Scheduling...';
+      submitBtn.innerHTML = '<i class="lucide lucide-hourglass mr-2" style="width:1rem;height:1rem;"></i>Scheduling...';
     }
 
     try {
@@ -763,29 +763,29 @@ export async function initNotificationsScheduled() {
         scheduleModal?.hide();
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed to schedule notification: ${ result?.error || 'Unknown error'}`);
+        alert(`Failed to schedule notification: ${result?.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(`Server error: ${ error.message}`);
+      alert(`Server error: ${error.message}`);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Schedule';
+        submitBtn.innerHTML = '<i class="lucide lucide-check mr-2" style="width:1rem;height:1rem;"></i>Schedule';
       }
     }
   }
 
   function getStatusBadge(status) {
     const badges = {
-      scheduled: '<span class="badge bg-info">Scheduled</span>',
-      sending: '<span class="badge bg-warning">Sending</span>',
-      sent: '<span class="badge bg-success">Sent</span>',
-      failed: '<span class="badge bg-danger">Failed</span>',
-      cancelled: '<span class="badge bg-secondary">Cancelled</span>',
-      draft: '<span class="badge bg-secondary">Draft</span>',
+      scheduled: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">Scheduled</span>',
+      sending: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Sending</span>',
+      sent: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Sent</span>',
+      failed: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>',
+      cancelled: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Cancelled</span>',
+      draft: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Draft</span>',
     };
-    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+    return badges[status] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Unknown</span>';
   }
 
   async function loadScheduledNotifications(status = 'scheduled') {
@@ -800,8 +800,8 @@ export async function initNotificationsScheduled() {
       if (!data?.success || !Array.isArray(list) || list.length === 0) {
         container.innerHTML = `
                     <div class="col-12">
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox display-4 mb-3 d-block"></i>
+                        <div class="text-center py-5 text-slate-500">
+                            <i class="lucide lucide-inbox mb-3 block" style="width:3rem;height:3rem;margin:0 auto;"></i>
                             <p>No notifications found.</p>
                         </div>
                     </div>
@@ -814,36 +814,36 @@ export async function initNotificationsScheduled() {
         container.innerHTML += `
                     <div class="col-lg-6 mb-4">
                         <div class="admin-panel-card h-100">
-                            <div class="admin-panel-card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="admin-panel-card-body flex flex-col">
+                                <div class="flex justify-between items-start mb-2">
                                     <div>
                                         <h5 class="mb-0">${escapeHtml(notif.title)}</h5>
-                                        <small class="text-muted">${escapeHtml(notif.created_at || '-')}</small>
+                                        <small class="text-slate-500">${escapeHtml(notif.created_at || '-')}</small>
                                     </div>
                                     ${statusBadge}
                                 </div>
 
-                                <p class="text-muted mb-3">${escapeHtml(notif.body || notif.message || '')}</p>
+                                <p class="text-slate-500 mb-3">${escapeHtml(notif.body || notif.message || '')}</p>
 
                                 <div class="mb-3">
                                     <div class="mb-2">
-                                        <small class="text-muted"><i class="bi bi-calendar me-1"></i>Scheduled:</small>
-                                        <div class="fw-bold">${escapeHtml(notif.scheduled_at || '-')}</div>
+                                        <small class="text-slate-500"><i class="lucide lucide-calendar mr-1" style="width:0.875rem;height:0.875rem;"></i>Scheduled:</small>
+                                        <div class="font-bold text-slate-900">${escapeHtml(notif.scheduled_at || '-')}</div>
                                     </div>
                                     <div>
-                                        <small class="text-muted"><i class="bi bi-people me-1"></i>Recipient:</small>
-                                        <span class="badge bg-info text-capitalize">${escapeHtml(notif.recipient_type || 'all')}</span>
+                                        <small class="text-slate-500"><i class="lucide lucide-users mr-1" style="width:0.875rem;height:0.875rem;"></i>Recipient:</small>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 capitalize">${escapeHtml(notif.recipient_type || 'all')}</span>
                                     </div>
                                 </div>
 
                                 <div class="mt-auto pt-2 border-top">
                                     <div class="btn-group btn-group-sm w-100" role="group">
-                                        <button class="btn btn-outline-primary" data-action="view-scheduled" data-notification-id="${notif.id}">
-                                            <i class="bi bi-eye me-1"></i>Details
+                                        <button class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="view-scheduled" data-notification-id="${notif.id}">
+                                            <i class="lucide lucide-eye mr-1" style="width:0.875rem;height:0.875rem;"></i>Details
                                         </button>
                                         ${notif.status === 'scheduled' ? `
-                                            <button class="btn btn-outline-danger" data-action="cancel-scheduled" data-notification-id="${notif.id}">
-                                                <i class="bi bi-x me-1"></i>Cancel
+                                            <button class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors" data-action="cancel-scheduled" data-notification-id="${notif.id}">
+                                                <i class="lucide lucide-x mr-1" style="width:0.875rem;height:0.875rem;"></i>Cancel
                                             </button>
                                         ` : ''}
                                     </div>
@@ -859,8 +859,8 @@ export async function initNotificationsScheduled() {
       if (container) {
         container.innerHTML = `
                     <div class="col-12">
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>Error: ${escapeHtml(error.message || 'Failed to load')}
+                        <div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+                            <i class="lucide lucide-alert-triangle mr-2" style="width:1rem;height:1rem;"></i>Error: ${escapeHtml(error.message || 'Failed to load')}
                         </div>
                     </div>
                 `;
@@ -880,7 +880,7 @@ export async function initNotificationsScheduled() {
         alert('Schedule cancelled.');
         loadScheduledNotifications('scheduled');
       } else {
-        alert(`Failed: ${ data.message || data.error || 'Unknown error'}`);
+        alert(`Failed: ${data.message || data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -889,7 +889,7 @@ export async function initNotificationsScheduled() {
   }
 
   function viewScheduledDetail(id) {
-    alert(`Detailed view is coming soon. ID: ${ id}`);
+    alert(`Detailed view is coming soon. ID: ${id}`);
   }
 
   document.addEventListener('click', (event) => {
@@ -917,11 +917,10 @@ export async function initNotificationsScheduled() {
   byId('recipientType')?.addEventListener('change', handleRecipientTypeChange);
 
   handleRecipientTypeChange();
-  loadScheduledNotifications('scheduled');
-  byId('scheduled-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('scheduled'));
-  byId('sent-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('sent'));
-  byId('failed-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('failed'));
-  byId('draft-tab')?.addEventListener('shown.bs.tab', () => loadScheduledNotifications('draft'));
+  loadScheduledNotifications('scheduled'); byId('scheduled-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('scheduled'));
+  byId('sent-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('sent'));
+  byId('failed-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('failed'));
+  byId('draft-tab')?.addEventListener('brox:shown', () => loadScheduledNotifications('draft'));
 }
 
 
@@ -950,23 +949,23 @@ export function initNotificationsDeviceSync() {
 
   function getActionBadge(action) {
     const badges = {
-      read: '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Read</span>',
-      dismissed: '<span class="badge bg-warning"><i class="bi bi-x-circle me-1"></i>Dismissed</span>',
-      deleted: '<span class="badge bg-danger"><i class="bi bi-trash me-1"></i>Deleted</span>',
-      sync: '<span class="badge bg-info"><i class="bi bi-arrow-repeat me-1"></i>Sync</span>',
+      read: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><i class="lucide lucide-check-circle mr-1" style="width:0.875rem;height:0.875rem;"></i>Read</span>',
+      dismissed: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="lucide lucide-x-circle mr-1" style="width:0.875rem;height:0.875rem;"></i>Dismissed</span>',
+      deleted: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="lucide lucide-trash-2 mr-1" style="width:0.875rem;height:0.875rem;"></i>Deleted</span>',
+      sync: '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800"><i class="lucide lucide-repeat mr-1" style="width:0.875rem;height:0.875rem;"></i>Sync</span>',
     };
-    return badges[action] || `<span class="badge bg-secondary">${escapeHtml(action || 'unknown')}</span>`;
+    return badges[action] || `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${escapeHtml(action || 'unknown')}</span>`;
   }
 
   function getSyncStatusBadge(log) {
     const status = String(log?.status || '').toLowerCase();
     if (status === 'sent' || status === 'success' || status === 'synced' || log?.synced_at) {
-      return '<span class="badge bg-success">Synced</span>';
+      return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Synced</span>';
     }
     if (status === 'failed' || status === 'error') {
-      return '<span class="badge bg-danger">Failed</span>';
+      return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
     }
-    return '<span class="badge bg-warning">Pending</span>';
+    return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>';
   }
 
   async function parseJsonResponse(response) {
@@ -975,7 +974,7 @@ export function initNotificationsDeviceSync() {
     try {
       return JSON.parse(cleaned || '{}');
     } catch (e) {
-      throw new Error(`Invalid JSON response (${response.status}): ${cleaned.slice(0, 160)}`);
+      throw new Error(`Invalid JSON response (${response.status}): ${cleaned.slice(0, 160)}`, { cause: e, });
     }
   }
 
@@ -990,7 +989,7 @@ export function initNotificationsDeviceSync() {
 
       const total = (data.pending_count || 0) + (data.synced_count || 0);
       const syncRate = total > 0 ? Math.round(((data.synced_count || 0) / total) * 100) : 0;
-      byId('syncRatePercent').textContent = `${syncRate }%`;
+      byId('syncRatePercent').textContent = `${syncRate}%`;
     } catch (error) {
       console.error('Error updating stats:', error);
     }
@@ -1012,8 +1011,8 @@ export function initNotificationsDeviceSync() {
       if (!Array.isArray(data.devices) || data.devices.length === 0) {
         tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> No devices found
+                        <td colspan="5" class="text-center text-slate-500 py-4">
+                            <i class="lucide lucide-inbox" style="width:1.5rem;height:1.5rem;"></i> No devices found
                         </td>
                     </tr>
                 `;
@@ -1031,18 +1030,18 @@ export function initNotificationsDeviceSync() {
         tbody.innerHTML += `
                     <tr>
                         <td>
-                            <i class="bi bi-phone me-2"></i>
+                            <i class="lucide lucide-phone mr-2" style="width:1rem;height:1rem;"></i>
                             ${escapeHtml(deviceName)}
                         </td>
                         <td><code>${escapeHtml(shortId(deviceId))}</code></td>
-                        <td><span class="badge bg-light text-dark">${escapeHtml(platform)}</span></td>
-                        <td><small class="text-muted">${escapeHtml(lastSeen)}</small></td>
+                        <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-700">${escapeHtml(platform)}</span></td>
+                        <td><small class="text-slate-500">${escapeHtml(lastSeen)}</small></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="syncDevice('${escapeHtml(deviceId)}')">
-                                <i class="bi bi-arrow-repeat"></i>
+                            <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" onclick="syncDevice('${escapeHtml(deviceId)}')">
+                                <i class="lucide lucide-repeat" style="width:1rem;height:1rem;"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="removeDevice('${escapeHtml(deviceId)}')">
-                                <i class="bi bi-trash"></i>
+                            <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-600 text-red-600 hover:bg-red-50 transition-colors" onclick="removeDevice('${escapeHtml(deviceId)}')">
+                                <i class="lucide lucide-trash-2" style="width:1rem;height:1rem;"></i>
                             </button>
                         </td>
                     </tr>
@@ -1056,8 +1055,8 @@ export function initNotificationsDeviceSync() {
       if (tbody) {
         tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-danger py-4">
-                            <i class="bi bi-exclamation-triangle me-2"></i>${escapeHtml(error.message || 'Failed')}
+                        <td colspan="5" class="text-center text-red-600 py-4">
+                            <i class="lucide lucide-alert-triangle mr-2" style="width:1rem;height:1rem;"></i>${escapeHtml(error.message || 'Failed')}
                         </td>
                     </tr>
                 `;
@@ -1077,8 +1076,8 @@ export function initNotificationsDeviceSync() {
       if (!data.success || !Array.isArray(data.logs) || data.logs.length === 0) {
         tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> No sync logs
+                        <td colspan="5" class="text-center text-slate-500 py-4">
+                            <i class="lucide lucide-inbox" style="width:1.5rem;height:1.5rem;"></i> No sync logs
                         </td>
                     </tr>
                 `;
@@ -1123,7 +1122,7 @@ export function initNotificationsDeviceSync() {
         loadSyncLog();
         loadDevicesList();
       } else {
-        alert(`Sync failed: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Sync failed: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1148,7 +1147,7 @@ export function initNotificationsDeviceSync() {
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Device sync failed: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Device sync failed: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1169,7 +1168,7 @@ export function initNotificationsDeviceSync() {
         loadDevicesList();
         loadSyncLog();
       } else {
-        alert(`Failed to remove device: ${ data.error || data.message || 'Unknown error'}`);
+        alert(`Failed to remove device: ${data.error || data.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -1227,8 +1226,8 @@ export async function initNotificationsOfflineHandler() {
     function initializeOfflineModal() {
       if (offlineModal) return;
       const offlineModalElement = byId('offlineModal');
-      if (offlineModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        offlineModal = new bootstrap.Modal(offlineModalElement);
+      if (offlineModalElement && typeof broxUI !== 'undefined' && broxUI.Modal) {
+        offlineModal = new broxUI.Modal(offlineModalElement);
       }
     }
 
@@ -1241,8 +1240,8 @@ export async function initNotificationsOfflineHandler() {
         if (buffered.length === 0) {
           tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No buffered notifications found
+                            <td colspan="5" class="text-center text-slate-500 py-4">
+                                <i class="lucide lucide-inbox" style="width:1.5rem;height:1.5rem;"></i> No buffered notifications found
                             </td>
                         </tr>
                     `;
@@ -1256,10 +1255,10 @@ export async function initNotificationsOfflineHandler() {
                             <td><code>${notif.id.substring(0, 8)}...</code></td>
                             <td>${escapeHtml(notif.title)}</td>
                             <td><small>${savedTime}</small></td>
-                            <td><span class="badge bg-info">Buffered</span></td>
+                            <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">Buffered</span></td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" data-action="remove-buffer" data-notification-id="${notif.id}">
-                                    <i class="bi bi-trash"></i>
+                                <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-600 text-red-600 hover:bg-red-50 transition-colors" data-action="remove-buffer" data-notification-id="${notif.id}">
+                                    <i class="lucide lucide-trash-2" style="width:1rem;height:1rem;"></i>
                                 </button>
                             </td>
                         </tr>
@@ -1288,8 +1287,8 @@ export async function initNotificationsOfflineHandler() {
         if (filtered.length === 0) {
           tbody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No retry queue items
+                            <td colspan="6" class="text-center text-slate-500 py-4">
+                                <i class="lucide lucide-inbox" style="width:1.5rem;height:1.5rem;"></i> No retry queue items
                             </td>
                         </tr>
                     `;
@@ -1299,8 +1298,8 @@ export async function initNotificationsOfflineHandler() {
         filtered.forEach(retry => {
           const nextRetry = new Date(retry.nextRetryTime).toLocaleString('bn-BD');
           const statusBadge = retry.status === 'pending'
-            ? '<span class="badge bg-warning">Pending</span>'
-            : '<span class="badge bg-danger">Failed</span>';
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pending</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
           const html = `
                         <tr>
                             <td><code>${retry.id.substring(0, 8)}...</code></td>
@@ -1309,8 +1308,8 @@ export async function initNotificationsOfflineHandler() {
                             <td><small>${nextRetry}</small></td>
                             <td>${statusBadge}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" data-action="force-retry" data-retry-id="${retry.id}">
-                                    <i class="bi bi-arrow-repeat"></i>
+                                <button class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="force-retry" data-retry-id="${retry.id}">
+                                    <i class="lucide lucide-repeat" style="width:1rem;height:1rem;"></i>
                                 </button>
                             </td>
                         </tr>
@@ -1349,7 +1348,7 @@ export async function initNotificationsOfflineHandler() {
         refreshBuffer();
         loadRetryQueue();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1359,7 +1358,7 @@ export async function initNotificationsOfflineHandler() {
         alert('Expired cache cleared successfully');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1370,7 +1369,7 @@ export async function initNotificationsOfflineHandler() {
         alert('All buffered notifications were cleared');
         refreshBuffer();
       } catch (error) {
-        alert(`Error: ${ error.message}`);
+        alert(`Error: ${error.message}`);
       }
     }
 
@@ -1410,8 +1409,8 @@ export async function initNotificationsOfflineHandler() {
         if (filtered.length === 0) {
           tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                <i class="bi bi-inbox"></i> No delivery history records
+                            <td colspan="5" class="text-center text-slate-500 py-4">
+                                <i class="lucide lucide-inbox" style="width:1.5rem;height:1.5rem;"></i> No delivery history records
                             </td>
                         </tr>
                     `;
@@ -1421,8 +1420,8 @@ export async function initNotificationsOfflineHandler() {
         filtered.forEach(h => {
           const time = new Date(h.timestamp).toLocaleString('bn-BD');
           const statusBadge = h.status === 'success'
-            ? '<span class="badge bg-success">Success</span>'
-            : '<span class="badge bg-danger">Failed</span>';
+            ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Success</span>'
+            : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>';
           const html = `
                         <tr>
                             <td><small>${time}</small></td>
@@ -1430,7 +1429,7 @@ export async function initNotificationsOfflineHandler() {
                             <td>${h.retryCount}</td>
                             <td>${statusBadge}</td>
                             <td>
-                                <small class="text-muted">${escapeHtml(h.error || 'N/A')}</small>
+                                <small class="text-slate-500">${escapeHtml(h.error || 'N/A')}</small>
                             </td>
                         </tr>
                     `;
@@ -1458,7 +1457,7 @@ export async function initNotificationsOfflineHandler() {
     });
 
     function initializePageContent() {
-      if (typeof bootstrap === 'undefined') {
+      if (typeof broxUI === 'undefined') {
         setTimeout(initializePageContent, 100);
         return;
       }
@@ -1474,4 +1473,421 @@ export async function initNotificationsOfflineHandler() {
       initializePageContent();
     }
   } catch (e) { /* ignore diagnostics from optional notification module loading */ }
+}
+
+
+export async function initNotificationsList() {
+  const hasAction = document.querySelector('[data-action="resend-notification"]');
+  if (!hasAction) return;
+  const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
+  const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
+  const showError = notificationSystem?.showError || window.showError || window.showMessage;
+  const trackResend = analytics?.trackAdminNotificationResend;
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest?.('[data-action="resend-notification"]');
+    if (!button) return;
+    const notificationId = parseInt(button.dataset.notificationId, 10);
+    if (Number.isNaN(notificationId)) return;
+    fetch('/api/notification/resend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+      body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          if (trackResend) trackResend(notificationId, data.recipient_count || 0);
+          showSuccess?.(data.message || 'Notification resent');
+          location.reload();
+        } else {
+          showError?.(`? Error: ${data.error || 'Unknown error'}`);
+        }
+      })
+      .catch((err) => showError?.(err.message || 'Error resending'));
+  });
+}
+
+export async function initNotificationsView() {
+  const dataEl = byId('notification-view-data');
+  if (!dataEl) return;
+  const notificationId = parseInt(dataEl.dataset.notificationId || '0', 10);
+  if (!notificationId) return;
+  const { notificationSystem, analytics, } = await initNotificationModuleHelpers();
+  const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
+  const showError = notificationSystem?.showError || window.showError || window.showMessage;
+  const showInfo = notificationSystem?.showInfo || window.showInfo || window.showMessage;
+  const trackResend = analytics?.trackAdminNotificationResend;
+
+  async function resendNotificationNow() {
+    if (!confirm('Do you want to resend this notification now?')) return;
+    try {
+      const response = await fetch('/api/notification/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+        body: JSON.stringify({ notification_id: notificationId, channels: ['push',], }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        trackResend?.(notificationId, data.recipient_count || 0);
+        showSuccess?.(data.message || 'Notification resent');
+        location.reload();
+      } else {
+        showError?.(`Error: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showError?.(`Error: ${error.message}`);
+    }
+  }
+
+  function duplicateNotification() {
+    showInfo?.('Duplicate notification feature is coming soon.');
+  }
+
+  function deleteNotification() {
+    if (confirm('Do you want to delete this notification?')) {
+      showInfo?.('Delete notification feature is coming soon.');
+    }
+  }
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest?.('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === 'resend-notification') return resendNotificationNow();
+    if (action === 'duplicate-notification') return duplicateNotification();
+    if (action === 'delete-notification') return deleteNotification();
+  });
+}
+
+export function initNotificationsDashboard() {
+  const root = byId('notificationsDashboardRoot');
+  if (!root) return;
+  const filterEndpoints = [
+    root.dataset.filterEndpoint,
+    '/api/notification/list',
+    '/api/admin/notifications',
+  ].filter(Boolean);
+
+  async function tryFilter(status) {
+    for (const endpoint of filterEndpoints) {
+      const url = status ? `${endpoint}?status=${encodeURIComponent(status)}` : endpoint;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.success) return true;
+      } catch {
+        continue;
+      }
+    }
+    return false;
+  }
+
+  window.filterNotifications = async function (status = null) {
+    const ok = await tryFilter(status);
+    if (ok) location.reload();
+  };
+
+  window.loadNotificationDetail = function (notifId) {
+    const detailContent = byId('detailContent');
+    if (!detailContent) return;
+    fetch(`/api/notification/${notifId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const notif = data.notification;
+          detailContent.innerHTML = `
+                            <div class="mb-3">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Title</label>
+                                <p>${notif.title}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Message</label>
+                                <p>${notif.message}</p>
+                            </div>
+                            <div class="row">
+                                <div class="w-full md:w-1/2 mb-3">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Recipient Type</label>
+                                    <p><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${notif.recipient_type}</span></p>
+                                </div>
+                                <div class="w-full md:w-1/2 mb-3">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+                                    <p><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">${notif.status}</span></p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Delivery Channels</label>
+                                <p>
+                                    ${notif.channels.includes('push') ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mr-2"><i class="lucide lucide-smartphone"></i> Push</span>' : ''}
+                                    ${notif.channels.includes('email') ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 mr-2"><i class="lucide lucide-mail"></i> Email</span>' : ''}
+                                    ${notif.channels.includes('in_app') ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="lucide lucide-message-square"></i> In-App</span>' : ''}
+                                </p>
+                            </div>
+                            <div class="row">
+                                <div class="w-full md:w-1/2 mb-3">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Created At</label>
+                                    <p>${new Date(notif.created_at).toLocaleString('bn-BD')}</p>
+                                </div>
+                                <div class="w-full md:w-1/2 mb-3">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Scheduled At</label>
+                                    <p>${notif.scheduled_at ? new Date(notif.scheduled_at).toLocaleString('bn-BD') : 'Not scheduled'}</p>
+                                </div>
+                            </div>
+                        `;
+
+          if (data.delivery_logs && data.delivery_logs.length > 0) {
+            const rows = data.delivery_logs
+              .map(
+                (l) => `
+                                <tr>
+                                    <td>${l.id}</td>
+                                    <td>${l.user_id || 'guest'}</td>
+                                    <td>${l.device_id || '-'}</td>
+                                    <td>${l.channel || '-'}</td>
+                                    <td>${l.ip_address || '-'}</td>
+                                    <td><small>${l.token || '-'}</small></td>
+                                    <td>${l.status}</td>
+                                    <td><small>${l.message_id || '-'}</small></td>
+                                    <td><small>${l.provider_response ? l.provider_response.substring(0, 200) + (l.provider_response.length > 200 ? '...' : '') : '-'}</small></td>
+                                    <td class="small text-slate-500">${l.created_at}</td>
+                                </tr>
+                            `
+              )
+              .join('');
+
+            detailContent.innerHTML += `
+                                <hr>
+                                <h6>Delivery Logs</h6>
+                                <div class="table-responsive">
+                                    <table class="w-full text-sm border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>User</th>
+                                                <th>Device</th>
+                                                <th>Channel</th>
+                                                <th>IP</th>
+                                                <th>Token</th>
+                                                <th>Status</th>
+                                                <th>Message ID</th>
+                                                <th>Provider Response</th>
+                                                <th>When</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${rows}</tbody>
+                                    </table>
+                                </div>
+                            `;
+          }
+        }
+      })
+      .catch(() => {
+        if (detailContent) {
+          detailContent.innerHTML =
+              '<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">Failed to load notification details</div>';
+        }
+      });
+  };
+
+  window.deleteNotification = function (notifId) {
+    if (!confirm('Do you want to delete this notification?')) return;
+    fetch(`/api/notification/${notifId}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': getCsrfToken(), },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert('Failed to delete notification');
+        }
+      });
+  };
+}
+
+export async function initNotificationsDrafts() {
+  const list = byId('draftsList');
+  if (!list) return;
+  const notificationSystem =
+      await import('/assets/firebase/v2/dist/notification-system.js').catch(() => null);
+  const showSuccess = notificationSystem?.showSuccess || window.showSuccess || window.showMessage;
+  const showError = notificationSystem?.showError || window.showError || window.showMessage;
+
+  async function loadDrafts() {
+    try {
+      const response = await fetch('/api/notification/list-drafts');
+      const data = await response.json();
+      if (data.success && data.drafts.length > 0) {
+        let html = `
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-slate-100">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Message</th>
+                                    <th>Type</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+        data.drafts.forEach((draft) => {
+          const createdAt = new Date(draft.created_at).toLocaleDateString('bn-BD', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          html += `
+                            <tr>
+                                <td>#${draft.id}</td>
+                                <td><strong>${draft.title}</strong></td>
+                                <td>${draft.message.substring(0, 50)}...</td>
+                                <td><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">${draft.type}</span></td>
+                                <td>${createdAt}</td>
+                                <td>
+                                    <button class="modern-btn text-xs px-2.5 py-1 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg" data-action="edit-draft" data-draft-id="${draft.id}">
+                                        <i class="lucide lucide-pencil" style="width:1rem;height:1rem;"></i> Edit
+                                    </button>
+                                    <button class="modern-btn text-xs px-2.5 py-1 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg" data-action="send-draft" data-draft-id="${draft.id}">
+                                        <i class="lucide lucide-send" style="width:1rem;height:1rem;"></i> Send
+                                    </button>
+                                    <button class="modern-btn text-xs px-2.5 py-1 bg-red-600 text-white hover:bg-red-700 rounded-lg" data-action="delete-draft" data-draft-id="${draft.id}">
+                                        <i class="lucide lucide-trash-2" style="width:1rem;height:1rem;"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+        });
+        html += '</tbody></table>';
+        list.innerHTML = html;
+      } else {
+        list.innerHTML = `
+                        <div class="p-4 text-center text-slate-500">
+                            <i class="lucide lucide-inbox mb-3 block" style="width:2rem;height:2rem;"></i>
+                            <strong>No drafts found</strong><br>
+                            <small><a href="/admin/notifications/send" class="no-underline">Create a new notification draft</a></small>
+                        </div>
+                    `;
+      }
+    } catch (error) {
+      list.innerHTML = `<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200 m-3">Error: ${error.message}</div>`;
+    }
+  }
+
+  function editDraft(draftId) {
+    fetch(`/api/notification/draft-detail?draft_id=${draftId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.draft) {
+          const draft = data.draft;
+          byId('editDraftId').value = draft.id;
+          byId('editTitle').value = draft.title;
+          byId('editMessage').value = draft.message;
+          byId('editType').value = draft.type;
+          byId('editActionUrl').value = draft.action_url || '';
+          byId('editRecipientType').value = draft.recipient_type;
+          new broxUI.Modal(byId('editDraftModal')).show();
+        } else {
+          showError?.('Failed to load draft details');
+        }
+      })
+      .catch((err) => {
+        console.error('Error:', err);
+        showError?.(`Error: ${err.message}`);
+      });
+  }
+
+  async function deleteDraft(draftId) {
+    if (!confirm('Do you want to delete this draft?')) return;
+    try {
+      const response = await fetch('/api/notification/delete-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+        body: JSON.stringify({ draft_id: draftId, }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showSuccess?.('Draft deleted successfully');
+        loadDrafts();
+      } else {
+        showError?.('Failed to delete draft');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showError?.(`Error: ${error.message}`);
+    }
+  }
+
+  async function sendDraft(draftId) {
+    if (!confirm('Do you want to send this draft now?')) return;
+    try {
+      const response = await fetch('/api/notification/send-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+        body: JSON.stringify({ draft_id: draftId, }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showSuccess?.(data.message || 'Draft sent successfully');
+        loadDrafts();
+        setTimeout(() => {
+          window.location.href = `/admin/notifications/view?id=${data.notification_id}`;
+        }, 1500);
+      } else {
+        showError?.(`Error: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showError?.(`Error: ${error.message}`);
+    }
+  }
+
+  async function saveEditedDraft() {
+    const draftId = byId('editDraftId').value;
+    const data = {
+      draft_id: draftId,
+      title: byId('editTitle').value,
+      message: byId('editMessage').value,
+      type: byId('editType').value,
+      action_url: byId('editActionUrl').value,
+      recipient_type: byId('editRecipientType').value,
+      channels: ['push',],
+      recipient_ids: [],
+    };
+    try {
+      const response = await fetch('/api/notification/update-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken(), },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (result.success) {
+        showSuccess?.(result.message || 'Draft updated successfully');
+        broxUI.Modal.getInstance(byId('editDraftModal'))?.hide();
+        loadDrafts();
+      } else {
+        showError?.('Failed to update draft');
+      }
+    } catch (error) {
+      showError?.(`Error: ${error.message}`);
+    }
+  }
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest?.('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === 'save-draft') return saveEditedDraft();
+    if (action === 'edit-draft') return editDraft(parseInt(button.dataset.draftId, 10));
+    if (action === 'send-draft') return sendDraft(parseInt(button.dataset.draftId, 10));
+    if (action === 'delete-draft') return deleteDraft(parseInt(button.dataset.draftId, 10));
+  });
+
+  loadDrafts();
 }

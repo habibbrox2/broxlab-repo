@@ -1,0 +1,59 @@
+﻿{% extends 'admin/layout.twig' %}
+
+{% block title %}Revenue Settings â€“ Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
+<li class="breadcrumb-item"><a href="/admin/revenue">Revenue</a></li>
+<li class="breadcrumb-item active" aria-current="page">Settings</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="dashboard-page">
+  <form method="POST" action="/admin/revenue/settings">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% set cats = [
+      {id:'donation', icon:'bi-heart-fill', color:'text-danger'},
+      {id:'advertisement', icon:'bi-megaphone-fill', color:'text-primary'},
+      {id:'sponsorship', icon:'bi-award-fill', color:'text-warning'},
+      {id:'general', icon:'bi-gear-fill', color:'text-secondary'},
+    ] %}
+
+    {% for cat in cats %}
+    {% if settings[cat.id]|default(settings|keys|column(0)) %}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-header bg-white border-0 py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi {{ cat.icon }} {{ cat.color }} mr-2"></i>{{ cat.id|capitalize }} Settings</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          {% for key, row in settings[cat.id]|default({}) %}
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label fw-semibold small">{{ row.label ?? key }}</label>
+            <input type="text" class="form-control"
+                   name="setting_key[]" value="{{ key }}" hidden>
+            <input type="text" class="form-control"
+                   name="setting_value[]" value="{{ row.setting_value ?? '' }}">
+            <input type="hidden" name="setting_type[]" value="{{ row.setting_type ?? 'text' }}">
+            <input type="hidden" name="category[]" value="{{ cat.id }}">
+            {% if row.description %}
+            <small class="text-muted d-block mt-1">{{ row.description }}</small>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="text-end">
+      <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold px-5">
+        <i class="bi bi-check-lg mr-2"></i>Save Settings
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

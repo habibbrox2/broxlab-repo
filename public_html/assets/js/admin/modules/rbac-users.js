@@ -12,15 +12,15 @@ function debounce(fn, waitMs) {
 
 function toggleCheckedClass(selector) {
   document.querySelectorAll(selector).forEach((checkbox) => {
-    checkbox.closest('.form-check')?.classList.toggle('checked', checkbox.checked);
+    checkbox.closest('.checkbox-wrapper')?.classList.toggle('checked', checkbox.checked);
     checkbox.addEventListener('change', function () {
-      this.closest('.form-check')?.classList.toggle('checked', this.checked);
+      this.closest('.checkbox-wrapper')?.classList.toggle('checked', this.checked);
     });
   });
 }
 
 function getStatusClass(status) {
-  return String(status || '').toLowerCase() === 'active' ? 'bg-success' : 'bg-warning';
+  return String(status || '').toLowerCase() === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
 }
 
 function formatDate(dateValue) {
@@ -35,14 +35,14 @@ export function initRbacRolesEdit() {
   window.selectAll = function () {
     document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
       checkbox.checked = true;
-      checkbox.closest('.form-check')?.classList.add('checked');
+      checkbox.closest('.checkbox-wrapper')?.classList.add('checked');
     });
   };
 
   window.deselectAll = function () {
     document.querySelectorAll('.permission-checkbox').forEach((checkbox) => {
       checkbox.checked = false;
-      checkbox.closest('.form-check')?.classList.remove('checked');
+      checkbox.closest('.checkbox-wrapper')?.classList.remove('checked');
     });
   };
 
@@ -65,7 +65,7 @@ export function initRbacUserRoles(options = {}) {
     if (!userResults) return;
     if (!Array.isArray(users) || users.length === 0) {
       userLookup.clear();
-      userResults.innerHTML = '<div class="alert alert-info">No users found.</div>';
+      userResults.innerHTML = '<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">No users found.</div>';
       userResults.style.display = 'block';
       return;
     }
@@ -94,14 +94,14 @@ export function initRbacUserRoles(options = {}) {
 
       return `
                 <button type="button"
-                    class="list-group-item list-group-item-action cursor-pointer text-start"
+                    class="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0 cursor-pointer"
                     data-user-id="${escapeHtml(userId)}">
-                    <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex justify-between items-start w-full">
                         <div>
                             <h6 class="mb-1">${escapeHtml(fullName)}</h6>
-                            <small class="text-muted">${escapeHtml(username)} (${escapeHtml(email)})</small>
+                            <small class="text-slate-500">${escapeHtml(username)} (${escapeHtml(email)})</small>
                         </div>
-                        <span class="badge ${getStatusClass(status)}">${escapeHtml(status)}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(status)}">${escapeHtml(status)}</span>
                     </div>
                 </button>
             `;
@@ -123,7 +123,7 @@ export function initRbacUserRoles(options = {}) {
       })
       .catch(() => {
         if (!userResults) return;
-        userResults.innerHTML = '<div class="alert alert-danger">Failed to search users.</div>';
+        userResults.innerHTML = '<div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">Failed to search users.</div>';
         userResults.style.display = 'block';
       });
   }
@@ -137,7 +137,7 @@ export function initRbacUserRoles(options = {}) {
 
         const roles = Array.isArray(data?.data) ? data.data : [];
         if (roles.length === 0) {
-          list.innerHTML = '<div class="alert alert-info mb-0">No roles assigned.</div>';
+          list.innerHTML = '<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 mb-0">No roles assigned.</div>';
           return;
         }
 
@@ -167,7 +167,7 @@ export function initRbacUserRoles(options = {}) {
 
         let html = '';
         for (const [moduleName, perms,] of Object.entries(permsData?.data || {})) {
-          html += `<h6 class="fw-bold text-primary mb-2 mt-3 module-header">${escapeHtml(moduleName).toUpperCase()}</h6>`;
+          html += `<h6 class="font-bold text-indigo-600 mb-2 mt-3 module-header">${escapeHtml(moduleName).toUpperCase()}</h6>`;
           html += '<div class="permissions-grid">';
           (perms || []).forEach((perm) => {
             html += `
@@ -180,7 +180,7 @@ export function initRbacUserRoles(options = {}) {
           });
           html += '</div>';
         }
-        list.innerHTML = html || '<div class="alert alert-info">No permissions found.</div>';
+        list.innerHTML = html || '<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">No permissions found.</div>';
       });
   }
 
@@ -196,7 +196,7 @@ export function initRbacUserRoles(options = {}) {
     if (statusEl) {
       statusEl.innerHTML = '';
       const badge = document.createElement('span');
-      badge.className = `badge ${getStatusClass(status)}`;
+      badge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(status)}`;
       badge.textContent = String(status || 'unknown');
       statusEl.appendChild(badge);
     }
@@ -245,17 +245,17 @@ export function initRbacUserRoles(options = {}) {
           const rawId = String(role?.id || '');
           const safeId = toSafeId(`role_${rawId}`) || `role_${rawId}`;
           return `
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="${escapeHtml(rawId)}" id="${escapeHtml(safeId)}">
-                            <label class="form-check-label" for="${escapeHtml(safeId)}">
+                        <div class="checkbox-wrapper flex items-start gap-2 mb-2">
+                            <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5" type="checkbox" value="${escapeHtml(rawId)}" id="${escapeHtml(safeId)}">
+                            <label class="text-sm cursor-pointer" for="${escapeHtml(safeId)}">
                                 ${escapeHtml(role?.name || 'Unnamed role')}
-                                <small class="text-muted d-block">${escapeHtml(role?.description || '')}</small>
+                                <small class="text-slate-500 block">${escapeHtml(role?.description || '')}</small>
                             </label>
                         </div>
                     `;
         }).join('');
 
-        const modal = new bootstrap.Modal(byId('assignRoleModal'));
+        const modal = new broxUI.Modal(byId('assignRoleModal'));
         modal.show();
       });
   }
@@ -279,7 +279,7 @@ export function initRbacUserRoles(options = {}) {
       .then((response) => response.json())
       .then((data) => {
         if (data?.success) {
-          bootstrap.Modal.getInstance(byId('assignRoleModal'))?.hide();
+          broxUI.Modal.getInstance(byId('assignRoleModal'))?.hide();
           loadUserRoles(selectedUserId);
           loadUserPermissions(selectedUserId);
           alert('Roles assigned successfully!');
@@ -319,7 +319,18 @@ export function initRbacUserRoles(options = {}) {
 
 export function initUsersAddUser() {
   if (!document.querySelector('.role-checkboxes')) return;
-  toggleCheckedClass('.role-checkboxes .form-check input');
+  toggleCheckedClass('.role-checkboxes .checkbox-wrapper input');
+}
+
+export function initRbacPermissionsList() {
+  const searchBox = document.getElementById('searchBox');
+  if (!searchBox) return;
+  searchBox.addEventListener('keyup', function () {
+    const filter = this.value.toLowerCase();
+    document.querySelectorAll('.permission-row').forEach((row) => {
+      row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
+    });
+  });
 }
 
 export function initUsersEditUser(options = {}) {
@@ -328,7 +339,7 @@ export function initUsersEditUser(options = {}) {
   if (!userEditData) return;
 
   const userId = parseInt(userEditData.dataset.userId || '0', 10);
-  toggleCheckedClass('.role-checkboxes .form-check input');
+  toggleCheckedClass('.role-checkboxes .checkbox-wrapper input');
 
   const permissionsEl = byId('userPermissions');
   if (!permissionsEl || !userId) return;
@@ -338,7 +349,7 @@ export function initUsersEditUser(options = {}) {
       .then((response) => response.json())
       .then((data) => {
         if (!data?.data || data.data.length === 0) {
-          permissionsEl.innerHTML = '<div class="alert alert-info mb-0">No roles assigned, no permissions available.</div>';
+          permissionsEl.innerHTML = '<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 mb-0">No roles assigned, no permissions available.</div>';
           return;
         }
         return fetch('/api/rbac/permissions/grouped')
@@ -346,16 +357,16 @@ export function initUsersEditUser(options = {}) {
           .then((permsData) => {
             let html = '';
             for (const [moduleName, perms,] of Object.entries(permsData?.data || {})) {
-              html += `<div class="mb-3"><strong class="text-primary text-uppercase-9">${escapeHtml(moduleName)}</strong></div>`;
+              html += `<div class="mb-3"><strong class="text-indigo-600 uppercase">${escapeHtml(moduleName)}</strong></div>`;
               (perms || []).forEach((perm) => {
                 html += `<div class="permission-badge">
                                     <div class="module">${escapeHtml(perm?.module || '')}</div>
                                     <div>${escapeHtml(perm?.name || '')}</div>
-                                    <small class="text-muted">${escapeHtml(perm?.description || '')}</small>
+                                    <small class="text-slate-500">${escapeHtml(perm?.description || '')}</small>
                                 </div>`;
               });
             }
-            permissionsEl.innerHTML = html || '<div class="alert alert-info mb-0">No permissions found.</div>';
+            permissionsEl.innerHTML = html || '<div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 mb-0">No permissions found.</div>';
           });
       });
   }

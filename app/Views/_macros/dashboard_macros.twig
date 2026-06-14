@@ -1,21 +1,19 @@
 {# ============================
-   FILE: templates/_macros/dashboard_macros.twig
-   Reusable UI helpers for dashboards
-   ============================ #}
+ FILE: templates/_macros/dashboard_macros.twig
+ Reusable UI helpers for dashboards
+ Version: 2.0 — Modern, Compact, Accessible
+ ============================ #}
+
+{# ── Modern Status Badge ── #}
 {% macro status_badge(status) %}
-  {% set s = status|lower %}
-  {% set cls =
-    s in ['approved','active','success'] ? 'bg-success' :
-    (s in ['pending','in review','processing'] ? 'bg-warning text-surface-dark' :
-    (s in ['rejected','inactive','failed'] ? 'bg-danger' : 'bg-secondary'))
-  %}
-  <span class="badge {{ cls }} text-capitalize">{{ status }}</span>
+ {% set s = status|lower %}
+ {% set badge_map = {
+  'approved': 'bg-emerald-50 text-emerald-700', 'active': 'bg-emerald-50 text-emerald-700', 'success': 'bg-emerald-50 text-emerald-700',
+  'pending': 'bg-amber-50 text-amber-700', 'in review': 'bg-amber-50 text-amber-700',
+  'processing': 'bg-sky-50 text-sky-700',
+  'rejected': 'bg-rose-50 text-rose-700', 'inactive': 'bg-rose-50 text-rose-700', 'failed': 'bg-rose-50 text-rose-700', 'banned': 'bg-rose-50 text-rose-700'
+ } %}
+ {% set classes = badge_map[s]|default('bg-slate-100 text-slate-600') %}
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ classes }}">{{ status }}</span>
 {% endmacro %}
 
-{% macro empty_state(title, subtitle) %}
-  <div class="text-center border rounded-4 p-5 bg-light">
-    <div class="display-6 mb-2">📭</div>
-    <h5 class="mb-1">{{ title }}</h5>
-    <p class="text-muted mb-0">{{ subtitle }}</p>
-  </div>
-{% endmacro %}

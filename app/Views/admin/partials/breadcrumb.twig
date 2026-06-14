@@ -1,31 +1,42 @@
-{# Admin Breadcrumb Navigation #}
+{# Admin Breadcrumb Navigation — polished glass-pill style #}
 {% if breadcrumbs is not defined or breadcrumbs|length == 0 %}
-    {# Automatically generate breadcrumbs for admin pages when not explicitly provided #}
-    {% set breadcrumbs = auto_admin_breadcrumbs() %}
+ {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% endif %}
 
 {% if breadcrumbs is defined and breadcrumbs|length > 0 %}
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb admin-breadcrumb bg-light rounded-3 px-4 py-3 shadow-sm">
-        {% for breadcrumb in breadcrumbs %}
-            {% if loop.last %}
-                <li class="breadcrumb-item active d-flex align-items-center" aria-current="page">
-                    {% if breadcrumb.icon is defined %}
-                        <i class="bi bi-{{ breadcrumb.icon }} me-2"></i>
-                    {% endif %}
-                    {{ breadcrumb.label }}
-                </li>
-            {% else %}
-                <li class="breadcrumb-item">
-                    <a href="{{ breadcrumb.url }}" class="text-decoration-none d-flex align-items-center">
-                        {% if breadcrumb.icon is defined %}
-                            <i class="bi bi-{{ breadcrumb.icon }} me-1"></i>
-                        {% endif %}
-                        {{ breadcrumb.label }}
-                    </a>
-                </li>
-            {% endif %}
-        {% endfor %}
-    </ol>
+<nav aria-label="Breadcrumb">
+ <ol class="mb-4 flex flex-wrap items-center gap-1 rounded-xl border border-slate-200/60 bg-white/70 px-3.5 py-2 text-xs font-medium text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,0.04)] backdrop-blur-md transition-shadow hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
+     itemscope itemtype="https://schema.org/BreadcrumbList">
+  {% for crumb in breadcrumbs %}
+   {% set position = loop.index %}
+   <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"
+       class="flex items-center gap-1">
+
+    {% if not loop.first %}
+     <i class="lucide lucide-chevron-right mx-0.5 text-slate-300" style="width:0.875em;height:0.875em;" aria-hidden="true"></i>
+    {% endif %}
+
+    {% if loop.last %}
+     <span itemprop="item" class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-indigo-700" aria-current="page">
+      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" style="width:0.75em;height:0.75em;"></i>{% endif %}
+      <span itemprop="name">{{ crumb.label }}</span>
+     </span>
+     <meta itemprop="position" content="{{ position }}">
+    {% else %}
+     <a href="{{ crumb.url }}" itemprop="item"
+        class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-slate-500 transition-all duration-150 hover:bg-slate-100 hover:text-indigo-600">
+      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" style="width:0.75em;height:0.75em;"></i>{% endif %}
+      <span itemprop="name">{{ crumb.label }}</span>
+     </a>
+     <meta itemprop="position" content="{{ position }}">
+    {% endif %}
+
+   </li>
+  {% endfor %}
+ </ol>
 </nav>
 {% endif %}
+
+
+
+

@@ -53,13 +53,13 @@ export function adminRenderNotifications(listEl, notifications) {
 
     return `
             <div class="notification-entry p-2 mb-2 rounded ${rowClass}" data-notification-id="${id}"${urlAttr}>
-                <div class="d-flex align-items-start gap-2">
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold small mb-1">${title}</div>
-                        <div class="small text-muted mb-1">${message}</div>
+                <div class="flex items-start gap-2">
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm mb-1">${title}</div>
+                        <div class="text-sm text-slate-500 mb-1">${message}</div>
                         <div class="small text-secondary">${createdAt}</div>
                     </div>
-                    ${isRead ? '' : `<button type="button" class="btn btn-sm btn-outline-primary" data-action="mark-read" data-notification-id="${id}">Read</button>`}
+                    ${isRead ? '' : `<button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors" data-action="mark-read" data-notification-id="${id}">Read</button>`}
                 </div>
             </div>
         `;
@@ -223,8 +223,8 @@ export function adminInitNotificationBell(options = {}) {
     return { active: false, };
   }
 
-  if (bellEl.hasAttribute('data-bs-toggle')) {
-    bellEl.removeAttribute('data-bs-toggle');
+  if (bellEl.hasAttribute('data-brox-toggle')) {
+    bellEl.removeAttribute('data-brox-toggle');
   }
 
   menuEl.classList.remove('show');
@@ -384,36 +384,78 @@ export async function initAdminNotificationRuntime() {
 export function initAdminUserDropdownSync() {
   const userToggle = document.getElementById('adminUserMenu');
   if (!userToggle) return;
+
   const userMenu = userToggle.closest('[data-admin-user-menu]');
   const userDropdown = userMenu?.querySelector('[data-admin-user-dropdown]');
 
-  const closeUserDropdown = () => {
-    if (window.bootstrap?.Dropdown?.getOrCreateInstance) {
-      const instance = window.bootstrap.Dropdown.getOrCreateInstance(userToggle);
-      if (instance && typeof instance.hide === 'function') {
-        instance.hide();
-        return;
-      }
-    }
+  if (!userDropdown) return;
 
-    const wrapper = userMenu || userToggle.closest('.dropdown');
-    const menu = userDropdown || wrapper?.querySelector('[data-admin-user-dropdown], .dropdown-menu');
-    if (!wrapper || !menu) return;
-
-    menu.classList.remove('show');
-    userToggle.classList.remove('show');
-    wrapper.classList.remove('show');
-    userToggle.setAttribute('aria-expanded', 'false');
+  // Initialize dropdown state
+  const openUserDropdown = () => {
+    userDropdown.classList.remove('opacity-0', 'invisible', 'pointer-events-none', 'scale-95');
+    userDropdown.classList.add('opacity-100', 'visible', 'pointer-events-auto', 'scale-100');
+    userToggle.setAttribute('aria-expanded', 'true');
+    userToggle.classList.add('bg-slate-100', 'dark:bg-slate-800');
+    userToggle.dispatchEvent(new CustomEvent('brox:shown', { bubbles: true, }));
   };
 
-  userToggle.addEventListener('shown.bs.dropdown', () => {
+  const closeUserDropdown = () => {
+    userDropdown.classList.add('opacity-0', 'invisible', 'pointer-events-none', 'scale-95');
+    userDropdown.classList.remove('opacity-100', 'visible', 'pointer-events-auto', 'scale-100');
+    userToggle.setAttribute('aria-expanded', 'false');
+    userToggle.classList.remove('bg-slate-100', 'dark:bg-slate-800');
+    userToggle.dispatchEvent(new CustomEvent('brox:hidden', { bubbles: true, }));
+  };
+
+  const toggleUserDropdown = () => {
+    if (userToggle.getAttribute('aria-expanded') === 'true') {
+      closeUserDropdown();
+    } else {
+      openUserDropdown();
+    }
+  };
+
+  // Toggle on button click
+  userToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleUserDropdown();
+  });
+
+  // Close dropdown when clicking menu items
+  userDropdown.querySelectorAll('a, button').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      // Don't close if it's a form submission (logout)
+      if (e.target.type !== 'submit' && item.tagName === 'A') {
+        closeUserDropdown();
+      }
+    });
+  });
+
+  // Close dropdown on events
+  userToggle.addEventListener('brox:shown', () => {
     adminEmitNavbarDropdownState('user', true);
   });
 
-  userToggle.addEventListener('hidden.bs.dropdown', () => {
+  userToggle.addEventListener('brox:hidden', () => {
     adminEmitNavbarDropdownState('user', false);
   });
 
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!userMenu?.contains(e.target)) {
+      closeUserDropdown();
+    }
+  });
+
+  // Close on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && userToggle.getAttribute('aria-expanded') === 'true') {
+      closeUserDropdown();
+      userToggle.focus();
+    }
+  });
+
+  // Close other dropdowns when opening user menu
   document.addEventListener(ADMIN_NAV_DROPDOWN_OPEN_EVENT, (event) => {
     const sourceKind = String(event?.detail?.kind || '');
     const isOpening = event?.detail?.open === true;

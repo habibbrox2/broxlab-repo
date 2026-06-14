@@ -2,140 +2,168 @@
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block title %}All Mobiles - Admin{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-phone me-2"></i>
-        Mobile Devices
-      </div>
-      <div class="admin-page-subtitle">Manage mobile devices</div>
-    </div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h1 class="h3 mb-0">All Mobiles</h1>
-        <small class="text-muted">Full list of mobiles</small>
-      </div>
-      <div class="d-flex gap-2 align-items-center">
-        <a href="/admin/mobiles/insert" class="modern-btn btn-sm btn-success">
-          <i class="bi bi-plus-circle me-1"></i> Add Mobile
-        </a>
-        <form method="get" class="d-flex gap-2 align-items-center">
-          <input type="search"
-                 name="search"
-                 class="form-control form-control-sm"
-                 placeholder="Search by brand or model"
-                 value="{{ search|default("") }}">
-          <select name="per_page" class="form-select form-select-sm">
-            {% set cur_per = pagination.per_page|default(50) %}
-            {% for opt in [10,25,50,100] %}
-              <option value="{{ opt }}" {{ cur_per == opt ? 'selected' : '' }}>{{ opt }} per page
-              </option>
-            {% endfor %}
-          </select>
-          <select name="sort" class="form-select form-select-sm">
-            {% set cur_sort = sort|default('brand_name') %}
-            <option value="brand_name" {{ cur_sort == 'brand_name' ? 'selected' : '' }}>Brand
-            </option>
-            <option value="model_name" {{ cur_sort == 'model_name' ? 'selected' : '' }}>Model
-            </option>
-            <option value="release_date"
-                    {{ cur_sort == 'release_date' ? 'selected' : '' }}>Release Date
-            </option>
-            <option value="created_at" {{ cur_sort == 'created_at' ? 'selected' : '' }}>Created
-            </option>
-          </select>
-          <select name="order" class="form-select form-select-sm">
-            {% set cur_order = order|default('ASC') %}
-            <option value="ASC" {{ cur_order == 'ASC' ? 'selected' : '' }}>Asc
-            </option>
-            <option value="DESC" {{ cur_order == 'DESC' ? 'selected' : '' }}>Desc
-            </option>
-          </select>
-          <button class="modern-btn btn-sm btn-primary">Apply</button>
-        </form>
-      </div>
-    </div>
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-stacked table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>#</th>
-                <th>Brand</th>
-                <th>Model</th>
-                <th>Status</th>
-                <th>Release Date</th>
-                <th class="text-center">Images</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if mobiles is not empty %}
-                {% for m in mobiles %}
-                  <tr>
-                    <td data-label="#">ID</td>
-                    <td data-label="Brand">{{ m.brand_name }}</td>
-                    <td data-label="Model">{{ m.model_name }}</td>
-                    <td data-label="Status">
-                      <span class="badge bg-{% if m.status == 'official' %}primary{% elseif m.status == 'unofficial' %}warning{% else %}secondary{% endif %}">{{ m.status|capitalize }}</span>
-                    </td>
-                    <td data-label="Release Date">{{ m.release_date ? m.release_date|date("M d, Y") : 'N/A' }}</td>
-                    <td class="text-center" data-label="Images">{{ m.image_count|default(0) }}</td>
-                    <td class="text-end" data-label="Actions">
-                      <a href="/admin/mobiles/view/{{ m.id }}"
-                         class="modern-btn btn-sm btn-outline-secondary"
-                         title="View"><i class="bi bi-eye"></i></a>
-                      <a href="/admin/mobiles/update/{{ m.id }}"
-                         class="modern-btn btn-sm btn-outline-primary"
-                         title="Edit"><i class="bi bi-pencil"></i></a>
-                      <a href="/admin/mobiles/delete?id={{ m.id }}"
-                         class="modern-btn btn-sm btn-outline-danger"
-                         title="Delete"><i class="bi bi-trash"></i></a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="7" class="text-center text-muted py-4">No mobiles found.</td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    {# Pagination #}
-    {% set current = pagination.current_page|default(1) %}
-    {% set total = pagination.total_pages|default(1) %}
-    {% if total > 1 %}
-      <nav aria-label="Page navigation" class="mt-3">
-        <ul class="pagination justify-content-center">
-          <li class="page-item {{ current <= 1 ? 'disabled' }}">
-            <a class="page-link"
-               href="?page={{ current - 1 }}&per_page={{ pagination.per_page|default(50) }}&search={{ search|url_encode }}&sort={{ sort|default("brand_name") }}&order={{ order|default("ASC") }}"
-               aria-label="Previous">
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-          {% for p in 1..total %}
-            <li class="page-item {{ current == p ? 'active' }}">
-              <a class="page-link"
-                 href="?page={{ p }}&per_page={{ pagination.per_page|default(50) }}&search={{ search|url_encode }}&sort={{ sort|default("brand_name") }}&order={{ order|default("ASC") }}">{{ p }}</a>
-            </li>
-          {% endfor %}
-          <li class="page-item {{ current >= total ? 'disabled' }}">
-            <a class="page-link"
-               href="?page={{ current + 1 }}&per_page={{ pagination.per_page|default(50) }}&search={{ search|url_encode }}&sort={{ sort|default("brand_name") }}&order={{ order|default("ASC") }}"
-               aria-label="Next">
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    {% endif %}
+{% import '_macros/dashboard_macros.twig' as ui %}
+<div class="w-full px-4 sm:px-6 py-4">
+
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 p-6 text-white shadow-2xl shadow-emerald-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-teal-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-smartphone" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Mobile Devices</h1>
+     <p class="mt-1 text-sm text-emerald-200/80">Manage mobile device inventory and specifications</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/mobiles/insert" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-plus-circle" style="width:0.875em;height:0.875em;"></i> Add Mobile
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Filter Section ── #}
+ <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+    <i class="lucide lucide-filter" style="width:1em;height:1em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Filter Mobiles</h2>
+    <p class="text-xs text-slate-500">Search by brand/model, sort, and adjust page size</p>
+   </div>
+  </div>
+  <form class="p-5" method="get" action="">
+   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+    <div>
+     <label for="mobile-search" class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+     <div class="relative">
+      <i class="lucide lucide-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style="width:0.875em;height:0.875em;"></i>
+      <input id="mobile-search" type="search" name="search" class="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Search by brand or model…" value="{{ search|default('') }}">
+     </div>
+    </div>
+    <div>
+     <label for="mobile-per-page" class="block text-xs font-medium text-slate-500 mb-1">Per Page</label>
+     <select id="mobile-per-page" name="per_page" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      {% set cur_per = pagination.per_page|default(50) %}
+      {% for opt in [10,25,50,100] %}
+      <option value="{{ opt }}" {{ cur_per == opt ? 'selected' : '' }}>{{ opt }} per page</option>
+      {% endfor %}
+     </select>
+    </div>
+    <div>
+     <label for="mobile-sort" class="block text-xs font-medium text-slate-500 mb-1">Sort By</label>
+     <select id="mobile-sort" name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      {% set cur_sort = sort|default('brand_name') %}
+      <option value="brand_name" {{ cur_sort == 'brand_name' ? 'selected' : '' }}>Brand</option>
+      <option value="model_name" {{ cur_sort == 'model_name' ? 'selected' : '' }}>Model</option>
+      <option value="release_date" {{ cur_sort == 'release_date' ? 'selected' : '' }}>Release Date</option>
+      <option value="created_at" {{ cur_sort == 'created_at' ? 'selected' : '' }}>Created</option>
+     </select>
+    </div>
+    <div>
+     <label for="mobile-order" class="block text-xs font-medium text-slate-500 mb-1">Order</label>
+     <select id="mobile-order" name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      {% set cur_order = order|default('ASC') %}
+      <option value="ASC" {{ cur_order == 'ASC' ? 'selected' : '' }}>Ascending</option>
+      <option value="DESC" {{ cur_order == 'DESC' ? 'selected' : '' }}>Descending</option>
+     </select>
+    </div>
+    <div class="flex items-end">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97] w-full">
+      <i class="lucide lucide-filter" style="width:1em;height:1em;"></i> Apply
+     </button>
+    </div>
+   </div>
+  </form>
+ </section>
+
+ {# ── Mobiles List Table ── #}
+ {% if mobiles is not empty %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+    <i class="lucide lucide-smartphone" style="width:1em;height:1em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">All Mobiles</h2>
+    <p class="text-xs text-slate-500">{{ pagination.total|default('?') }} devices in inventory</p>
+   </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table class="w-full text-left text-sm">
+    <thead>
+     <tr class="border-b border-slate-100 bg-slate-50/50">
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Brand</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Model</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Release Date</th>
+      <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Images</th>
+      <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+     </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+     {% for m in mobiles %}
+     <tr class="transition-colors duration-150 hover:bg-emerald-50/30">
+      <td class="px-5 py-3.5"><span class="font-semibold text-slate-900">{{ m.id }}</span></td>
+      <td class="px-5 py-3.5 font-medium text-slate-900">{{ m.brand_name }}</td>
+      <td class="px-5 py-3.5 text-slate-700">{{ m.model_name }}</td>
+      <td class="px-5 py-3.5">
+       {% if m.status == 'official' %}
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Official</span>
+       {% elseif m.status == 'unofficial' %}
+        <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Unofficial</span>
+       {% else %}
+        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">Both</span>
+       {% endif %}
+      </td>
+      <td class="px-5 py-3.5 text-slate-600">{{ m.release_date ? m.release_date|date("M d, Y") : 'N/A' }}</td>
+      <td class="px-5 py-3.5 text-center">
+       <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+        <i class="lucide lucide-image mr-1" style="width:0.75em;height:0.75em;"></i> {{ m.image_count|default(0) }}
+       </span>
+      </td>
+      <td class="px-5 py-3.5 text-right">
+       <div class="inline-flex items-center gap-1.5">
+        <a href="/admin/mobiles/view/{{ m.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5" title="View">
+         <i class="lucide lucide-eye" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/mobiles/update/{{ m.id }}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5" title="Edit">
+         <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/mobiles/delete?id={{ m.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return confirm('Delete this mobile?')">
+         <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
+        </a>
+       </div>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  <div class="border-t border-slate-100 px-5 py-4">
+   {% include "admin/partials/pagination.twig" %}
+  </div>
+ </section>
+ {% else %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white p-8 shadow-sm">
+  <div class="text-center">
+   <i class="lucide lucide-smartphone text-slate-300 mx-auto" style="width:3em;height:3em;"></i>
+   <h3 class="mt-4 text-lg font-bold text-slate-900">No mobiles found</h3>
+   <p class="mt-1 text-sm text-slate-500">Get started by adding your first mobile device.</p>
+   <a href="/admin/mobiles/insert" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md">
+    <i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Mobile
+   </a>
+  </div>
+ </section>
+ {% endif %}
+</div>
 {% endblock %}
-
-

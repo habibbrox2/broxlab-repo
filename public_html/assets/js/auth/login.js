@@ -10,18 +10,40 @@
 
 import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 
+const runWhenReady = (fn) => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true, });
+  } else {
+    fn();
+  }
+};
+
 (function () {
   'use strict';
 
   // ============ REDIRECT URL HANDLING ============
   // Check for stored redirect URL from session timeout
+  const REDIRECT_STORAGE_KEY = 'login_redirect_url';
+
+  function getSafeRedirectUrl(rawUrl) {
+    const urlValue = String(rawUrl || '').trim();
+    if (!urlValue) return null;
+
+    try {
+      const parsed = new URL(urlValue, window.location.origin);
+      if (parsed.origin !== window.location.origin) return null;
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return null;
+    }
+  }
+
   function handleStoredRedirectUrl() {
-    const STORAGE_KEY = 'login_redirect_url';
     const form = document.querySelector('#loginForm');
     if (!form) return;
 
     // Check if there's a stored URL from previous session
-    const storedUrl = sessionStorage.getItem(STORAGE_KEY);
+    const storedUrl = getSafeRedirectUrl(sessionStorage.getItem(REDIRECT_STORAGE_KEY));
     const currentRedirect = form.dataset.redirectUrl;
 
     // If no redirect set in template, use stored URL
@@ -31,18 +53,18 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 
     // Also check URL query param
     const urlParams = new URLSearchParams(window.location.search);
-    const returnUrl = urlParams.get('return_url') || urlParams.get('redirect');
+    const returnUrl = getSafeRedirectUrl(urlParams.get('return_url') || urlParams.get('redirect'));
     if (returnUrl && !currentRedirect) {
       form.dataset.redirectUrl = returnUrl;
     }
 
     // Clear stored URL after use
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(REDIRECT_STORAGE_KEY);
   }
 
   // Store current URL for redirect after login (for session timeout scenarios)
   window.storeLoginRedirectUrl = function (url) {
-    sessionStorage.setItem('login_redirect_url', url || window.location.href);
+    sessionStorage.setItem(REDIRECT_STORAGE_KEY, getSafeRedirectUrl(url) || window.location.href);
   };
 
   // ============ SELECTORS ============
@@ -145,7 +167,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
       btn.setAttribute('aria-busy', isActive ? 'true' : 'false');
 
       if (isActive) {
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        btn.innerHTML = '<span class="inline-spinner inline-spinner-sm" role="status" aria-hidden="true"></span>';
       }
     });
   }
@@ -186,16 +208,23 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
   function initPasswordToggle() {
     if (!elements.passwordToggle || !elements.passwordInput) return;
 
+    const updateIcon = (isPassword) => {
+      // Remove all lucide icons and replace with correct one
+      const iconName = isPassword ? 'eye' : 'eye-off';
+      elements.passwordToggle.innerHTML = `<i class="lucide lucide-${iconName} w-5 h-5"></i>`;
+      elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Show password' : 'Hide password');
+      elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'false' : 'true');
+    };
+
     const toggle = () => {
       const isPassword = elements.passwordInput.type === 'password';
       elements.passwordInput.type = isPassword ? 'text' : 'password';
-      elements.passwordToggle.className = isPassword
-        ? 'bi bi-eye-slash password-toggle'
-        : 'bi bi-eye password-toggle';
-      elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-      elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+      updateIcon(isPassword);
       elements.passwordInput.focus();
     };
+
+    // Initialize icon
+    updateIcon(true);
 
     elements.passwordToggle.addEventListener('click', (e) => {
       e.preventDefault();
@@ -235,7 +264,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
   async function handleGoogleAuth() {
     setOAuthLoadingState(elements.googleAuthBtn);
     try {
-      const redirectUrl = elements.form?.dataset.redirectUrl || '/user/dashboard';
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
       await AuthUIHandler.signInWithGoogle({
         redirectTo: redirectUrl,
       });
@@ -248,7 +277,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
   async function handleFacebookAuth() {
     setOAuthLoadingState(elements.facebookAuthBtn);
     try {
-      const redirectUrl = elements.form?.dataset.redirectUrl || '/user/dashboard';
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
       await AuthUIHandler.signInWithFacebook({
         redirectTo: redirectUrl,
       });
@@ -261,7 +290,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
   async function handleGuestAuth() {
     setOAuthLoadingState(elements.guestAuthBtn);
     try {
-      const redirectUrl = elements.form?.dataset.redirectUrl || '/user/dashboard';
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
       await AuthUIHandler.signInAnonymous({
         redirectTo: redirectUrl,
       });
@@ -306,7 +335,7 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
         clearStatus();
         showStatus('Login successful! Redirecting...', 'success');
         // fallback redirect in case handler doesn't perform it
-        const redirectUrl = elements.form?.dataset.redirectUrl || '/user/dashboard';
+        const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
         if (redirectUrl) {
           setTimeout(() => {
             window.location.href = redirectUrl;
@@ -335,26 +364,26 @@ import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
 
   // ============ INITIALIZATION ============
   function init() {
-    // Handle stored redirect URL from session timeout
-    handleStoredRedirectUrl();
-    cacheElements();
+    try {
+      // Handle stored redirect URL from session timeout
+      handleStoredRedirectUrl();
+      cacheElements();
 
-    if (!elements.form) {
-      console.warn('Login form not found');
-      return;
+      if (!elements.form) {
+        console.warn('Login form not found');
+        return;
+      }
+
+      initPasswordToggle();
+      initFormHandler();
+      initOAuthButtons();
+      setupAuthCallbacks();
+      showInitialStatusFromServer();
+    } catch (error) {
+      console.error('[Login] Initialization failed:', error);
     }
-
-    initPasswordToggle();
-    initFormHandler();
-    initOAuthButtons();
-    setupAuthCallbacks();
-    showInitialStatusFromServer();
   }
 
   // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  runWhenReady(init);
 })();

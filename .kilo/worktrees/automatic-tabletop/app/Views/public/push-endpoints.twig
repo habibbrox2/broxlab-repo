@@ -1,0 +1,98 @@
+﻿{% extends "layout.twig" %}
+
+{% block title %}Push Endpoints - {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
+
+{% block content %}
+<section class="py-5" style="background: radial-gradient(circle at 10% 10%, #bfdbfe 0%, #ffffff 55%, #d1fae5 100%);">
+  <div class="container">
+    <div class="mx-auto" style="max-width: 920px;">
+      <div class="rounded-4 shadow-sm p-4 p-md-5" style="background:#ffffff; border:1px solid #e2e8f0;">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+          <div>
+            <h1 class="fw-bold mb-1">Push Endpoint Reference</h1>
+            <p class="text-muted mb-0">API integration guide for pushing content to BroxLab. Data is automatically staged and processed.</p>
+          </div>
+          <a href="/" class="btn btn-outline-secondary">Back Home</a>
+        </div>
+
+        <div class="alert alert-warning" role="alert">
+          Keep your bearer token private. Do not expose it in client-side apps or public repositories.
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Articles Push URL</label>
+            <div class="input-group">
+              <input id="publicPushArticlesUrl" class="form-control" value="{{ push_articles_url }}" readonly>
+              <button class="btn btn-outline-primary copy-target" data-target="publicPushArticlesUrl" type="button">Copy</button>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Mobiles Push URL</label>
+            <div class="input-group">
+              <input id="publicPushMobilesUrl" class="form-control" value="{{ push_mobiles_url }}" readonly>
+              <button class="btn btn-outline-primary copy-target" data-target="publicPushMobilesUrl" type="button">Copy</button>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Combined/Batch Push URL</label>
+            <div class="input-group">
+              <input id="publicPushLegacyUrl" class="form-control" value="{{ push_legacy_url }}" readonly>
+              <button class="btn btn-outline-primary copy-target" data-target="publicPushLegacyUrl" type="button">Copy</button>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Push Headers (JSON)</label>
+            <textarea id="publicPushHeadersJson" class="form-control" rows="3" readonly>{{ push_headers_json }}</textarea>
+          </div>
+        </div>
+
+        <h2 class="h5 fw-bold mb-2">Quick Example (cURL)</h2>
+        <pre class="p-3 rounded-3 text-light" style="background:#0f172a; overflow:auto;"><code>curl -X POST "{{ push_articles_url }}" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"articles":[{"title":"Sample"}],"source":"scraper"}'</code></pre>
+
+        <p id="copyStatus" class="small text-muted mb-0"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const status = document.getElementById('copyStatus');
+  const copyText = async (text) => {
+    if (!text) return false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(temp);
+    return ok;
+  };
+
+  document.querySelectorAll('.copy-target').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-target');
+      const target = id ? document.getElementById(id) : null;
+      const value = target ? target.value : '';
+      const ok = await copyText(value.trim());
+      status.textContent = ok ? 'Copied to clipboard.' : 'Copy failed.';
+      status.classList.toggle('text-success', ok);
+      status.classList.toggle('text-danger', !ok);
+    });
+  });
+})();
+</script>
+{% endblock %}
+

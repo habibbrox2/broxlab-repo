@@ -107,8 +107,8 @@ function isPopupCancelError(error) {
 
 function renderInfoState(container, message) {
   container.innerHTML = `
-        <div class="alert alert-info mb-0">
-            <i class="bi bi-info-circle-fill me-2"></i>${message}
+        <div class="p-4 rounded-lg bg-info-light text-blue-700 border border-info mb-0">
+            <i class="bi icon-info mr-2"></i>${message}
         </div>
     `;
 }
@@ -143,7 +143,7 @@ export async function initFirebaseUISignIn(options = {}) {
 
   container.innerHTML = `
         <div class="text-center py-3">
-            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <div class="inline-spinner inline-spinner-sm text-primary" role="status"></div>
             <p class="text-muted small mt-2 mb-0">Loading sign-in options...</p>
         </div>
     `;

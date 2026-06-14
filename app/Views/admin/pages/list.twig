@@ -1,98 +1,147 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}All Pages{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-file-earmark-text"></i>
-        Pages Management
-      </div>
-      <div class="admin-page-subtitle">Manage all static pages</div>
-    </div>
+<div class="w-full px-4 sm:px-6 py-4">
 
-    <div class="d-flex justify-content-end mb-4">
-      <a href="/admin/pages/create" class="modern-btn modern-btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> Add New Page
-      </a>
-    </div>
-
-    <div class="admin-panel-card mb-4">
-      <div class="admin-panel-card-body">
-        <form class="row" method="get" action="">
-          <div class="col-md-4">
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-              <input type="text" name="search" value="{{ search|default('') }}" class="form-control" placeholder="Search by title...">
-            </div>
-          </div>
-          <div class="col-md-3">
-            <select name="sort" class="form-select">
-              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <button type="submit" class="modern-btn modern-btn-primary w-100">
-              <i class="bi bi-funnel-fill me-1"></i> Filter
-            </button>
-          </div>
-          <div class="col-md-1">
-            <select name="limit" class="form-select form-select-sm">
-              <option value="20" selected>20</option>
-              <option value="10">10</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    {% if pages is not empty %}
-      <div class="admin-panel-card">
-        <div class="admin-panel-card-body">
-          <div class="table-responsive">
-            <table class="table table-stacked">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th><i class="bi bi-type"></i> Title</th>
-                  <th><i class="bi bi-link-45deg"></i> Slug</th>
-                  <th><i class="bi bi-calendar-check"></i> Status</th>
-                  <th class="text-center"><i class="bi bi-gear"></i> Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for page in pages %}
-                  <tr>
-                    <td class="fw-bold" data-label="#">ID</td>
-                    <td data-label="Title">{{ page.title }}</td>
-                    <td data-label="Slug"><code class="text-muted">{{ page.slug ?? '-' }}</code></td>
-                    <td data-label="Status">
-                      {% if page.published %}
-                        <span class="badge bg-success rounded-pill"><i class="bi bi-check2"></i> Published</span>
-                      {% else %}
-                        <span class="badge bg-warning text-surface-dark rounded-pill"><i class="bi bi-pencil"></i> Draft</span>
-                      {% endif %}
-                    </td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/pages/view/{{ page.slug }}" class="modern-btn btn-sm btn-info me-1" title="View"><i class="bi bi-eye-fill"></i></a>
-                      <a href="/admin/pages/edit?id={{ page.id }}" class="modern-btn btn-sm btn-warning me-1" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                      <a href="/admin/pages/delete?id={{ page.id }}" class="modern-btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure?');"><i class="bi bi-trash3-fill"></i></a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% include "admin/partials/pagination.twig" %}
-        </div>
-      </div>
-    {% else %}
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-1"></i> No pages found.
-      </div>
-    {% endif %}
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-file" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Pages Management</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Manage all static pages</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/pages/create" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-plus-circle" style="width:0.875em;height:0.875em;"></i> Add New Page
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Filter Section ── #}
+ <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+    <i class="lucide lucide-filter" style="width:1em;height:1em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Filter Pages</h2>
+    <p class="text-xs text-slate-500">Search by title, sort order, and adjust page size</p>
+   </div>
+  </div>
+  <form class="p-5" method="get" action="">
+   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div>
+     <label for="page-search" class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+     <div class="relative">
+      <i class="lucide lucide-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style="width:0.875em;height:0.875em;"></i>
+      <input id="page-search" type="text" name="search" value="{{ search|default('') }}" placeholder="Search by title..." class="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+     </div>
+    </div>
+    <div>
+     <label for="page-sort" class="block text-xs font-medium text-slate-500 mb-1">Sort</label>
+     <select id="page-sort" name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+      <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+     </select>
+    </div>
+    <div>
+     <label for="page-limit" class="block text-xs font-medium text-slate-500 mb-1">Per Page</label>
+     <select id="page-limit" name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+      <option value="20" selected>20</option>
+      <option value="10">10</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+     </select>
+    </div>
+    <div class="flex items-end">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97] w-full">
+      <i class="lucide lucide-filter" style="width:1em;height:1em;"></i> Filter
+     </button>
+    </div>
+   </div>
+  </form>
+ </section>
+
+ {# ── Pages List Table ── #}
+ {% if pages is not empty %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-file" style="width:1em;height:1em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">All Pages</h2>
+    <p class="text-xs text-slate-500">Static pages overview</p>
+   </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table class="w-full text-left text-sm">
+    <thead>
+     <tr class="border-b border-slate-100 bg-slate-50/50">
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Title</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Slug</th>
+      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+      <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+     </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+     {% for page in pages %}
+     <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+      <td class="px-5 py-3.5 font-semibold text-slate-900" data-label="#">{{ page.id }}</td>
+      <td class="px-5 py-3.5 font-medium text-slate-900" data-label="Title">{{ page.title }}</td>
+      <td class="px-5 py-3.5" data-label="Slug"><code class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ page.slug ?? '-' }}</code></td>
+      <td class="px-5 py-3.5" data-label="Status">
+       {% if page.published %}
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+         <i class="lucide lucide-check" style="width:0.75em;height:0.75em;margin-right:0.25em;"></i> Published
+        </span>
+       {% else %}
+        <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+         <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;margin-right:0.25em;"></i> Draft
+        </span>
+       {% endif %}
+      </td>
+      <td class="px-5 py-3.5 text-right" data-label="Actions">
+       <div class="inline-flex items-center gap-1.5">
+        <a href="/admin/pages/view/{{ page.slug }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5" title="View">
+         <i class="lucide lucide-eye" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/pages/edit?id={{ page.id }}" class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:-translate-y-0.5" title="Edit">
+         <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
+        </a>
+        <a href="/admin/pages/delete?id={{ page.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return confirm('Are you sure?');">
+         <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
+        </a>
+       </div>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  <div class="border-t border-slate-100 px-5 py-4">
+   {% include "admin/partials/pagination.twig" %}
+  </div>
+ </section>
+ {% else %}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white p-8 shadow-sm">
+  <div class="text-center text-slate-500">
+   <i class="lucide lucide-file mx-auto text-slate-300" style="width:2em;height:2em;"></i>
+   <p class="mt-2 text-sm">No pages found.</p>
+  </div>
+ </section>
+ {% endif %}
+</div>
 {% endblock %}

@@ -1199,7 +1199,7 @@ class UserModel
      */
     public function getUserById(int $id): ?array
     {
-        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
+        $sql = "SELECT id, username, email, password, first_name, last_name, status, deleted_at, auth_provider, firebase_uid, email_verified, profile_pic, phone FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1";
         $stmt = $this->mysqli->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();

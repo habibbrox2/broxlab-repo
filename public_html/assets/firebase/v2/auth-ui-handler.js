@@ -524,6 +524,46 @@ export async function resetPassword(email) {
   }
 }
 
+// ============ REDIRECT RESULT HANDLING ============
+// Called on page load to process redirect sign-in results
+// (when popup was blocked and we fell back to redirect)
+export async function handleRedirectResult() {
+  try {
+    const result = await Auth.handleAuthRedirectResult();
+    if (!result) return null; // No redirect result to process
+
+    if (result.success) {
+      DebugUtils.moduleLog('auth-ui', 'Redirect sign-in successful, processing...');
+      _setStatus('Sign-in successful! Redirecting...', 'success');
+      if (_successCallback) {
+        _successCallback(result);
+      }
+    } else {
+      DebugUtils.moduleWarn('auth-ui', `Redirect sign-in failed: ${result.error}`);
+      if (_errorCallback) {
+        _errorCallback({ provider: 'redirect', message: result.error || 'Redirect sign-in failed' });
+      }
+    }
+
+    return result;
+  } catch (err) {
+    DebugUtils.moduleError('auth-ui', 'Redirect result handling error:', err?.message || err);
+    return null;
+  }
+}
+
+// Auto-check redirect result on page load after Firebase is initialized
+// Runs after DOMContentLoaded so that login/register page callbacks are set
+(function autoCheckRedirectResult() {
+  if (typeof window === 'undefined') return;
+  const check = () => setTimeout(() => handleRedirectResult().catch(() => {}), 300);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', check, { once: true });
+  } else {
+    check();
+  }
+})();
+
 // ============ SIGN OUT ============
 export async function signOutUser(options = {}) {
   try {
@@ -598,4 +638,5 @@ export default {
   setAllCallbacks,
   isProcessing,
   resetState,
+  handleRedirectResult,
 };

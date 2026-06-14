@@ -3,880 +3,386 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block extra_styles %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-:root {
-    --studio-ink: #08111d;
-    --studio-panel: rgba(5, 17, 31, 0.92);
-    --studio-surface: rgba(8, 18, 33, 0.84);
-    --studio-line: rgba(148, 163, 184, 0.18);
-    --studio-muted: #94a3b8;
-    --studio-text: #e2e8f0;
-    --studio-accent: #0ea5e9;
-    --studio-accent-2: #22c55e;
-    --studio-warm: #f97316;
-    --studio-danger: #ef4444;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-.brox-navbar-container,
-footer {
-    display: none;
-}
-
-body {
-    margin: 0;
-    background:
-        radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 26%),
-        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 24%),
-        linear-gradient(180deg, #020617 0%, #07111d 48%, #02060f 100%);
-}
-
-#main-content {
-    min-height: 100vh;
-}
-
-.studio-app {
-    min-height: 100vh;
-    color: var(--studio-text);
-    font-family: "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif;
-}
-
-.studio-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 390px;
-    min-height: 100vh;
-}
-
-.studio-main {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.studio-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    background: rgba(2, 6, 23, 0.75);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--studio-line);
-}
-
-.studio-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    color: #fff;
-    text-decoration: none;
-}
-
-.studio-brand-mark {
-    width: 44px;
-    height: 44px;
-    border-radius: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #0284c7, #22c55e);
-    box-shadow: 0 14px 34px rgba(14, 165, 233, 0.3);
-}
-
-.studio-brand-copy strong,
-.studio-panel-heading strong {
-    display: block;
-    font-size: 0.98rem;
-}
-
-.studio-brand-copy span,
-.studio-panel-heading span,
-.studio-meta,
-.studio-helper {
-    color: var(--studio-muted);
-    font-size: 0.82rem;
-}
-
-.studio-top-actions,
-.studio-stack,
-.studio-grid,
-.studio-inline {
-    display: flex;
-    gap: 0.65rem;
-    flex-wrap: wrap;
-}
-
-.studio-stack {
-    flex-direction: column;
-}
-
-.studio-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.studio-btn,
-.studio-icon-btn,
-.studio-chip,
-.studio-tool-card {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-}
-
-.studio-btn:hover,
-.studio-icon-btn:hover,
-.studio-chip:hover,
-.studio-tool-card:hover {
-    transform: translateY(-1px);
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.11);
-}
-
-.studio-btn,
-.studio-chip {
-    padding: 0.82rem 1rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-}
-
-.studio-btn.primary {
-    background: linear-gradient(135deg, #0284c7, #22c55e);
-    border-color: transparent;
-}
-
-.studio-btn.warm {
-    background: linear-gradient(135deg, #f97316, #fb7185);
-    border-color: transparent;
-}
-
-.studio-icon-btn {
-    width: 42px;
-    height: 42px;
-}
-
-.studio-chip {
-    padding: 0.72rem 0.92rem;
-    text-align: left;
-    width: 100%;
-}
-
-.studio-chip.active,
-.studio-tool-card.active,
-.studio-swatch.active {
-    border-color: rgba(14, 165, 233, 0.9);
-    background: rgba(14, 165, 233, 0.16);
-    box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.28);
-}
-
-.studio-chip small {
-    display: block;
-    color: var(--studio-muted);
-    font-weight: 500;
-}
-
-.studio-workspace {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-}
-
-.studio-ribbon {
-    padding: 1rem 1.25rem 0;
-}
-
-.studio-ribbon-card {
-    padding: 1rem;
-    border: 1px solid var(--studio-line);
-    border-radius: 24px;
-    background: rgba(5, 17, 31, 0.78);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1rem;
-}
-
-.studio-ribbon-copy h2 {
-    margin: 0 0 0.35rem;
-    font-size: 1.15rem;
-}
-
-.studio-canvas-wrap {
-    padding: 1.25rem;
-    min-height: 0;
-}
-
-.studio-canvas-stage {
-    position: relative;
-    height: 100%;
-    min-height: 60vh;
-    border-radius: 28px;
-    border: 1px solid var(--studio-line);
-    background:
-        linear-gradient(45deg, rgba(148, 163, 184, 0.1) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(148, 163, 184, 0.1) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(148, 163, 184, 0.1) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(148, 163, 184, 0.1) 75%),
-        rgba(15, 23, 42, 0.68);
-    background-size: 28px 28px;
-    background-position: 0 0, 0 14px, 14px -14px, -14px 0;
-    overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 32px 70px rgba(2, 6, 23, 0.42);
-}
-
-.canvas-scroll {
-    position: absolute;
-    inset: 0;
-    overflow: auto;
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.canvas-container {
-    position: relative;
-    transform-origin: center center;
-}
-
-#photoCanvas {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    border-radius: 22px;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.42);
-    background: #fff;
-    touch-action: none;
-}
-
-.canvas-placeholder {
-    position: absolute;
-    inset: 1.5rem;
-    border-radius: 24px;
-    border: 1.5px dashed rgba(255, 255, 255, 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    cursor: pointer;
-    padding: 1.5rem;
-    background: rgba(5, 17, 31, 0.34);
-}
-
-.canvas-placeholder-inner {
-    max-width: 360px;
-}
-
-.canvas-placeholder i {
-    font-size: 3.5rem;
-    color: #7dd3fc;
-}
-
-.canvas-placeholder h3,
-.studio-section h3 {
-    margin: 0 0 0.35rem;
-}
-
-.studio-canvas-hud {
-    position: absolute;
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    pointer-events: none;
-}
-
-.studio-hud-pill,
-.studio-statusbar {
-    padding: 0.72rem 0.95rem;
-    border-radius: 18px;
-    background: rgba(2, 6, 23, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
-}
-
-.studio-statusbar {
-    margin: 0 1.25rem 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-}
-
-.studio-sidebar {
-    border-left: 1px solid var(--studio-line);
-    background: var(--studio-panel);
-    padding: 1rem;
-    overflow: auto;
-}
-
-.studio-panel-card,
-.studio-section,
-.studio-modal-card {
-    background: rgba(15, 23, 42, 0.74);
-    border: 1px solid var(--studio-line);
-    border-radius: 22px;
-}
-
-.studio-panel-card {
-    padding: 1rem;
-}
-
-.studio-section {
-    padding: 1rem;
-    margin-top: 0.95rem;
-}
-
-.studio-panel-heading {
-    margin-bottom: 0.8rem;
-}
-
-.studio-tool-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
-}
-
-.studio-tool-card {
-    padding: 0.95rem 0.9rem;
-    text-align: left;
-}
-
-.studio-tool-card strong {
-    display: block;
-    margin-top: 0.35rem;
-}
-
-.studio-tool-card span {
-    display: block;
-    color: var(--studio-muted);
-    font-size: 0.78rem;
-    margin-top: 0.15rem;
-}
-
-.studio-field {
-    display: grid;
-    gap: 0.45rem;
-    margin-top: 0.78rem;
-}
-
-.studio-field label {
-    font-size: 0.84rem;
-    color: var(--studio-muted);
-}
-
-.studio-field input[type="range"],
-.studio-field input[type="number"],
-.studio-field input[type="text"],
-.studio-field input[type="color"],
-.studio-field select,
-.studio-textarea {
-    width: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
-    border-radius: 14px;
-    padding: 0.8rem 0.9rem;
-}
-
-.studio-inline {
-    align-items: center;
-}
-
-.studio-inline.spread {
-    justify-content: space-between;
-}
-
-.studio-swatch-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.55rem;
-    margin-top: 0.85rem;
-}
-
-.studio-swatch {
-    height: 44px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    cursor: pointer;
-}
-
-.studio-tray {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-    gap: 0.7rem;
-}
-
-.tray-item {
-    position: relative;
-    padding: 0;
-    aspect-ratio: 1;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-}
-
-.tray-item.active {
-    border-color: rgba(14, 165, 233, 0.8);
-    box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.24);
-}
-
-.tray-item.selected::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 2px solid #22c55e;
-    border-radius: 18px;
-}
-
-.tray-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.tray-item-remove {
-    position: absolute;
-    top: 0.35rem;
-    right: 0.35rem;
-    width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    border: 0;
-    background: rgba(2, 6, 23, 0.72);
-    color: #fff;
-    cursor: pointer;
-}
-
-.studio-modal {
-    position: fixed;
-    inset: 0;
-    padding: 1rem;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2, 6, 23, 0.7);
-    z-index: 60;
-}
-
-.studio-modal-card {
-    width: min(760px, 100%);
-    padding: 1.15rem;
-}
-
-.studio-preview-box {
-    min-height: 160px;
-    border-radius: 18px;
-    border: 1px dashed rgba(255, 255, 255, 0.14);
-    background: rgba(2, 6, 23, 0.35);
-    padding: 0.9rem;
-    margin-top: 0.85rem;
-}
-
-.studio-preview-sheet {
-    width: 100%;
-    min-height: 118px;
-    border-radius: 16px;
-    background: #fff;
-    position: relative;
-    overflow: hidden;
-}
-
-.studio-preview-photo {
-    position: absolute;
-    border: 1px solid #cbd5e1;
-    background-size: cover;
-    background-position: center;
-}
-
-.toast-container {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    z-index: 80;
-    display: grid;
-    gap: 0.6rem;
-}
-
-.toast {
-    padding: 0.85rem 1rem;
-    border-radius: 16px;
-    background: rgba(2, 6, 23, 0.92);
-    border-left: 4px solid #38bdf8;
-    color: #fff;
-    min-width: 240px;
-}
-
-.toast.success {
-    border-left-color: #22c55e;
-}
-
-.toast.error {
-    border-left-color: #ef4444;
-}
-
-.studio-mobile-toggle {
-    display: none;
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    z-index: 50;
-}
-
-@media (max-width: 1180px) {
-    .studio-shell {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .studio-sidebar {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: min(430px, 100%);
-        transform: translateX(100%);
-        transition: transform 0.2s ease;
-        z-index: 55;
-    }
-
-    .studio-app.sidebar-open .studio-sidebar {
-        transform: translateX(0);
-    }
-
-    .studio-mobile-toggle {
-        display: inline-flex;
-    }
-}
-
-@media (max-width: 720px) {
-    .studio-topbar,
-    .studio-ribbon-card,
-    .studio-statusbar {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    .studio-ribbon-card,
-    .studio-statusbar {
-        grid-template-columns: 1fr;
-    }
-
-    .studio-grid,
-    .studio-tool-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .studio-canvas-wrap {
-        padding: 1rem;
-    }
-
-    .canvas-scroll {
-        padding: 1rem;
-    }
-}
+/* Critical JS-dependent styles only — kept minimal, no decorative styling */
+.tray-item { position:relative; }
+.tray-item.active { outline: 2px solid #6366f1; outline-offset: -2px; }
+.tray-item.selected::after { content:''; position:absolute; inset:0; border:2px solid #22c55e; border-radius:8px; }
+[data-tool-button].active { border-color: #6366f1; background: #eef2ff; }
+.studio-preview-photo { position:absolute; border:1px solid #cbd5e1; background-size:cover; background-position:center; }
+.toast { padding:0.75rem 1rem; border-radius:0.5rem; background:#1e293b; color:#fff; margin-top:0.5rem; min-width:200px; }
+.toast-container { position:fixed; right:1rem; bottom:1rem; z-index:80; display:grid; gap:0.5rem; }
+.toast.success { border-left:3px solid #22c55e; }
+.toast.error { border-left:3px solid #ef4444; }
 </style>
 {% endblock %}
 
 {% block content %}
 {% set studio_link = studio_header_url|default('/studio') %}
-<div class="studio-app" id="studioApp">
-    <button type="button" class="studio-btn primary studio-mobile-toggle" onclick="toggleToolsPanel(true)">
-        <i class="bi bi-sliders"></i>
-        <span>Tools</span>
-    </button>
 
-    <div class="studio-shell">
-        <div class="studio-main">
-            <div class="studio-topbar">
-                <a href="{{ studio_link }}" class="studio-brand">
-                    <span class="studio-brand-mark"><i class="bi bi-camera2"></i></span>
-                    <span class="studio-brand-copy">
-                        <strong>Brox Studio ID Photo Pro</strong>
-                        <span>Passport, visa, job, exam, and print-ready photo workflow</span>
-                    </span>
-                </a>
+<div class="max-w-full px-4 sm:px-6 lg:px-8 py-6" id="studioApp">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Brox Studio ID Photo Pro</h1>
+      <p class="text-sm text-slate-500 mt-1">Passport, visa, job, exam, and print-ready photo workflow</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="undo()" id="undoBtn" disabled>
+        <i class="lucide lucide-undo-2 w-4 h-4"></i><span>Undo</span>
+      </button>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="redo()" id="redoBtn" disabled>
+        <i class="lucide lucide-redo w-4 h-4"></i><span>Redo</span>
+      </button>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="document.getElementById('imageUploadInput').click()">
+        <i class="lucide lucide-upload w-4 h-4"></i><span>Upload</span>
+      </button>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="preparePrintReady()">
+        <i class="lucide lucide-sparkles w-4 h-4"></i><span>Prepare</span>
+      </button>
+      <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm" onclick="downloadImage()">
+        <i class="lucide lucide-download w-4 h-4"></i><span>Export</span>
+      </button>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors shadow-sm" onclick="openPrintSheetModal()">
+        <i class="lucide lucide-printer w-4 h-4"></i><span>Print Sheet</span>
+      </button>
+    </div>
+  </div>
 
-                <div class="studio-top-actions">
-                    <button type="button" class="studio-icon-btn" onclick="undo()" id="undoBtn" title="Undo" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
-                    <button type="button" class="studio-icon-btn" onclick="redo()" id="redoBtn" title="Redo" disabled><i class="bi bi-arrow-clockwise"></i></button>
-                    <button type="button" class="studio-btn" onclick="document.getElementById('imageUploadInput').click()"><i class="bi bi-upload"></i><span>Upload</span></button>
-                    <button type="button" class="studio-btn" onclick="preparePrintReady()"><i class="bi bi-stars"></i><span>Prepare</span></button>
-                    <button type="button" class="studio-btn primary" onclick="downloadImage()"><i class="bi bi-download"></i><span>Export</span></button>
-                    <button type="button" class="studio-btn warm" onclick="openPrintSheetModal()"><i class="bi bi-printer"></i><span>Print Sheet</span></button>
-                </div>
-            </div>
+  <div class="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6">
+    {# Main workspace #}
+    <div class="min-w-0">
+      {# Preset info + guide controls #}
+      <div class="flex items-center justify-between gap-4 p-4 mb-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900" id="presetTitle">Bangladesh Passport</h2>
+          <p class="text-sm text-slate-500" id="presetDescription">Choose a preset, align the face inside the guide box, then export or place on a print sheet.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="toggleGuides()">
+            <i class="lucide lucide-crop w-3.5 h-3.5"></i><span id="guideToggleLabel">Hide Guides</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="fitToGuide()">
+            <i class="lucide lucide-frame w-3.5 h-3.5"></i><span>Fit To Guide</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="centerSubject()">
+            <i class="lucide lucide-align-center-horizontal w-3.5 h-3.5"></i><span>Center</span>
+          </button>
+        </div>
+      </div>
 
-            <div class="studio-workspace">
-                <div class="studio-ribbon">
-                    <div class="studio-ribbon-card">
-                        <div class="studio-ribbon-copy">
-                            <h2 id="presetTitle">Bangladesh Passport</h2>
-                            <p class="studio-helper" id="presetDescription">Choose a preset, align the face inside the guide box, then export or place on a print sheet.</p>
-                        </div>
-                        <div class="studio-inline">
-                            <button type="button" class="studio-btn" onclick="toggleGuides()"><i class="bi bi-bounding-box"></i><span id="guideToggleLabel">Hide Guides</span></button>
-                            <button type="button" class="studio-btn" onclick="fitToGuide()"><i class="bi bi-person-bounding-box"></i><span>Fit To Guide</span></button>
-                            <button type="button" class="studio-btn" onclick="centerSubject()"><i class="bi bi-distribute-horizontal"></i><span>Center</span></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="studio-canvas-wrap">
-                    <div class="studio-canvas-stage" id="canvasArea">
-                        <div class="canvas-scroll" id="canvasScroll">
-                            <div class="canvas-container" id="canvasContainer" style="display:none;">
-                                <canvas id="photoCanvas"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="canvas-placeholder" id="uploadPlaceholder" onclick="document.getElementById('imageUploadInput').click()">
-                            <div class="canvas-placeholder-inner">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                                <h3>Drop or upload a portrait photo</h3>
-                                <p class="studio-helper">Supports JPG, PNG, GIF, and WebP up to 10MB. Then choose a preset and align it like a real studio app.</p>
-                            </div>
-                        </div>
-
-                        <div class="studio-canvas-hud">
-                            <div class="studio-hud-pill">
-                                <strong id="canvasModeBadge">Select Tool</strong>
-                                <div class="studio-helper" id="toolHint">Move and align the subject inside the face guide.</div>
-                            </div>
-                            <div class="studio-hud-pill">
-                                <strong id="zoomLevel">100%</strong>
-                                <div class="studio-helper" id="imageInfo">No image loaded</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="studio-statusbar">
-                    <div class="studio-inline">
-                        <button type="button" class="studio-icon-btn" onclick="zoomOut()" title="Zoom out"><i class="bi bi-dash"></i></button>
-                        <button type="button" class="studio-icon-btn" onclick="zoomIn()" title="Zoom in"><i class="bi bi-plus"></i></button>
-                        <button type="button" class="studio-icon-btn" onclick="resetZoom()" title="Reset zoom"><i class="bi bi-arrows-fullscreen"></i></button>
-                        <button type="button" class="studio-icon-btn" onclick="rotateImage()" title="Rotate 90 degrees"><i class="bi bi-arrow-repeat"></i></button>
-                        <button type="button" class="studio-icon-btn" onclick="flipImage('horizontal')" title="Flip horizontal"><i class="bi bi-symmetry-horizontal"></i></button>
-                        <button type="button" class="studio-icon-btn" onclick="flipImage('vertical')" title="Flip vertical"><i class="bi bi-symmetry-vertical"></i></button>
-                    </div>
-                    <div class="studio-meta" id="sessionMeta">Preset ready for export</div>
-                </div>
-            </div>
+      {# Canvas area #}
+      <div class="relative rounded-xl border border-slate-200 bg-slate-50 overflow-hidden min-h-[50vh]" id="canvasArea">
+        <div class="absolute inset-0 overflow-auto p-4 flex items-center justify-center" id="canvasScroll">
+          <div class="relative" id="canvasContainer" style="display:none;">
+            <canvas id="photoCanvas" class="max-w-full h-auto rounded-lg shadow-md bg-white"></canvas>
+          </div>
         </div>
 
-        <aside class="studio-sidebar" id="studioSidebar">
-            <div class="studio-panel-card">
-                <div class="studio-panel-heading">
-                    <strong>Studio Session</strong>
-                    <span>Preset, tray, tools, adjustments, background, and print settings live here.</span>
-                </div>
-
-                <div class="studio-field">
-                    <label for="presetSelect">ID Photo Preset</label>
-                    <select id="presetSelect"></select>
-                </div>
-
-                <div class="studio-field">
-                    <label>Preset Details</label>
-                    <div class="studio-grid" id="presetChipGrid"></div>
-                </div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Image Tray</h3>
-                <p class="studio-helper">Keep multiple portraits and switch between them while preserving the current session.</p>
-                <div class="studio-inline">
-                    <button type="button" class="studio-btn primary" onclick="document.getElementById('imageUploadInput').click()"><i class="bi bi-images"></i><span>Add Photo</span></button>
-                    <button type="button" class="studio-btn" onclick="deleteCurrentImage()"><i class="bi bi-trash3"></i><span>Delete Active</span></button>
-                </div>
-                <div class="studio-tray" id="imageTray" style="margin-top: 0.9rem;"></div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Editing Tools</h3>
-                <p class="studio-helper">Select, crop, retouch, annotate, and isolate the subject with a more studio-like workflow.</p>
-                <div class="studio-tool-grid">
-                    <button type="button" class="studio-tool-card active" data-tool-button="select" onclick="setTool('select')"><i class="bi bi-cursor-fill"></i><strong>Select</strong><span>Move and scale</span></button>
-                    <button type="button" class="studio-tool-card" data-tool-button="crop" onclick="setTool('crop')"><i class="bi bi-crop"></i><strong>Crop</strong><span>Drag box with handles</span></button>
-                    <button type="button" class="studio-tool-card" data-tool-button="brush" onclick="setTool('brush')"><i class="bi bi-brush"></i><strong>Brush</strong><span>Retouch and highlight</span></button>
-                    <button type="button" class="studio-tool-card" data-tool-button="eraser" onclick="setTool('eraser')"><i class="bi bi-eraser"></i><strong>Eraser</strong><span>Refine edges</span></button>
-                    <button type="button" class="studio-tool-card" data-tool-button="text" onclick="setTool('text')"><i class="bi bi-fonts"></i><strong>Text</strong><span>Add label</span></button>
-                    <button type="button" class="studio-tool-card" data-tool-button="shape" onclick="setTool('shape')"><i class="bi bi-bounding-box-circles"></i><strong>Shape</strong><span>Rectangle or circle</span></button>
-                    <button type="button" class="studio-tool-card" onclick="bgRemove()"><i class="bi bi-magic"></i><strong>Cutout</strong><span>Remove background</span></button>
-                    <button type="button" class="studio-tool-card" onclick="openPrintSheetModal()"><i class="bi bi-grid-3x3-gap-fill"></i><strong>Print</strong><span>Live sheet preview</span></button>
-                </div>
-
-                <div class="studio-field">
-                    <label for="brushSizeSlider">Brush / Eraser Size</label>
-                    <input id="brushSizeSlider" type="range" min="4" max="80" value="22">
-                </div>
-                <div class="studio-grid">
-                    <div class="studio-field">
-                        <label for="brushColorPicker">Brush Color</label>
-                        <input id="brushColorPicker" type="color" value="#f97316">
-                    </div>
-                    <div class="studio-field">
-                        <label for="foregroundScaleSlider">Subject Scale</label>
-                        <input id="foregroundScaleSlider" type="range" min="40" max="220" value="100">
-                    </div>
-                </div>
-                <div class="studio-inline">
-                    <button type="button" class="studio-btn" onclick="applyCrop()"><i class="bi bi-check2-square"></i><span>Apply Crop</span></button>
-                </div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Text & Shape</h3>
-                <div class="studio-field">
-                    <label for="textInputValue">Text Content</label>
-                    <input id="textInputValue" type="text" value="ID PHOTO">
-                </div>
-                <div class="studio-grid">
-                    <div class="studio-field">
-                        <label for="textSizeInput">Text Size</label>
-                        <input id="textSizeInput" type="number" min="16" max="120" value="36">
-                    </div>
-                    <div class="studio-field">
-                        <label for="textColorPicker">Text Color</label>
-                        <input id="textColorPicker" type="color" value="#ffffff">
-                    </div>
-                </div>
-                <div class="studio-grid">
-                    <div class="studio-field">
-                        <label for="shapeTypeSelect">Shape Type</label>
-                        <select id="shapeTypeSelect">
-                            <option value="rect">Rectangle</option>
-                            <option value="circle">Circle</option>
-                        </select>
-                    </div>
-                    <div class="studio-field">
-                        <label for="shapeColorPicker">Shape Color</label>
-                        <input id="shapeColorPicker" type="color" value="#38bdf8">
-                    </div>
-                </div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Adjustments</h3>
-                <div class="studio-field">
-                    <label for="brightnessSlider">Brightness</label>
-                    <input id="brightnessSlider" type="range" min="-100" max="100" value="0">
-                </div>
-                <div class="studio-field">
-                    <label for="contrastSlider">Contrast</label>
-                    <input id="contrastSlider" type="range" min="-100" max="100" value="0">
-                </div>
-                <div class="studio-field">
-                    <label for="saturationSlider">Saturation</label>
-                    <input id="saturationSlider" type="range" min="-100" max="100" value="0">
-                </div>
-                <div class="studio-inline">
-                    <button type="button" class="studio-btn primary" onclick="applyAllFilters()"><i class="bi bi-check2"></i><span>Apply Preview</span></button>
-                    <button type="button" class="studio-btn" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i><span>Reset</span></button>
-                </div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Background & Guides</h3>
-                <div class="studio-grid">
-                    <div class="studio-field">
-                        <label for="backgroundColorPicker">Solid Background</label>
-                        <input id="backgroundColorPicker" type="color" value="#ffffff">
-                    </div>
-                    <div class="studio-field">
-                        <label for="guideOpacitySlider">Guide Opacity</label>
-                        <input id="guideOpacitySlider" type="range" min="10" max="100" value="76">
-                    </div>
-                </div>
-                <div class="studio-swatch-grid" id="backgroundPresetGrid"></div>
-                <div class="studio-inline">
-                    <button type="button" class="studio-btn" onclick="clearBackgroundLayer()"><i class="bi bi-layers-half"></i><span>Transparent</span></button>
-                    <button type="button" class="studio-btn" onclick="setBackgroundColor(document.getElementById('backgroundColorPicker').value)"><i class="bi bi-palette"></i><span>Use Color</span></button>
-                </div>
-            </div>
-
-            <div class="studio-section">
-                <h3>Export & Print</h3>
-                <div class="studio-field">
-                    <label for="printPageSize">Paper Size</label>
-                    <select id="printPageSize"></select>
-                </div>
-                <div class="studio-grid">
-                    <div class="studio-field">
-                        <label for="printOrientation">Orientation</label>
-                        <select id="printOrientation">
-                            <option value="portrait">Portrait</option>
-                            <option value="landscape">Landscape</option>
-                        </select>
-                    </div>
-                    <div class="studio-field">
-                        <label for="printLayout">Layout</label>
-                        <select id="printLayout">
-                            <option value="center">Centered Grid</option>
-                            <option value="wide">Wide Fit</option>
-                            <option value="compact">Compact</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="studio-field">
-                    <label for="printSpacing">Spacing (mm)</label>
-                    <input id="printSpacing" type="number" min="0" max="12" step="0.5" value="4">
-                </div>
-                <div class="studio-inline">
-                    <button type="button" class="studio-btn primary" onclick="downloadImage()"><i class="bi bi-download"></i><span>Download Active</span></button>
-                    <button type="button" class="studio-btn warm" onclick="openPrintSheetModal()"><i class="bi bi-file-earmark-pdf"></i><span>Generate PDF</span></button>
-                </div>
-            </div>
-        </aside>
-    </div>
-
-    <div class="studio-modal" id="printSheetModal">
-        <div class="studio-modal-card">
-            <div class="studio-inline spread">
-                <div>
-                    <h3 style="margin:0;">Print Sheet Preview</h3>
-                    <p class="studio-helper" style="margin:0.35rem 0 0;">Select tray images, confirm paper settings, then generate a PDF.</p>
-                </div>
-                <button type="button" class="studio-icon-btn" onclick="closePrintSheetModal()"><i class="bi bi-x-lg"></i></button>
-            </div>
-
-            <div class="studio-preview-box">
-                <div class="studio-preview-sheet" id="printSheetPreview"></div>
-            </div>
-
-            <div class="studio-field">
-                <label>Selected Images</label>
-                <div class="studio-tray" id="printSheetImageList"></div>
-            </div>
-
-            <div class="studio-inline" style="justify-content:flex-end; margin-top: 1rem;">
-                <button type="button" class="studio-btn" onclick="closePrintSheetModal()">Cancel</button>
-                <button type="button" class="studio-btn primary" onclick="generatePrintSheet()"><i class="bi bi-download"></i><span>Generate PDF</span></button>
-            </div>
+        {# Upload placeholder #}
+        <div class="absolute inset-0 flex items-center justify-center cursor-pointer p-6" id="uploadPlaceholder" onclick="document.getElementById('imageUploadInput').click()">
+          <div class="text-center max-w-sm">
+            <i class="lucide lucide-cloud-upload text-5xl text-slate-300 mx-auto block mb-3"></i>
+            <h3 class="text-lg font-semibold text-slate-700 mb-1">Drop or upload a portrait photo</h3>
+            <p class="text-sm text-slate-500">Supports JPG, PNG, GIF, and WebP up to 10MB. Then choose a preset and align it like a real studio app.</p>
+          </div>
         </div>
+
+        {# Canvas HUD #}
+        <div class="absolute left-3 right-3 bottom-3 flex justify-between gap-3 pointer-events-none">
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/90 border border-slate-200 shadow-sm text-xs">
+            <strong class="text-slate-800" id="canvasModeBadge">Select Tool</strong>
+            <span class="text-slate-500" id="toolHint">Move and align the subject inside the face guide.</span>
+          </div>
+          <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/90 border border-slate-200 shadow-sm text-xs">
+            <strong class="text-slate-800" id="zoomLevel">100%</strong>
+            <span class="text-slate-500" id="imageInfo">No image loaded</span>
+          </div>
+        </div>
+      </div>
+
+      {# Status bar #}
+      <div class="flex items-center justify-between gap-4 mt-4 p-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center gap-1">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="zoomOut()" title="Zoom out">
+            <i class="lucide lucide-minus w-4 h-4"></i>
+          </button>
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="zoomIn()" title="Zoom in">
+            <i class="lucide lucide-plus w-4 h-4"></i>
+          </button>
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="resetZoom()" title="Reset zoom">
+            <i class="lucide lucide-maximize w-4 h-4"></i>
+          </button>
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="rotateImage()" title="Rotate 90 degrees">
+            <i class="lucide lucide-repeat w-4 h-4"></i>
+          </button>
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="flipImage('horizontal')" title="Flip horizontal">
+            <i class="lucide lucide-flip-horizontal w-4 h-4"></i>
+          </button>
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="flipImage('vertical')" title="Flip vertical">
+            <i class="lucide lucide-flip-vertical w-4 h-4"></i>
+          </button>
+        </div>
+        <span class="text-xs text-slate-500" id="sessionMeta">Preset ready for export</span>
+      </div>
     </div>
 
-    <input id="imageUploadInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
-    <script id="studioConfigData" type="application/json">{{ studio_config_json|raw }}</script>
-    <div class="toast-container" id="toastContainer"></div>
+    {# Sidebar #}
+    <aside class="space-y-4" id="studioSidebar">
+      {# Studio Session #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="mb-3">
+          <strong class="text-sm font-semibold text-slate-900">Studio Session</strong>
+          <p class="text-xs text-slate-500">Preset, tray, tools, adjustments, background, and print settings.</p>
+        </div>
+        <div class="mb-3">
+          <label for="presetSelect" class="block text-xs font-medium text-slate-600 mb-1">ID Photo Preset</label>
+          <select id="presetSelect" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Preset Details</label>
+          <div class="grid grid-cols-2 gap-2" id="presetChipGrid"></div>
+        </div>
+      </div>
+
+      {# Image Tray #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-1">Image Tray</h3>
+        <p class="text-xs text-slate-500 mb-3">Keep multiple portraits and switch between them.</p>
+        <div class="flex items-center gap-2 mb-3">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="document.getElementById('imageUploadInput').click()">
+            <i class="lucide lucide-images w-3.5 h-3.5"></i><span>Add Photo</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="deleteCurrentImage()">
+            <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i><span>Delete Active</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2" id="imageTray"></div>
+      </div>
+
+      {# Editing Tools #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-1">Editing Tools</h3>
+        <p class="text-xs text-slate-500 mb-3">Select, crop, retouch, annotate, and isolate the subject.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors active" data-tool-button="select" onclick="setTool('select')">
+            <i class="lucide lucide-mouse-pointer w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Select</strong>
+            <span class="text-[11px] text-slate-500">Move and scale</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="crop" onclick="setTool('crop')">
+            <i class="lucide lucide-crop w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Crop</strong>
+            <span class="text-[11px] text-slate-500">Drag box with handles</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="brush" onclick="setTool('brush')">
+            <i class="lucide lucide-paintbrush w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Brush</strong>
+            <span class="text-[11px] text-slate-500">Retouch and highlight</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="eraser" onclick="setTool('eraser')">
+            <i class="lucide lucide-eraser w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Eraser</strong>
+            <span class="text-[11px] text-slate-500">Refine edges</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="text" onclick="setTool('text')">
+            <i class="lucide lucide-type w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Text</strong>
+            <span class="text-[11px] text-slate-500">Add label</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="shape" onclick="setTool('shape')">
+            <i class="lucide lucide-frame w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Shape</strong>
+            <span class="text-[11px] text-slate-500">Rectangle or circle</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" onclick="bgRemove()">
+            <i class="lucide lucide-wand-sparkles w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Cutout</strong>
+            <span class="text-[11px] text-slate-500">Remove background</span>
+          </button>
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" onclick="openPrintSheetModal()">
+            <i class="lucide lucide-grid-3x3 w-4 h-4 text-slate-600"></i>
+            <strong class="text-xs font-semibold text-slate-800">Print</strong>
+            <span class="text-[11px] text-slate-500">Live sheet preview</span>
+          </button>
+        </div>
+
+        <div class="mt-3">
+          <label for="brushSizeSlider" class="block text-xs font-medium text-slate-600 mb-1">Brush / Eraser Size</label>
+          <input id="brushSizeSlider" type="range" min="4" max="80" value="22" class="w-full">
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <div>
+            <label for="brushColorPicker" class="block text-xs font-medium text-slate-600 mb-1">Brush Color</label>
+            <input id="brushColorPicker" type="color" value="#f97316" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label for="foregroundScaleSlider" class="block text-xs font-medium text-slate-600 mb-1">Subject Scale</label>
+            <input id="foregroundScaleSlider" type="range" min="40" max="220" value="100" class="w-full">
+          </div>
+        </div>
+        <button type="button" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="applyCrop()">
+          <i class="lucide lucide-check-square w-3.5 h-3.5"></i><span>Apply Crop</span>
+        </button>
+      </div>
+
+      {# Text & Shape #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Text & Shape</h3>
+        <div class="mb-3">
+          <label for="textInputValue" class="block text-xs font-medium text-slate-600 mb-1">Text Content</label>
+          <input id="textInputValue" type="text" value="ID PHOTO" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label for="textSizeInput" class="block text-xs font-medium text-slate-600 mb-1">Text Size</label>
+            <input id="textSizeInput" type="number" min="16" max="120" value="36" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+          </div>
+          <div>
+            <label for="textColorPicker" class="block text-xs font-medium text-slate-600 mb-1">Text Color</label>
+            <input id="textColorPicker" type="color" value="#ffffff" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="shapeTypeSelect" class="block text-xs font-medium text-slate-600 mb-1">Shape Type</label>
+            <select id="shapeTypeSelect" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <option value="rect">Rectangle</option>
+              <option value="circle">Circle</option>
+            </select>
+          </div>
+          <div>
+            <label for="shapeColorPicker" class="block text-xs font-medium text-slate-600 mb-1">Shape Color</label>
+            <input id="shapeColorPicker" type="color" value="#38bdf8" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+        </div>
+      </div>
+
+      {# Adjustments #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Adjustments</h3>
+        <div class="mb-2">
+          <label for="brightnessSlider" class="block text-xs font-medium text-slate-600 mb-1">Brightness</label>
+          <input id="brightnessSlider" type="range" min="-100" max="100" value="0" class="w-full">
+        </div>
+        <div class="mb-2">
+          <label for="contrastSlider" class="block text-xs font-medium text-slate-600 mb-1">Contrast</label>
+          <input id="contrastSlider" type="range" min="-100" max="100" value="0" class="w-full">
+        </div>
+        <div class="mb-3">
+          <label for="saturationSlider" class="block text-xs font-medium text-slate-600 mb-1">Saturation</label>
+          <input id="saturationSlider" type="range" min="-100" max="100" value="0" class="w-full">
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="applyAllFilters()">
+            <i class="lucide lucide-check w-3.5 h-3.5"></i><span>Apply Preview</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="resetFilters()">
+            <i class="lucide lucide-undo-2 w-3.5 h-3.5"></i><span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+      {# Background & Guides #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Background & Guides</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label for="backgroundColorPicker" class="block text-xs font-medium text-slate-600 mb-1">Solid Background</label>
+            <input id="backgroundColorPicker" type="color" value="#ffffff" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label for="guideOpacitySlider" class="block text-xs font-medium text-slate-600 mb-1">Guide Opacity</label>
+            <input id="guideOpacitySlider" type="range" min="10" max="100" value="76" class="w-full">
+          </div>
+        </div>
+        <div class="grid grid-cols-5 gap-2 mb-3" id="backgroundPresetGrid"></div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="clearBackgroundLayer()">
+            <i class="lucide lucide-layers w-3.5 h-3.5"></i><span>Transparent</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="setBackgroundColor(document.getElementById('backgroundColorPicker').value)">
+            <i class="lucide lucide-palette w-3.5 h-3.5"></i><span>Use Color</span>
+          </button>
+        </div>
+      </div>
+
+      {# Export & Print #}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Export & Print</h3>
+        <div class="mb-3">
+          <label for="printPageSize" class="block text-xs font-medium text-slate-600 mb-1">Paper Size</label>
+          <select id="printPageSize" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label for="printOrientation" class="block text-xs font-medium text-slate-600 mb-1">Orientation</label>
+            <select id="printOrientation" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+          <div>
+            <label for="printLayout" class="block text-xs font-medium text-slate-600 mb-1">Layout</label>
+            <select id="printLayout" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <option value="center">Centered Grid</option>
+              <option value="wide">Wide Fit</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="printSpacing" class="block text-xs font-medium text-slate-600 mb-1">Spacing (mm)</label>
+          <input id="printSpacing" type="number" min="0" max="12" step="0.5" value="4" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="downloadImage()">
+            <i class="lucide lucide-download w-3.5 h-3.5"></i><span>Download Active</span>
+          </button>
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition-colors" onclick="openPrintSheetModal()">
+            <i class="lucide lucide-file-text w-3.5 h-3.5"></i><span>Generate PDF</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  {# Print Sheet Modal #}
+  <div class="fixed inset-0 p-4 hidden items-center justify-center bg-black/40 z-50" id="printSheetModal">
+    <div class="w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900" style="margin:0;">Print Sheet Preview</h3>
+          <p class="text-sm text-slate-500" style="margin:0.25rem 0 0;">Select tray images, confirm paper settings, then generate a PDF.</p>
+        </div>
+        <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="closePrintSheetModal()">
+          <i class="lucide lucide-x w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="min-h-[160px] rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 mb-4">
+        <div class="w-full min-h-[118px] rounded-lg bg-white relative overflow-hidden" id="printSheetPreview"></div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Selected Images</label>
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2" id="printSheetImageList"></div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button type="button" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" onclick="closePrintSheetModal()">Cancel</button>
+        <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" onclick="generatePrintSheet()">
+          <i class="lucide lucide-download w-4 h-4"></i><span>Generate PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <input id="imageUploadInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
+  <script id="studioConfigData" type="application/json">{{ studio_config_json|raw }}</script>
+  <div class="toast-container" id="toastContainer"></div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/assets/js/photo-studio/editor.js"></script>
+<script type="module" src="/assets/js/dist/photo-studio/editor.js"></script>
 {% endblock %}

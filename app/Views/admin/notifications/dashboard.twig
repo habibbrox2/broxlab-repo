@@ -2,338 +2,239 @@
 {% block title %}Notifications Dashboard{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4" id="notificationsDashboardRealtime">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div>
-        <div class="admin-page-title">
-          <i class="bi bi-bell-slash"></i> Notifications Dashboard
-        </div>
-        <p class="admin-page-subtitle">Real-time monitoring, delivery metrics and notification operations</p>
-      </div>
-    </div>
-    <!-- KPI Cards -->
-    <div class="row mb-4">
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <h6 class="text-muted mb-2">Sent Today</h6>
-                <h3 class="mb-0" id="sentToday">{{ stats.sent_today|default(0) }}</h3>
-                <small class="text-muted" id="sentTodayChange">+0%</small>
-              </div>
-              <i class="bi bi-send display-5 text-primary opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <h6 class="text-muted mb-2">Open Rate</h6>
-                <h3 class="mb-0" id="openRate">{{ stats.open_rate|default(0) }}%</h3>
-                <small class="text-muted" id="openRateChange">+0%</small>
-              </div>
-              <i class="bi bi-eye display-5 text-success opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <h6 class="text-muted mb-2">Scheduled Pending</h6>
-                <h3 class="mb-0" id="scheduledPending">{{ stats.scheduled_pending|default(0) }}</h3>
-                <small class="text-muted">Next run: <span id="nextScheduledTime">--</span></small>
-              </div>
-              <i class="bi bi-calendar-event display-5 text-warning opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <h6 class="text-muted mb-2">System Health</h6>
-                <h3 class="mb-0" id="systemHealth">OK</h3>
-                <small class="text-muted" id="systemHealthDetail">No incidents detected</small>
-              </div>
-              <i class="bi bi-heart-pulse display-5 text-danger opacity-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header">
-            <h5 class="mb-0">
-              <i class="bi bi-lightning-fill me-2"></i>Quick Actions
-            </h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="row g-2">
-              <div class="col-md-3">
-                <a href="/admin/notifications/send" class="btn btn-primary w-100">
-                  <i class="bi bi-send me-2"></i>Send
-                </a>
-              </div>
-              <div class="col-md-3">
-                <a href="/admin/notifications/scheduled" class="btn btn-info w-100">
-                  <i class="bi bi-calendar-event me-2"></i>Scheduled
-                </a>
-              </div>
-              <div class="col-md-3">
-                <a href="/admin/notifications/device-sync" class="btn btn-warning w-100">
-                  <i class="bi bi-phone-landscape me-2"></i>Device Sync
-                </a>
-              </div>
-              <div class="col-md-3">
-                <a href="/admin/notifications/offline-handler"
-                   class="btn btn-secondary w-100">
-                  <i class="bi bi-wifi-off me-2"></i>Offline
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Main Tabs -->
-    <div class="admin-panel-card">
-      <div class="admin-panel-card-header">
-        <ul class="nav nav-tabs border-bottom mb-0" role="tablist">
-          <li class="nav-item">
-            <button class="nav-link active"
-                    data-bs-toggle="tab"
-                    data-bs-target="#overview"
-                    type="button">
-              <i class="bi bi-speedometer2 me-2"></i>Overview
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link"
-                    data-bs-toggle="tab"
-                    data-bs-target="#recent"
-                    type="button">
-              <i class="bi bi-clock-history me-2"></i>Recent
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link"
-                    data-bs-toggle="tab"
-                    data-bs-target="#features"
-                    type="button">
-              <i class="bi bi-star me-2"></i>Features
-            </button>
-          </li>
-        </ul>
-      </div>
-      <div class="admin-panel-card-body tab-content">
-        <!-- Overview Tab -->
-        <div class="tab-pane fade show active" id="overview">
-          <div class="row">
-            <div class="col-lg-6">
-              <h6 class="mb-3">Delivery Overview</h6>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded">
-                    <small class="text-muted">Total Sent</small>
-                    <h5 class="mb-0">{{ stats.total_sent|default(0) }}</h5>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded">
-                    <small class="text-muted">Delivered</small>
-                    <h5 class="mb-0 text-success">{{ stats.delivered|default(0) }}</h5>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded">
-                    <small class="text-muted">Failed</small>
-                    <h5 class="mb-0 text-danger">{{ stats.failed|default(0) }}</h5>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded">
-                    <small class="text-muted">Pending</small>
-                    <h5 class="mb-0 text-warning">{{ stats.pending|default(0) }}</h5>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-6">
-              <h6 class="mb-3">Feature Status</h6>
-              <div class="row g-2">
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded text-center">
-                    <i class="bi bi-calendar-event display-6 text-warning mb-2 d-block"></i>
-                    <small>Scheduler</small>
-                    <p class="mb-0">
-                      <span class="badge bg-success">Active</span>
-                    </p>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded text-center">
-                    <i class="bi bi-phone-landscape display-6 text-info mb-2 d-block"></i>
-                    <small>Multi-Device</small>
-                    <p class="mb-0">
-                      <span class="badge bg-success">Active</span>
-                    </p>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded text-center">
-                    <i class="bi bi-wifi-off display-6 text-secondary mb-2 d-block"></i>
-                    <small>Offline</small>
-                    <p class="mb-0">
-                      <span class="badge bg-success">Active</span>
-                    </p>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="p-3 bg-light rounded text-center">
-                    <i class="bi bi-key display-6 text-theme-strong mb-2 d-block"></i>
-                    <small>Security</small>
-                    <p class="mb-0">
-                      <span class="badge bg-success">Active</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Recent Tab -->
-        <div class="tab-pane fade" id="recent">
-          <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Message</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if recent_notifications|length > 0 %}
-                {% for notif in recent_notifications %}
-                  <tr>
-                    <td>#{{ notif.id }}</td>
-                    <td>
-                      <strong>{{ notif.title|truncate(30) }}</strong>
-                    </td>
-                    <td>{{ notif.message|truncate(50) }}</td>
-                    <td>
-                      <span class="badge bg-primary">{{ notif.type }}</span>
-                    </td>
-                    <td>{{ notif.created_at|date("d M Y H:i") }}</td>
-                    <td>
-                      <a href="/admin/notifications/view?id={{ notif.id }}"
-                         class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="6" class="text-center text-muted py-4">
-                    <i class="bi bi-inbox"></i> No notifications yet
-                  </td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-        <!-- Features Tab -->
-        <div class="tab-pane fade" id="features">
-          <div class="row g-3">
-            <div class="col-lg-6">
-              <h6 class="mb-3">Core Tools</h6>
-              <div class="list-group">
-                <a href="/admin/notifications/scheduled"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-calendar-event me-3 text-warning"></i>
-                    <div>
-                      <h6 class="mb-0">Schedule Notifications</h6>
-                      <small class="text-muted">Create and manage scheduled notification campaigns</small>
-                    </div>
-                  </div>
-                </a>
-                <a href="/admin/notifications/device-sync"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-phone-landscape me-3 text-info"></i>
-                    <div>
-                      <h6 class="mb-0">Multi-Device Sync</h6>
-                      <small class="text-muted">Keep notification status consistent across devices</small>
-                    </div>
-                  </div>
-                </a>
-                <a href="/admin/notifications/offline-handler"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-wifi-off me-3 text-secondary"></i>
-                    <div>
-                      <h6 class="mb-0">Offline Manager</h6>
-                      <small class="text-muted">Handle offline queue and retry delivery</small>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            </div>
-            <div class="col-lg-6">
-              <h6 class="mb-3">More Tools</h6>
-              <div class="list-group">
-                <a href="/admin/notifications/send"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-send me-3"></i>
-                    <div>
-                      <h6 class="mb-0">Send Notification</h6>
-                      <small class="text-muted">Create and send new notification campaigns</small>
-                    </div>
-                  </div>
-                </a>
-                <a href="/admin/notifications/list"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-list-check me-3"></i>
-                    <div>
-                      <h6 class="mb-0">All Notifications</h6>
-                      <small class="text-muted">View all sent notifications and delivery history</small>
-                    </div>
-                  </div>
-                </a>
-                <a href="/admin/notifications/analytics"
-                   class="list-group-item list-group-item-action">
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-graph-up me-3"></i>
-                    <div>
-                      <h6 class="mb-0">Analytics</h6>
-                      <small class="text-muted">Track notification performance and engagement metrics</small>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<style>.tab-pane:not(.active){display:none}.tab-pane.active{display:block}</style>
+<div class="space-y-6" id="notificationsDashboardRealtime">
+
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-bell" style="width:1.5em;height:1.5em;"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Notifications Dashboard</h1>
+     <p class="mt-1 text-sm text-indigo-200/80">Real-time monitoring, delivery metrics, and notification operations.</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/notifications/send" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-send" style="width:0.875em;height:0.875em;"></i> Send
+    </a>
+    <a href="/admin/notifications/list" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-list-checks" style="width:0.875em;height:0.875em;"></i> All Notifications
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Stats Cards ── #}
+ <section class="scroll-fade-in grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Sent Today</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+      <i class="lucide lucide-send" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="sentToday">{{ stats.sent_today|default(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Notifications sent today</div>
+   </div>
+  </div>
+
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Open Rate</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+      <i class="lucide lucide-eye" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="openRate">{{ stats.open_rate|default(0) }}%</div>
+    <div class="mt-1 text-xs text-slate-500">Notification open rate</div>
+   </div>
+  </div>
+
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Scheduled Pending</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+      <i class="lucide lucide-calendar" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="scheduledPending">{{ stats.scheduled_pending|default(0) }}</div>
+    <div class="mt-1 text-xs text-slate-500">Next run: <span id="nextScheduledTime">--</span></div>
+   </div>
+  </div>
+
+  <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+   <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+   <div class="p-4">
+    <div class="flex items-center justify-between">
+     <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">System Health</span>
+     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+      <i class="lucide lucide-shield-check" style="width:1em;height:1em;"></i>
+     </div>
+    </div>
+    <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="systemHealth">OK</div>
+    <div class="mt-1 text-xs text-slate-500" id="systemHealthDetail">No incidents detected</div>
+   </div>
+  </div>
+ </section>
+
+ {# ── Quick Actions ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+    <i class="lucide lucide-zap" style="width:0.875em;height:0.875em;"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Quick Actions</h2>
+    <p class="text-xs text-slate-500">High frequency actions for operators</p>
+   </div>
+  </div>
+  <div class="p-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+   <a href="/admin/notifications/send" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5 active:scale-[0.97]">
+    <i class="lucide lucide-send" style="width:1em;height:1em;"></i> Send
+   </a>
+   <a href="/admin/notifications/scheduled" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5 active:scale-[0.97]">
+    <i class="lucide lucide-calendar" style="width:1em;height:1em;"></i> Scheduled
+   </a>
+   <a href="/admin/notifications/device-sync" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5 active:scale-[0.97]">
+    <i class="lucide lucide-smartphone" style="width:1em;height:1em;"></i> Device Sync
+   </a>
+   <a href="/admin/notifications/offline-handler" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5 active:scale-[0.97]">
+    <i class="lucide lucide-wifi-off" style="width:1em;height:1em;"></i> Offline
+   </a>
+  </div>
+ </section>
+
+ {# ── Tabs Section ── #}
+ <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="px-5 pt-4">
+   <ul class="flex flex-wrap gap-1 border-b border-slate-200 pb-0" role="tablist">
+    <li><button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-indigo-600 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition" data-brox-toggle="tab" data-brox-target="#overview" type="button"><i class="lucide lucide-gauge" style="width:1em;height:1em;"></i>Overview</button></li>
+    <li><button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900" data-brox-toggle="tab" data-brox-target="#recent" type="button"><i class="lucide lucide-clock" style="width:1em;height:1em;"></i>Recent</button></li>
+    <li><button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900" data-brox-toggle="tab" data-brox-target="#features" type="button"><i class="lucide lucide-star" style="width:1em;height:1em;"></i>Features</button></li>
+   </ul>
+  </div>
+
+  <div class="p-5 tab-content">
+   {# ── Overview Tab ── #}
+   <div class="tab-pane active" id="overview">
+    <div class="grid gap-4 lg:grid-cols-2">
+     <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-4 py-3">
+       <h3 class="text-sm font-bold text-slate-900">Delivery Overview</h3>
+      </div>
+      <div class="p-4 grid gap-3 sm:grid-cols-2">
+       <div class="rounded-xl bg-slate-50 p-4">
+        <div class="text-xs font-medium text-slate-500">Total Sent</div>
+        <div class="mt-1 text-2xl font-bold text-slate-900">{{ stats.total_sent|default(0) }}</div>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4">
+        <div class="text-xs font-medium text-slate-500">Delivered</div>
+        <div class="mt-1 text-2xl font-bold text-emerald-600">{{ stats.delivered|default(0) }}</div>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4">
+        <div class="text-xs font-medium text-slate-500">Failed</div>
+        <div class="mt-1 text-2xl font-bold text-rose-600">{{ stats.failed|default(0) }}</div>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4">
+        <div class="text-xs font-medium text-slate-500">Pending</div>
+        <div class="mt-1 text-2xl font-bold text-amber-600">{{ stats.pending|default(0) }}</div>
+       </div>
+      </div>
+     </div>
+
+     <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-4 py-3">
+       <h3 class="text-sm font-bold text-slate-900">Feature Status</h3>
+      </div>
+      <div class="p-4 grid gap-3 sm:grid-cols-2">
+       <div class="rounded-xl bg-slate-50 p-4 text-center">
+        <i class="lucide lucide-calendar mx-auto mb-2 text-2xl text-amber-500" style="width:1.5em;height:1.5em;"></i>
+        <div class="text-sm font-medium text-slate-600">Scheduler</div>
+        <span class="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4 text-center">
+        <i class="lucide lucide-smartphone mx-auto mb-2 text-2xl text-sky-500" style="width:1.5em;height:1.5em;"></i>
+        <div class="text-sm font-medium text-slate-600">Multi-Device</div>
+        <span class="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4 text-center">
+        <i class="lucide lucide-wifi-off mx-auto mb-2 text-2xl text-slate-500" style="width:1.5em;height:1.5em;"></i>
+        <div class="text-sm font-medium text-slate-600">Offline</div>
+        <span class="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+       </div>
+       <div class="rounded-xl bg-slate-50 p-4 text-center">
+        <i class="lucide lucide-key mx-auto mb-2 text-2xl text-indigo-500" style="width:1.5em;height:1.5em;"></i>
+        <div class="text-sm font-medium text-slate-600">Security</div>
+        <span class="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+
+   {# ── Recent Tab ── #}
+   <div class="tab-pane" id="recent">
+    <div class="overflow-x-auto">
+     <table class="w-full text-left text-sm">
+      <thead>
+       <tr class="border-b border-slate-100 bg-slate-50/50">
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Title</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Type</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
+        <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+       </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+       {% for n in recent_notifications|default([]) %}
+       <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+        <td class="px-4 py-3 font-medium text-slate-900">{{ n.title }}</td>
+        <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ n.type }}</span></td>
+        <td class="px-4 py-3 text-sm text-slate-600">{{ n.status|default('pending') }}</td>
+        <td class="px-4 py-3 text-sm text-slate-500">{{ n.created_at|date("d M Y H:i") }}</td>
+        <td class="px-4 py-3 text-center"><a href="/admin/notifications/view?id={{ n.id }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">View</a></td>
+       </tr>
+       {% else %}
+       <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No recent notifications.</td></tr>
+       {% endfor %}
+      </tbody>
+     </table>
+    </div>
+   </div>
+
+   {# ── Features Tab ── #}
+   <div class="tab-pane" id="features">
+    <div class="grid gap-4 lg:grid-cols-3">
+     <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-slate-900">Operational tools</h3>
+      <p class="mt-2 text-sm text-slate-500 leading-relaxed">Delivery monitoring, scheduling, and device sync stay accessible from the same interface.</p>
+     </div>
+     <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-slate-900">Status visibility</h3>
+      <p class="mt-2 text-sm text-slate-500 leading-relaxed">Operators can check system health and delivery state at a glance.</p>
+     </div>
+     <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-slate-900">Future-friendly</h3>
+      <p class="mt-2 text-sm text-slate-500 leading-relaxed">This section keeps the layout ready for charts and live telemetry widgets.</p>
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
+</div>
 {% endblock %}
+{% block scripts %}{% endblock %}

@@ -1,8 +1,6 @@
-#!/usr/bin/env node
 /**
- * ESBuild Main Config (Refactored)
- * Optimized JavaScript bundling for the app
- * Uses shared build utilities for better maintainability
+ * ESBuild Optimized Config
+ * Bundles JavaScript using shared build utilities.
  */
 
 import esbuild from 'esbuild';
@@ -22,13 +20,10 @@ async function build() {
     const outDirs = getOutDirs();
 
     try {
-        // Ensure output directory exists
         ensureOutDir(outDirs.js);
 
-        // Get common build options
         const commonOptions = getCommonBuildOptions({ isDev, isAnalyze });
 
-        // Build app JavaScript
         if (target === 'app' || target === 'all') {
             Logger.heading('Building App JavaScript');
 
@@ -48,12 +43,11 @@ async function build() {
         }
 
         Logger.success('JavaScript bundling complete!');
-        exit(0, `✅ Output directory: ${outDirs.js}`);
+        exit(0, `Output directory: ${outDirs.js}`);
     } catch (error) {
         Logger.error(`Build failed: ${error.message}`);
-        exit(1, '❌ Build failed');
+        exit(1, 'Build failed');
     }
 }
 
-// Run build
 build();
