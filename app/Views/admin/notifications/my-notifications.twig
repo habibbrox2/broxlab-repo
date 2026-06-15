@@ -33,7 +33,7 @@
         <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <i class="lucide lucide-list text-indigo-500" style="width:1.125em;height:1.125em;"></i>
+                    <i class="lucide lucide-list text-indigo-500" w-[18px] h-[18px]></i>
                     <h2 class="text-sm font-semibold text-slate-900">Notifications</h2>
                 </div>
                 <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">{{ notifications|length }} total</span>
@@ -81,11 +81,11 @@
     {% if total_pages|default(1) > 1 %}
     <nav class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm" aria-label="Notification pagination">
         <a class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 {% if page|default(1) <= 1 %}pointer-events-none opacity-50{% endif %}" href="?page={{ (page|default(1) - 1) > 0 ? (page|default(1) - 1) : 1 }}">
-            <i class="lucide lucide-chevron-left" style="width:0.875em;height:0.875em;"></i> Previous
+            <i class="lucide lucide-chevron-left" w-3.5 h-3.5></i> Previous
         </a>
         <span class="text-sm text-slate-500">Page {{ page|default(1) }} of {{ total_pages }}</span>
         <a class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 {% if page|default(1) >= total_pages %}pointer-events-none opacity-50{% endif %}" href="?page={{ (page|default(1) + 1) <= total_pages ? (page|default(1) + 1) : total_pages }}">
-            Next <i class="lucide lucide-chevron-right" style="width:0.875em;height:0.875em;"></i>
+            Next <i class="lucide lucide-chevron-right" w-3.5 h-3.5></i>
         </a>
     </nav>
     {% endif %}

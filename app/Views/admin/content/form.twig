@@ -51,6 +51,83 @@
  }
  .slug-preview .slug-text { @apply text-indigo-600 font-medium; }
 
+ /* ── Tag/Category Combobox Styles ── */
+ .tag-combobox {
+  @apply relative w-full;
+ }
+ .tag-combobox-control {
+  @apply flex min-h-[2.75rem] flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3 py-2 text-sm shadow-sm transition-all duration-200 ease-out cursor-text focus-within:border-indigo-400 dark:focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600;
+ }
+ .tag-combobox-chips {
+  @apply flex flex-wrap items-center gap-1.5;
+ }
+ .tag-combobox-chip {
+  @apply inline-flex items-center gap-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 select-none;
+ }
+ .tag-combobox-chip-remove {
+  @apply inline-flex items-center justify-center w-4 h-4 rounded-full text-indigo-500 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 hover:text-indigo-900 dark:hover:text-indigo-200 transition-colors;
+  font-size: 14px;
+  line-height: 1;
+ }
+ .tag-combobox-input {
+  @apply min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-0;
+ }
+ .tag-combobox-dropdown {
+  @apply absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl shadow-black/5 dark:shadow-black/30;
+ }
+ .tag-combobox-option {
+  @apply flex w-full items-center px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer;
+ }
+ .tag-combobox-option.is-active {
+  @apply bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300;
+ }
+ .tag-combobox-create {
+  @apply flex w-full items-center px-3.5 py-2.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer font-medium;
+ }
+ .tag-combobox-empty {
+  @apply px-3.5 py-4 text-xs text-slate-400 text-center;
+ }
+
+ /* ── Featured Image Drop Zone ── */
+ .featured-dropzone {
+  @apply relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/60 dark:bg-slate-800/30 p-6 transition-all duration-200 ease-out cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10;
+  min-height: 160px;
+ }
+ .featured-dropzone.drag-over {
+  @apply border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02];
+ }
+ .featured-dropzone.has-image {
+  @apply border-solid border-emerald-400 dark:border-emerald-600 bg-emerald-50/30 dark:bg-emerald-900/10 p-2;
+ }
+ .featured-preview {
+  @apply relative w-full overflow-hidden rounded-lg;
+  max-height: 220px;
+ }
+ .featured-preview img {
+  @apply w-full h-full object-cover rounded-lg;
+  max-height: 210px;
+ }
+ .featured-preview-actions {
+  @apply absolute top-2 right-2 flex gap-1.5;
+ }
+ .featured-preview-btn {
+  @apply inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150 border border-slate-200/60 dark:border-slate-700/60;
+ }
+ .featured-preview-btn.remove {
+  @apply hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800;
+ }
+
+ /* ── Word Counter ── */
+ .word-counter {
+  @apply flex items-center gap-3 px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 text-xs text-slate-500 dark:text-slate-400;
+ }
+ .word-counter-item {
+  @apply flex items-center gap-1.5;
+ }
+ .word-counter-item strong {
+  @apply text-slate-700 dark:text-slate-300 font-semibold;
+ }
+
  /* ── Dark Mode Overrides (file-specific) ── */
  [data-theme="dark"] .pill-option { @apply bg-slate-800/80 border-slate-600 text-slate-400 shadow-none; }
  [data-theme="dark"] .pill-option:hover { @apply bg-indigo-900/30 border-indigo-700 text-indigo-300; }
@@ -689,197 +766,172 @@
 {% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
- <div class="w-full px-4 py-4 sm:px-6 lg:px-8">
+<div class="px-4 sm:px-6 lg:px-8 py-5">
  <div class="mx-auto max-w-[1520px]">
-<!-- Page Header -->
- <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-900 p-5 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)] sm:p-6">
-  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.22),transparent_28%)]" aria-hidden="true"></div>
-  <div class="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-   <div class="flex items-start gap-4">
-    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white shadow-lg ring-1 ring-white/10 backdrop-blur">
-     <i class="lucide {{ type == 'posts' ? 'lucide-file-text' : 'lucide-file' }} text-xl"></i>
-    </div>
-    <div class="min-w-0">
-     <div class="flex flex-wrap items-center gap-2">
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur">{{ type == 'posts' ? 'Content Studio' : 'Page Studio' }}</span>
-      <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
-       <i class="lucide {{ not isCreate ? 'lucide-pencil' : 'lucide-plus-circle' }} w-3.5 h-3.5"></i>
-       {{ not isCreate ? 'Editing mode' : 'Create mode' }}
-      </span>
+  {# ── Page Header Banner ── #}
+  <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+   <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+   <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+     <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+      <i class="lucide {{ type == 'posts' ? 'lucide-file-text' : 'lucide-file' }} w-5 h-5 text-white"></i>
      </div>
-     <h1 class="mt-3 text-2xl font-black tracking-tight sm:text-[2rem]">
-      {{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}
-     </h1>
-     <p class="mt-1 max-w-2xl text-sm leading-6 text-white/72">
-      {{ not isCreate
-       ? (type == 'posts' ? 'Update the article, metadata, and publishing controls in one streamlined workspace.' : 'Update the page content, metadata, and publishing controls in one streamlined workspace.')
-       : (type == 'posts' ? 'Create a polished new article with the editor, SEO, and publish settings in one place.' : 'Create a polished new page with the editor, SEO, and publish settings in one place.')
-      }}
-     </p>
-     <div class="mt-4 flex flex-wrap gap-2">
-      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-monitor w-3.5 h-3.5 text-indigo-600"></i>Responsive layout</span>
-      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-save w-3.5 h-3.5 text-indigo-600"></i>Autosave ready</span>
-      <span class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur"><i class="lucide lucide-zap w-3.5 h-3.5 text-indigo-600"></i>AI assisted</span>
+     <div>
+      <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ type == 'posts' ? 'Post Studio' : 'Page Studio' }}</p>
+      <h1 class="text-xl font-bold text-white">{{ not isCreate ? (type == 'posts' ? 'Edit Post' : 'Edit Page') : (type == 'posts' ? 'Create New Post' : 'Create New Page') }}</h1>
+      <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ not isCreate ? (type == 'posts' ? 'Update the article, metadata, and publishing controls in one streamlined workspace.' : 'Update the page content, metadata, and publishing controls in one streamlined workspace.') : (type == 'posts' ? 'Create a polished new article with content, metadata, and publishing settings in one place.' : 'Create a polished new page with content, metadata, and publishing settings in one place.') }}</p>
      </div>
     </div>
-   </div>
-   <div class="flex flex-wrap gap-2 xl:justify-end">
-    <a href="/admin/{{ type }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98] self-start sm:self-auto">
-     <i class="lucide lucide-arrow-left text-base"></i>
-     Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
-    </a>
+    <div class="flex gap-2">
+     <a href="/admin/{{ type }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to {{ type == 'posts' ? 'Posts' : 'Pages' }}
+     </a>
+    </div>
    </div>
   </div>
- </div>
- <!-- Main Form -->
- <form method="post"
- action="{{ not isCreate ? ('/admin/' ~ type ~ '/edit') : ('/admin/' ~ type ~ '/create') }}"
- data-autosave="true"
- class="space-y-6">
- {% if not isCreate %}
- <input type="hidden" name="id" value="{{ item.id }}">
- {% if type == 'posts' %}
- <input type="hidden" id="post_id" value="{{ item.id }}">
- {% else %}
- <input type="hidden" id="page_id" value="{{ item.id }}">
- {% endif %}
- <input type="hidden"
- id="item_permalink"
- name="permalink"
- value="{{ item.slug|default("") }}">
- {% else %}
- {% if type == 'posts' %}
- <input type="hidden" id="post_id" value="">
- {% else %}
- <input type="hidden" id="page_id" value="">
- {% endif %}
- <input type="hidden" id="item_permalink" name="permalink" value="">
- {% endif %}
- <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)] xl:items-start">
-<!-- Main Content Column -->
- <div class="space-y-6 xl:space-y-8">
+  {# ── Main Form ── #}
+  <form method="post"
+   action="{{ not isCreate ? ('/admin/' ~ type ~ '/edit') : ('/admin/' ~ type ~ '/create') }}"
+   data-autosave="true"
+   class="space-y-6">
+   {% if not isCreate %}
+   <input type="hidden" name="id" value="{{ item.id }}">
+   {% if type == 'posts' %}
+   <input type="hidden" id="post_id" value="{{ item.id }}">
+   {% else %}
+   <input type="hidden" id="page_id" value="{{ item.id }}">
+   {% endif %}
+   <input type="hidden"
+    id="item_permalink"
+    name="permalink"
+    value="{{ item.slug|default("") }}">
+   {% else %}
+   {% if type == 'posts' %}
+   <input type="hidden" id="post_id" value="">
+   {% else %}
+   <input type="hidden" id="page_id" value="">
+   {% endif %}
+   <input type="hidden" id="item_permalink" name="permalink" value="">
+   {% endif %}
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+   <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)] xl:items-start">
+
+    {# ── Main Content Column ── #}
+    <div class="space-y-6 xl:space-y-8">
  <!-- Basic Information Card -->
- <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50">
- <div class="flex items-center gap-2 border-b border-slate-200 px-5 py-3 bg-gradient-to-r from-slate-50/50 to-slate-100/50">
- <h3 class="m-0 flex items-center gap-2 text-base font-semibold text-slate-900">
- <i class="lucide lucide-file-text"></i>
- {{ type == 'posts' ? 'Post Details' : 'Page Details' }}
- </h3>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-file-text w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+  </div>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ type == 'posts' ? 'Post Details' : 'Page Details' }}</h3>
  </div>
- <div class="p-5 space-y-2">
- <!-- Title Input -->
- <div class="space-y-1.5">
- <label for="title" class="block text-sm font-semibold tracking-tight text-slate-700">
- Title
- <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
- </label>
- <input type="text"
- class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
- id="title"
- name="title"
- placeholder="Enter {{ type == 'posts' ? 'post' : 'page' }} title"
- value="{{ item.title|default("") }}"
- required>
- <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</span>
- </div>
+ <div class="p-5 space-y-4">
+{# Title Input #}
+       <div class="space-y-1.5">
+        <label for="title" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+         Title <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+        </label>
+        <input type="text"
+         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/40"
+         id="title"
+         name="title"
+         placeholder="Enter {{ type == 'posts' ? 'post' : 'page' }} title"
+         value="{{ item.title|default("") }}"
+         required>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">A clear, descriptive title for your {{ type == 'posts' ? 'post' : 'page' }}</p>
+       </div>
 
- <!-- URL Slug -->
- <div class="space-y-1.5">
- <label for="seo" class="block text-sm font-semibold tracking-tight text-slate-700">
- URL Slug
- <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
- </label>
- <div class="relative">
- <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
- <i class="lucide lucide-link text-base"></i>
- </span>
- <input type="text"
- class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 pl-10 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
- id="seo"
- name="slug"
- placeholder="example-slug"
- value="{{ item.slug|default("") }}"
- required>
- </div>
- <div id="slugPreview" class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
- <i class="lucide lucide-arrow-right text-xs"></i>
- <span>{{ site_url|default(base_url|default('https://example.com/')) }}<span class="slug-text" id="slugText">{{ item.slug|default('enter-title')|lower|replace({' ':'-','--':'-'}) }}</span></span>
- </div>
- <div id="seo-feedback" class="mt-1.5 block text-xs leading-relaxed text-slate-500"></div>
- </div>
+{# URL Slug #}
+       <div class="space-y-1.5">
+        <label for="seo" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+         URL Slug <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+        </label>
+        <div class="relative">
+         <i class="lucide lucide-link w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600"></i>
+         <input type="text"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/40"
+          id="seo"
+          name="slug"
+          placeholder="example-slug"
+          value="{{ item.slug|default("") }}"
+          required>
+        </div>
+        <div id="slugPreview" class="slug-preview">
+         <i class="lucide lucide-arrow-right w-3 h-3"></i>
+         <span>{{ site_url|default(base_url|default('https://example.com/')) }}<span class="slug-text" id="slugText">{{ item.slug|default('enter-title')|lower|replace({' ':'-','--':'-'}) }}</span></span>
+        </div>
+        <div id="seo-feedback" class="mt-1 text-xs text-slate-400 dark:text-slate-600"></div>
+       </div>
 
- <!-- SEO Title -->
- <div class="space-y-1.5">
- <label for="meta_title" class="block text-sm font-semibold tracking-tight text-slate-700">SEO Title</label>
- <input type="text"
- class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
- id="meta_title"
- name="meta_title"
- placeholder="Optional SEO title"
- maxlength="60"
- value="{{ item.meta_title|default("") }}"
- data-char-max="60">
- <div class="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
- <span>A custom SEO title for search engines</span>
- <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
- <div class="h-full rounded-full bg-indigo-500 transition-all duration-300 ease-out" id="metaTitleProgress" style="width: {{ (item.meta_title|default('')|length / 60 * 100)|round }}%"></div>
- </div>
- <span id="metaTitleCount">{{ item.meta_title|default('')|length }}/60</span>
- </div>
- </div>
+{# SEO Title #}
+       <div class="space-y-1.5">
+        <label for="meta_title" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">SEO Title</label>
+        <input type="text"
+         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/40"
+         id="meta_title"
+         name="meta_title"
+         placeholder="Optional SEO title"
+         maxlength="60"
+         value="{{ item.meta_title|default("") }}"
+         data-char-max="60">
+        <div class="char-progress">
+         <span>A custom SEO title for search engines</span>
+         <div class="char-progress-track">
+          <div class="char-progress-bar" id="metaTitleProgress" style="width: {{ (item.meta_title|default('')|length / 60 * 100)|round }}%"></div>
+         </div>
+         <span id="metaTitleCount" class="text-slate-400 dark:text-slate-500">{{ item.meta_title|default('')|length }}/60</span>
+        </div>
+       </div>
 
- <!-- SEO Description -->
- <div class="space-y-1.5">
- <label for="meta_description" class="block text-sm font-semibold tracking-tight text-slate-700">SEO Description</label>
- <textarea class="min-h-[96px] w-full resize-y rounded-xl border border-slate-300 bg-white/95 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 h-20"
- id="meta_description"
- name="meta_description"
- placeholder="Optional SEO description"
- maxlength="160"
- data-char-max="160">{{ item.meta_description|default("") }}</textarea>
- <div class="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
- <span>A short summary for search results and social media</span>
- <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
- <div class="h-full rounded-full bg-indigo-500 transition-all duration-300 ease-out" id="metaDescProgress" style="width: {{ (item.meta_description|default('')|length / 160 * 100)|round }}%"></div>
- </div>
- <span id="metaDescCount">{{ item.meta_description|default('')|length }}/160</span>
- </div>
- </div>
+{# SEO Description #}
+       <div class="space-y-1.5">
+        <label for="meta_description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">SEO Description</label>
+        <textarea
+         class="min-h-[96px] w-full resize-y rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/40"
+         id="meta_description"
+         name="meta_description"
+         placeholder="Optional SEO description"
+         maxlength="160"
+         data-char-max="160">{{ item.meta_description|default("") }}</textarea>
+        <div class="char-progress">
+         <span>A short summary for search results and social media</span>
+         <div class="char-progress-track">
+          <div class="char-progress-bar" id="metaDescProgress" style="width: {{ (item.meta_description|default('')|length / 160 * 100)|round }}%"></div>
+         </div>
+         <span id="metaDescCount" class="text-slate-400 dark:text-slate-500">{{ item.meta_description|default('')|length }}/160</span>
+        </div>
+       </div>
 
- <!-- Content Editor -->
- <div class="space-y-1.5">
- <label for="content" class="block text-sm font-semibold tracking-tight text-slate-700">
- Content
- <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
- </label>
- <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" data-editor-shell="content">
- {% include 'partials/editor.twig' with {
- 'editorId': 'content',
- 'editorName': 'content',
- 'initialContent': item.content|default(''),
- 'darkMode': false,
- 'rtl': false
-} %}
- </div>
- <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</span>
- </div>
- </div>
- </div>
+{# Content Editor #}
+       <div class="space-y-1.5">
+        <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+         Content <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+        </label>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 shadow-sm" data-editor-shell="content" style="min-height:300px">
+         {% include 'partials/editor.twig' with {
+          'editorId': 'content',
+          'editorName': 'content',
+          'initialContent': item.content|default(''),
+          'darkMode': false,
+          'rtl': false
+         } %}
+        </div>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Write the main content for your {{ type == 'posts' ? 'post' : 'page' }}</p>
+       </div>
+      </div>
+     </div>
 
  <!-- Categories & Tags Card -->
- <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
- <div class="flex items-center gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-3.5 sm:px-6">
- <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
-  <i class="lucide lucide-tags"></i>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-tags w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+  </div>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Categories & Tags</h3>
  </div>
- <div class="min-w-0">
-  <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">Labels</p>
-  <h3 class="m-0 text-[0.95rem] font-semibold tracking-tight text-slate-900">Categories & Tags</h3>
- </div>
- </div>
- <div class="space-y-4 p-5 sm:p-6">
- <div class="space-y-1.5">
- <label class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Categories</label>
+ <div class="p-5 space-y-4">
  {% include 'admin/partials/_categories.twig' with {
  'categories': categories|default([]),
  'selectedCategories': selectedCategories|default([])
@@ -887,231 +939,253 @@
  </div>
  </div>
  </div>
- </div>
  <!-- AI Writer Modal -->
- <div class="modal" id="aiWriterModal" tabindex="-1" aria-labelledby="aiWriterModalLabel" aria-hidden="true">
- <div class="modal-dialog modal-dialog-centered modal-lg">
- <div class="modal-content !border-0 rounded-2xl shadow-2xl">
- <div class="modal-header border-b border-slate-200">
- <h5 class="modal-title font-semibold text-lg flex items-center gap-2" id="aiWriterModalLabel">
- <i class="lucide lucide-sparkles text-indigo-600"></i>
- AI Article Writer
- </h5>
- <div class="flex items-center gap-2 ms-auto">
- <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]" id="aiWriterMinimizeBtn" aria-label="Minimize AI Writer" title="Minimize">
- <i class="lucide lucide-minus"></i>
- </button>
- <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]" data-brox-dismiss="modal" aria-label="Close">
- <i class="lucide lucide-x"></i>
- </button>
- </div>
- </div>
- <div class="modal-body">
- <div class="space-y-4">
- <div class="space-y-1.5">
- <label for="aiTopic" class="block text-sm font-semibold tracking-tight text-slate-700">Topic</label>
- <input type="text" class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiTopic"
- placeholder="e.g., Benefits of AI in Healthcare">
- </div>
-
- <div class="grid grid-cols-2 gap-4">
- <div class="space-y-1.5">
- <label for="aiTone" class="block text-sm font-semibold tracking-tight text-slate-700">Tone</label>
- <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiTone">
- <option value="informative">Informative</option>
- <option value="professional">Professional</option>
- <option value="conversational">Conversational</option>
- <option value="persuasive">Persuasive</option>
- <option value="technical">Technical</option>
- </select>
- </div>
-
- <div class="space-y-1.5">
- <label for="aiLength" class="block text-sm font-semibold tracking-tight text-slate-700">Length</label>
- <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiLength">
- <option value="short">Short</option>
- <option value="medium" selected>Medium</option>
- <option value="long">Long</option>
- <option value="detailed">Detailed</option>
- </select>
- </div>
- </div>
-
- <div class="grid grid-cols-2 gap-4">
- <div class="space-y-1.5">
- <label for="aiLanguage" class="block text-sm font-semibold tracking-tight text-slate-700">Language</label>
- <select class="w-full cursor-pointer appearance-none rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiLanguage">
- <option value="en">🇺🇸 English</option>
- <option value="bn">🇧🇩 Bengali</option>
- <option value="hi">🇮🇳 Hindi</option>
- <option value="ar">🇸🇦 Arabic</option>
- </select>
- </div>
-
- <div class="space-y-1.5">
- <label for="aiKeywords" class="block text-sm font-semibold tracking-tight text-slate-700">Keywords (optional)</label>
- <input type="text" class="w-full rounded-xl border border-slate-300 bg-white/95 px-4 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" id="aiKeywords"
- placeholder="e.g., statistics, research">
- </div>
- </div>
-
- <div class="space-y-2">
- <button type="button" class="inline-flex w-full items-center justify-start gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]" id="pexelsBtn">
- <i class="lucide lucide-image"></i> Find Image from Pexels
- </button>
- <button type="button" class="inline-flex w-full items-center justify-start gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]" id="pixabayBtn">
- <i class="lucide lucide-image"></i> Find Image from Pixabay
- </button>
- </div>
-
- <div class="flex items-center justify-between p-4 rounded-lg bg-indigo-50 border border-indigo-200">
- <label class="flex items-center gap-3 cursor-pointer flex-1">
- <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
- type="checkbox" id="aiStreamToggle" checked>
- <span class="text-sm font-medium text-slate-900">Live Stream Output</span>
- </label>
- <span class="text-xs text-slate-600 ml-2">Real-time</span>
- </div>
- </div>
- </div>
- <div class="modal-footer border-t border-slate-200 bg-slate-50">
- <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-slate-300 active:scale-[0.98]" data-brox-dismiss="modal">Close</button>
- <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98]" id="aiGenerateBtn">
- <i class="lucide lucide-sparkles"></i> Generate Article
- </button>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
+ <div class="fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm" id="aiWriterModal" role="dialog" aria-modal="true" aria-labelledby="aiWriterModalLabel" style="display:none">
+  <div class="mx-4 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl max-h-[85vh] flex flex-col">
+   <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+    <h5 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2" id="aiWriterModalLabel">
+     <i class="lucide lucide-sparkles w-4 h-4 text-indigo-600"></i>
+     AI Article Writer
+    </h5>
+    <div class="flex items-center gap-2">
+     <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150" id="aiWriterMinimizeBtn" aria-label="Minimize AI Writer" title="Minimize">
+      <i class="lucide lucide-minus w-4 h-4"></i>
+     </button>
+     <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" data-brox-dismiss="modal" aria-label="Close">
+      <i class="lucide lucide-x w-4 h-4"></i>
+     </button>
+    </div>
+   </div>
+   <div class="flex-1 overflow-y-auto p-5 space-y-4">
+    <div class="space-y-1.5">
+     <label for="aiTopic" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Topic</label>
+     <input type="text" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" id="aiTopic" placeholder="e.g., Benefits of AI in Healthcare">
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+     <div class="space-y-1.5">
+      <label for="aiTone" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Tone</label>
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" id="aiTone">
+       <option value="informative">Informative</option>
+       <option value="professional">Professional</option>
+       <option value="conversational">Conversational</option>
+       <option value="persuasive">Persuasive</option>
+       <option value="technical">Technical</option>
+      </select>
+     </div>
+     <div class="space-y-1.5">
+      <label for="aiLength" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Length</label>
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" id="aiLength">
+       <option value="short">Short</option>
+       <option value="medium" selected>Medium</option>
+       <option value="long">Long</option>
+       <option value="detailed">Detailed</option>
+      </select>
+     </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+     <div class="space-y-1.5">
+      <label for="aiLanguage" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Language</label>
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" id="aiLanguage">
+       <option value="en">🇺🇸 English</option>
+       <option value="bn">🇧🇩 Bengali</option>
+       <option value="hi">🇮🇳 Hindi</option>
+       <option value="ar">🇸🇦 Arabic</option>
+      </select>
+     </div>
+     <div class="space-y-1.5">
+      <label for="aiKeywords" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Keywords (optional)</label>
+      <input type="text" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" id="aiKeywords" placeholder="e.g., statistics, research">
+     </div>
+    </div>
+    <div class="space-y-2">
+     <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="pexelsBtn">
+      <i class="lucide lucide-image w-4 h-4"></i> Find Image from Pexels
+     </button>
+     <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="pixabayBtn">
+      <i class="lucide lucide-image w-4 h-4"></i> Find Image from Pixabay
+     </button>
+    </div>
+    <div class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40">
+     <label class="flex items-center gap-3 cursor-pointer flex-1">
+      <input class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" id="aiStreamToggle" checked>
+      <span class="text-sm font-medium text-slate-900 dark:text-slate-100">Live Stream Output</span>
+     </label>
+     <span class="text-xs text-slate-500 dark:text-slate-400">Real-time</span>
+    </div>
+   </div>
+   <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 flex-shrink-0">
+    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-brox-dismiss="modal">Close</button>
+    <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="aiGenerateBtn">
+     <i class="lucide lucide-sparkles w-4 h-4"></i> Generate Article
+    </button>
+   </div>
+  </div>
  </div>
  <!-- Sidebar Column -->
  <div class="space-y-6">
  <div class="sticky top-24 space-y-4">
  <!-- Tags Card -->
- <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
- <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-3.5 sm:px-6">
- <div class="flex items-center gap-3">
-  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
-   <i class="lucide lucide-tag"></i>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-tag w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
   </div>
-  <div class="min-w-0">
-   <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600">Labels</p>
-   <h3 class="m-0 text-[0.95rem] font-semibold tracking-tight text-slate-900">{{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}</h3>
-  </div>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ type == 'posts' ? 'Post Tags' : 'Page Tags' }}</h3>
  </div>
- </div>
- <div class="space-y-4 p-5 sm:p-6">
+ <div class="p-5 space-y-4">
  <div class="space-y-1.5">
- <label class="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Tags</label>
+ <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Tags</label>
  {% include 'admin/partials/_tags.twig' with {
  'allTags': allTags|default([]),
  'selectedTags': selectedTags|default([])
  } %}
- <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Select or create tags for better organization</span>
+ <span class="mt-1 text-xs text-slate-400 dark:text-slate-600">Select or create tags for better organization</span>
  </div>
  </div>
  </div>
 
  <!-- Settings Card -->
- <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm">
- <div class="border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-4 sm:px-6">
- <h3 class="m-0 flex items-center gap-2 text-base font-semibold text-slate-900">
- <i class="lucide lucide-sliders-horizontal"></i>
- {{ type == 'posts' ? 'Post Settings' : 'Page Settings' }}
- </h3>
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-sliders-horizontal w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+  </div>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ type == 'posts' ? 'Post Settings' : 'Page Settings' }}</h3>
  </div>
- <div class="space-y-5 p-5 sm:p-6">
+ <div class="p-5 space-y-5">
  <!-- Status -->
  <div class="space-y-1.5">
- <label class="block text-sm font-semibold tracking-tight text-slate-700">
- Status <span class="ml-1 align-middle text-base leading-none text-rose-500">*</span>
+ <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+  Status <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
  </label>
  {% set current_status = item.status|default(status|default('draft')) %}
  <div data-pill-group class="flex flex-wrap gap-2" role="radiogroup" aria-label="Post status">
  <label data-pill-option data-active="{{ current_status == 'draft' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20" data-value="draft">
- <input type="radio" name="status" value="draft" {{ current_status == 'draft' ? 'checked' : '' }}>
+ <input type="radio" name="status" value="draft" id="status-draft" {{ current_status == 'draft' ? 'checked' : '' }} aria-label="Draft">
  <i class="lucide lucide-pencil text-xs"></i>
  Draft
  </label>
  <label data-pill-option data-active="{{ current_status == 'published' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20" data-value="published">
- <input type="radio" name="status" value="published" {{ current_status == 'published' ? 'checked' : '' }}>
+ <input type="radio" name="status" value="published" id="status-published" {{ current_status == 'published' ? 'checked' : '' }} aria-label="Published">
  <i class="lucide lucide-globe text-xs"></i>
  Published
  </label>
+ <label data-pill-option data-active="{{ current_status == 'scheduled' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20" data-value="scheduled">
+ <input type="radio" name="status" value="scheduled" id="status-scheduled" {{ current_status == 'scheduled' ? 'checked' : '' }} aria-label="Scheduled">
+ <i class="lucide lucide-clock text-xs"></i>
+ Scheduled
+ </label>
  </div>
- <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Set the visibility of this {{ type == 'posts' ? 'post' : 'page' }}</span>
+ <span class="mt-1 text-xs text-slate-400 dark:text-slate-600">Set the visibility of this {{ type == 'posts' ? 'post' : 'page' }}</span>
  </div>
 
- {% if isCreate %}
- <!-- Push Notification Toggle -->
- <div class="flex items-start gap-3 p-3.5 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 dark:from-indigo-950/30 dark:to-blue-950/30 dark:border-indigo-800"><button type="button"
- data-ui-switch class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full bg-slate-300 transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-2 aria-checked:bg-indigo-600"
- id="send_push_notification"
- role="switch"
- aria-checked="false"
- aria-label="Send push notification"
- tabindex="0">
- <span class="inline-block h-5 w-5 translate-x-0 rounded-full bg-white shadow-sm transition-all duration-200 ease-out aria-checked:translate-x-5"></span>
-</button>
- <input type="hidden" name="send_push_notification" value="0">
- <div class="flex-1 min-w-0">
- <label class="text-sm font-medium text-slate-900 dark:text-slate-200 cursor-pointer" for="send_push_notification">
- Send Push Notification
- </label>
- <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Notify subscribers when status is published</p>
+ {% if isCreate %} <!-- Push Notification Toggle -->
+ <div class="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-3.5">
+  <button type="button" data-ui-switch class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full bg-slate-300 dark:bg-slate-600 transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-2 aria-checked:bg-indigo-600" role="switch" aria-checked="false" aria-label="Send push notification" tabindex="0">
+   <span class="inline-block h-5 w-5 translate-x-0 rounded-full bg-white shadow-sm transition-all duration-200 ease-out"></span>
+  </button>
+  <input type="hidden" name="send_push_notification" value="0" id="send_push_notification">
+  <label class="flex-1 cursor-pointer select-none text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2" for="send_push_notification">
+   <i class="lucide lucide-bell w-4 h-4 text-red-600"></i> Send Push Notification
+  </label>
  </div>
- </div>
+ <p class="-mt-3 mb-1 text-xs text-slate-400 dark:text-slate-600 pl-1">Notify subscribers when status is published</p>
  {% endif %}
 
  <!-- SEO Indexing -->
  {% if type == 'posts' %}
  <div class="space-y-1.5">
- <label class="block text-sm font-semibold tracking-tight text-slate-700">
- <i class="lucide lucide-search text-indigo-600 dark:text-indigo-400"></i>
- SEO Indexing
+ <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+  <i class="lucide lucide-search w-3.5 h-3.5 inline-block mr-1 text-indigo-600 dark:text-indigo-400"></i>
+  SEO Indexing
  </label>
  <div data-pill-group class="flex flex-wrap gap-2" role="radiogroup" aria-label="SEO indexing">
  <label data-pill-option data-active="{{ not item.reader_indexing or item.reader_indexing == '' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
- <input type="radio" name="reader_indexing" value="" {{ not item.reader_indexing or item.reader_indexing == '' ? 'checked' : '' }}>
+ <input type="radio" name="reader_indexing" value="" id="seo-index-follow" {{ not item.reader_indexing or item.reader_indexing == '' ? 'checked' : '' }} aria-label="Index and Follow">
  <i class="lucide lucide-check-circle text-xs"></i>
  Index & Follow
  </label>
  <label data-pill-option data-active="{{ item.reader_indexing == 'noindex' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
- <input type="radio" name="reader_indexing" value="noindex" {{ item.reader_indexing == 'noindex' ? 'checked' : '' }}>
+ <input type="radio" name="reader_indexing" value="noindex" id="seo-noindex" {{ item.reader_indexing == 'noindex' ? 'checked' : '' }} aria-label="No Index">
  <i class="lucide lucide-eye-off text-xs"></i>
  No Index
  </label>
  <label data-pill-option data-active="{{ item.reader_indexing == 'nofollow' ? 'true' : 'false' }}" class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:shadow-indigo-500/20">
- <input type="radio" name="reader_indexing" value="nofollow" {{ item.reader_indexing == 'nofollow' ? 'checked' : '' }}>
+ <input type="radio" name="reader_indexing" value="nofollow" id="seo-nofollow" {{ item.reader_indexing == 'nofollow' ? 'checked' : '' }} aria-label="No Follow">
  <i class="lucide lucide-link-2-off text-xs"></i>
  No Follow
  </label>
  </div>
- <span class="mt-1.5 block text-xs leading-relaxed text-slate-500">Control how search engines index this content</span>
+ <span class="mt-1 text-xs text-slate-400 dark:text-slate-600">Control how search engines index this content</span>
  </div>
  {% endif %}
  </div>
  </div>
 
- <!-- Quick Actions Card -->
- <div class="overflow-hidden rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50 via-white to-sky-50 shadow-sm">
- <div class="space-y-3 p-5 sm:p-6">
- <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
- <i class="lucide lucide-zap text-indigo-600"></i>
- Ready to {{ not isCreate ? 'update' : 'publish' }}?
- </h3>
- <div class="space-y-2.5">
- <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98]">
- <i class="lucide lucide-check-circle"></i>
- {{ not isCreate ? (type == 'posts' ? 'Update Post' : 'Update Page') : (type == 'posts' ? 'Publish Post' : 'Publish Page') }}
- </button>
- <a href="/admin/{{ type }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]">
- <i class="lucide lucide-x"></i>
- Cancel
- </a>
+ <!-- Featured Image Card -->
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-image w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+  </div>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Featured Image</h3>
  </div>
+ <div class="p-5 space-y-3">
+  <!-- Drag & Drop Upload Zone -->
+  <div class="featured-dropzone" id="featuredDropzone" data-upload-url="/upload">
+   <input type="file" id="featuredFileInput" accept="image/*" class="hidden" aria-label="Choose featured image">
+   <input type="hidden" name="featured_image" id="featuredImageInput" value="{{ item.featured_image|default('') }}">
+   <div id="featuredPlaceholder" class="flex flex-col items-center gap-2 text-center">
+    <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
+     <i class="lucide lucide-cloud-upload w-6 h-6 text-indigo-500 dark:text-indigo-400"></i>
+    </div>
+    <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Drop an image here or click to browse</p>
+    <p class="text-xs text-slate-400 dark:text-slate-600">JPEG, PNG, WebP — max 5MB</p>
+   </div>
+   <div id="featuredPreview" class="featured-preview hidden">
+    <img id="featuredPreviewImg" src="" alt="Featured image preview">
+    <div class="featured-preview-actions">
+     <button type="button" class="featured-preview-btn" id="featuredReplaceBtn" title="Replace image">
+      <i class="lucide lucide-refresh-cw w-4 h-4"></i>
+     </button>
+     <button type="button" class="featured-preview-btn remove" id="featuredRemoveBtn" title="Remove image">
+      <i class="lucide lucide-trash-2 w-4 h-4"></i>
+     </button>
+    </div>
+   </div>
+  </div>
+  <!-- Image Source Buttons -->
+  <div class="grid grid-cols-2 gap-2">
+   <button type="button" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="featuredPexelsBtn">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3V3z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+    Pexels
+   </button>
+   <button type="button" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="featuredPixabayBtn">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+    Pixabay
+   </button>
+  </div>
+ </div>
+ </div>
+
+ <!-- Quick Actions Card -->
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+ <div class="p-5 space-y-3">
+  <p class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+   <i class="lucide lucide-zap w-4 h-4 text-indigo-600"></i>
+   Ready to {{ not isCreate ? 'update' : 'publish' }}?
+  </p>
+  <div class="space-y-2.5">
+   <button type="submit"
+    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+    <i class="lucide lucide-save w-4 h-4"></i>
+    {{ not isCreate ? (type == 'posts' ? 'Update Post' : 'Update Page') : (type == 'posts' ? 'Publish Post' : 'Publish Page') }}
+   </button>
+   <a href="/admin/{{ type }}"
+    class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+    <i class="lucide lucide-x w-4 h-4"></i> Cancel
+   </a>
+  </div>
  </div>
  </div>
  </div>
@@ -1239,6 +1313,276 @@
  const form = document.querySelector('form[data-autosave="true"]');
  if (!form) return;
 
+ // ── Word Count & Character Count ──
+ const editorShell = document.querySelector('[data-editor-shell="content"]');
+ if (editorShell) {
+  // Insert word counter bar below the editor
+  const counterBar = document.createElement('div');
+  counterBar.className = 'word-counter';
+  counterBar.id = 'editorWordCounter';
+  counterBar.innerHTML = '<span class="word-counter-item"><i class="lucide lucide-type w-3.5 h-3.5 text-indigo-500"></i> <strong id="wordCount">0</strong> words</span><span class="word-counter-item"><i class="lucide lucide-text-cursor w-3.5 h-3.5 text-indigo-500"></i> <strong id="charCount">0</strong> characters</span><span class="ml-auto text-slate-400" id="readingTime">< 1 min read</span>';
+  editorShell.appendChild(counterBar);
+
+  function updateWordCount() {
+   const editor = window.editor_content;
+   const html = editor && typeof editor.getContent === 'function'
+    ? editor.getContent()
+    : (document.getElementById('content-input')?.value || '');
+   const text = String(html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+   const chars = text.length;
+   const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+   const wordEl = document.getElementById('wordCount');
+   const charEl = document.getElementById('charCount');
+   const readingEl = document.getElementById('readingTime');
+   if (wordEl) wordEl.textContent = words.toLocaleString();
+   if (charEl) charEl.textContent = chars.toLocaleString();
+   if (readingEl) {
+    const mins = Math.max(1, Math.ceil(words / 200));
+    readingEl.textContent = mins + ' min' + (mins > 1 ? 's' : '') + ' read';
+   }
+  }
+
+  // Poll for editor content changes (the RTE dispatches input events on the contenteditable)
+  const editorEl = editorShell.querySelector('[contenteditable="true"]');
+  if (editorEl) {
+   editorEl.addEventListener('input', updateWordCount);
+   editorEl.addEventListener('keyup', updateWordCount);
+  }
+  // Also watch for RTE ready event to attach listener
+  document.addEventListener('rte:ready', function (e) {
+   if (e.detail && e.detail.editorId === 'content') {
+    setTimeout(updateWordCount, 100);
+    var editor = window.editor_content;
+    if (editor && editor.getEditor && typeof editor.getEditor === 'function') {
+     var el = editor.getEditor();
+     if (el) {
+      el.addEventListener('input', updateWordCount);
+      el.addEventListener('keyup', updateWordCount);
+     }
+    }
+   }
+  });
+  setTimeout(updateWordCount, 500);
+ }
+
+ // ── Featured Image Drop Zone ──
+ (function() {
+  var dropzone = document.getElementById('featuredDropzone');
+  var fileInput = document.getElementById('featuredFileInput');
+  var hiddenInput = document.getElementById('featuredImageInput');
+  var placeholder = document.getElementById('featuredPlaceholder');
+  var preview = document.getElementById('featuredPreview');
+  var previewImg = document.getElementById('featuredPreviewImg');
+  var replaceBtn = document.getElementById('featuredReplaceBtn');
+  var removeBtn = document.getElementById('featuredRemoveBtn');
+  var pexelsBtn = document.getElementById('featuredPexelsBtn');
+  var pixabayBtn = document.getElementById('featuredPixabayBtn');
+
+  if (!dropzone) return;
+
+  // Restore existing image if present
+  function restoreExistingImage() {
+   var existingUrl = hiddenInput ? hiddenInput.value : '';
+   if (existingUrl && previewImg && placeholder && preview) {
+    previewImg.src = existingUrl;
+    placeholder.classList.add('hidden');
+    preview.classList.remove('hidden');
+    dropzone.classList.add('has-image');
+   }
+  }
+  restoreExistingImage();
+
+  function handleFile(file) {
+   if (!file || !file.type.startsWith('image/')) {
+    window.showMessage?.('Please select a valid image file', 'warning');
+    return;
+   }
+   if (file.size > 5 * 1024 * 1024) {
+    window.showMessage?.('Image must be under 5MB', 'warning');
+    return;
+   }
+
+   // Show preview immediately
+   var reader = new FileReader();
+   reader.onload = function(e) {
+    if (previewImg) previewImg.src = e.target.result;
+    if (placeholder) placeholder.classList.add('hidden');
+    if (preview) preview.classList.remove('hidden');
+    if (dropzone) dropzone.classList.add('has-image');
+
+    // Upload via FormData
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'featured');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/media/upload');
+    xhr.setRequestHeader('X-CSRF-Token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+    xhr.onload = function() {
+     if (xhr.status === 200) {
+      try {
+       var data = JSON.parse(xhr.responseText);
+       if (data.success && data.url && hiddenInput) {
+        hiddenInput.value = data.url;
+        if (previewImg) previewImg.src = data.url;
+       } else if (data.url && hiddenInput) {
+        hiddenInput.value = data.url;
+       }
+      } catch(_) {}
+     }
+    };
+    xhr.send(formData);
+   };
+   reader.readAsDataURL(file);
+  }
+
+  // Click to upload
+  dropzone.addEventListener('click', function(e) {
+   if (e.target.closest('.featured-preview-actions')) return;
+   if (fileInput) fileInput.click();
+  });
+
+  if (fileInput) {
+   fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files[0]) {
+     handleFile(fileInput.files[0]);
+    }
+   });
+  }
+
+  // Drag and drop
+  dropzone.addEventListener('dragover', function(e) {
+   e.preventDefault();
+   e.stopPropagation();
+   dropzone.classList.add('drag-over');
+  });
+  dropzone.addEventListener('dragleave', function(e) {
+   e.preventDefault();
+   e.stopPropagation();
+   dropzone.classList.remove('drag-over');
+  });
+  dropzone.addEventListener('drop', function(e) {
+   e.preventDefault();
+   e.stopPropagation();
+   dropzone.classList.remove('drag-over');
+   var files = e.dataTransfer.files;
+   if (files && files[0]) {
+    handleFile(files[0]);
+    if (fileInput) {
+     var dt = new DataTransfer();
+     dt.items.add(files[0]);
+     fileInput.files = dt.files;
+    }
+   }
+  });
+
+  // Replace button
+  if (replaceBtn) {
+   replaceBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (fileInput) fileInput.click();
+   });
+  }
+
+  // Remove button
+  if (removeBtn) {
+   removeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (previewImg) previewImg.src = '';
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (preview) preview.classList.add('hidden');
+    if (dropzone) dropzone.classList.remove('has-image');
+    if (hiddenInput) hiddenInput.value = '';
+    if (fileInput) fileInput.value = '';
+   });
+  }
+
+  // Pexels/Pixabay - use existing modal openers
+  if (pexelsBtn) {
+   pexelsBtn.addEventListener('click', function() {
+    var pexelsModal = document.getElementById('pexelsModal');
+    if (pexelsModal) pexelsModal.classList.add('active');
+    var input = document.getElementById('pexelsSearchInput');
+    if (input) input.focus();
+   });
+  }
+  if (pixabayBtn) {
+   pixabayBtn.addEventListener('click', function() {
+    var pixabayModal = document.getElementById('pixabayModal');
+    if (pixabayModal) pixabayModal.classList.add('active');
+    var input = document.getElementById('pixabaySearchInput');
+    if (input) input.focus();
+   });
+  }
+ })();
+
+ // ── Slug Auto-Lock on Manual Edit ──
+ (function() {
+  var slugInput = document.getElementById('seo');
+  var titleInput = document.getElementById('title');
+  if (!slugInput || !titleInput) return;
+
+  var slugManuallyEdited = slugInput.value.trim().length > 0;
+
+  slugInput.addEventListener('input', function() {
+   if (!slugManuallyEdited && this.value.trim().length > 0) {
+    slugManuallyEdited = true;
+   }
+  });
+
+  titleInput.addEventListener('input', function() {
+   if (slugManuallyEdited) return;
+   var title = this.value.trim();
+   if (!title) return;
+   var slug = title.toLowerCase().trim()
+    .replace(/[^a-z0-9\s\u0980-\u09FF]+/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+   if (slug) {
+    slugInput.value = slug;
+    var slugText = document.getElementById('slugText');
+    if (slugText) slugText.textContent = slug;
+   }
+  });
+ })();
+
+ // ── SEO Progress Bar Threshold Colors ──
+ (function() {
+  function updateProgressWithColors(inputId, progressId, countId, max) {
+   var input = document.getElementById(inputId);
+   var bar = document.getElementById(progressId);
+   var count = document.getElementById(countId);
+   if (!input || !bar || !count) return;
+
+   function update() {
+    var val = input.value.length;
+    var pct = Math.min((val / max) * 100, 100);
+    bar.style.width = pct + '%';
+    // Reset classes
+    bar.className = 'char-progress-bar';
+    // Threshold: 70%+ amber, 90%+ red
+    if (pct >= 90) {
+     bar.classList.add('danger');
+    } else if (pct >= 70) {
+     bar.classList.add('warning');
+    }
+    count.textContent = val + '/' + max;
+    count.className = 'text-slate-400 dark:text-slate-500';
+    if (val > max) {
+     count.classList.add('text-red-500');
+     count.classList.remove('text-slate-400');
+    }
+   }
+
+   input.addEventListener('input', update);
+   update();
+  }
+
+  updateProgressWithColors('meta_title', 'metaTitleProgress', 'metaTitleCount', 60);
+  updateProgressWithColors('meta_description', 'metaDescProgress', 'metaDescCount', 160);
+ })();
+
  form.addEventListener('submit', function (event) {
  const editor = window.editor_content;
  const html = editor && typeof editor.getContent === 'function'
@@ -1353,7 +1697,7 @@
  var aiWriterModal = document.getElementById('aiWriterModal');
  if (aiWriterModal) {
  aiWriterModal.classList.add('show');
- aiWriterModal.style.display = 'block';
+ aiWriterModal.style.display = 'flex';
  }
  }
  setTimeout(function() {
@@ -1566,7 +1910,7 @@
  var aiWriterModal = document.getElementById('aiWriterModal');
  if (aiWriterModal) {
  aiWriterModal.classList.add('show');
- aiWriterModal.style.display = 'block';
+ aiWriterModal.style.display = 'flex';
  }
  }
  }
@@ -2607,7 +2951,7 @@ showCompletion(true, 'Article streamed successfully! The form has been updated.'
  var aiWriterModal = document.getElementById('aiWriterModal');
  if (aiWriterModal) {
  aiWriterModal.classList.add('show');
- aiWriterModal.style.display = 'block';
+ aiWriterModal.style.display = 'flex';
  }
  }
  setTimeout(function() {

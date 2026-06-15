@@ -29,18 +29,21 @@
 
 {% block content %}
 <div class="stream-writer w-full px-4 sm:px-6 py-4 space-y-4">
-    <!-- Gradient Header -->
-    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
-        <div class="relative flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <i class="lucide lucide-refresh-cw text-2xl text-white"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl font-bold text-white sm:text-3xl">Live Streaming Article Writer</h1>
-                <p class="mt-1 text-sm text-indigo-100">Watch articles generate in real-time with live streaming preview.</p>
-            </div>
-        </div>
+    {# ── Gradient Page Header ── #}
+    <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+     <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+      <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+     </div>
+     <div class="relative flex items-center gap-3">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+       <i class="lucide lucide-refresh-cw w-6 h-6"></i>
+      </div>
+      <div>
+       <h1 class="text-xl font-black tracking-tight sm:text-2xl">Live Streaming Article Writer</h1>
+       <p class="mt-1 text-sm text-indigo-200/80">Watch articles generate in real-time with live streaming preview.</p>
+      </div>
+     </div>
     </div>
 
     <!-- Article Topic Card -->

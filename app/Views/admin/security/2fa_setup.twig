@@ -11,7 +11,7 @@
   </div>
   <div class="relative flex items-center gap-3">
    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
-    <i class="lucide lucide-qr-code" style="width:1.5em;height:1.5em;"></i>
+    <i class="lucide lucide-qr-code w-6 h-6"></i>
    </div>
    <div>
     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Setup Two-Factor Authentication</h1>
@@ -31,7 +31,7 @@
    <div class="p-5">
     <div class="flex items-start gap-3 mb-3">
      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
-      <i class="lucide lucide-globe" style="width:1.125em;height:1.125em;"></i>
+      <i class="lucide lucide-globe w-[18px] h-[18px]"></i>
      </div>
      <div>
       <p class="text-sm text-slate-600 mb-2">Download one of these free authenticator apps to your phone:</p>
@@ -56,7 +56,7 @@
     <div class="flex justify-center">
      {% if qr_image %}
      <div class="inline-block rounded-xl border-2 border-slate-200 bg-white p-3 shadow-sm">
-      <img src="{{ qr_image }}" alt="QR Code" class="mx-auto" style="max-width:200px;height:auto;">
+      <img src="{{ qr_image }}" alt="QR Code" class="mx-auto" max-w-[200px] h-auto>
      </div>
      {% else %}
      <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">Could not generate QR code</div>
@@ -70,7 +70,7 @@
  <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden transition-shadow hover:shadow-md">
   <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-5 py-4">
    <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600">
-    <i class="lucide lucide-keyboard" style="width:0.875em;height:0.875em;"></i>
+    <i class="lucide lucide-keyboard w-3.5 h-3.5"></i>
    </div>
    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Can't scan? Enter manually</h2>
   </div>
@@ -83,7 +83,7 @@
      readonly
      id="secretKey">
     <button class="shrink-0 inline-flex items-center justify-center h-10 px-4 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 border-l border-slate-300 transition" onclick="copySecret(this)">
-     <i class="lucide lucide-copy mr-1" style="width:1em;height:1em;"></i>
+     <i class="lucide lucide-copy mr-1 w-4 h-4"></i>
      Copy
     </button>
    </div>
@@ -115,11 +115,11 @@
     <button type="button"
      class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all w-full hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]"
      id="verifyBtn">
-     <i class="lucide lucide-check mr-2" style="width:1.125em;height:1.125em;"></i>
+     <i class="lucide lucide-check mr-2 w-4.5 h-4.5"></i>
      Verify & Enable 2FA
     </button>
     <button type="button" class="inline-flex items-center justify-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-600 transition w-full" onclick="goBack()">
-     <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i>
+     <i class="lucide lucide-arrow-left w-4 h-4"></i>
      Cancel
     </button>
    </form>
@@ -130,7 +130,7 @@
  <div class="rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-amber-100/50 p-5 shadow-sm">
   <div class="flex items-start gap-3">
    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-    <i class="lucide lucide-alert-circle" style="width:1.125em;height:1.125em;"></i>
+    <i class="lucide lucide-alert-circle w-[18px] h-[18px]"></i>
    </div>
    <div>
     <h6 class="text-sm font-bold text-amber-800 mb-2">Important</h6>

@@ -266,7 +266,6 @@ const PostFormEnhancements = (() => {
 
     const updateCounter = () => {
       const count = field.value.length;
-      const percentage = maxChars ? Math.round((count / maxChars) * 100) : 0;
       const status = maxChars && count > maxChars * 0.9 ? 'text-orange-500' : 'text-slate-500';
 
       counter.innerHTML = `
@@ -467,7 +466,6 @@ const PostFormEnhancements = (() => {
       }
 
       // Show loading state
-      const originalText = submitBtn.innerHTML;
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<i class="lucide lucide-loader animate-spin"></i> Saving...';
 

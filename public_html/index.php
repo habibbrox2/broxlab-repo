@@ -160,7 +160,7 @@ if (!empty($timezone)) {
 // Load All Constants
 // ============================================================================
 require_once dirname(__DIR__) . '/Config/Constants.php';
-require_once dirname(__DIR__) . '/app/Permissions.php';
+require_once dirname(__DIR__) . '/app/Models/Permissions.php';
 
 // ============================================================================
 // Ensure Required Directories

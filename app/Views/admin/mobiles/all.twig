@@ -1,169 +1,76 @@
-{% extends 'admin/layout.twig' %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
-{% block title %}All Mobiles - Admin{% endblock %}
+{% extends "admin/layout.twig" %}
 {% block content %}
-{% import '_macros/dashboard_macros.twig' as ui %}
-<div class="w-full px-4 sm:px-6 py-4">
-
- {# ── Gradient Page Header ── #}
- <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 p-6 text-white shadow-2xl shadow-emerald-900/20 sm:p-8">
-  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
-   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
-   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-teal-300/20 blur-3xl"></div>
-  </div>
-  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-   <div class="flex items-center gap-3">
-    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
-     <i class="lucide lucide-smartphone" style="width:1.5em;height:1.5em;"></i>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Devices</p>
+                    <h1 class="text-xl font-bold text-white">Mobile Devices</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Manage tracked mobile devices.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="/admin/mobiles/insert" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-plus w-4 h-4"></i> Add Device
+                </a>
+            </div>
+        </div>
     </div>
-    <div>
-     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Mobile Devices</h1>
-     <p class="mt-1 text-sm text-emerald-200/80">Manage mobile device inventory and specifications</p>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">All Devices</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ mobiles|length }}</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">ID</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Brand</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Model</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">OS</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if mobiles is defined and mobiles|length > 0 %}
+                        {% for mobile in mobiles %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ mobile.id }}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{{ mobile.brand }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ mobile.model }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ mobile.os_version ?? 'N/A' }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-1">
+                                    <a href="/admin/mobiles/details/{{ mobile.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="View">
+                                        <i class="lucide lucide-eye w-3.5 h-3.5"></i>
+                                    </a>
+                                    <a href="/admin/mobiles/edit/{{ mobile.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="Edit">
+                                        <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
+                                    </a>
+                                    <a href="/admin/mobiles/delete/{{ mobile.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+                                        <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" class="px-4 py-16"><div class="flex flex-col items-center justify-center text-center"><div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><i class="lucide lucide-smartphone w-7 h-7 text-slate-400 dark:text-slate-600"></i></div><h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No devices found</h3><p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">No mobile devices have been added yet.</p><a href="/admin/mobiles/insert" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 transition-all duration-150"><i class="lucide lucide-plus w-4 h-4"></i> Add Device</a></div></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
-   </div>
-   <div class="flex flex-wrap gap-2">
-    <a href="/admin/mobiles/insert" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
-     <i class="lucide lucide-plus-circle" style="width:0.875em;height:0.875em;"></i> Add Mobile
-    </a>
-   </div>
-  </div>
- </div>
-
- {# ── Filter Section ── #}
- <section class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
-  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
-   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
-    <i class="lucide lucide-filter" style="width:1em;height:1em;"></i>
-   </div>
-   <div>
-    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Filter Mobiles</h2>
-    <p class="text-xs text-slate-500">Search by brand/model, sort, and adjust page size</p>
-   </div>
-  </div>
-  <form class="p-5" method="get" action="">
-   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-    <div>
-     <label for="mobile-search" class="block text-xs font-medium text-slate-500 mb-1">Search</label>
-     <div class="relative">
-      <i class="lucide lucide-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style="width:0.875em;height:0.875em;"></i>
-      <input id="mobile-search" type="search" name="search" class="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Search by brand or model…" value="{{ search|default('') }}">
-     </div>
-    </div>
-    <div>
-     <label for="mobile-per-page" class="block text-xs font-medium text-slate-500 mb-1">Per Page</label>
-     <select id="mobile-per-page" name="per_page" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-      {% set cur_per = pagination.per_page|default(50) %}
-      {% for opt in [10,25,50,100] %}
-      <option value="{{ opt }}" {{ cur_per == opt ? 'selected' : '' }}>{{ opt }} per page</option>
-      {% endfor %}
-     </select>
-    </div>
-    <div>
-     <label for="mobile-sort" class="block text-xs font-medium text-slate-500 mb-1">Sort By</label>
-     <select id="mobile-sort" name="sort" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-      {% set cur_sort = sort|default('brand_name') %}
-      <option value="brand_name" {{ cur_sort == 'brand_name' ? 'selected' : '' }}>Brand</option>
-      <option value="model_name" {{ cur_sort == 'model_name' ? 'selected' : '' }}>Model</option>
-      <option value="release_date" {{ cur_sort == 'release_date' ? 'selected' : '' }}>Release Date</option>
-      <option value="created_at" {{ cur_sort == 'created_at' ? 'selected' : '' }}>Created</option>
-     </select>
-    </div>
-    <div>
-     <label for="mobile-order" class="block text-xs font-medium text-slate-500 mb-1">Order</label>
-     <select id="mobile-order" name="order" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-      {% set cur_order = order|default('ASC') %}
-      <option value="ASC" {{ cur_order == 'ASC' ? 'selected' : '' }}>Ascending</option>
-      <option value="DESC" {{ cur_order == 'DESC' ? 'selected' : '' }}>Descending</option>
-     </select>
-    </div>
-    <div class="flex items-end">
-     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97] w-full">
-      <i class="lucide lucide-filter" style="width:1em;height:1em;"></i> Apply
-     </button>
-    </div>
-   </div>
-  </form>
- </section>
-
- {# ── Mobiles List Table ── #}
- {% if mobiles is not empty %}
- <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
-  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
-   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
-    <i class="lucide lucide-smartphone" style="width:1em;height:1em;"></i>
-   </div>
-   <div>
-    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">All Mobiles</h2>
-    <p class="text-xs text-slate-500">{{ pagination.total|default('?') }} devices in inventory</p>
-   </div>
-  </div>
-  <div class="overflow-x-auto">
-   <table class="w-full text-left text-sm">
-    <thead>
-     <tr class="border-b border-slate-100 bg-slate-50/50">
-      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
-      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Brand</th>
-      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Model</th>
-      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-      <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Release Date</th>
-      <th class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Images</th>
-      <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
-     </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-100">
-     {% for m in mobiles %}
-     <tr class="transition-colors duration-150 hover:bg-emerald-50/30">
-      <td class="px-5 py-3.5"><span class="font-semibold text-slate-900">{{ m.id }}</span></td>
-      <td class="px-5 py-3.5 font-medium text-slate-900">{{ m.brand_name }}</td>
-      <td class="px-5 py-3.5 text-slate-700">{{ m.model_name }}</td>
-      <td class="px-5 py-3.5">
-       {% if m.status == 'official' %}
-        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Official</span>
-       {% elseif m.status == 'unofficial' %}
-        <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Unofficial</span>
-       {% else %}
-        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">Both</span>
-       {% endif %}
-      </td>
-      <td class="px-5 py-3.5 text-slate-600">{{ m.release_date ? m.release_date|date("M d, Y") : 'N/A' }}</td>
-      <td class="px-5 py-3.5 text-center">
-       <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-        <i class="lucide lucide-image mr-1" style="width:0.75em;height:0.75em;"></i> {{ m.image_count|default(0) }}
-       </span>
-      </td>
-      <td class="px-5 py-3.5 text-right">
-       <div class="inline-flex items-center gap-1.5">
-        <a href="/admin/mobiles/view/{{ m.id }}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5" title="View">
-         <i class="lucide lucide-eye" style="width:0.75em;height:0.75em;"></i>
-        </a>
-        <a href="/admin/mobiles/update/{{ m.id }}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5" title="Edit">
-         <i class="lucide lucide-pencil" style="width:0.75em;height:0.75em;"></i>
-        </a>
-        <a href="/admin/mobiles/delete?id={{ m.id }}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:-translate-y-0.5" title="Delete" onclick="return window.confirmAction(event, this, 'Delete this mobile?')">
-         <i class="lucide lucide-trash-2" style="width:0.75em;height:0.75em;"></i>
-        </a>
-       </div>
-      </td>
-     </tr>
-     {% endfor %}
-    </tbody>
-   </table>
-  </div>
-  <div class="border-t border-slate-100 px-5 py-4">
-   {% include "admin/partials/pagination.twig" %}
-  </div>
- </section>
- {% else %}
- <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white p-8 shadow-sm">
-  <div class="text-center">
-   <i class="lucide lucide-smartphone text-slate-300 mx-auto" style="width:3em;height:3em;"></i>
-   <h3 class="mt-4 text-lg font-bold text-slate-900">No mobiles found</h3>
-   <p class="mt-1 text-sm text-slate-500">Get started by adding your first mobile device.</p>
-   <a href="/admin/mobiles/insert" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md">
-    <i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Mobile
-   </a>
-  </div>
- </section>
- {% endif %}
 </div>
 {% endblock %}

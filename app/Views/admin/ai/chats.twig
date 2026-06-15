@@ -13,8 +13,8 @@
   border: 1px solid #e2e8f0;
   background: #e2e8f0;
   overflow: hidden;
-  min-height: calc(100vh - 12rem);
-  max-height: calc(100vh - 12rem);
+  min-height: calc(100vh - 15rem);
+  max-height: calc(100vh - 15rem);
 }
 .chat-manager-root > * {
   background: #fff;
@@ -162,24 +162,26 @@
 
 {% block content %}
 <div class="px-4 sm:px-6 py-4">
-  <!-- Page Header -->
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-    <div>
-      <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900">
-        <i class="lucide lucide-message-square text-indigo-600"></i>
-        AI Conversations
-      </h1>
-      <p class="mt-1 max-w-2xl text-sm text-slate-500">
-        Manage and monitor visitor interactions with BroxBhai AI.
-      </p>
+  {# ── Gradient Page Header ── #}
+  <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+   <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+    <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+   </div>
+   <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3">
+     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+      <i class="lucide lucide-message-square w-6 h-6"></i>
+     </div>
+     <div>
+      <h1 class="text-xl font-black tracking-tight sm:text-2xl">AI Conversations</h1>
+      <p class="mt-1 text-sm text-indigo-200/80">Manage and monitor visitor interactions with BroxBhai AI.</p>
+     </div>
     </div>
-    <div class="flex gap-2">
-      <button id="refreshList"
-        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow active:scale-[0.97]">
-        <i class="lucide lucide-refresh-cw w-4 h-4"></i>
-        <span>Refresh</span>
-      </button>
-    </div>
+    <button id="refreshList" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-refresh-cw w-3.5 h-3.5"></i> Refresh
+    </button>
+   </div>
   </div>
 
   <!-- Main Chat Manager -->

@@ -1,0 +1,46 @@
+{% extends "admin/layout.twig" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-cloud-download w-5 h-5 text-white"></i></div>
+                <div><p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Scrap Control</p><h1 class="text-xl font-bold text-white">Push Logs</h1><p class="text-sm text-white/60 mt-0.5">View data push logs from scrapers.</p></div>
+            </div>
+            <div class="flex gap-2"><a href="/admin/scrap-control-center" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back</a></div>
+        </div>
+    </div>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-cloud-download w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Push Logs</h3>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ push_logs|length }}</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead><tr class="border-b border-slate-100 dark:border-slate-800">
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">ID</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Type</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Status</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Time</th>
+                </tr></thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if push_logs is defined and push_logs|length > 0 %}
+                        {% for log in push_logs %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ log.id }}</td>
+                            <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400">{{ log.data_type }}</span></td>
+                            <td class="px-4 py-3">{% if log.status == 'success' %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><span class="w-1 h-1 rounded-full bg-emerald-500"></span> Success</span>{% else %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"><span class="w-1 h-1 rounded-full bg-red-500"></span> Failed</span>{% endif %}</td>
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ log.created_at|date('d M Y H:i:s') }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="4" class="px-4 py-16"><div class="flex flex-col items-center justify-center text-center"><div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><i class="lucide lucide-cloud-download w-7 h-7 text-slate-400 dark:text-slate-600"></i></div><h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No push logs</h3><p class="text-sm text-slate-400 dark:text-slate-600 max-w-xs">No push logs recorded yet.</p></div></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

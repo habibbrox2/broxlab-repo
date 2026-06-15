@@ -1,130 +1,85 @@
-{% extends"admin/layout.twig" %}
-{% block title %}{{ title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% extends "admin/layout.twig" %}
 {% block content %}
- <div class="w-full px-4 sm:px-6 py-4">
- <!-- Page Header -->
- <div class=" mb-4">
- <div>
- <i class="lucide lucide-mail mr-2"></i>
- Contact Messages
- </div>
- <div>Manage customer inquiries and messages</div>
- </div>
- <!-- Card Wrapper -->
- <div class=" border border-slate-200 bg-white shadow-sm border-0 rounded-2xl">
- <div class="border-slate-200 px-4 py-3 text-white rounded-t-xl flex justify-between items-center">
- <h4 class="mb-0">
- <i class="lucide lucide-mail mr-2"></i> {{ header_title }}
- </h4>
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-indigo-600">
- <i class="lucide lucide-inbox mr-1"></i> {{ messages|length }} Messages
- </span>
- </div>
- <div class="p-4 p-4">
- <!-- Search & Filter Form -->
- <div class="border-b border-slate-200 px-3 py-3 mb-3">
- <form method="get" class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2 items-end">
- <div class="md:col-span-4">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500 mb-1">Search</label>
- <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
- <span class="shrink-0 flex items-center px-3 py-2 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-search"></i></span>
- <input type="text"
- name="search"
- value="{{ pagination.search|default("") }}"
- class="w-full border-0 px-3 py-2 text-sm focus:outline-none bg-white"
- placeholder="Search by name, email, or subject...">
- </div>
- </div>
- <div class="md:col-span-3">
- <label class="block text-sm font-medium text-slate-700 mb-1 small text-slate-500 mb-1">Limit</label>
- <select name="limit" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:border-indigo-500-sm">
- <option value="10">10 items</option>
- <option value="20" selected>20 items</option>
- <option value="50">50 items</option>
- <option value="100">100 items</option>
- </select>
- </div>
- <div class="md:col-span-5 text-right">
- <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1.5 text-xs">
- <i class="lucide lucide-filter mr-1"></i> Apply
- </button>
- </div>
- </form>
- </div>
- <div class="overflow-x-auto shadow-sm rounded-xl">
- <table class="w-full text-left text-sm align-middle mb-0">
- <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wider text-indigo-700">
- <tr>
- <th>#</th>
- <th>
- <i class="lucide lucide-user"></i> Name
- </th>
- <th>
- <i class="lucide lucide-mail"></i> Email
- </th>
- <th>
- <i class="lucide lucide-text"></i> Subject
- </th>
- <th>
- <i class="lucide lucide-calendar"></i> Date
- </th>
- <th class="text-center">
- <i class="lucide lucide-settings"></i> Actions
- </th>
- </tr>
- </thead>
- <tbody>
- {% for msg in messages %}
- <tr>
- <td class="font-bold" data-label="#">ID</td>
- <td data-label="Name">{{ msg.name }}</td>
- <td data-label="Email">
- {% if msg.email matches '/^.+@.+\..+$/' %}
- <a href="mailto:{{ msg.email }}" class="no-underline"><i class="lucide lucide-mail-check text-emerald-600 mr-1"></i>{{ msg.email }}</a>
- {% else %}
- {{ msg.email }}
- {% endif %}
- </td>
- <td data-label="Subject">{{ msg.subject }}</td>
- <td data-label="Date">
- <i class="lucide lucide-clock text-sky-600 mr-1"></i>{{ msg.created_at|date("Y-m-d H:i") }}
- </td>
- <td class="text-center" data-label="Actions">
- <a href="/admin/contact/view/{{ msg.id }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-sky-600 hover:bg-sky-100 rounded-full mr-1"
- title="View">
- <i class="lucide lucide-eye"></i>
- </a>
- <a href="/admin/contact/delete/{{ msg.id }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700-outline rounded-full"
- title="Delete"
- onclick="return window.confirmAction(event, this, 'Are you sure?')">
- <i class="lucide lucide-trash-2"></i>
- </a>
- </td>
- </tr>
- {% else %}
- <tr>
- <td colspan="6" class="text-center text-slate-500 py-4">
- <i class="lucide lucide-info mr-1"></i> No messages found.
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- <!-- Pagination -->
- {% include"admin/partials/pagination.twig" %}
- </div>
- </div>
- </div>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+
+    {# Page Header Banner #}
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-mail w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Contact</p>
+                    <h1 class="text-xl font-bold text-white">Contact Submissions</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Manage and respond to contact form submissions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Table Card #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-mail w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">All Submissions</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ contacts|length }}</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Name</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Email</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Subject</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Date</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if contacts is defined and contacts|length > 0 %}
+                        {% for contact in contacts %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ contact.name ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ contact.email ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ contact.subject ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ contact.created_at|date('d M Y H:i') }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-1">
+                                    <a href="/admin/contact/{{ contact.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="View">
+                                        <i class="lucide lucide-eye w-3.5 h-3.5"></i>
+                                    </a>
+                                    <button type="button" onclick="if(confirm('Delete this submission?')) window.location='/admin/contact/delete/{{ contact.id }}'" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+                                        <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        {# Empty State #}
+                        <tr>
+                            <td colspan="5" class="px-4 py-16">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                                        <i class="lucide lucide-mail w-7 h-7 text-slate-400 dark:text-slate-600"></i>
+                                    </div>
+                                    <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No submissions</h3>
+                                    <p class="text-sm text-slate-400 dark:text-slate-600 max-w-xs">No contact form submissions yet.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
 {% endblock %}
-
-
-
-
-
-
-
-

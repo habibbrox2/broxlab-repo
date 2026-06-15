@@ -1,6 +1,0 @@
-interface:
-  display_name: "BroxLab Coding Agent"
-  short_description: "Full-stack BroxLab coding workflow"
-  icon_small: "./assets/broxlab-coding-agent.svg"
-  brand_color: "#00FF88"
-  default_prompt: "Use $broxlab-coding-agent to plan, implement, validate, and deliver a BroxLab change end to end."

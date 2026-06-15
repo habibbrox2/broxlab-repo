@@ -1,211 +1,235 @@
-{% extends"admin/layout.twig" %}
+{% extends "admin/layout.twig" %}
 {% set skip_auto_breadcrumb = true %}
 {% block title %}Application Details - Admin{% endblock %}
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 space-y-6">
-    <!-- Gradient Header -->
-    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
-        <div class="relative flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                    <i class="lucide lucide-file text-2xl text-white"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-2xl font-bold text-white sm:text-3xl">Application #{{ application.id }}</h1>
-                        {% set status_colors = {"pending":"bg-amber-500","processing":"bg-sky-500","approved":"bg-emerald-500","rejected":"bg-rose-500"} %}
-                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold text-white {{ status_colors[application.status]|default('bg-slate-500') }}">{{ application.status|upper }}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-indigo-100">View application information and audit details.</p>
-                </div>
-            </div>
-            <a href="/admin/applications" class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
-                <i class="lucide lucide-arrow-left"></i> Back to Applications
-            </a>
-        </div>
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-file-text w-5 h-5 text-white"></i>
     </div>
-
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <!-- Main Content -->
-        <div class="lg:col-span-8 space-y-6">
-            <!-- Application Details Card -->
-            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
-                    <div class="flex items-center gap-2">
-                        <i class="lucide lucide-info text-indigo-500" style="width:1.125em;height:1.125em;"></i>
-                        <h2 class="text-sm font-semibold text-slate-900">Application Details</h2>
-                    </div>
-                </div>
-                <div class="p-5 space-y-6">
-                    <!-- Applicant Information -->
-                    <div>
-                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Applicant Information</h3>
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                                <span class="block text-xs font-medium text-slate-500">Name</span>
-                                <span class="mt-1 block font-semibold text-slate-900">{{ applicant.username }}</span>
-                            </div>
-                            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                                <span class="block text-xs font-medium text-slate-500">Email</span>
-                                <span class="mt-1 block font-semibold text-slate-900">{{ applicant.email }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Service Information -->
-                    <div>
-                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Service Information</h3>
-                        <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                            <span class="block text-xs font-medium text-slate-500">Service Name</span>
-                            <span class="mt-1 block font-semibold text-slate-900">{{ application.service_name }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Submitted Data -->
-                    <div>
-                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Submitted Data</h3>
-                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {% for field, value in application.application_data %}
-                            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                {% set normalized_field = field|lower %}
-                                {% set mapped_label = form_field_labels[field]|default(form_field_labels[normalized_field]|default('')) %}
-                                {% if mapped_label != '' %}
-                                    {% set field_label = mapped_label %}
-                                {% else %}
-                                    {% set field_label = normalized_field == '_documents' ? 'Documents' : (normalized_field == '_payment' ? 'Payment' : (field|replace({'_': ' ', '-': ' '})|title)) %}
-                                {% endif %}
-                                <span class="block text-xs font-medium text-slate-500 mb-1">{{ field_label }}</span>
-                                {% if value is iterable %}
-                                    {% if normalized_field == '_payment' %}
-                                        {% set pay = value %}
-                                        <div class="space-y-1 text-sm text-slate-700">
-                                            <div><strong>Transaction:</strong> {{ pay.transaction_id|default(pay.paymentID|default('N/A')) }}</div>
-                                            <div><strong>Gateway:</strong> {{ pay.gateway|default(pay.method|default('N/A')) }}</div>
-                                            <div><strong>Status:</strong> {{ pay.status|default("N/A")|title }}</div>
-                                            <div><strong>Amount:</strong> {% if pay.amount is defined and pay.amount is not same as('') %}{{ pay.amount }} {{ pay.currency|default("BDT") }}{% else %}N/A{% endif %}</div>
-                                        </div>
-                                    {% elseif normalized_field == '_documents' %}
-                                        {% if value|length > 0 %}
-                                            <ul class="space-y-2">
-                                                {% for doc in value %}
-                                                    {% set doc_name = doc.name|default('Document ' ~ loop.index) %}
-                                                    <li class="flex flex-wrap items-center gap-2">
-                                                        {% if doc.url|default('') %}
-                                                            <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">{{ doc_name }}</a>
-                                                            <button type="button" class="js-doc-preview inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-doc-url="{{ doc.url|e("html_attr") }}" data-doc-name="{{ doc_name|e("html_attr") }}" data-doc-mime="{{ doc.mime_type|default("")|e('html_attr') }}">
-                                                                <i class="lucide lucide-eye"></i> Preview
-                                                            </button>
-                                                        {% else %}
-                                                            {{ doc_name }}
-                                                        {% endif %}
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        {% else %}
-                                            <code class="text-xs">N/A</code>
-                                        {% endif %}
-                                    {% else %}
-                                        <pre class="overflow-x-auto rounded bg-slate-100 p-2 text-xs text-slate-700">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
-                                    {% endif %}
-                                {% else %}
-                                    <code class="text-sm">{% if value is same as(null) or value is same as('') %}N/A{% elseif value is same as(true) %}Yes{% elseif value is same as(false) %}No{% else %}{{ value }}{% endif %}</code>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- Submission Details -->
-                    <div>
-                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Submission Details</h3>
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                                <span class="block text-xs font-medium text-slate-500">Submitted</span>
-                                <span class="mt-1 block text-slate-900">{{ application.created_at|date("M d, Y H:i") }}</span>
-                            </div>
-                            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                                <span class="block text-xs font-medium text-slate-500">IP Address</span>
-                                <code class="mt-1 block text-xs">{{ application.ip_address }}</code>
-                            </div>
-                        </div>
-                    </div>
-
-                    {% if application.admin_notes %}
-                    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="lucide lucide-sticky-note text-amber-600" style="width:1em;height:1em;"></i>
-                            <h3 class="text-xs font-semibold uppercase tracking-wider text-amber-800">Previous Admin Notes</h3>
-                        </div>
-                        <pre class="text-sm text-amber-900">{{ application.admin_notes }}</pre>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Audit Log Card -->
-            {% if audit_log %}
-            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
-                    <div class="flex items-center gap-2">
-                        <i class="lucide lucide-history text-amber-500" style="width:1.125em;height:1.125em;"></i>
-                        <h2 class="text-sm font-semibold text-slate-900">Audit Log</h2>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-100 bg-slate-50/50">
-                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Date</th>
-                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
-                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">User</th>
-                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in audit_log %}
-                            <tr class="border-b border-slate-50 transition hover:bg-indigo-50/30">
-                                <td class="px-5 py-3 text-sm text-slate-500">{{ log.created_at|date("M d, H:i") }}</td>
-                                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ log.action_type }}</span></td>
-                                <td class="px-5 py-3 text-sm text-slate-600">{{ log.username ?? 'System' }}</td>
-                                <td class="px-5 py-3 text-sm text-slate-600">{{ log.description }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <div class="lg:col-span-4 space-y-4">
-            <!-- Actions Card -->
-            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div class="border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-indigo-50/50 px-5 py-4">
-                    <div class="flex items-center gap-2">
-                        <i class="lucide lucide-zap text-sky-500" style="width:1.125em;height:1.125em;"></i>
-                        <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
-                    </div>
-                </div>
-                <div class="p-5 space-y-2">
-                    {% if application.status == 'pending' or application.status == 'processing' %}
-                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95" onclick="approveApplication({{ application.id }})"><i class="lucide lucide-check"></i> Approve</button>
-                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95" onclick="markProcessing({{ application.id }})"><i class="lucide lucide-settings"></i> Mark Processing</button>
-                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 active:scale-95" onclick="rejectApplication({{ application.id }})"><i class="lucide lucide-x"></i> Reject</button>
-                    {% elseif application.status == 'approved' %}
-                        {% if not application.service_activated %}
-                        <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95" onclick="activateService({{ application.id }})"><i class="lucide lucide-power"></i> Activate Service</button>
-                        {% else %}
-                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><i class="lucide lucide-check-circle mr-2"></i>Service Activated</div>
-                        {% endif %}
-                    {% elseif application.status == 'rejected' %}
-                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95" onclick="revertStatus({{ application.id }})"><i class="lucide lucide-rotate-ccw"></i> Revert to Pending</button>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Application Details</p>
+     <div class="flex items-center gap-3">
+      <h1 class="text-xl font-bold text-white">Application #{{ application.id }}</h1>
+      {% set status_bg = application.status == 'pending' ? 'bg-amber-500/20 text-amber-300' : (application.status == 'processing' ? 'bg-sky-500/20 text-sky-300' : (application.status == 'approved' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300')) %}
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold {{ status_bg }} border border-white/10">
+       <span class="w-1 h-1 rounded-full {{ application.status == 'pending' ? 'bg-amber-400' : (application.status == 'processing' ? 'bg-sky-400' : (application.status == 'approved' ? 'bg-emerald-400' : 'bg-red-400')) }}"></span>
+       {{ application.status|upper }}
+      </span>
+     </div>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">View application information and audit details.</p>
     </div>
+   </div>
+   <div class="flex gap-2">
+    <a href="/admin/applications" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Applications
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Content Grid ── #}
+ <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.25fr)_340px]">
+  {# ── Main Content ── #}
+  <div class="space-y-6">
+
+   {# Application Details Card #}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Application Details</h3>
+    </div>
+    <div class="p-5 space-y-6">
+
+     {# Applicant Information #}
+     <div>
+      <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">Applicant Information</h4>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+       <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</p>
+        <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ applicant.username }}</p>
+       </div>
+       <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Email</p>
+        <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ applicant.email }}</p>
+       </div>
+      </div>
+     </div>
+
+     {# Service Information #}
+     <div>
+      <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">Service Information</h4>
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
+       <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Service Name</p>
+       <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ application.service_name }}</p>
+      </div>
+     </div>
+
+     {# Submitted Data #}
+     <div>
+      <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">Submitted Data</h4>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+       {% for field, value in application.application_data %}
+       <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+        {% set normalized_field = field|lower %}
+        {% set mapped_label = form_field_labels[field]|default(form_field_labels[normalized_field]|default('')) %}
+        {% if mapped_label != '' %}
+         {% set field_label = mapped_label %}
+        {% else %}
+         {% set field_label = normalized_field == '_documents' ? 'Documents' : (normalized_field == '_payment' ? 'Payment' : (field|replace({'_': ' ', '-': ' '})|title)) %}
+        {% endif %}
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{{ field_label }}</p>
+        {% if value is iterable %}
+         {% if normalized_field == '_payment' %}
+          {% set pay = value %}
+          <div class="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+           <div><span class="font-semibold">Transaction:</span> {{ pay.transaction_id|default(pay.paymentID|default('N/A')) }}</div>
+           <div><span class="font-semibold">Gateway:</span> {{ pay.gateway|default(pay.method|default('N/A')) }}</div>
+           <div><span class="font-semibold">Status:</span> {{ pay.status|default("N/A")|title }}</div>
+           <div><span class="font-semibold">Amount:</span> {% if pay.amount is defined and pay.amount is not same as('') %}{{ pay.amount }} {{ pay.currency|default("BDT") }}{% else %}N/A{% endif %}</div>
+          </div>
+         {% elseif normalized_field == '_documents' %}
+          {% if value|length > 0 %}
+           <ul class="space-y-2">
+            {% for doc in value %}
+             {% set doc_name = doc.name|default('Document ' ~ loop.index) %}
+             <li class="flex flex-wrap items-center gap-2">
+              {% if doc.url|default('') %}
+               <a href="{{ doc.url }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">{{ doc_name }}</a>
+               <button type="button" class="js-doc-preview inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-doc-url="{{ doc.url|e("html_attr") }}" data-doc-name="{{ doc_name|e("html_attr") }}" data-doc-mime="{{ doc.mime_type|default("")|e('html_attr') }}">
+                <i class="lucide lucide-eye w-3 h-3"></i> Preview
+               </button>
+              {% else %}
+               {{ doc_name }}
+              {% endif %}
+             </li>
+            {% endfor %}
+           </ul>
+          {% else %}
+           <code class="text-xs text-slate-400">N/A</code>
+          {% endif %}
+         {% else %}
+          <pre class="overflow-x-auto rounded-xl bg-slate-100 dark:bg-slate-800 p-2 text-xs text-slate-700 dark:text-slate-300">{{ value|json_encode(constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+         {% endif %}
+        {% else %}
+         <code class="text-sm text-slate-700 dark:text-slate-300">{% if value is same as(null) or value is same as('') %}N/A{% elseif value is same as(true) %}Yes{% elseif value is same as(false) %}No{% else %}{{ value }}{% endif %}</code>
+        {% endif %}
+       </div>
+       {% endfor %}
+      </div>
+     </div>
+
+     {# Submission Details #}
+     <div>
+      <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">Submission Details</h4>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+       <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Submitted</p>
+        <p class="text-sm text-slate-900 dark:text-white">{{ application.created_at|date("M d, Y H:i") }}</p>
+       </div>
+       <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">IP Address</p>
+        <code class="text-xs text-slate-700 dark:text-slate-300">{{ application.ip_address }}</code>
+       </div>
+      </div>
+     </div>
+
+     {# Admin Notes #}
+     {% if application.admin_notes %}
+     <div class="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/30 p-4">
+      <div class="flex items-center gap-2 mb-2">
+       <i class="lucide lucide-sticky-note w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+       <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-400">Previous Admin Notes</h4>
+      </div>
+      <pre class="text-sm text-amber-900 dark:text-amber-200">{{ application.admin_notes }}</pre>
+     </div>
+     {% endif %}
+    </div>
+   </div>
+
+   {# Audit Log Card #}
+   {% if audit_log %}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-activity w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Audit Log</h3>
+    </div>
+    <div class="overflow-x-auto">
+     <table class="w-full text-left">
+      <thead>
+       <tr class="border-b border-slate-100 dark:border-slate-800">
+        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Date</th>
+        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Action</th>
+        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">User</th>
+        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Description</th>
+       </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+       {% for log in audit_log %}
+       <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+        <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{{ log.created_at|date("M d, H:i") }}</td>
+        <td class="px-4 py-3">
+         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{{ log.action_type }}</span>
+        </td>
+        <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{{ log.username ?? 'System' }}</td>
+        <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{{ log.description }}</td>
+       </tr>
+       {% endfor %}
+      </tbody>
+     </table>
+    </div>
+   </div>
+   {% endif %}
+  </div>
+
+  {# ── Sidebar ── #}
+  <div class="space-y-4">
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm xl:sticky xl:top-20">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-zap w-4 h-4 text-sky-600 dark:text-sky-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Actions</h3>
+    </div>
+    <div class="p-5 space-y-2.5">
+     {% if application.status == 'pending' or application.status == 'processing' %}
+      <button onclick="approveApplication({{ application.id }})" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+       <i class="lucide lucide-check w-4 h-4"></i> Approve
+      </button>
+      <button onclick="markProcessing({{ application.id }})" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+       <i class="lucide lucide-settings w-4 h-4"></i> Mark Processing
+      </button>
+      <button onclick="rejectApplication({{ application.id }})" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+       <i class="lucide lucide-x w-4 h-4"></i> Reject
+      </button>
+     {% elseif application.status == 'approved' %}
+      {% if not application.service_activated %}
+       <button onclick="activateService({{ application.id }})" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+        <i class="lucide lucide-power w-4 h-4"></i> Activate Service
+       </button>
+      {% else %}
+       <div class="rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+        <i class="lucide lucide-check-circle w-4 h-4 text-emerald-600"></i> Service Activated
+       </div>
+      {% endif %}
+     {% elseif application.status == 'rejected' %}
+      <button onclick="revertStatus({{ application.id }})" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+       <i class="lucide lucide-rotate-ccw w-4 h-4"></i> Revert to Pending
+      </button>
+     {% endif %}
+    </div>
+   </div>
+  </div>
+ </div>
 </div>
 <div id="application-data" data-application-id="{{ application.id }}"></div>
 {% endblock %}

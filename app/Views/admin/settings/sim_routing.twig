@@ -1,173 +1,186 @@
 {% extends "admin/layout.twig" %}
 
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-  {# Flash Messages #}
-  {% if flash is defined and flash %}
-  {% set flash_styles = {'success':'bg-emerald-50 border-emerald-200 text-emerald-800','danger':'bg-red-50 border-red-200 text-red-800','warning':'bg-amber-50 border-amber-200 text-amber-800','info':'bg-sky-50 border-sky-200 text-sky-800'} %}
-  <div class="{{ flash_styles[flash.type]|default('bg-sky-50 border-sky-200 text-sky-800') }} rounded-xl border p-4 flex items-center justify-between gap-3 shadow-sm" role="alert">
-   <div class="flex items-start gap-2">
-    <i class="lucide lucide-info mt-0.5" style="width:1em;height:1em;flex-shrink:0;"></i>
-    <span class="text-sm">{{ flash.message }}</span>
+ {# Flash Messages #}
+ {% if flash is defined and flash %}
+ {% set flash_styles = {'success':'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-200','danger':'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/40 text-red-800 dark:text-red-200','warning':'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200','info':'bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/40 text-sky-800 dark:text-sky-200'} %}
+ <div class="{{ flash_styles[flash.type]|default('bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/40 text-sky-800 dark:text-sky-200') }} rounded-2xl border p-4 flex items-center justify-between gap-3 shadow-sm" role="alert">
+  <div class="flex items-start gap-2">
+   <i class="lucide lucide-info w-4 h-4 mt-0.5 flex-shrink-0"></i>
+   <span class="text-sm">{{ flash.message }}</span>
+  </div>
+  <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-current opacity-70 hover:opacity-100 shrink-0 transition-opacity" data-brox-dismiss="alert" aria-label="Close">
+   <i class="lucide lucide-x w-4 h-4"></i>
+  </button>
+ </div>
+ {% endif %}
+
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-radio w-5 h-5 text-white"></i>
+    </div>
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">SMS Routing</p>
+     <h1 class="text-xl font-bold text-white">SIM Routing Rules</h1>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">Configure automated SMS routing and forwarding rules.</p>
+    </div>
    </div>
-   <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-current opacity-70 hover:opacity-100 shrink-0 transition-opacity" data-brox-dismiss="alert" aria-label="Close">
-    <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+  </div>
+ </div>
+
+ {# ── Rules Card ── #}
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+   <div class="flex items-center gap-3">
+    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-shuffle w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+    </div>
+    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Routing Rules</h3>
+   </div>
+   <button class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"
+    data-brox-toggle="modal"
+    data-brox-target="#routeModal"
+    id="addRouteBtn"
+    onclick="resetRouteForm()">
+    <i class="lucide lucide-plus w-3.5 h-3.5"></i> Add Rule
    </button>
   </div>
-  {% endif %}
 
-  <!-- Gradient Header -->
-  <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8 shadow-lg">
-   <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
-   <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
-   <div class="relative flex flex-wrap items-end justify-between gap-4">
-    <div class="flex items-start gap-4">
-     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-      <i class="lucide lucide-radio text-2xl text-white"></i>
-     </div>
-     <div>
-      <h1 class="text-2xl font-bold text-white sm:text-3xl">SIM Routing Rules</h1>
-      <p class="mt-1 text-sm text-indigo-200/80">Configure automated SMS routing and forwarding rules.</p>
-     </div>
-    </div>
-   </div>
-  </div>
-
-  <!-- Rules Card -->
-  <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-   <div class="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-    <div class="flex items-center gap-3">
-     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-      <i class="lucide lucide-shuffle" style="width:0.875em;height:0.875em;"></i>
-     </div>
-     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Routing Rules</h2>
-    </div>
-    <button class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.97]"
-     data-brox-toggle="modal"
-     data-brox-target="#routeModal"
-     id="addRouteBtn"
-     onclick="resetRouteForm()">
-     <i class="lucide lucide-plus" style="width:0.875em;height:0.875em;"></i> Add Rule
-    </button>
-   </div>
-
-   <div class="p-5">
-    <div class="overflow-x-auto">
-     <table class="w-full text-left text-sm">
-      <thead>
-       <tr class="border-b border-slate-200">
-        <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Label</th>
-        <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Match</th>
-        <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
-        <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
-       </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-       {% if routes is empty %}
-       <tr>
-        <td colspan="5" class="px-3 py-8 text-center text-slate-500">
-         <div class="flex flex-col items-center justify-center">
-          <i class="lucide lucide-route text-2xl text-slate-300 mb-2"></i>
-          <p class="m-0 text-sm">No routes configured yet. Add your first rule.</p>
+  <div class="p-5">
+   <div class="overflow-x-auto">
+    <table class="w-full text-left">
+     <thead>
+      <tr class="border-b border-slate-100 dark:border-slate-800">
+       <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Label</th>
+       <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Match</th>
+       <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Action</th>
+       <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Status</th>
+       <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap text-right">Actions</th>
+      </tr>
+     </thead>
+     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+      {% if routes is empty %}
+      <tr>
+       <td colspan="5" class="px-4 py-16">
+        <div class="flex flex-col items-center justify-center text-center">
+         <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+          <i class="lucide lucide-route w-7 h-7 text-slate-400 dark:text-slate-600"></i>
          </div>
-        </td>
-       </tr>
-       {% else %}
-       {% for route in routes %}
-       <tr class="hover:bg-slate-50/50 transition-colors">
-        <td class="px-3 py-3">
-         <span class="text-sm font-semibold text-slate-800">{{ route.label }}</span>
-        </td>
-        <td class="px-3 py-3">
-         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700">{{ route.match_type }}</span>
-         {% if route.match_value %}<span class="text-xs text-slate-500 ml-1">{{ route.match_value }}</span>{% endif %}
-        </td>
-        <td class="px-3 py-3">
-         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-sky-100 text-sky-700">{{ route.action|replace({'_': ' '}) }}</span>
-        </td>
-        <td class="px-3 py-3">
-         {% if route.enabled %}
-         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700">Enabled</span>
-         {% else %}
-         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700">Disabled</span>
-         {% endif %}
-        </td>
-        <td class="px-3 py-3 text-right">
-         <div class="inline-flex gap-1">
-          <button class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-all"
-           onclick="editRoute({{ route|json_encode }})"
-           title="Edit">
-           <i class="lucide lucide-pencil text-sm"></i>
+         <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No routes configured</h3>
+         <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Add your first routing rule to get started.</p>
+         <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"
+          data-brox-toggle="modal" data-brox-target="#routeModal" onclick="resetRouteForm()">
+          <i class="lucide lucide-plus w-4 h-4"></i> Add Rule
+         </button>
+        </div>
+       </td>
+      </tr>
+      {% else %}
+      {% for route in routes %}
+      <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+       <td class="px-4 py-3">
+        <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ route.label }}</span>
+       </td>
+       <td class="px-4 py-3">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{{ route.match_type }}</span>
+        {% if route.match_value %}<span class="text-xs text-slate-500 dark:text-slate-400 ml-1">{{ route.match_value }}</span>{% endif %}
+       </td>
+       <td class="px-4 py-3">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400">{{ route.action|replace({'_': ' '}) }}</span>
+       </td>
+       <td class="px-4 py-3">
+        {% if route.enabled %}
+         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+          <span class="w-1 h-1 rounded-full bg-emerald-500"></span> Enabled
+         </span>
+        {% else %}
+         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+          <span class="w-1 h-1 rounded-full bg-slate-400"></span> Disabled
+         </span>
+        {% endif %}
+       </td>
+       <td class="px-4 py-3 text-right">
+        <div class="flex items-center justify-end gap-1">
+         <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150"
+          onclick="editRoute({{ route|json_encode }})" title="Edit">
+          <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
+         </button>
+         <form action="/admin/sim-routing/delete" method="POST" class="inline"
+          onsubmit="return window.confirmAction(event, this, 'Delete this route?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="id" value="{{ route.id }}">
+          <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+           <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
           </button>
-          <form action="/admin/sim-routing/delete" method="POST" class="inline"
-           onsubmit="return window.confirmAction(event, this, 'Delete this route?')">
-           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-           <input type="hidden" name="id" value="{{ route.id }}">
-           <button type="submit" class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-500 hover:bg-red-50 transition-all" title="Delete">
-            <i class="lucide lucide-trash-2 text-sm"></i>
-           </button>
-          </form>
-         </div>
-        </td>
-       </tr>
-       {% endfor %}
-       {% endif %}
-      </tbody>
-     </table>
-    </div>
+         </form>
+        </div>
+       </td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+     </tbody>
+    </table>
    </div>
   </div>
+ </div>
 </div>
 
 {# Add/Edit Route Modal #}
 <div class="fixed inset-0 z-50 hidden" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel">
  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" data-brox-dismiss="modal"></div>
  <div class="fixed inset-0 flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-black/20 w-full max-w-lg overflow-hidden">
    <form action="/admin/sim-routing/save" method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="id" id="route_id" value="0">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
-     <h5 class="text-lg font-semibold text-slate-900 m-0 flex items-center gap-2">
-      <i class="lucide lucide-radio text-indigo-600" style="width:1.125em;height:1.125em;"></i>
+    <div class="flex items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+      <i class="lucide lucide-radio w-4 h-4 text-indigo-600"></i>
       <span id="routeModalLabel">Add SIM Routing Rule</span>
-     </h5>
-     <button type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-150"
+     </h3>
+     <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150"
       data-brox-dismiss="modal" aria-label="Close">
-      <i class="lucide lucide-x text-lg"></i>
+      <i class="lucide lucide-x w-4 h-4"></i>
      </button>
     </div>
     <div class="p-6 space-y-4">
      <div>
-      <label class="block text-sm font-medium text-slate-700 mb-1.5">Label</label>
-      <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="label" id="route_label" required placeholder="e.g. Forward Bank OTPs">
+      <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Label</label>
+      <input type="text"
+       class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
+       name="label" id="route_label" required placeholder="e.g. Forward Bank OTPs">
      </div>
      <div>
-      <label class="block text-sm font-medium text-slate-700 mb-1.5">Match Type</label>
-      <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="match_type" id="route_match_type" onchange="toggleMatchValue(this.value)">
+      <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Match Type</label>
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="match_type" id="route_match_type" onchange="toggleMatchValue(this.value)">
        <option value="any">Any SMS</option>
        <option value="sender">Sender Number</option>
        <option value="keyword">Keyword in Message</option>
       </select>
      </div>
      <div id="match_value_group" style="display:none">
-      <label class="block text-sm font-medium text-slate-700 mb-1.5" id="match_value_label">Match Value</label>
-      <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="match_value" id="route_match_value"
-       placeholder="Sender number or keyword">
+      <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5" id="match_value_label">Match Value</label>
+      <input type="text"
+       class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
+       name="match_value" id="route_match_value" placeholder="Sender number or keyword">
      </div>
      <div>
-      <label class="block text-sm font-medium text-slate-700 mb-1.5">Action</label>
-      <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="action" id="route_action" onchange="toggleActionFields(this.value)">
+      <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Action</label>
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="action" id="route_action" onchange="toggleActionFields(this.value)">
        <option value="reply_sms">Auto-Reply SMS</option>
        <option value="both">Both</option>
       </select>
      </div>
      <div id="reply_fields" style="display:none" class="space-y-4">
       <div>
-       <label class="block text-sm font-medium text-slate-700 mb-1.5">Reply Device</label>
-       <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="device_id" id="route_device_id">
+       <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Reply Device</label>
+       <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="device_id" id="route_device_id">
         <option value="">Same device</option>
         {% for device in devices %}
         <option value="{{ device.id }}">{{ device.device_name }}</option>
@@ -175,27 +188,28 @@
        </select>
       </div>
       <div>
-       <label class="block text-sm font-medium text-slate-700 mb-1.5">SIM Slot</label>
-       <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="sim_slot" id="route_sim_slot">
+       <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">SIM Slot</label>
+       <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="sim_slot" id="route_sim_slot">
         <option value="1">SIM 1</option>
         <option value="2">SIM 2</option>
        </select>
       </div>
       <div>
-       <label class="block text-sm font-medium text-slate-700 mb-1.5">Auto-Reply Message</label>
-       <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="reply_message" id="route_reply_message" rows="3"
-        placeholder="Message to send back..."></textarea>
+       <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Auto-Reply Message</label>
+       <textarea
+        class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[80px]"
+        name="reply_message" id="route_reply_message" rows="3" placeholder="Message to send back..."></textarea>
       </div>
      </div>
      <div class="flex items-start gap-2">
-      <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="enabled" id="route_enabled" value="1" checked>
-      <label class="text-sm text-slate-700" for="route_enabled">Enabled</label>
+      <input class="mt-1 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20" type="checkbox" name="enabled" id="route_enabled" value="1" checked>
+      <label class="text-sm text-slate-700 dark:text-slate-300" for="route_enabled">Enabled</label>
      </div>
     </div>
-    <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
-     <button type="button" class="inline-flex items-center px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-100 transition-all" data-brox-dismiss="modal">Cancel</button>
-     <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm active:scale-[0.97]">
-      <i class="lucide lucide-save" style="width:1em;height:1em;"></i> Save Rule
+    <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 rounded-b-2xl">
+     <button type="button" class="inline-flex items-center px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-brox-dismiss="modal">Cancel</button>
+     <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-save w-4 h-4"></i> Save Rule
      </button>
     </div>
    </form>

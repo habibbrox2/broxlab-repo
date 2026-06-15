@@ -2,223 +2,299 @@
 {% block title %}Media Manager - Admin{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
- <div class="w-full px-4 sm:px-6 py-4">
- <!-- Page Header -->
- <div class=" mb-4">
- <div>
- <i class="lucide lucide-image mr-2"></i>
- Media Library
- </div>
- <div>Manage media files</div>
- </div>
- <!-- Header -->
- <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
- <div class="md:col-span-8">
- <h1>
- <i class="lucide lucide-image"></i> Media Manager
- </h1>
- <small class="text-slate-500">Manage all your media files (images, videos, audio, documents)</small>
- </div>
- <div class="md:col-span-4 text-right">
- <a href="/admin/media/upload"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1.5 text-xs">
- <i class="lucide lucide-cloud-upload"></i> Upload Media
- </a>
- </div>
- </div>
- <!-- Statistics -->
- {% if stats %}
- <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
- <div class="md:col-span-4">
- <div class=" border border-slate-200 bg-white shadow-sm">
- <div class="p-4">
- <h6 class=" opacity-75">Total Media Files</h6>
- <h2 class="mb-0">{{ stats.total_files }}</h2>
- </div>
- </div>
- </div>
- <div class="md:col-span-4">
- <div class=" border border-slate-200 bg-white shadow-sm border-0 bg--success text-white">
- <div class="p-4">
- <h6 class=" opacity-75">Storage Used</h6>
- <h2 class="mb-0">{{ stats.total_size_formatted }}</h2>
- </div>
- </div>
- </div>
- <div class="md:col-span-4">
- <div class=" border border-slate-200 bg-white shadow-sm">
- <div class="p-4">
- <h6 class=" opacity-75">Media Types</h6>
- <h2 class="mb-0">{{ type_stats|length }}</h2>
- </div>
- </div>
- </div>
- </div>
- {% endif %}
- <!-- Search & Filter -->
- <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
- <div class="md:col-span-12">
- <form method="GET" class=" border border-slate-200 bg-white shadow-sm p-3">
- <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-2">
- <div class="md:col-span-5">
- <input type="text"
- name="search"
- class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
- placeholder="Search by title or filename..."
- {% if filters.search %}value="{{ filters.search }}"{% endif %}>
- </div>
- <div class="md:col-span-3">
- <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
- <option value="">All Media Types</option>
- <option value="image" {% if filters.type == 'image' %}selected{% endif %}>📸 Images</option>
- <option value="video" {% if filters.type == 'video' %}selected{% endif %}>🎬 Videos</option>
- <option value="audio" {% if filters.type == 'audio' %}selected{% endif %}>🎵 Audio</option>
- <option value="document"
- {% if filters.type == 'document' %}selected{% endif %}>📄 Documents</option>
- </select>
- </div>
- <div class="md:col-span-2">
- <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 w-full">
- <i class="lucide lucide-search"></i> Search
- </button>
- </div>
- <div class="md:col-span-2">
- <a href="/admin/media" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200 w-full">
- <i class="lucide lucide-refresh-cw"></i> Reset
- </a>
- </div>
- </div>
- </form>
- </div>
- </div>
- <!-- Media Grid -->
- <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gap-3">
- {% if media %}
- {% for item in media %}
- <div class="md:col-span-6 lg:col-span-4">
- <div class=" border border-slate-200 bg-white shadow-sm h-full hover-rounded-xl">
- <!-- Media Preview -->
- <div class="relative bg-slate-100 ">
- {% if item.media_type == 'image' and item.thumbnail_path %}
- <img src="{{ thumbnail_url(item.thumbnail_path) }}"
- alt="{{ item.title|striptags }}"
- class="max-w-full h-auto w-full h-full ">
- {% elseif item.media_type == 'image' %}
- <img src="{{ media_url(item.file_path) }}"
- alt="{{ item.title|striptags }}"
- class="max-w-full h-auto w-full h-full ">
- {% elseif item.media_type == 'video' %}
- <div class="flex items-center justify-center h-full bg-slate-900 text-white">
- <i class="lucide lucide-play-circle "></i>
- </div>
- {% elseif item.media_type == 'audio' %}
- <div class="flex items-center justify-center h-full bg-slate-900 text-white">
- <i class="lucide lucide-music "></i>
- </div>
- {% else %}
- <div class="flex items-center justify-center h-full bg-slate-100 text-slate-500">
- <i class="lucide lucide-file "></i>
- </div>
- {% endif %}
- <!-- Media Type Badge -->
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-indigo-600 absolute top-2 left-2 uppercase">{{ item.media_type }}</span>
- </div>
- <!-- Card Body -->
- <div class="p-4">
- <h5 class=" truncate" title="{{ item.title|striptags }}">{{ item.title|striptags|raw }}</h5>
- <p class=" small text-slate-500 truncate"
- title="{{ item.original_name }}">{{ item.original_name }}</p>
- <!-- Meta Info -->
- <div class="small text-slate-500 mb-3">
- <div>
- <strong>Size:</strong> {{ item.file_size|filesizeformat }}
- </div>
- {% if item.width and item.height %}
- <div>
- <strong>Dimensions:</strong> {{ item.width }}x{{ item.height }}px
- </div>
- {% endif %}
- <div>
- <strong>Uploaded:</strong> {{ item.created_at|date("d M Y H:i") }}
- </div>
- </div>
- {% if item.description %}
- <div class="bg-slate-100 p-2 rounded small mb-3 ">{{ item.description }}</div>
- {% endif %}
- </div>
- <!-- Card Footer - Actions -->
- <div class=" border border-slate-200 bg-white shadow-sm-footer">
- <div class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-group w-full" role="group">
- <a href="/admin/media/{{ item.id }}"
- class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-indigo-600 text-white hover:bg-indigo-700-outline">
- <i class="lucide lucide-eye"></i> View
- </a>
- <form method="POST"
- action="/admin/media/{{ item.id }}/delete"
- class="inline w-full"
- onsubmit="return window.confirmAction(event, this, 'Delete this media? This action can be reversed from trash.')">
- <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs inline-flex text-red-600 hover:bg-red-100 w-full">
- <i class="lucide lucide-trash-2"></i> Delete
- </button>
- </form>
- </div>
- </div>
- </div>
- </div>
- {% endfor %}
- {% else %}
- <div class="col-span-12">
- <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-center py-5">
- <i class="lucide lucide-inbox "></i>
- <p class="mb-0">
- No media found. <a href="/admin/media/upload">Upload your first media file</a>
- </p>
- </div>
- </div>
- {% endif %}
- </div>
- <!-- Pagination -->
- {% if pagination.total > 1 %}
- <nav aria-label="Pagination" class="mt-5">
- <ul class="pagination justify-center">
- {% if pagination.current > 1 %}
- <li class="page-item">
- <a class="page-link" href="/admin/media?page=1">
- <i class="lucide lucide-chevrons-left"></i> First
- </a>
- </li>
- <li class="page-item">
- <a class="page-link"
- href="/admin/media?page={{ pagination.current - 1 }}">
- <i class="lucide lucide-chevron-left"></i> Previous
- </a>
- </li>
- {% endif %}
- {% for p in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
- <li class="page-item {% if p == pagination.current %}active{% endif %}">
- <a class="page-link" href="/admin/media?page={{ p }}">{{ p }}</a>
- </li>
- {% endfor %}
- {% if pagination.current < pagination.total %}
- <li class="page-item">
- <a class="page-link"
- href="/admin/media?page={{ pagination.current + 1 }}">
- Next <i class="lucide lucide-chevron-right"></i>
- </a>
- </li>
- <li class="page-item">
- <a class="page-link" href="/admin/media?page={{ pagination.total }}">
- Last <i class="lucide lucide-chevrons-right"></i>
- </a>
- </li>
- {% endif %}
- </ul>
- </nav>
- {% endif %}
- </div>
+
+{# ── Gradient Page Header ── #}
+<div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+        <i class="lucide lucide-image w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Content</p>
+        <h1 class="text-xl font-bold text-white">Media Manager</h1>
+        <p class="text-sm text-white/60 mt-0.5 max-w-md">Manage all your media files (images, videos, audio, documents)</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <a href="/admin/media/upload" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+        <i class="lucide lucide-cloud-upload w-4 h-4"></i> Upload Media
+      </a>
+    </div>
+  </div>
+</div>
+
+{# ── Statistics Cards ── #}
+{% if stats %}
+<section class="scroll-fade-in grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mb-6">
+  <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Total Media Files</p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ stats.total_files }}</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+        <i class="lucide lucide-image w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+    </div>
+  </div>
+  <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Storage Used</p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ stats.total_size_formatted }}</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+        <i class="lucide lucide-hard-drive w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+      </div>
+    </div>
+  </div>
+  <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Media Types</p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ type_stats|length }}</p>
+      </div>
+      <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-900/30 flex items-center justify-center flex-shrink-0">
+        <i class="lucide lucide-layers w-5 h-5 text-sky-600 dark:text-sky-400"></i>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Search & Filter ── #}
+<section class="scroll-fade-in mb-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+    <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-search w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+    </div>
+    <div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Search & Filter</h3>
+      <p class="text-xs text-slate-400 dark:text-slate-600">Find media by title, filename, or type</p>
+    </div>
+  </div>
+  <form method="GET" class="p-5">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="space-y-1.5">
+        <label for="media-search" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Search</label>
+        <input type="text" name="search" id="media-search" placeholder="Search by title or filename..."
+          {% if filters.search %}value="{{ filters.search }}"{% endif %}
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600">
+      </div>
+      <div class="space-y-1.5">
+        <label for="media-type" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Type</label>
+        <select name="type" id="media-type"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+          <option value="">All Media Types</option>
+          <option value="image" {% if filters.type == 'image' %}selected{% endif %}>📸 Images</option>
+          <option value="video" {% if filters.type == 'video' %}selected{% endif %}>🎬 Videos</option>
+          <option value="audio" {% if filters.type == 'audio' %}selected{% endif %}>🎵 Audio</option>
+          <option value="document" {% if filters.type == 'document' %}selected{% endif %}>📄 Documents</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">
+          <i class="lucide lucide-search w-4 h-4"></i> Search
+        </button>
+      </div>
+      <div class="flex items-end">
+        <a href="/admin/media" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">
+          <i class="lucide lucide-refresh-cw w-4 h-4"></i> Reset
+        </a>
+      </div>
+    </div>
+  </form>
+</section>
+
+{# ── Bulk Actions Bar ── #}
+{% if media %}
+<div class="scroll-fade-in flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500">
+  <label for="select-all" class="text-sm font-semibold text-slate-900 dark:text-white cursor-pointer">Select All</label>
+  <div class="w-px h-6 bg-slate-200 dark:bg-slate-800"></div>
+  <select id="bulk-action" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
+    <option value="">Bulk Actions</option>
+    <option value="delete">Delete Selected</option>
+  </select>
+  <button id="apply-bulk-action" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed" disabled onclick="applyBulkAction()">
+    Apply
+  </button>
+</div>
+{% endif %}
+
+{# ── Media Grid ── #}
+{% if media %}
+<form id="bulk-action-form" method="POST" action="/admin/media/bulk-delete">
+  <section class="scroll-fade-in grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {% for item in media %}
+  <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 relative">
+    <!-- Select Checkbox -->
+    <div class="absolute top-2 right-2 z-10">
+      <input type="checkbox" name="ids[]" value="{{ item.id }}" class="media-checkbox w-5 h-5 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-800"{% if item.deleted_at %}disabled{% endif %}>
+    </div>
+    <!-- Media Preview -->
+    <div class="relative bg-slate-100 dark:bg-slate-800 h-48 flex items-center justify-center overflow-hidden rounded-t-2xl">
+      {% if item.media_type == 'image' and item.thumbnail_path %}
+      <img src="{{ thumbnail_url(item.thumbnail_path) }}" alt="{{ item.title|striptags }}" class="w-full h-full object-cover">
+      {% elseif item.media_type == 'image' %}
+      <img src="{{ media_url(item.file_path) }}" alt="{{ item.title|striptags }}" class="w-full h-full object-cover">
+      {% elseif item.media_type == 'video' %}
+      <div class="flex items-center justify-center w-full h-full bg-slate-900 text-white">
+        <i class="lucide lucide-play-circle w-12 h-12 text-white/80"></i>
+      </div>
+      {% elseif item.media_type == 'audio' %}
+      <div class="flex items-center justify-center w-full h-full bg-slate-900 text-white">
+        <i class="lucide lucide-music w-12 h-12 text-white/80"></i>
+      </div>
+      {% else %}
+      <div class="flex items-center justify-center w-full h-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+        <i class="lucide lucide-file w-12 h-12"></i>
+      </div>
+      {% endif %}
+      <!-- Media Type Badge -->
+      <span class="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-600 text-white">{{ item.media_type }}</span>
+    </div>
+    <!-- Card Body -->
+    <div class="p-4 space-y-2">
+      <h4 class="text-sm font-semibold text-slate-900 dark:text-white truncate" title="{{ item.title|striptags }}">{{ item.title|striptags|raw }}</h4>
+      <p class="text-xs text-slate-400 dark:text-slate-600 truncate" title="{{ item.original_name }}">{{ item.original_name }}</p>
+      <!-- Meta Info -->
+      <div class="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+        <div class="flex items-center gap-1.5">
+          <i class="lucide lucide-hard-drive w-3 h-3"></i>
+          <span>{{ item.file_size|filesizeformat }}</span>
+        </div>
+        {% if item.width and item.height %}
+        <div class="flex items-center gap-1.5">
+          <i class="lucide lucide-maximize-2 w-3 h-3"></i>
+          <span>{{ item.width }}x{{ item.height }}px</span>
+        </div>
+        {% endif %}
+        <div class="flex items-center gap-1.5">
+          <i class="lucide lucide-calendar w-3 h-3"></i>
+          <span>{{ item.created_at|date("d M Y H:i") }}</span>
+        </div>
+      </div>
+      {% if item.description %}
+      <div class="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-2.5 rounded-lg">{{ item.description }}</div>
+      {% endif %}
+    </div>
+    <!-- Card Footer - Actions -->
+    <div class="flex items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <a href="/admin/media/{{ item.id }}"
+         class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+        <i class="lucide lucide-eye w-3 h-3"></i> View
+      </a>
+      <form method="POST" action="/admin/media/{{ item.id }}/delete" class="inline" onsubmit="return window.confirmAction(event, this, 'Delete this media? This action can be reversed from trash.')">
+        <button type="submit"
+           class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+          <i class="lucide lucide-trash-2 w-3 h-3"></i> Delete
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  </section>
+</form>
+
+{# ── Pagination ── #}
+{% if pagination and pagination.total > 0 %}
+<div class="flex flex-col gap-3 mt-6 px-5 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-500 dark:text-slate-400">Show</span>
+      <select id="per-page" onchange="window.location.href='/admin/media?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}&limit='+this.value" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 cursor-pointer">
+        <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+        <option value="20" {% if pagination.per_page == 20 %}selected{% endif %}>20</option>
+        <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>100</option>
+      </select>
+      <span class="text-xs text-slate-500 dark:text-slate-400">per page</span>
+    </div>
+    <span class="text-xs text-slate-500 dark:text-slate-400">
+      Showing {{ ((pagination.current - 1) * pagination.per_page) + 1 }}–{{ min(pagination.current * pagination.per_page, pagination.total_items) }} of {{ pagination.total_items }} items
+    </span>
+  </div>
+  <div class="flex items-center justify-center gap-1">
+    {% if pagination.current > 1 %}
+    <a href="/admin/media?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.limit %}&limit={{ filters.limit }}{% endif %}"
+       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150" title="First page">
+      <i class="lucide lucide-chevrons-left w-3.5 h-3.5"></i>
+    </a>
+    <a href="/admin/media?page={{ pagination.current - 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.limit %}&limit={{ filters.limit }}{% endif %}"
+       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150" title="Previous page">
+      <i class="lucide lucide-chevron-left w-3.5 h-3.5"></i>
+    </a>
+    {% endif %}
+    {% for p in range(max(1, pagination.current - 2), min(pagination.total, pagination.current + 2)) %}
+    <a href="/admin/media?page={{ p }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.limit %}&limit={{ filters.limit }}{% endif %}"
+       class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-semibold {{ p == pagination.current ? 'bg-indigo-600 text-white border border-indigo-600' : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400' }} transition-all duration-150">
+      {{ p }}
+    </a>
+    {% endfor %}
+    {% if pagination.current < pagination.total %}
+    <a href="/admin/media?page={{ pagination.current + 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.limit %}&limit={{ filters.limit }}{% endif %}"
+       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150" title="Next page">
+      <i class="lucide lucide-chevron-right w-3.5 h-3.5"></i>
+    </a>
+    <a href="/admin/media?page={{ pagination.total }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.limit %}&limit={{ filters.limit }}{% endif %}"
+       class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150" title="Last page">
+      <i class="lucide lucide-chevrons-right w-3.5 h-3.5"></i>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+{# ── Empty State ── #}
+<section class="scroll-fade-in overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex flex-col items-center justify-center py-16 text-center">
+    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+      <i class="lucide lucide-image w-7 h-7 text-slate-400 dark:text-slate-600"></i>
+    </div>
+    <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No media found</h3>
+    <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Upload your first media file to get started.</p>
+    <a href="/admin/media/upload" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 transition-all duration-150">
+      <i class="lucide lucide-cloud-upload w-4 h-4"></i> Upload Media
+    </a>
+  </div>
+</section>
+{% endif %}
+
+{% if media %}
+<script>
+(function() {
+  const selectAll = document.getElementById('select-all');
+  const checkboxes = document.querySelectorAll('.media-checkbox');
+  const bulkAction = document.getElementById('bulk-action');
+  const applyBtn = document.getElementById('apply-bulk-action');
+  const form = document.getElementById('bulk-action-form');
+
+  function updateState() {
+    const checked = document.querySelectorAll('.media-checkbox:checked').length;
+    applyBtn.disabled = checked === 0;
+  }
+
+  selectAll?.addEventListener('change', () => {
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateState();
+  });
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateState));
+
+  window.applyBulkAction = function() {
+    const action = bulkAction.value;
+    const checked = Array.from(document.querySelectorAll('.media-checkbox:checked')).map(cb => cb.value);
+    if (!action || checked.length === 0) return;
+    if (action === 'delete') {
+      if (!window.confirmAction(null, { preventDefault: () => {} }, 'Delete ' + checked.length + ' media items? This action can be reversed from trash.')) return;
+      form.submit();
+    }
+  };
+})();
+</script>
+{% endif %}
 {% endblock %}
-
-
-
-
-

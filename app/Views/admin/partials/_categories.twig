@@ -15,12 +15,12 @@
  {% endif %}
 {% endfor %}
 
-<select multiple name="category_ids[]" id="category_ids_select" class="block w-full min-h-44 rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 text-sm text-slate-900 shadow-sm transition-all duration-200 ease-out focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 hover:border-slate-400">
+<select multiple name="category_ids[]" id="category_ids_select" class="block w-full min-h-[11rem] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/40">
  {% for cat in categories %}
  {% set catId = cat.id ~ '' %}
  <option value="{{ cat.id }}" {{ catId in selectedIds ? 'selected' : '' }}>{{ cat.name }}</option>
  {% endfor %}
 </select>
-<p class="text-[11px] leading-relaxed text-slate-500">Search or create labels, then press Enter.</p>
+<p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Search or create labels, then press Enter.</p>
 
 

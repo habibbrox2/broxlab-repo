@@ -1,41 +1,41 @@
-<div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
- <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-  <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-   <i class="lucide lucide-bot" style="width:0.875em;height:0.875em;"></i>
+<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+ <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+   <i class="lucide lucide-bot w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
   </div>
-  <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">AI Provider Configuration</h2>
+  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">AI Provider Configuration</h3>
  </div>
  <div class="p-5">
   <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
    <div>
-    <label class="block text-sm font-semibold text-slate-700 mb-1.5">AI Provider</label>
-    <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" name="ai_provider" id="ai_provider">
+    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">AI Provider</label>
+    <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="ai_provider" id="ai_provider">
      <option value="openrouter" {{ settings.ai_provider|default('openrouter') == 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
      <option value="ollama" {{ settings.ai_provider|default('openrouter') == 'ollama' ? 'selected' : '' }}>Ollama Cloud</option>
     </select>
-    <p class="mt-1 text-xs text-slate-500">Select the AI provider to use for content generation and analysis.</p>
+    <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Select the AI provider to use for content generation and analysis.</p>
    </div>
    <div>
-    <label class="block text-sm font-semibold text-slate-700 mb-1.5">AI Model</label>
+    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">AI Model</label>
     <input type="text"
-     class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
      name="ai_model"
      id="ai_model"
      value="{{ settings.ai_model|default('meta-llama/llama-3-8b-instruct:free') }}"
      placeholder="e.g., meta-llama/llama-3-8b-instruct:free, llama2">
-    <p class="mt-1 text-xs text-slate-500">Model identifier for the selected provider.</p>
+    <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Model identifier for the selected provider.</p>
    </div>
    <div class="md:col-span-2">
-    <label class="block text-sm font-semibold text-slate-700 mb-1.5">API Key</label>
+    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">API Key</label>
     <input type="password"
-     class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
      name="ai_api_key"
      id="ai_api_key"
      value="{{ settings.ai_api_key|default('') }}"
      placeholder="Enter API key"
      autocomplete="off">
-    <p class="mt-1 text-xs text-slate-500">
-     For OpenRouter: Get your API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" class="text-indigo-600 hover:underline">openrouter.ai/keys</a><br>
+    <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">
+     For OpenRouter: Get your API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">openrouter.ai/keys</a><br>
      For Ollama: Usually not required when running locally, but can be set if configured.
     </p>
    </div>

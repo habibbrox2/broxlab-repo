@@ -1,323 +1,89 @@
 {% extends "admin/layout.twig" %}
-
-{% block title %}{{ page_title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
-{% set current_page = current_page|default('job-positions') %}
-
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4">
- {# Hero Header #}
- <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-  <div>
-   <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ page_title }}</h1>
-   <p class="text-sm text-slate-500 mt-1">
-    {% if mode == 'create' %}
-     Create a new job position with suggested resume content.
-    {% else %}
-     Edit the position details, summaries, bullet points, and skill suggestions.
-    {% endif %}
-   </p>
-  </div>
-  <a href="/admin/job-positions" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-   <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List
-  </a>
- </div>
-
- {# Error Display #}
- {% if errors is defined and errors is not empty %}
- <div class="rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-4 mb-6">
-  <div class="flex items-center gap-2 text-red-700 dark:text-red-400 font-semibold mb-2">
-   <i class="lucide lucide-alert-triangle w-5 h-5"></i>
-   <span>Please fix the following errors:</span>
-  </div>
-  <ul class="list-disc list-inside text-sm text-red-600 dark:text-red-400">
-   {% for error in errors %}
-   <li>{{ error }}</li>
-   {% endfor %}
-  </ul>
- </div>
- {% endif %}
-
- <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-  {# Main Form #}
-  <div class="lg:col-span-8 space-y-6">
-   {# Basic Details Card #}
-   <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-     <h5 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-      <i class="lucide lucide-info w-4 h-4 text-indigo-600"></i>
-      Position Details
-     </h5>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-briefcase w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Jobs</p>
+                    <h1 class="text-xl font-bold text-white">{{ job.id is defined and job.id ? 'Edit Position' : 'New Position' }}</h1>
+                    <p class="text-sm text-white/60 mt-0.5">{{ job.id is defined and job.id ? 'Update job position details.' : 'Create a new job position.' }}</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="/admin/job-positions" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="p-5">
-     <form method="post" action="{% if mode == 'edit' %}/admin/job-positions/{{ position_id }}{% else %}/admin/job-positions{% endif %}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
-       <div>
-        <label for="title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title <span class="text-red-500">*</span></label>
-        <input type="text" id="title" name="title"
-         class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white"
-         value="{{ form_data.title|default(position.title|default('')) }}"
-         required
-         placeholder="e.g. Web Developer">
-        <div class="text-xs text-slate-400 mt-1">The display name for this position.</div>
-       </div>
-       {% if mode == 'create' %}
-       <div>
-        <label for="slug" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug <span class="text-red-500">*</span></label>
-        <input type="text" id="slug" name="slug"
-         class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white"
-         value="{{ form_data.slug|default('') }}"
-         pattern="[a-z0-9][a-z0-9-]*" maxlength="50"
-         placeholder="web-developer">
-        <div class="text-xs text-slate-400 mt-1">URL-friendly identifier. Auto-generated from title if left empty.</div>
-       </div>
-       {% endif %}
-      </div>
-
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
-       <div>
-        <label for="category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
-        <input type="text" id="category" name="category"
-         class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white"
-         value="{{ form_data.category|default(position.category|default('')) }}"
-         placeholder="e.g. Technology, Design, Healthcare">
-        <div class="text-xs text-slate-400 mt-1">Group this position under a category for filtering.</div>
-       </div>
-       {% if mode == 'edit' %}
-       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
-        <label class="inline-flex items-center gap-2 cursor-pointer">
-         <input type="checkbox" name="is_active" value="1" {% if position.is_active %}checked{% endif %}
-          class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-         <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
-        </label>
-        <div class="text-xs text-slate-400 mt-1">Inactive positions will not appear in the CV Builder suggestions.</div>
-       </div>
-       {% endif %}
-      </div>
-
-      <div class="mb-4">
-       <label for="description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-       <textarea id="description" name="description" rows="2"
-        class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white"
-        placeholder="Brief description of this position">{{ form_data.description|default(position.description|default('')) }}</textarea>
-      </div>
-
-      <div class="flex gap-2">
-       <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700">
-        <i class="lucide lucide-check-circle w-4 h-4"></i>
-        {% if mode == 'create' %}Create Position{% else %}Save Changes{% endif %}
-       </button>
-       <a href="/admin/job-positions" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</a>
-      </div>
-     </form>
-    </div>
-   </div>
-
-   {% if mode == 'edit' %}
-   {# ==================================================================== #}
-   {# Professional Summaries #}
-   {# ==================================================================== #}
-   <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-     <h5 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-      <i class="lucide lucide-file-text w-4 h-4 text-indigo-600"></i>
-      Professional Summaries & Career Objectives
-     </h5>
-    </div>
-    <div class="p-5">
-     {# Existing summaries #}
-     {% if position.summaries is defined and position.summaries is not empty %}
-     <div class="space-y-3 mb-4">
-      {% for summary in position.summaries %}
-      <div class="flex gap-3 items-start bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-       <div class="flex-1">
-        <input type="hidden" name="summary_id[]" value="{{ summary.id }}">
-        <select name="summary_type[]" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs mb-2 bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-         <option value="professional_summary" {% if summary.type == 'professional_summary' %}selected{% endif %}>Professional Summary</option>
-         <option value="career_objective" {% if summary.type == 'career_objective' %}selected{% endif %}>Career Objective</option>
-        </select>
-        <textarea name="summary_content[]" rows="3"
-         class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white">{{ summary.content }}</textarea>
-        <input type="hidden" name="summary_order[]" value="{{ summary.sort_order }}">
-       </div>
-       <div class="flex-shrink-0 pt-6">
-        <label class="inline-flex items-center gap-1 cursor-pointer text-xs text-red-500 hover:text-red-600">
-         <input type="checkbox" name="summary_delete[]" value="1" class="w-3.5 h-3.5 rounded border-slate-300 text-red-500 focus:ring-red-400">
-         Delete
-        </label>
-       </div>
-      </div>
-      {% endfor %}
-     </div>
-     {% endif %}
-
-     {# New summary template #}
-     <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 text-center" id="newSummaryTemplate" style="display: none;">
-      <select name="new_summary_type[]" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs mb-2 bg-white dark:bg-slate-800 dark:text-white">
-       <option value="professional_summary">Professional Summary</option>
-       <option value="career_objective">Career Objective</option>
-      </select>
-      <textarea name="new_summary_content[]" rows="3" placeholder="Enter summary content..."
-       class="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white"></textarea>
-     </div>
-     <button type="button" onclick="document.getElementById('newSummaryTemplate').style.display='block';document.getElementById('newSummaryTemplate').querySelector('textarea').focus();this.style.display='none';"
-      class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-2">
-      <i class="lucide lucide-plus-circle w-4 h-4"></i> Add Summary
-     </button>
-    </div>
-   </div>
-
-   {# ==================================================================== #}
-   {# Bullet Points #}
-   {# ==================================================================== #}
-   <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-     <h5 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-      <i class="lucide lucide-list-checks w-4 h-4 text-indigo-600"></i>
-      Bullet Points (Responsibilities & Achievements)
-     </h5>
-    </div>
-    <div class="p-5">
-     {% set all_bullets = (position.bullets.responsibilities is defined ? position.bullets.responsibilities : [])|merge(position.bullets.achievements is defined ? position.bullets.achievements : []) %}
-     {% if all_bullets is not empty %}
-     <div class="space-y-2 mb-4">
-      {% for bullet in all_bullets %}
-      <div class="flex gap-3 items-start bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-       <div class="flex-1 flex gap-2">
-        <input type="hidden" name="bullet_id[]" value="{{ bullet.id }}">
-        <select name="bullet_category[]" class="w-36 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 dark:text-white">
-         <option value="responsibilities" {% if bullet.category == 'responsibilities' %}selected{% endif %}>Responsibility</option>
-         <option value="achievements" {% if bullet.category == 'achievements' %}selected{% endif %}>Achievement</option>
-        </select>
-        <input type="text" name="bullet_content[]" value="{{ bullet.content }}"
-         class="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white">
-        <input type="hidden" name="bullet_order[]" value="{{ bullet.sort_order }}">
-       </div>
-       <div class="flex-shrink-0 pt-2">
-        <label class="inline-flex items-center gap-1 cursor-pointer text-xs text-red-500 hover:text-red-600">
-         <input type="checkbox" name="bullet_delete[]" value="1" class="w-3.5 h-3.5 rounded border-slate-300 text-red-500 focus:ring-red-400">
-         Delete
-        </label>
-       </div>
-      </div>
-      {% endfor %}
-     </div>
-     {% endif %}
-
-     <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 text-center" id="newBulletTemplate" style="display: none;">
-      <div class="flex gap-2">
-       <select name="new_bullet_category[]" class="w-36 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 dark:text-white">
-        <option value="responsibilities">Responsibility</option>
-        <option value="achievements">Achievement</option>
-       </select>
-       <input type="text" name="new_bullet_content[]" placeholder="Enter bullet point..."
-        class="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white">
-      </div>
-     </div>
-     <button type="button" onclick="document.getElementById('newBulletTemplate').style.display='block';document.getElementById('newBulletTemplate').querySelector('input').focus();this.style.display='none';"
-      class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-2">
-      <i class="lucide lucide-plus-circle w-4 h-4"></i> Add Bullet Point
-     </button>
-    </div>
-   </div>
-
-   {# ==================================================================== #}
-   {# Skills #}
-   {# ==================================================================== #}
-   <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-    <div class="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-     <h5 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-      <i class="lucide lucide-wrench w-4 h-4 text-indigo-600"></i>
-      Suggested Skills
-     </h5>
-    </div>
-    <div class="p-5">
-     {% set all_skills = (position.skills.technical is defined ? position.skills.technical : [])|merge(position.skills.soft is defined ? position.skills.soft : [])|merge(position.skills.language is defined ? position.skills.language : []) %}
-     {% if all_skills is not empty %}
-     <div class="space-y-2 mb-4">
-      {% for skill in all_skills %}
-      <div class="flex gap-3 items-start bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-       <div class="flex-1 flex gap-2">
-        <input type="hidden" name="skill_id[]" value="{{ skill.id }}">
-        <select name="skill_category[]" class="w-28 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 dark:text-white">
-         <option value="technical" {% if skill.category == 'technical' %}selected{% endif %}>Technical</option>
-         <option value="soft" {% if skill.category == 'soft' %}selected{% endif %}>Soft</option>
-         <option value="language" {% if skill.category == 'language' %}selected{% endif %}>Language</option>
-        </select>
-        <input type="text" name="skill_name[]" value="{{ skill.skill_name }}"
-         class="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white">
-        <input type="hidden" name="skill_order[]" value="{{ skill.sort_order }}">
-       </div>
-       <div class="flex-shrink-0 pt-2">
-        <label class="inline-flex items-center gap-1 cursor-pointer text-xs text-red-500 hover:text-red-600">
-         <input type="checkbox" name="skill_delete[]" value="1" class="w-3.5 h-3.5 rounded border-slate-300 text-red-500 focus:ring-red-400">
-         Delete
-        </label>
-       </div>
-      </div>
-      {% endfor %}
-     </div>
-     {% endif %}
-
-     <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 text-center" id="newSkillTemplate" style="display: none;">
-      <div class="flex gap-2">
-       <select name="new_skill_category[]" class="w-28 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs bg-white dark:bg-slate-800 dark:text-white">
-        <option value="technical">Technical</option>
-        <option value="soft">Soft</option>
-        <option value="language">Language</option>
-       </select>
-       <input type="text" name="new_skill_name[]" placeholder="Enter skill name..."
-        class="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white dark:bg-slate-800 dark:text-white">
-      </div>
-     </div>
-     <button type="button" onclick="document.getElementById('newSkillTemplate').style.display='block';document.getElementById('newSkillTemplate').querySelector('input').focus();this.style.display='none';"
-      class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-2">
-      <i class="lucide lucide-plus-circle w-4 h-4"></i> Add Skill
-     </button>
-    </div>
-   </div>
-   {% endif %}
-  </div>
-
-  {# Sidebar Help #}
-  <div class="lg:col-span-4">
-   <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 sticky top-24">
-    <div class="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-     <h5 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-      <i class="lucide lucide-lightbulb w-4 h-4 text-amber-500"></i>
-      About Job Positions
-     </h5>
-    </div>
-    <div class="p-5 space-y-4 text-sm text-slate-600 dark:text-slate-400">
-     <div>
-      <h6 class="font-semibold text-slate-700 dark:text-slate-300 mb-1">What is a Job Position?</h6>
-      <p>Each job position stores pre-written resume content that the CV Builder uses to auto-suggest text when a user selects their profession.</p>
-     </div>
-     <div>
-      <h6 class="font-semibold text-slate-700 dark:text-slate-300 mb-1">Content Types</h6>
-      <ul class="space-y-1">
-       <li><strong>Professional Summary</strong> — A paragraph summarizing experience and skills.</li>
-       <li><strong>Career Objective</strong> — A statement of career goals and aspirations.</li>
-       <li><strong>Bullet Points</strong> — Responsibilities and achievements for work experience.</li>
-       <li><strong>Skills</strong> — Suggested skills categorized as Technical, Soft, or Language.</li>
-      </ul>
-     </div>
-     <div>
-      <h6 class="font-semibold text-slate-700 dark:text-slate-300 mb-1">Usage</h6>
-      <p>When a user enters their job title in the CV Builder, the system will look up the matching position and suggest content automatically.</p>
-     </div>
-     <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-      <h6 class="font-semibold text-slate-700 dark:text-slate-300 mb-1">API Endpoints</h6>
-      <code class="block text-xs bg-slate-100 dark:bg-slate-700 rounded p-2 mb-1">GET /api/job-positions</code>
-      <code class="block text-xs bg-slate-100 dark:bg-slate-700 rounded p-2 mb-1">GET /api/job-positions/{id}</code>
-      <code class="block text-xs bg-slate-100 dark:bg-slate-700 rounded p-2 mb-1">GET /api/job-positions/slug/{slug}</code>
-     </div>
-    </div>
-   </div>
-  </div>
- </div>
+    <form method="POST" action="{{ action_url|default('/admin/job-positions/save') }}">
+        {% if csrf_token is defined %}<input type="hidden" name="_token" value="{{ csrf_token }}">{% endif %}
+        {% if job.id is defined and job.id %}<input type="hidden" name="id" value="{{ job.id }}">{% endif %}
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_340px] gap-5">
+            <div class="space-y-5">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Position Details</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Title <span class="text-rose-500 ml-0.5">*</span></label>
+                            <input type="text" name="title" value="{{ job.title|default('') }}" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="e.g., Senior Software Engineer">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Location</label>
+                            <input type="text" name="location" value="{{ job.location|default('') }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="e.g., Dhaka, Bangladesh">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Type</label>
+                            <select name="type" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                <option value="Full-time" {{ job.type == 'Full-time' ? 'selected' : '' }}>Full-time</option>
+                                <option value="Part-time" {{ job.type == 'Part-time' ? 'selected' : '' }}>Part-time</option>
+                                <option value="Contract" {{ job.type == 'Contract' ? 'selected' : '' }}>Contract</option>
+                                <option value="Internship" {{ job.type == 'Internship' ? 'selected' : '' }}>Internship</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Description</label>
+                            <textarea name="description" rows="6" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[120px]" placeholder="Describe the role and responsibilities...">{{ job.description|default('') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-5 xl:sticky xl:top-20">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-settings w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Status</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_active" value="1" class="sr-only peer" {{ job.is_active|default(true) ? 'checked' : '' }}>
+                                <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">
+                                <i class="lucide lucide-save w-4 h-4"></i> Save
+                            </button>
+                            <a href="/admin/job-positions" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 {% endblock %}

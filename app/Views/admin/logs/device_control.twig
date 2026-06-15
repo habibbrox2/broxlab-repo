@@ -1,109 +1,64 @@
-{% extends"admin/layout.twig" %}
-
-{% block title %}Device Control Logs{% endblock %}
-
+{% extends "admin/layout.twig" %}
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 space-y-4">
-
-    <!-- Gradient Header -->
-    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
-        <div class="relative flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <i class="lucide lucide-cpu text-2xl text-white"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl font-bold text-white sm:text-3xl">Device Control Logs</h1>
-                <p class="mt-1 text-sm text-indigo-100">Remote device command history and delivery status.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Summary Stats -->
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Total Devices</p>
-            <p class="mt-1 text-2xl font-bold text-slate-900">{{ summary.total|default(0) }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Online</p>
-            <p class="mt-1 text-2xl font-bold text-emerald-600">{{ summary.online|default(0) }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Offline</p>
-            <p class="mt-1 text-2xl font-bold text-slate-600">{{ summary.offline|default(0) }}</p>
-        </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Disabled</p>
-            <p class="mt-1 text-2xl font-bold text-red-600">{{ summary.disabled|default(0) }}</p>
-        </div>
-    </div>
-
-    <!-- Recent Commands Card -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i class="lucide lucide-terminal text-indigo-500" style="width:1.125em;height:1.125em;"></i>
-                    <h2 class="text-sm font-semibold text-slate-900">Recent Commands</h2>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-5 h-5 text-white"></i>
                 </div>
-                <form method="get" class="flex items-center gap-2">
-                    <select name="limit" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10">
-                        <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
-                        <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
-                        <option value="200" {% if limit == 200 %}selected{% endif %}>200</option>
-                        <option value="500" {% if limit == 500 %}selected{% endif %}>500</option>
-                    </select>
-                    <button class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700" type="submit">Apply</button>
-                </form>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Logs</p>
+                    <h1 class="text-xl font-bold text-white">Device Control Log</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Monitor device control events and triggers.</p>
+                </div>
             </div>
         </div>
-        <div>
-            {% if commands is not empty %}
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/50">
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">#ID</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Device</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Command</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Response</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Created</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Delivered</th>
-                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Executed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cmd in commands %}
-                        <tr class="border-b border-slate-50 transition hover:bg-indigo-50/30">
-                            <td class="px-5 py-3 font-mono text-xs text-slate-600">{{ cmd.id }}</td>
-                            <td class="px-5 py-3">{{ cmd.device_name|default('Device #' ~ cmd.device_id) }}</td>
-                            <td class="px-5 py-3"><code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{{ cmd.command }}</code></td>
-                            <td class="px-5 py-3">
-                                {% set status = cmd.status|default('queued') %}
-                                {% if status == 'completed' %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>{{ status }}</span>
-                                {% elseif status == 'failed' %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700"><span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>{{ status }}</span>
-                                {% elseif status == 'delivered' %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700"><span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>{{ status }}</span>
+    </div>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Device Events</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ logs|length }}</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Time</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Device</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Action</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if logs is defined and logs|length > 0 %}
+                        {% for log in logs %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ log.created_at|date('d M Y H:i:s') }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ log.device_name ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ log.action }}</td>
+                            <td class="px-4 py-3">
+                                {% if log.status == 'success' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><span class="w-1 h-1 rounded-full bg-emerald-500"></span> Success</span>
+                                {% elseif log.status == 'failed' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"><span class="w-1 h-1 rounded-full bg-red-500"></span> Failed</span>
                                 {% else %}
-                                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600"><span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>{{ status }}</span>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"><span class="w-1 h-1 rounded-full bg-amber-500"></span> {{ log.status }}</span>
                                 {% endif %}
                             </td>
-                            <td class="px-5 py-3 text-xs text-slate-500">{{ cmd.response_text|default('') }}</td>
-                            <td class="px-5 py-3 text-xs text-slate-600">{{ cmd.created_at|default('') }}</td>
-                            <td class="px-5 py-3 text-xs text-slate-600">{{ cmd.delivered_at|default('') }}</td>
-                            <td class="px-5 py-3 text-xs text-slate-600">{{ cmd.executed_at|default('') }}</td>
                         </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="py-10 text-center text-slate-500">No command history found yet.</div>
-            {% endif %}
+                    {% else %}
+                        <tr><td colspan="4" class="px-4 py-16"><div class="flex flex-col items-center justify-center text-center"><div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><i class="lucide lucide-smartphone w-7 h-7 text-slate-400 dark:text-slate-600"></i></div><h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No device logs</h3><p class="text-sm text-slate-400 dark:text-slate-600 max-w-xs">No device control events recorded yet.</p></div></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

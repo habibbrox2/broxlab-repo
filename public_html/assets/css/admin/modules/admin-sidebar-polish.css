@@ -1,0 +1,585 @@
+/* ============================================================
+   ADMIN SIDEBAR POLISH
+   ============================================================
+   Modern, polished admin sidebar with Tailwind CSS patterns,
+   smooth animations, and enhanced UX interactions.
+   ============================================================ */
+
+/* ============================
+   1. SIDEBAR HEADER POLISH
+   ============================ */
+
+#adminSidebar {
+    --sidebar-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sidebar label - uppercase nav indicator */
+#adminSidebar .sidebar-group-label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(148, 163, 184);
+    padding: 0.75rem 0.5rem 0.5rem;
+    margin-top: 0.75rem;
+}
+
+#adminSidebar .sidebar-group-label:first-of-type {
+    margin-top: 0;
+    padding-top: 0.5rem;
+}
+
+.dark #adminSidebar .sidebar-group-label {
+    color: rgb(100, 116, 139);
+}
+
+/* ============================
+   2. MENU ITEMS & LINKS
+   ============================ */
+
+/* Main sidebar links - modern appearance */
+.sidebar-link-modern,
+.sidebar-sublink {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.625rem;
+    margin: 0.125rem 0;
+    border-radius: 0.5rem;
+    background-color: transparent;
+    color: rgb(71, 85, 105);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--sidebar-transition);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidebar-link-modern {
+    width: 100%;
+    text-align: left;
+}
+
+.dark .sidebar-link-modern,
+.dark .sidebar-sublink {
+    color: rgb(203, 213, 225);
+}
+
+/* Hover state - soft highlight */
+.sidebar-link-modern:hover,
+.sidebar-sublink:hover {
+    background-color: rgb(241, 245, 249);
+    color: rgb(51, 65, 85);
+}
+
+.dark .sidebar-link-modern:hover,
+.dark .sidebar-sublink:hover {
+    background-color: rgba(100, 116, 139, 0.15);
+    color: rgb(226, 232, 240);
+}
+
+/* Active state - more prominent */
+.sidebar-link-modern.active,
+.sidebar-sublink.active {
+    background-color: rgb(224, 242, 254);
+    color: rgb(3, 102, 214);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 0 rgb(3, 102, 214);
+}
+
+.dark .sidebar-link-modern.active,
+.dark .sidebar-sublink.active {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: rgb(147, 197, 253);
+    box-shadow: inset 3px 0 0 0 rgb(147, 197, 253);
+}
+
+/* Icon sizing and styling */
+.sidebar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0.9;
+    transition: var(--sidebar-transition);
+}
+
+.sidebar-link-modern:hover .sidebar-icon,
+.sidebar-link-modern.active .sidebar-icon {
+    opacity: 1;
+}
+
+/* Sidebar badge - pending/draft counts */
+.sidebar-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    margin-left: auto;
+    padding: 0 0.375rem;
+    border-radius: 0.375rem;
+    background-color: rgb(239, 68, 68);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    animation: badgePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.dark .sidebar-badge {
+    background-color: rgb(220, 38, 38);
+}
+
+/* Chevron icon for expandable items */
+.sidebar-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    margin-left: auto;
+    opacity: 0.5;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-link-modern[aria-expanded="true"] .sidebar-chevron {
+    transform: rotate(180deg);
+}
+
+/* ============================
+   3. SUBMENU STYLING
+   ============================ */
+
+.sidebar-submenu {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    max-height: 0;
+    visibility: hidden;
+    transition: 
+        grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-submenu.open {
+    grid-template-rows: 1fr;
+    max-height: 500px;
+    visibility: visible;
+}
+
+.sidebar-submenu>* {
+    overflow: hidden;
+}
+
+.sidebar-sublink {
+    padding-left: 2.625rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+.sidebar-submenu .sidebar-sublink:before {
+    content: '';
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background-color: currentColor;
+    opacity: 0.4;
+    transition: var(--sidebar-transition);
+}
+
+.sidebar-submenu .sidebar-sublink.active:before {
+    width: 0.5rem;
+    height: 0.5rem;
+    opacity: 1;
+}
+
+/* ============================
+   4. SIDEBAR MINI/COMPACT MODE
+   ============================ */
+
+body.sidebar-collapsed #adminSidebar {
+    width: 4rem;
+}
+
+body.sidebar-collapsed .sidebar-link-modern>span,
+body.sidebar-collapsed .sidebar-link-modern .sidebar-chevron,
+body.sidebar-collapsed .sidebar-link-modern .sidebar-badge,
+body.sidebar-collapsed .sidebar-group-label {
+    display: none;
+}
+
+body.sidebar-collapsed .sidebar-link-modern {
+    justify-content: center;
+    padding: 0.75rem 0.625rem;
+}
+
+body.sidebar-collapsed .sidebar-icon {
+    margin-right: 0;
+}
+
+body.sidebar-collapsed .sidebar-submenu {
+    display: none;
+}
+
+/* Tooltip on hover in compact mode */
+body.sidebar-collapsed .sidebar-link-modern::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    background-color: rgb(15, 23, 42);
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+}
+
+.dark body.sidebar-collapsed .sidebar-link-modern::after {
+    background-color: rgb(30, 41, 59);
+}
+
+body.sidebar-collapsed .sidebar-link-modern:hover::after {
+    opacity: 1;
+}
+
+/* ============================
+   5. MOBILE & RESPONSIVE
+   ============================ */
+
+/* Tablet optimized sidebar width */
+@media (min-width: 768px) and (max-width: 1023px) {
+    #adminSidebar {
+        width: 200px;
+    }
+}
+
+/* Mobile sidebar - full overlay */
+@media (max-width: 1023px) {
+    #adminSidebar {
+        position: fixed;
+        left: 0;
+        top: 4rem;
+        height: calc(100vh - 4rem);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: none;
+        z-index: 40;
+    }
+
+    #adminSidebar.translate-x-0 {
+        transform: translateX(0);
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+    }
+}
+
+/* ============================
+   6. ANIMATIONS & TRANSITIONS
+   ============================ */
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Smooth fade for icons */
+.sidebar-link-modern i,
+.sidebar-sublink i {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.2s ease;
+}
+
+.sidebar-link-modern:hover i {
+    transform: translateX(1px);
+}
+
+/* ============================
+   7. ACCESSIBILITY
+   ============================ */
+
+.sidebar-link-modern:focus-visible,
+.sidebar-sublink:focus-visible {
+    outline: 2px solid rgb(59, 130, 246);
+    outline-offset: -2px;
+}
+
+.sidebar-link-modern:disabled,
+.sidebar-sublink:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ============================
+   8. SCROLLBAR POLISH
+   ============================ */
+
+#adminSidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+#adminSidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#adminSidebar::-webkit-scrollbar-thumb {
+    background: rgb(203, 213, 225);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+#adminSidebar::-webkit-scrollbar-thumb:hover {
+    background: rgb(148, 163, 184);
+}
+
+.dark #adminSidebar::-webkit-scrollbar-thumb {
+    background: rgb(71, 85, 105);
+}
+
+.dark #adminSidebar::-webkit-scrollbar-thumb:hover {
+    background: rgb(100, 116, 139);
+}
+
+/* ============================
+   9. SIDEBAR RESIZER
+   ============================ */
+
+#adminColumnResizer {
+    cursor: col-resize;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#adminColumnResizer:hover {
+    background-color: rgb(139, 92, 246);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.dark #adminColumnResizer:hover {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+/* ============================
+   10. DARK MODE POLISH
+   ============================ */
+
+.dark #adminSidebar {
+    border-color: var(--border-color);
+    background: var(--bg-primary);
+}
+
+/* Ensure text is readable in dark mode */
+.dark .sidebar-link-modern {
+    color: rgb(203, 213, 225);
+}
+
+.dark .sidebar-link-modern:hover {
+    background-color: rgba(100, 116, 139, 0.2);
+    color: rgb(241, 245, 249);
+}
+
+/* ============================
+   11. CATEGORY / TAG COMBOBOX
+   ============================ */
+
+.tag-combobox-source {
+    display: none !important;
+}
+
+.tag-combobox,
+.category-combobox {
+    position: relative;
+    width: 100%;
+}
+
+.tag-combobox-control,
+.category-combobox-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.375rem;
+    min-height: 2.875rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgb(203, 213, 225);
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.tag-combobox-control:focus-within,
+.category-combobox-control:focus-within {
+    border-color: rgb(99, 102, 241);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    background: #fff;
+}
+
+.tag-combobox-chips,
+.category-combobox-chips {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.tag-combobox-input,
+.category-combobox-input {
+    flex: 1 1 11rem;
+    min-width: 9rem;
+    border: 0;
+    background: transparent;
+    padding: 0.25rem 0.125rem;
+    box-shadow: none;
+    outline: none;
+}
+
+.tag-combobox-input:focus,
+.category-combobox-input:focus {
+    border: 0;
+    box-shadow: none;
+}
+
+.tag-combobox-chip,
+.category-combobox-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    border-radius: 9999px;
+    border: 1px solid rgb(226, 232, 240);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+    color: rgb(51, 65, 85);
+    padding: 0.28rem 0.62rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.tag-combobox-chip span,
+.category-combobox-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tag-combobox-chip-remove,
+.category-combobox-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.1rem;
+    border: 0;
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.14);
+    color: rgb(71, 85, 105);
+    font-size: 1rem;
+    line-height: 1;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.tag-combobox-chip-remove:hover,
+.category-combobox-chip-remove:hover {
+    background: rgba(99, 102, 241, 0.12);
+    color: rgb(49, 46, 129);
+    transform: scale(1.04);
+}
+
+.tag-combobox-dropdown,
+.category-combobox-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: block;
+    max-height: 15rem;
+    overflow-y: auto;
+    border: 1px solid rgb(226, 232, 240);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    padding: 0.25rem;
+}
+
+.tag-combobox-dropdown[hidden],
+.category-combobox-dropdown[hidden] {
+    display: none !important;
+}
+
+.tag-combobox-empty,
+.category-combobox-empty {
+    padding: 0.55rem 0.75rem;
+    color: rgb(100, 116, 139);
+    font-size: 0.8rem;
+}
+
+.tag-combobox-option,
+.category-combobox-option,
+.tag-combobox-create,
+.category-combobox-create {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    border-radius: 0.7rem;
+    background: transparent;
+    padding: 0.55rem 0.75rem;
+    color: rgb(15, 23, 42);
+    font-size: 0.85rem;
+    text-align: left;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tag-combobox-option:hover,
+.category-combobox-option:hover,
+.tag-combobox-create:hover,
+.category-combobox-create:hover,
+.tag-combobox-option.is-active,
+.category-combobox-option.is-active {
+    background: rgb(241, 245, 249);
+    color: rgb(15, 23, 42);
+}
+
+.tag-combobox-create,
+.category-combobox-create {
+    margin-top: 0.15rem;
+    color: rgb(37, 99, 235);
+    font-weight: 600;
+}
+
+.tag-combobox-create strong,
+.category-combobox-create strong {
+    font-weight: 700;
+}

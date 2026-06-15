@@ -2707,7 +2707,7 @@ $renderScrapControlCenter = function () use ($twig, $broxScrapModel) {
     $incomingStats = $broxScrapModel->getIncomingPublishStats();
     $pipelineRuns = $broxScrapModel->getPipelineRuns(1, 5, null);
 
-    echo $twig->render('admin/push-logs.twig', [
+    echo $twig->render('admin/scrapping/push-logs.twig', [
         'title' => 'Scrap Control Center',
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2738,7 +2738,7 @@ $renderScrapLogDetail = function ($id) use ($twig, $broxScrapModel) {
         renderError(404, 'Push Log Not Found');
     }
 
-    echo $twig->render('admin/push-log-detail.twig', [
+    echo $twig->render('admin/scrapping/push-log-detail.twig', [
         'title' => 'Scrap Log #' . $logId,
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2755,7 +2755,7 @@ $renderPipelineRuns = function () use ($twig, $broxScrapModel) {
     $action = isset($_GET['action']) ? trim((string) $_GET['action']) : null;
 
     $result = $broxScrapModel->getPipelineRuns($page, $limit, $action);
-    echo $twig->render('admin/pipeline-runs.twig', [
+    echo $twig->render('admin/scrapping/pipeline-runs.twig', [
         'title' => 'Pipeline Runs',
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2782,7 +2782,7 @@ $renderPipelineRunDetail = function ($id) use ($twig, $broxScrapModel) {
         renderError(404, 'Pipeline Run Not Found');
     }
 
-    echo $twig->render('admin/pipeline-run-detail.twig', [
+    echo $twig->render('admin/scrapping/pipeline-run-detail.twig', [
         'title' => 'Pipeline Run #' . $runId,
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2805,7 +2805,7 @@ $renderFailedPipelineLogs = function () use ($twig, $broxScrapModel) {
     $totalFailedItems = count($failedItems);
     $totalRuns = (int) ($result['total'] ?? 0);
 
-    echo $twig->render('admin/pipeline-failed-logs.twig', [
+    echo $twig->render('admin/scrapping/pipeline-failed-logs.twig', [
         'title' => 'Failed Pipeline Logs',
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2831,7 +2831,7 @@ $renderAllPipelineLogs = function () use ($twig, $broxScrapModel) {
     $status = isset($_GET['status']) ? trim((string) $_GET['status']) : null;
 
     $result = $broxScrapModel->getAllPipelineRunsFiltered($page, $limit, $action, $status);
-    echo $twig->render('admin/pipeline-all-logs.twig', [
+    echo $twig->render('admin/scrapping/pipeline-all-logs.twig', [
         'title' => 'All Pipeline Logs',
         'current_page' => 'scrap-control-center',
         'route_base' => '/admin/scrap-control-center',
@@ -2857,7 +2857,7 @@ $router->get('/admin/scrap-control-center/incoming', ['middleware' => ['auth', '
     $result = $broxScrapModel->getIncomingItems($page, $limit, $status, $type);
     $items = array_map('scraperPushDecorateIncomingQueueItem', $result['items']);
 
-    echo $twig->render('admin/scrap-incoming-list.twig', [
+    echo $twig->render('admin/scrapping/scrap-incoming-list.twig', [
         'title' => 'Incoming Scrapes',
         'current_page' => 'scrap-control-center',
         'items' => $items,
@@ -2887,7 +2887,7 @@ $router->get('/admin/scrap-control-center/incoming/{type}/{id}', ['middleware' =
     }
 
     $item = scraperPushDecorateIncomingQueueItem($item);
-    echo $twig->render('admin/scrap-incoming-detail.twig', [
+    echo $twig->render('admin/scrapping/scrap-incoming-detail.twig', [
         'title' => 'Incoming Item #' . $itemId,
         'current_page' => 'scrap-control-center',
         'item' => $item,
@@ -2906,7 +2906,7 @@ $router->get('/admin/scrap-control-center/incoming/{id}', ['middleware' => ['aut
     }
 
     $item = scraperPushDecorateIncomingQueueItem($item);
-    echo $twig->render('admin/scrap-incoming-detail.twig', [
+    echo $twig->render('admin/scrapping/scrap-incoming-detail.twig', [
         'title' => 'Incoming Item #' . $itemId,
         'current_page' => 'scrap-control-center',
         'item' => $item,

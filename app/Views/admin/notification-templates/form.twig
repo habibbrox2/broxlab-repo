@@ -1,311 +1,72 @@
 {% extends "admin/layout.twig" %}
-{% block title %}{{ title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 space-y-4">
- {# ── Gradient Page Header ── #}
- <section class="scroll-fade-in relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8">
-  <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
-  <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
-  <div class="relative">
-   <div class="flex items-start gap-4">
-    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-     <i class="lucide lucide-bell text-2xl text-white"></i>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-mail-open w-5 h-5 text-white"></i>
+                </div>
+                <div><p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Notification Templates</p><h1 class="text-xl font-bold text-white">{{ template.id is defined and template.id ? 'Edit Template' : 'New Template' }}</h1><p class="text-sm text-white/60 mt-0.5">{{ template.id is defined and template.id ? 'Update template details.' : 'Create a new notification template.' }}</p></div>
+            </div>
+            <div class="flex gap-2"><a href="/admin/notification-templates" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back</a></div>
+        </div>
     </div>
-    <div>
-     <h1 class="text-2xl font-bold text-white sm:text-3xl">{{ title }}</h1>
-     <p class="mt-1 text-sm text-indigo-200/80">
-      {% if template %}Edit and manage notification template settings{% else %}Create a new notification template{% endif %}
-     </p>
-    </div>
-   </div>
-  </div>
- </section>
-
- <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-  {# ── Form Column ── #}
-  <div class="lg:col-span-8">
-   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-      <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i>
-     </div>
-     <div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">{% if template %}Edit{% else %}Create New{% endif %} Template</h2>
-     </div>
-    </div>
-    <div class="p-5">
-     <form id="templateForm">
-      {% if template %}<input type="hidden" name="_method" value="PUT">{% endif %}
-
-      {# ── Basic Information ── #}
-      <div class="mb-6">
-       <div class="mb-3 flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-600"><i class="lucide lucide-info" style="width:0.75em;height:0.75em;"></i></div>
-        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Basic Information</h3>
-       </div>
-       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-         <label class="block text-sm font-medium text-slate-700 mb-1">Template Name <span class="text-rose-500">*</span></label>
-         <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="name" name="name" value="{{ template.name ?? '' }}" required placeholder="e.g., Welcome Notification">
+    <form method="POST" action="{{ action_url|default('/admin/notification-templates/save') }}">
+        {% if csrf_token is defined %}<input type="hidden" name="_token" value="{{ csrf_token }}">{% endif %}
+        {% if template.id is defined and template.id %}<input type="hidden" name="id" value="{{ template.id }}">{% endif %}
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_340px] gap-5">
+            <div class="space-y-5">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-mail-open w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Template Details</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Name <span class="text-rose-500 ml-0.5">*</span></label>
+                            <input type="text" name="name" value="{{ template.name|default('') }}" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="Template name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Type</label>
+                            <select name="type" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                <option value="email" {{ template.type == 'email' ? 'selected' : '' }}>Email</option>
+                                <option value="push" {{ template.type == 'push' ? 'selected' : '' }}>Push</option>
+                                <option value="sms" {{ template.type == 'sms' ? 'selected' : '' }}>SMS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Subject</label>
+                            <input type="text" name="subject" value="{{ template.subject|default('') }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="Subject line">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Body <span class="text-rose-500 ml-0.5">*</span></label>
+                            <textarea name="body" rows="8" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[150px]">{{ template.body|default('') }}</textarea>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_active" value="1" class="sr-only peer" {{ template.is_active|default(true) ? 'checked' : '' }}>
+                                <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/20 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-5 xl:sticky xl:top-20">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-settings w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Actions</h3>
+                    </div>
+                    <div class="p-5 flex flex-col gap-2">
+                        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full"><i class="lucide lucide-save w-4 h-4"></i> Save</button>
+                        <a href="/admin/notification-templates" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">Cancel</a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div>
-         <label class="block text-sm font-medium text-slate-700 mb-1">Template Slug <span class="text-rose-500">*</span></label>
-         <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="slug" name="slug" value="{{ template.slug ?? '' }}" required placeholder="e.g., welcome_notification" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, and underscores only">
-         <small class="text-xs text-slate-500">Used in code to reference this template</small>
-        </div>
-       </div>
-       <div class="mt-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-        <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="description" name="description" rows="2" placeholder="What is this template used for?">{{ template.description ?? '' }}</textarea>
-       </div>
-      </div>
-
-      <hr class="border-slate-200 mb-6">
-
-      {# ── Template Content ── #}
-      <div class="mb-6">
-       <div class="mb-3 flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-600"><i class="lucide lucide-file-text" style="width:0.75em;height:0.75em;"></i></div>
-        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Template Content</h3>
-       </div>
-       <div class="mb-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1">Notification Title <span class="text-rose-500">*</span></label>
-        <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="title" name="title" value="{{ template.title ?? '' }}" required placeholder="e.g., Welcome {{ USER_NAME }}!" maxlength="255">
-        <small class="text-xs text-slate-500">Supports variables like {{ USER_NAME }}, {{ APP_NAME }}, {{ AMOUNT }}</small>
-       </div>
-       <div class="mb-3">
-        <label class="block text-sm font-medium text-slate-700 mb-1">Message Body <span class="text-rose-500">*</span></label>
-        <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="body" name="body" rows="6" required placeholder="Notification message with {{ VARIABLES }}...">{{ template.body ?? '' }}</textarea>
-        <small class="text-xs text-slate-500">Supports markdown and template variables. Use {{ VARIABLE_NAME }} syntax.</small>
-       </div>
-
-       {# ── Live Preview ── #}
-       <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-        <div class="border-b border-slate-200 bg-white px-3 py-2">
-         <span class="text-xs font-semibold text-slate-600"><i class="lucide lucide-eye mr-1" style="width:0.75em;height:0.75em;"></i>Live Preview</span>
-        </div>
-        <div class="grid grid-cols-1 gap-4 p-3 md:grid-cols-2">
-         <div>
-          <small class="block text-xs text-slate-500 mb-1">Title</small>
-          <div id="titlePreview" class="rounded border bg-white px-2 py-1.5 text-sm truncate">(Type to preview)</div>
-         </div>
-         <div>
-          <small class="block text-xs text-slate-500 mb-1">Body (first 100 chars)</small>
-          <div id="bodyPreview" class="rounded border bg-white px-2 py-1.5 text-sm truncate">(Type to preview)</div>
-         </div>
-        </div>
-       </div>
-      </div>
-
-      <hr class="border-slate-200 mb-6">
-
-      {# ── Channels & Configuration ── #}
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 mb-6">
-       <div>
-        <div class="mb-3 flex items-center gap-2">
-         <div class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-600"><i class="lucide lucide-send" style="width:0.75em;height:0.75em;"></i></div>
-         <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Delivery Channels</h3>
-        </div>
-        <div class="space-y-2">
-         <label class="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="ch_in_app" name="channels" value="in_app" {% if template and 'in_app' in (template.channels|default([])) %}checked{% endif %}>
-          <span class="text-sm text-slate-700"><i class="lucide lucide-bell mr-1" style="width:0.875em;height:0.875em;"></i><strong>In-App</strong><br><small class="text-slate-500">Shows in user dashboard</small></span>
-         </label>
-         <label class="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="ch_fcm" name="channels" value="fcm" {% if template and 'fcm' in (template.channels|default([])) %}checked{% endif %}>
-          <span class="text-sm text-slate-700"><i class="lucide lucide-smartphone mr-1" style="width:0.875em;height:0.875em;"></i><strong>Push (FCM)</strong><br><small class="text-slate-500">Mobile and web browsers</small></span>
-         </label>
-         <label class="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="ch_email" name="channels" value="email" {% if template and 'email' in (template.channels|default([])) %}checked{% endif %}>
-          <span class="text-sm text-slate-700"><i class="lucide lucide-mail mr-1" style="width:0.875em;height:0.875em;"></i><strong>Email</strong><br><small class="text-slate-500">Sent via SMTP</small></span>
-         </label>
-         <label class="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="ch_sms" name="channels" value="sms" {% if template and 'sms' in (template.channels|default([])) %}checked{% endif %}>
-          <span class="text-sm text-slate-700"><i class="lucide lucide-message-square mr-1" style="width:0.875em;height:0.875em;"></i><strong>SMS</strong><br><small class="text-slate-500">Text messages</small></span>
-         </label>
-        </div>
-       </div>
-       <div>
-        <div class="mb-3 flex items-center gap-2">
-         <div class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-600"><i class="lucide lucide-tags" style="width:0.75em;height:0.75em;"></i></div>
-         <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Template Variables</h3>
-        </div>
-        <div id="variablesList" class="space-y-2 mb-3">
-         {% if template and template.variables %}
-         {% for key, placeholder in template.variables %}
-         <div class="flex items-center gap-1">
-          <span class="inline-flex items-center text-xs text-indigo-600 font-mono">&#123;&#123;</span>
-          <input type="text" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono" placeholder="Variable name" value="{{ key }}" readonly>
-          <span class="inline-flex items-center text-xs text-indigo-600 font-mono">&#125;&#125;</span>
-          <input type="text" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Description" value="{{ placeholder }}">
-          <button type="button" class="inline-flex items-center justify-center rounded-lg px-2 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" onclick="removeVariable(this)" aria-label="Remove variable"><i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i></button>
-         </div>
-         {% endfor %}
-         {% endif %}
-        </div>
-        <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" onclick="addVariable()"><i class="lucide lucide-plus" style="width:0.875em;height:0.875em;"></i> Add Variable</button>
-       </div>
-      </div>
-
-      <hr class="border-slate-200 mb-6">
-
-      {# ── Visual Settings ── #}
-      <div class="mb-6">
-       <div class="mb-3 flex items-center gap-2">
-        <div class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-slate-600"><i class="lucide lucide-palette" style="width:0.75em;height:0.75em;"></i></div>
-        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Visual Settings</h3>
-       </div>
-       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-         <label class="block text-sm font-medium text-slate-700 mb-1">Icon Class</label>
-         <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
-          <span class="shrink-0 flex items-center px-3 py-2.5 bg-slate-50 border-r border-slate-300 text-slate-400"><i class="lucide lucide-bell" style="width:1em;height:1em;"></i></span>
-          <input type="text" class="w-full border-0 px-3 py-2.5 text-sm focus:outline-none bg-white" id="icon" name="icon" value="{{ template.icon ?? '' }}" placeholder="e.g., bell, check-circle, star">
-         </div>
-        </div>
-        <div>
-         <label class="block text-sm font-medium text-slate-700 mb-1">Color Code</label>
-         <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
-          <input type="color" class="shrink-0 w-12 h-11 border-0 bg-white cursor-pointer p-0.5" id="color" name="color" value="{{ template.color ?? '#0d6efd' }}">
-          <input type="text" class="w-full border-0 px-3 py-2.5 text-sm focus:outline-none bg-white" id="colorText" value="{{ template.color ?? '#0d6efd' }}" placeholder="#0d6efd">
-         </div>
-        </div>
-       </div>
-       <div class="mt-3 flex items-start gap-2">
-        <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" id="is_active" name="is_active" value="1" {% if not template or template.is_active %}checked{% endif %}>
-        <label class="text-sm text-slate-700" for="is_active"><strong>Active</strong> - Enable this template for use</label>
-       </div>
-      </div>
-
-      {# ── Form Actions ── #}
-      <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-       <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]"><i class="lucide lucide-save" style="width:1em;height:1em;"></i> {% if template %}Save Changes{% else %}Create Template{% endif %}</button>
-       {% if template %}
-       <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 hover:shadow-md active:scale-[0.97]" onclick="testSendTemplate()"><i class="lucide lucide-clock" style="width:1em;height:1em;"></i> Test Send</button>
-       {% endif %}
-       <a href="/admin/notification-templates" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:-translate-y-0.5 ml-auto"><i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Cancel</a>
-      </div>
-     </form>
-    </div>
-   </section>
-  </div>
-
-  {# ── Help Sidebar ── #}
-  <div class="lg:col-span-4 space-y-4">
-   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-    <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600"><i class="lucide lucide-help-circle" style="width:0.875em;height:0.875em;"></i></div>
-     <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Help &amp; Guide</h2>
-    </div>
-    <div class="p-5 space-y-4 text-sm">
-     <div>
-      <strong class="flex items-center gap-1 text-slate-900"><i class="lucide lucide-tag" style="width:0.875em;height:0.875em;"></i> Variables</strong>
-      <p class="mt-1 text-slate-500">Use double braces with uppercase variable names:</p>
-      <code class="block rounded bg-slate-100 p-2 text-xs font-mono text-slate-700">{{ USER_NAME }}<br>{{ EMAIL }}<br>{{ AMOUNT }}</code>
-     </div>
-     <div>
-      <strong class="flex items-center gap-1 text-slate-900"><i class="lucide lucide-send" style="width:0.875em;height:0.875em;"></i> Channels</strong>
-      <ul class="mt-1 space-y-1 text-slate-500">
-       <li>&#128241; <strong>In-App:</strong> Dashboard notifications</li>
-       <li>&#128242; <strong>FCM:</strong> Mobile push</li>
-       <li>&#9993;&#65039; <strong>Email:</strong> Email delivery</li>
-       <li>&#128172; <strong>SMS:</strong> Text messages</li>
-      </ul>
-     </div>
-     <div>
-      <strong class="flex items-center gap-1 text-slate-900"><i class="lucide lucide-palette" style="width:0.875em;height:0.875em;"></i> Colors</strong>
-      <p class="mt-1 text-slate-500">Use hex color codes.</p>
-     </div>
-     <div class="rounded-lg bg-sky-50 p-3 text-xs text-sky-700 border border-sky-200">
-      <i class="lucide lucide-lightbulb mr-1" style="width:0.75em;height:0.75em;"></i> Use the "Test Send" feature to preview your template before publishing.
-     </div>
-    </div>
-   </section>
-  </div>
- </div>
+    </form>
 </div>
-<script>
-// Color picker sync
-document.getElementById('color')?.addEventListener('change', function() { document.getElementById('colorText').value = this.value; });
-document.getElementById('colorText')?.addEventListener('input', function() { if (/^#[0-9A-F]{6}$/i.test(this.value)) document.getElementById('color').value = this.value; });
-
-// Live preview
-function updatePreview() {
- const title = document.getElementById('title').value;
- const body = document.getElementById('body').value;
- document.getElementById('titlePreview').textContent = title || '(Type to preview)';
- document.getElementById('bodyPreview').textContent = (body.substring(0, 100) + (body.length > 100 ? '...' : '')) || '(Type to preview)';
-}
-document.getElementById('title')?.addEventListener('input', updatePreview);
-document.getElementById('body')?.addEventListener('input', updatePreview);
-
-// Variable management
-function addVariable() {
- const list = document.getElementById('variablesList');
- const html = `<div class="flex items-center gap-1">
-  <span class="inline-flex items-center text-xs text-indigo-600 font-mono">&#123;&#123;</span>
-  <input type="text" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono" placeholder="Variable name" required>
-  <span class="inline-flex items-center text-xs text-indigo-600 font-mono">&#125;&#125;</span>
-  <input type="text" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="Description">
-  <button type="button" class="inline-flex items-center justify-center rounded-lg px-2 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" onclick="removeVariable(this)" aria-label="Remove variable"><i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i></button>
- </div>`;
- list.insertAdjacentHTML('beforeend', html);
-}
-
-function removeVariable(btn) { btn.closest('.flex.items-center.gap-1')?.remove(); }
-
-// Form submission
-document.getElementById('templateForm')?.addEventListener('submit', async function(e) {
- e.preventDefault();
- const formData = new FormData(this);
- const url = `/admin/notification-templates{% if template %}/{{ template.id }}{% endif %}`;
-
- const variables = {};
- document.querySelectorAll('#variablesList .flex.items-center.gap-1').forEach(group => {
-  const inputs = group.querySelectorAll('input');
-  const name = inputs[0]?.value || '';
-  if (name) variables[name] = inputs[1]?.value || '';
- });
- formData.set('variables', JSON.stringify(variables));
-
- const channels = [];
- document.querySelectorAll('input[name="channels"]:checked').forEach(cb => channels.push(cb.value));
- formData.set('channels', JSON.stringify(channels));
-
- try {
-  const response = await fetch(url, { method: 'POST', body: formData });
-  const data = await response.json();
-  if (data.success) {
-   Swal.fire('Success!', data.message, 'success').then(() => { data.redirect ? window.location.href = data.redirect : history.back(); });
-  } else {
-   Swal.fire('Error', data.message || 'Failed to save', 'error');
-  }
- } catch (e) { Swal.fire('Error', e.message, 'error'); }
-});
-
-{% if template %}
-function testSendTemplate() {
- Swal.fire({
-  title: 'Test Send',
-  input: 'number',
-  inputLabel: 'User ID',
-  inputPlaceholder: 'Enter user ID',
-  showCancelButton: true,
-  inputAttributes: { min: 1 }
- }).then(result => {
-  if (!result.isConfirmed || !result.value) return;
-  const userId = result.value;
-  Swal.fire('Sending...', 'Please wait', 'info');
-  const formData = new FormData();
-  formData.append('user_id', userId);
-  Array.from(document.querySelectorAll('input[name="channels"]:checked')).forEach(ch => formData.append('channels[]', ch.value));
-  fetch('/admin/notification-templates/{{ template.id }}/test-send', { method: 'POST', body: formData })
-   .then(r => r.json())
-   .then(data => { data.success ? Swal.fire('Sent!', `Sent to ${data.details.sent} channel(s)`, 'success') : Swal.fire('Error', data.message, 'error'); })
-   .catch(e => Swal.fire('Error', e.message, 'error'));
- });
-}
-{% endif %}
-</script>
 {% endblock %}

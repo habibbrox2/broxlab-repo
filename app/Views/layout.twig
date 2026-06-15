@@ -279,6 +279,40 @@
 
   {% block schema %}{% endblock %}
 
+    {# ── Preloader ── #}
+  <div id="sitePreloader" role="status" aria-label="Loading"
+       class="fixed inset-0 z-[99999] flex flex-col items-center justify-center
+              bg-white dark:bg-slate-950
+              transition-all duration-500 ease-out
+              motion-reduce:transition-none">
+    <div class="relative flex flex-col items-center gap-5">
+      {# Animated logo icon #}
+      <div class="relative flex items-center justify-center w-16 h-16">
+        <div class="absolute inset-0 rounded-full border-[3px] border-slate-100 dark:border-slate-800"></div>
+        <div class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-indigo-500
+                    animate-[preloader-spin_0.8s_linear_infinite]
+                    motion-reduce:animate-none"></div>
+        <div class="absolute inset-[3px] rounded-full border-[3px] border-transparent border-r-violet-400
+                    animate-[preloader-spin_1.2s_linear_infinite_reverse]
+                    motion-reduce:animate-none"></div>
+        <i class="lucide lucide-sparkles w-6 h-6 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+      {# Loading dots #}
+      <div class="flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-[preloader-dot_1.4s_ease-in-out_infinite_both] motion-reduce:animate-none"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-[preloader-dot_1.4s_ease-in-out_infinite_both_0.16s] motion-reduce:animate-none"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-[preloader-dot_1.4s_ease-in-out_infinite_both_0.32s] motion-reduce:animate-none"></span>
+      </div>
+    </div>
+    {# Loading bar #}
+    <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-100 dark:bg-slate-800">
+      <div id="preloaderBar"
+           class="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500
+                  transition-all duration-[3s] ease-out motion-reduce:transition-none"
+           style="width:0%"></div>
+    </div>
+  </div>
+
   {# ── Accessibility: Skip link ── #}
   <a href="#main-content"
      class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-3 focus:bg-white focus:text-indigo-600 focus:outline-none focus:rounded-br-lg"
@@ -395,7 +429,15 @@
   {# Page transition overlay #}
   <div id="pageTransitionOverlay"
        aria-hidden="true"
-       class="page-transition-overlay fixed inset-0 z-[9998] pointer-events-none opacity-0">
+       class="fixed inset-0 z-[99998] pointer-events-none
+              bg-white dark:bg-slate-950
+              transition-all duration-300 ease-out motion-reduce:transition-none"
+       style="opacity:0">
+    <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-violet-500/5 dark:from-indigo-500/10 dark:to-violet-500/10"></div>
+    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
+      <div class="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-indigo-500 animate-spin motion-reduce:animate-none"></div>
+      <span class="text-xs font-medium text-slate-400 dark:text-slate-500">Loading...</span>
+    </div>
   </div>
 
   {# ─────────────────────────────────────────────
@@ -490,7 +532,22 @@
       });
     }
 
-    /* ── 5. Page transition overlay ── */
+    /* ── 5. Preloader hide ── */
+    var preloaderHidden = false;
+    function hidePreloader() {
+      if (preloaderHidden) return;
+      preloaderHidden = true;
+      var preloader = document.getElementById('sitePreloader');
+      if (!preloader) return;
+      preloader.classList.add('preloader-hidden');
+      // Remove from DOM after transition completes
+      setTimeout(function () {
+        preloader.style.display = 'none';
+        preloader.removeAttribute('role');
+      }, 600);
+    }
+
+    /* ── 6. Page transition overlay ── */
     function initPageTransitions() {
       var overlay = document.getElementById('pageTransitionOverlay');
       if (!overlay) return;
@@ -509,17 +566,42 @@
         overlay.classList.add('is-active');
       });
 
-      window.addEventListener('pageshow', function () { overlay.classList.remove('is-active'); });
+      window.addEventListener('pageshow', function () {
+        overlay.classList.remove('is-active');
+        // Re-hide preloader on bfcache restore
+        hidePreloader();
+      });
     }
 
     /* ── Init ── */
     function init() {
+      // Animate preloader progress bar to 70% immediately
+      var preloaderBar = document.getElementById('preloaderBar');
+      if (preloaderBar) {
+        requestAnimationFrame(function () {
+          preloaderBar.style.width = '70%';
+        });
+      }
+
       initScrollTopBtn();
       initProgressBar();
       initScrollAnimations();
       initSmoothAnchors();
       initPageTransitions();
+
+      // Hide preloader once everything is initialized
+      hidePreloader();
     }
+
+    // Start preloader bar animation early (before DOMContentLoaded)
+    (function earlyProgress() {
+      var bar = document.getElementById('preloaderBar');
+      if (bar) {
+        requestAnimationFrame(function () {
+          bar.style.width = '30%';
+        });
+      }
+    })();
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init, { once: true });

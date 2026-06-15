@@ -79,9 +79,10 @@ async function buildRteBundle() {
       legalComments: 'none',
       drop: ['debugger'],
       pure: ['window.RTE_debugLog'],
-      define: {
-        'window.RTE_DEBUG': 'false',
-      },
+      // window.RTE_DEBUG is NOT defined here to avoid 'assign-to-define' warnings,
+      // since the editor source code also assigns to it at runtime for the debug
+      // toggle API (RTE_enableDebug, options.debug). The 'pure' marking on
+      // window.RTE_debugLog above handles tree-shaking of log calls instead.
     });
 
     // Re-read the written file to calculate sizes
@@ -94,7 +95,7 @@ async function buildRteBundle() {
     console.log('RTE bundle written: ' + outputPath);
     console.log('Original: ' + (originalBytes / 1024).toFixed(1) + ' KB -> Bundled: ' + (bundledBytes / 1024).toFixed(1) + ' KB (' + savings + '% reduction)');
     console.log(EAGER_MODULES.length + ' eager files -> 1 bundle');
-    console.log('Optimizations: define[RTE_DEBUG=false], pure[RTE_debugLog], drop[debugger], legalComments[none]');
+    console.log('Optimizations: pure[RTE_debugLog], drop[debugger], legalComments[none]');
   } catch (err) {
     console.error('esbuild build failed: ' + err.message);
     process.exit(1);

@@ -13,7 +13,7 @@
  <div>
  <div class="flex items-center gap-3">
  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
- <i class="lucide lucide-activity text-white" style="width:1.25em;height:1.25em;"></i>
+ <i class="lucide lucide-activity text-white" w-5 h-5></i>
  </div>
  <div>
  <h1 class="text-xl font-bold text-white">Real-time Monitoring</h1>
@@ -22,7 +22,7 @@
  </div>
  </div>
  <button class="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:shadow-md active:scale-[0.97]" id="refreshMainBtn" onclick="refreshAllData()">
- <i class="lucide lucide-refresh-cw" style="width:1em;height:1em;"></i>
+ <i class="lucide lucide-refresh-cw" w-4 h-4></i>
  Refresh Now
  </button>
  </div>
@@ -35,7 +35,7 @@
  <div class="p-4">
  <div class="mb-2 flex items-start justify-between">
  <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Users (15 min)</span>
- <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 shadow-sm"><i class="lucide lucide-users" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 shadow-sm"><i class="lucide lucide-users" w-4 h-4></i></div>
  </div>
  <div class="text-2xl font-bold text-slate-900" id="activeUsersCount">-</div>
  <div class="mt-1 text-xs text-slate-500" id="activeUsersChange">Loading...</div>
@@ -47,7 +47,7 @@
  <div class="p-4">
  <div class="mb-2 flex items-start justify-between">
  <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Successful Logins (24h)</span>
- <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 shadow-sm"><i class="lucide lucide-check-circle" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 shadow-sm"><i class="lucide lucide-check-circle" w-4 h-4></i></div>
  </div>
  <div class="text-2xl font-bold text-slate-900" id="successfulLoginsCount">-</div>
  <div class="mt-1 text-xs text-slate-500" id="successfulLoginsPercent">-</div>
@@ -59,7 +59,7 @@
  <div class="p-4">
  <div class="mb-2 flex items-start justify-between">
  <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Failed Logins (24h)</span>
- <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 shadow-sm"><i class="lucide lucide-alert-circle" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 shadow-sm"><i class="lucide lucide-alert-circle" w-4 h-4></i></div>
  </div>
  <div class="text-2xl font-bold text-slate-900" id="failedLoginsCount">-</div>
  <div class="mt-1 text-xs text-slate-500" id="failedLoginsPercent">-</div>
@@ -71,7 +71,7 @@
  <div class="p-4">
  <div class="mb-2 flex items-start justify-between">
  <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Alerts</span>
- <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 shadow-sm"><i class="lucide lucide-alert-triangle" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 shadow-sm"><i class="lucide lucide-alert-triangle" w-4 h-4></i></div>
  </div>
  <div class="text-2xl font-bold text-slate-900" id="activeAlertsCount">-</div>
  <div class="mt-1 text-xs text-slate-500" id="alertsStatus">Checking...</div>
@@ -82,7 +82,7 @@
  <!-- System Health -->
  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
  <div class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-4 py-3">
- <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600 shadow-sm"><i class="lucide lucide-cpu" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600 shadow-sm"><i class="lucide lucide-cpu" w-4 h-4></i></div>
  <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">System Health</h2>
  </div>
  <div id="systemHealthContent" class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
@@ -110,7 +110,7 @@
  <!-- Real-time Activity Feed -->
  <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
  <div class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-4 py-3">
- <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600 shadow-sm"><i class="lucide lucide-clock" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600 shadow-sm"><i class="lucide lucide-clock" w-4 h-4></i></div>
  <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Recent Activity (Last Hour)</h2>
  </div>
  <div id="activityFeed">
@@ -121,7 +121,7 @@
  <!-- Active Users -->
  <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
  <div class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 px-4 py-3">
- <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-100 text-blue-600 shadow-sm"><i class="lucide lucide-user-check" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-100 text-blue-600 shadow-sm"><i class="lucide lucide-user-check" w-4 h-4></i></div>
  <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Currently Active Users</h2>
  </div>
  <div id="activeUsersList" class="flex flex-wrap gap-2 p-4">
@@ -133,7 +133,7 @@
  <!-- Alerts Section -->
  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
  <div class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-4 py-3">
- <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600 shadow-sm"><i class="lucide lucide-alert-triangle" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600 shadow-sm"><i class="lucide lucide-alert-triangle" w-4 h-4></i></div>
  <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Active Alerts & Warnings</h2>
  </div>
  <div id="alertsList" class="p-4">
@@ -144,7 +144,7 @@
  <!-- Auto-refresh Settings -->
  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
  <div class="flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-4 py-3">
- <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600 shadow-sm"><i class="lucide lucide-settings" style="width:1em;height:1em;"></i></div>
+ <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600 shadow-sm"><i class="lucide lucide-settings" w-4 h-4></i></div>
  <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Auto-Refresh Settings</h2>
  </div>
  <div class="flex flex-wrap items-center gap-4 p-4">

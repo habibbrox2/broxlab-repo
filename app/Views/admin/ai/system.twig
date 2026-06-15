@@ -343,16 +343,7 @@
 
 .ai-status-note {
  color: #6c757d;
-}
-
-.ai-form-input:focus,
-.ai-form-select:focus,
-.form-range:focus {
- border-color: #86b7fe;
- box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
-}
-
-#aiSettingsForm textarea {
+}#aiSettingsForm textarea {
  min-height: 140px;
 }
 
@@ -476,7 +467,7 @@
  #aiSettingsForm .btn,
  #aiSettingsForm .form-input,
  #aiSettingsForm .form-select,
- #aiSettingsForm .form-range {
+ #aiSettingsForm input[type="range"] {
  min-height: 44px;
  }
 }
@@ -484,7 +475,7 @@
 {% endblock %}
 {% block content %}
 <div class="w-full px-4 sm:px-6 py-4 ai-system-shell">
- <div class="rounded-xl border border-slate-200 bg-white shadow-sm ai-command-hero mb-4 border-0 relative">
+ <div class="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-fade-in ai-command-hero mb-4 border-0 relative">
  <div class="p-4 xl:p-5">
  <div class="flex flex-wrap items-start justify-between gap-4">
  <div class="ai-hero-copy flex-1">
@@ -551,7 +542,7 @@
  <div class="panel-header border-b border-slate-200 px-4 py-3">
  <div class="flex flex-wrap items-center justify-between gap-3">
  <div>
- <div class="section-eyebrow">Provider inventory</div>
+ <span class="section-eyebrow">Provider inventory</span>
  <h2 class="h5 mb-1">Connected providers</h2>
  <p class="text-slate-500 small mb-0">Search, filter, test, and toggle providers without leaving the page.</p>
  </div>
@@ -627,8 +618,7 @@
  <i class="lucide lucide-cpu text-xl text-sky-600"></i>
  {% elseif provider.provider_name == 'ollama' %}
  <i class="lucide lucide-house text-xl text-slate-600"></i>
- {% elseif provider.provider_name == 'huggingface' %}
- <i class="lucide lucide-bot text-lg" style="color: #FF9D00;"></i>
+ {% elseif provider.provider_name == 'huggingface' %}  <i class="lucide lucide-bot text-lg text-amber-500"></i>
  {% else %}
  <i class="lucide lucide-settings text-xl text-slate-600"></i>
  {% endif %}
@@ -657,7 +647,7 @@
  </td>
  <td data-label="Endpoint">
  {% set endpoint = provider.api_endpoint|default(provider.config.endpoint)|default('') %}
- <small class="text-slate-500 font-monospace" style="font-size: 11px;">{{ endpoint ?: 'N/A' }}</small>
+ <small class="text-slate-500 font-mono" style="font-size: 11px;">{{ endpoint ?: 'N/A' }}</small>
  </td>
  <td data-label="Status">
  <div class="flex items-center gap-3">
@@ -765,7 +755,7 @@
  <div class="border-b border-slate-200 px-4 py-3">
  <div class="flex flex-wrap items-center justify-between gap-3">
  <div>
- <div class="section-eyebrow">Routing workspace</div>
+ <span class="section-eyebrow">Routing workspace</span>
  <h2 class="h5 mb-1">General settings</h2>
  <p class="text-slate-500 small mb-0">Set the frontend assistant, backend content pipeline, prompts, and failover controls.</p>
  </div>
@@ -829,8 +819,7 @@
  <small class="text-slate-500">Maximum tokens in AI response</small>
  </div>
  <div class="md:col-span-6">
- <label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Temperature</label>
- <input type="range" class="form-range" name="temperature"
+ <label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Temperature</label>  <input type="range" class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-indigo-600" name="temperature"
  min="0" max="2" step="0.1"
  value="{{ settings.temperature|default(0.7) }}"
  id="temperatureRange">
@@ -1109,102 +1098,97 @@
 </div>
 
 <!-- Add Provider Modal -->
-<div class="modal" id="addProviderModal" tabindex="-1" aria-labelledby="addProviderModalLabel" aria-hidden="true">
- <div class="modal-dialog">
- <div class="modal-content">
+<div id="addProviderModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50" tabindex="-1" aria-labelledby="addProviderModalLabel" aria-hidden="true">
+ <div class="mx-4 w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl">
  <form action="/admin/ai-system/add-provider" method="POST">
  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
- <div class="modal-header">
- <h5 class="modal-title" id="addProviderModalLabel">
+ <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+ <h5 class="text-sm font-bold text-slate-900" id="addProviderModalLabel">
  <i class="lucide lucide-plus-circle mr-2"></i>Add Custom Provider
  </h5>
- <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x"></i></button>
+ <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x w-4 h-4"></i></button>
  </div>
- <div class="modal-body">
- <div class="mb-3">
+ <div class="space-y-4 p-5">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">Provider Name</label>
  <input type="text" name="display_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" required
  placeholder="e.g., My Custom AI">
  </div>
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">Description (optional)</label>
  <input type="text" name="description" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
  placeholder="Brief description">
  </div>
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">API Endpoint</label>
  <input type="url" name="api_endpoint" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" required
  placeholder="https://api.example.com/v1/chat/completions">
  <small class="text-slate-500">OpenAI-compatible endpoint</small>
  </div>
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">API Key (optional)</label>
  <input type="password" name="api_key" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
  placeholder="Enter API key if needed">
  </div>
  </div>
- <div class="modal-footer">
+ <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
  <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" data-brox-dismiss="modal">Cancel</button>
  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">Add Provider</button>
  </div>
  </form>
  </div>
- </div>
 </div>
 
 <!-- Edit Provider Modal (Hugging Face Manual Config) -->
-<div class="modal" id="editProviderModal" tabindex="-1" aria-labelledby="editProviderModalLabel" aria-hidden="true">
- <div class="modal-dialog max-w-3xl">
- <div class="modal-content">
- <div class="modal-header">
- <h5 class="modal-title" id="editProviderModalLabel">
+<div id="editProviderModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50" tabindex="-1" aria-labelledby="editProviderModalLabel" aria-hidden="true">
+ <div class="mx-4 w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-2xl">
+ <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+ <h5 class="text-sm font-bold text-slate-900" id="editProviderModalLabel">
  <i class="lucide lucide-sliders mr-2"></i>Hugging Face Manual Config
  </h5>
- <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x"></i></button>
+ <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x w-4 h-4"></i></button>
  </div>
- <div class="modal-body">
+ <div class="space-y-4 p-5">
  <input type="hidden" id="editProviderId" value="">
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">API Endpoint</label>
  <input type="url" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="editProviderEndpoint"
  placeholder="https://router.huggingface.co/v1/chat/completions">
  <small class="text-slate-500">OpenAI-compatible endpoint for Hugging Face.</small>
  </div>
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1 font-semibold">Supported Models (JSON map)</label>
- <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-monospace" id="editProviderModels" rows="8"
+ <textarea class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono" id="editProviderModels" rows="8"
  placeholder='{"model/id":"Label"}'></textarea>
  <small class="text-slate-500">Format: JSON object of model_id to label.</small>
  <div class="text-red-600 small hidden" id="editProviderError">Invalid JSON.</div>
  </div>
  </div>
- <div class="modal-footer">
+ <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
  <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" data-brox-dismiss="modal">Cancel</button>
  <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700" id="saveProviderConfig">
  <i class="lucide lucide-save mr-1"></i>Save Changes
  </button>
  </div>
  </div>
- </div>
 </div>
 
 <!-- Test Connection Modal -->
-<div class="modal" id="testConnectionModal" tabindex="-1" aria-labelledby="testConnectionModalLabel" aria-hidden="true">
- <div class="modal-dialog">
- <div class="modal-content">
- <div class="modal-header">
- <h5 class="modal-title" id="testConnectionModalLabel">
+<div id="testConnectionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50" tabindex="-1" aria-labelledby="testConnectionModalLabel" aria-hidden="true">
+ <div class="mx-4 w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl">
+ <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+ <h5 class="text-sm font-bold text-slate-900" id="testConnectionModalLabel">
  <i class="lucide lucide-plug mr-2"></i>Test Connection
  </h5>
- <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x"></i></button>
+ <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal"><i class="lucide lucide-x w-4 h-4"></i></button>
  </div>
- <div class="modal-body">
- <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hidden small mb-2" id="testConnectionWarning"></div>
- <div class="mb-3">
+ <div class="space-y-4 p-5">
+ <div class="hidden rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-700 text-sm" id="testConnectionWarning"></div>
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">Select Provider</label>
  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="testProviderSelect"></select>
  </div>
- <div class="mb-3">
+ <div>
  <label class="block text-sm font-medium text-slate-700 mb-1">Select Model</label>
  <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="testModelSelect">
  <option value="">Loading models...</option>
@@ -1219,12 +1203,11 @@
  </div>
  </div>
  </div>
- <div class="modal-footer">
+ <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
  <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" data-brox-dismiss="modal">Close</button>
  <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700" data-action="run-test">
  <i class="lucide lucide-plug mr-1"></i>Run Test
  </button>
- </div>
  </div>
  </div>
 </div>

@@ -1,37 +1,31 @@
-{# Admin panel layout #}
+{# Admin panel layout — UI v3 #}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 
-{# ===== Imports ===== #}
 {% import '_macros/flash.twig' as flash_macros %}
 <head>
- <meta charset="UTF-8">
- <meta http-equiv="X-UA-Compatible" content="IE=edge">
- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
- <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
- <meta name="robots" content="noindex, nofollow">
- <meta name="csrf-token" content="{{ csrf_token }}">
- {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
 
- <script>
- (function () {
- try {
- var root = document.documentElement;
- var savedTheme = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
- var isValidSavedTheme = savedTheme === 'dark' || savedTheme === 'light';
- var resolvedTheme = isValidSavedTheme
- ? savedTheme
- : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  <script>
+    (function () {
+      try {
+        var root = document.documentElement;
+        var saved = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
+        var valid = saved === 'dark' || saved === 'light';
+        var theme = valid ? saved : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        root.setAttribute('data-theme', theme);
+        root.style.colorScheme = theme;
+      } catch (e) {}
+    })();
+  </script>
 
- root.setAttribute('data-theme', resolvedTheme);
- root.style.colorScheme = resolvedTheme;
- } catch (error) {
- // Ignore storage/media-query failures and keep the default theme.
- }
- })();
- </script>
-
- <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">  {# Fonts — preload + swap (non render-blocking) #}
+  <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -42,495 +36,741 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap" rel="stylesheet">
   </noscript>
 
- {# Core styles - Tailwind single source of truth #}
- <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-admin.css') }}">
- <link rel="stylesheet" href="{{ asset('/assets/css/admin-sidebar-polish.css') }}">
- <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"
-        media="print" onload="this.media='all'">
- <noscript><link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"></noscript>
+  <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-admin.css') }}">
+  <link rel="stylesheet" href="{{ asset('/assets/css/admin/modules/admin-sidebar-polish.css') }}">
+  <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"></noscript>
+  <link rel="stylesheet" href="{{ asset('/assets/ai/css/assistant.css') }}">
+  <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
 
- {# AI Assistant styles #}
- <link rel="stylesheet" href="{{ asset('/assets/ai/css/assistant.css') }}">
+  <style>
+    /* ── Sidebar group label ── */
+    .sidebar-group-label {
+      @apply px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 select-none;
+    }
+    /* ── Modern sidebar link ── */
+    .sidebar-link-modern {
+      @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400
+             hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300
+             transition-all duration-150 ease-out cursor-pointer w-full;
+    }
+    .sidebar-link-modern.active {
+      @apply bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700 hover:text-white;
+    }
+    .sidebar-link-modern.active .sidebar-icon {
+      @apply text-white/90;
+    }
+    .sidebar-icon { @apply w-4 h-4 flex-shrink-0 text-slate-400; }
+    .sidebar-link-modern:hover .sidebar-icon { @apply text-indigo-500; }
 
- {# Third-party styles #}
- <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
- <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
+    /* ── Submenu ── */
+    .sidebar-submenu {
+      @apply hidden ml-7 mt-1 space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-3;
+    }
+    .sidebar-submenu.open { @apply block; }
+    .sidebar-sublink {
+      @apply block rounded-lg px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-500
+             hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-400
+             transition-all duration-150;
+    }
+    .sidebar-sublink.active {
+      @apply text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 font-semibold;
+    }
+    .sidebar-chevron {
+      @apply w-3.5 h-3.5 text-slate-400 ml-auto transition-transform duration-200 flex-shrink-0;
+    }
+    [aria-expanded="true"] .sidebar-chevron { @apply rotate-180; }
 
- {% block stylesheets %}{% endblock %}
+    /* ── Badge count pill ── */
+    .sidebar-badge {
+      @apply ml-auto inline-flex items-center justify-center min-w-[1.125rem] h-[1.125rem]
+             rounded-full bg-rose-500 text-[9px] font-bold text-white px-1 leading-none;
+    }
+
+    /* ── Topbar button ── */
+    .topbar-btn {
+      @apply inline-flex items-center justify-center rounded-xl transition-all duration-150 active:scale-95 focus-visible:outline-none;
+    }
+
+    /* ── Notification badge pulse ── */
+    @keyframes badge-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .badge-pulse { animation: badge-pulse 2s ease-in-out infinite; }
+
+    /* ── Scroll fade animations ── */
+    .scroll-fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; }
+    .scroll-fade-in.visible { opacity: 1; transform: none; }
+    .scroll-slide-up { opacity: 0; transform: translateY(20px); transition: opacity 0.45s ease, transform 0.45s ease; }
+    .scroll-slide-up.visible { opacity: 1; transform: none; }
+    .scroll-scale-in { opacity: 0; transform: scale(0.97); transition: opacity 0.35s ease, transform 0.35s ease; }
+    .scroll-scale-in.visible { opacity: 1; transform: none; }
+
+    /* ── User dropdown animation ── */
+    [data-admin-user-dropdown] {
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+      transform: translateY(-6px) scale(0.97);
+    }
+    [data-admin-user-dropdown].open {
+      opacity: 1 !important; visibility: visible !important;
+      transform: translateY(0) scale(1) !important;
+      pointer-events: auto !important;
+    }
+
+    /* ── Kbd hint ── */
+    .kbd-hint { pointer-events: none; }
+
+    /* ── Admin search focus glow ── */
+    .search-input:focus { box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+    /* ── Sidebar compact mode ── */
+    #adminSidebar.compact { @apply w-[60px]; }
+    #adminSidebar.compact .sidebar-group-label,
+    #adminSidebar.compact .sidebar-sublink,
+    #adminSidebar.compact span.truncate,
+    #adminSidebar.compact .sidebar-badge,
+    #adminSidebar.compact .sidebar-chevron { @apply hidden; }
+    #adminSidebar.compact .sidebar-link-modern { @apply justify-center px-0; }
+    #adminSidebar.compact .sidebar-icon { @apply w-5 h-5; }
+    #adminSidebar.compact nav { @apply px-1; }
+  </style>
+
+  {% block stylesheets %}{% endblock %}
 </head>
-<body data-admin-dir="{{ admin_dir|default('/admin') }}" class="bg-white dark:bg-slate-950">
- <div class="min-h-screen flex flex-col">
-  {# ===== TOP HEADER/NAVBAR ===== #}
-  <header class="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
-   <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2.5 gap-3">
-    {# Mobile menu toggle #}
-    <button id="sidebarToggle" class="lg:hidden topbar-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="adminSidebar">
-     <i class="lucide lucide-menu w-5 h-5"></i>
-    </button>
 
-    {# Brand #}
-    <a class="flex items-center gap-2 flex-shrink-0" href="/admin/dashboard" aria-label="Go to dashboard">
-     <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white">
-      <i class="lucide lucide-gauge w-4 h-4"></i>
-     </div>
-     <div class="hidden sm:block">
-      <div class="text-sm font-bold text-slate-900 dark:text-white leading-none">BroxLab</div>
-      <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Admin</div>
-     </div>
-    </a>
+<body data-admin-dir="{{ admin_dir|default('/admin') }}"
+      class="bg-slate-50 dark:bg-slate-950 antialiased text-slate-900 dark:text-slate-100">
+<div class="min-h-screen flex flex-col">
 
-    {# Search bar with Cmd+K hint #}
-    <div class="hidden lg:block admin-search-wrapper flex-1 max-w-md">
-     <i class="lucide lucide-search search-icon"></i>
-     <input
-      id="adminGlobalSearch"
-      type="search"
-      class="search-input"
-      placeholder="Search admin records…"
-      value="{{ search|default(pagination.search|default('')) }}">
-     <span class="kbd-hint" aria-hidden="true">Ctrl+K</span>
-    </div>
+  {# ══════════════════════════════════════════
+     TOP HEADER
+  ══════════════════════════════════════════ #}
+  <header class="sticky top-0 z-40 h-14 flex items-center
+                 border-b border-slate-200/70 dark:border-slate-800/70
+                 bg-white/95 dark:bg-slate-950/95
+                 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
+    <div class="flex items-center w-full px-4 sm:px-5 gap-3">
 
-    {# Right section - icons and user menu #}
-    <div class="ml-auto flex items-center gap-0.5 sm:gap-1.5">
-     {% set admin_unread_count = unread_count|default(0) %}
-
-     {# Notification Bell #}
-     <div class="relative">
-      <button
-       id="adminNotificationBell"
-       type="button"
-       aria-expanded="false"
-       title="Notifications"
-       class="topbar-btn relative"
-       aria-label="Notifications">
-       <i class="lucide lucide-bell w-[1.125rem] h-[1.125rem]"></i>
-       {% if admin_unread_count > 0 %}
-        <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[1.125rem] h-[1.125rem] text-[0.625rem] font-bold text-white bg-red-500 rounded-full px-1">
-         <span id="adminNotificationCount">{{ admin_unread_count }}</span>
-        </span>
-       {% endif %}
+      {# Mobile toggle #}
+      <button id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="adminSidebar"
+              class="topbar-btn lg:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
+                     bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
+                     hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
+                     focus-visible:ring-2 focus-visible:ring-indigo-500/30">
+        <i class="lucide lucide-menu w-4 h-4"></i>
       </button>
-     </div>
 
-     {# Theme Toggle #}
-     <button
-      id="broxThemeToggle"
-      type="button"
-      title="Toggle theme"
-      aria-label="Toggle dark mode"
-      aria-pressed="false"
-      class="topbar-btn">
-      <i class="lucide lucide-circle-half w-[1.125rem] h-[1.125rem]"></i>
-     </button>
-
-     {# Server Status Indicator #}
-     <div class="relative">
-      <button
-       id="serverStatusIndicator"
-       type="button"
-       aria-expanded="false"
-       title="Checking server status..."
-       aria-label="Server status"
-       class="topbar-btn gap-1.5 px-2.5 w-auto">
-       <i class="lucide lucide-server w-[1.125rem] h-[1.125rem]" id="serverStatusIcon"></i>
-       <span class="hidden md:inline text-xs" id="serverStatusText">Checking</span>
-       <i class="lucide lucide-chevron-down w-3 h-3 opacity-50"></i>
-      </button>
-     </div>
-
-     {# User Menu #}
-     {% if auth_user.is_authenticated %}
-      <div class="relative" data-admin-user-menu>
-       <button
-        id="adminUserMenu"
-        type="button"
-        aria-expanded="false"
-        aria-haspopup="true"
-        class="inline-flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
-        <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile" class="w-7 h-7 rounded-full object-cover ring-2 ring-transparent group-hover:ring-indigo-300 dark:group-hover:ring-indigo-600 transition-all">
-        <div class="hidden sm:block text-left">
-         <div class="text-xs font-semibold text-slate-900 dark:text-white leading-tight">{{ auth_user.username }}</div>
-         {% if auth_user.roles is not empty %}
-          <div class="text-[0.625rem] font-medium text-indigo-600 dark:text-indigo-400 leading-tight">{{ auth_user.roles|join(', ')|upper }}</div>
-         {% endif %}
+      {# Brand #}
+      <a href="/admin/dashboard" aria-label="Dashboard"
+         class="group flex items-center gap-2.5 flex-shrink-0 mr-1">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center
+                    shadow-md shadow-indigo-500/25
+                    group-hover:bg-indigo-700 group-hover:scale-105 transition-all duration-200">
+          <i class="lucide lucide-gauge w-4 h-4 text-white"></i>
         </div>
-        <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors"></i>
-       </button>
-
-       {# User dropdown menu #}
-       <div
-        data-admin-user-dropdown
-        class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 origin-top-right scale-95 opacity-0 invisible transition-all duration-150 ease-out pointer-events-none z-50"
-        style="transform-origin: top right;">
-
-        {# User info header #}
-        <div class="px-4 py-3">
-         <div class="flex items-center gap-3">
-          <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile" class="w-10 h-10 rounded-full object-cover" loading="lazy" width="40" height="40">
-          <div class="flex-1 min-w-0">
-           <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ auth_user.username }}</div>
-           <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ auth_user.email|default('') }}</div>
-          </div>
-         </div>
+        <div class="hidden sm:block leading-none">
+          <div class="text-[13px] font-bold text-slate-900 dark:text-white
+                      group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">BroxLab</div>
+          <div class="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">Admin Panel</div>
         </div>
+      </a>
 
-        {# Menu items #}
-        <div class="py-2">
-         <a href="/admin/account-settings" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-          <i class="lucide lucide-user w-4 h-4"></i>
-          <span>Account Settings</span>
-         </a>
-         <a href="/admin/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-          <i class="lucide lucide-user-circle w-4 h-4"></i>
-          <span>View Profile</span>
-         </a>
-        </div>
+      {# Divider #}
+      <div class="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-800 flex-shrink-0"></div>
 
-        {# Logout #}
-        <div class="py-2">
-         <form method="POST" action="/logout" class="px-4 py-2">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button type="submit" class="w-full flex items-center gap-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 px-0 py-2 rounded transition-colors -mx-0">
-           <i class="lucide lucide-log-out w-4 h-4"></i>
-           <span>Logout</span>
-          </button>
-         </form>
-        </div>
-       </div>
+      {# Search #}
+      <div class="hidden lg:flex flex-1 max-w-sm relative">
+        <i class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
+        <input id="adminGlobalSearch" type="search"
+               class="search-input w-full h-9 rounded-xl border border-slate-200 dark:border-slate-700
+                      bg-slate-50 dark:bg-slate-900
+                      pl-9 pr-16 text-sm text-slate-900 dark:text-slate-100
+                      placeholder:text-slate-400 dark:placeholder:text-slate-600
+                      focus:border-indigo-400 dark:focus:border-indigo-600
+                      focus:bg-white dark:focus:bg-slate-900
+                      focus:outline-none transition-all duration-200
+                      hover:border-slate-300 dark:hover:border-slate-600"
+               placeholder="Search records…"
+               value="{{ search|default(pagination.search|default('')) }}">
+        <span class="kbd-hint absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5
+                     px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700
+                     bg-white dark:bg-slate-800 text-[9px] font-semibold text-slate-400 dark:text-slate-600"
+              aria-hidden="true">⌘K</span>
       </div>
-     {% endif %}
 
-     {# Sidebar close button for mobile #}
-     <button id="sidebarClose" type="button" class="lg:hidden topbar-btn" aria-label="Close navigation">
-      <i class="lucide lucide-x w-4 h-4"></i>
-     </button>
+      {# Right actions #}
+      <div class="ml-auto flex items-center gap-1">
+        {% set admin_unread_count = unread_count|default(0) %}
+
+        {# Notifications #}
+        <div class="relative">
+          <button id="adminNotificationBell" type="button" aria-expanded="false" aria-label="Notifications"
+                  title="Notifications"
+                  class="topbar-btn relative w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
+                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
+                         focus-visible:ring-2 focus-visible:ring-indigo-500/30">
+            <i class="lucide lucide-bell w-4 h-4"></i>
+            {% if admin_unread_count > 0 %}
+              <span class="badge-pulse absolute -top-1 -right-1 flex items-center justify-center
+                           min-w-[1.125rem] h-[1.125rem] text-[9px] font-bold text-white
+                           bg-rose-500 rounded-full px-1 shadow-sm">
+                <span id="adminNotificationCount">{{ admin_unread_count }}</span>
+              </span>
+            {% endif %}
+          </button>
+        </div>
+
+        {# Theme toggle #}
+        <button id="broxThemeToggle" type="button" title="Toggle theme" aria-label="Toggle dark mode" aria-pressed="false"
+                class="topbar-btn w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-white dark:bg-slate-900
+                       text-amber-500 dark:text-amber-400
+                       hover:bg-amber-50 dark:hover:bg-amber-950/30
+                       focus-visible:ring-2 focus-visible:ring-amber-500/30">
+          <i class="lucide lucide-sun dark:hidden block w-4 h-4"></i>
+          <i class="lucide lucide-moon hidden dark:block w-4 h-4"></i>
+        </button>
+
+        {# Server status #}
+        <div class="relative">
+          <button id="serverStatusIndicator" type="button" aria-expanded="false"
+                  title="Server status" aria-label="Server status"
+                  class="topbar-btn inline-flex items-center gap-1.5 h-9 px-2.5 rounded-xl
+                         border border-slate-200 dark:border-slate-700
+                         bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
+                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
+                         focus-visible:ring-2 focus-visible:ring-indigo-500/30">
+            <i class="lucide lucide-server w-3.5 h-3.5" id="serverStatusIcon"></i>
+            <span class="hidden md:inline text-xs font-medium" id="serverStatusText">Checking</span>
+            <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400/70"></i>
+          </button>
+        </div>
+
+        {# Mobile sidebar close #}
+        <button id="sidebarClose" type="button" aria-label="Close navigation"
+                class="topbar-btn lg:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-white dark:bg-slate-900 text-slate-500
+                       hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 dark:hover:text-red-400
+                       focus-visible:ring-2 focus-visible:ring-red-500/30">
+          <i class="lucide lucide-x w-4 h-4"></i>
+        </button>
+
+        {# User menu #}
+        {% if auth_user.is_authenticated %}
+          <div class="relative" data-admin-user-menu>
+            <div class="hidden lg:block h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1" aria-hidden="true"></div>
+            <button id="adminUserMenu" type="button"
+                    aria-expanded="false" aria-haspopup="true"
+                    class="inline-flex items-center gap-2 h-9 px-2 rounded-xl
+                           hover:bg-slate-100 dark:hover:bg-slate-800/80
+                           transition-all duration-150 group
+                           focus-visible:ring-2 focus-visible:ring-indigo-500/30 focus-visible:outline-none">
+              <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}"
+                   alt="Profile" width="28" height="28"
+                   class="w-7 h-7 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-700
+                          group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700 transition-all">
+              <div class="hidden sm:block text-left min-w-0 max-w-[100px]">
+                <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight
+                            group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {{ auth_user.username }}
+                </div>
+                {% if auth_user.roles is not empty %}
+                  <div class="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 truncate leading-tight">
+                    {{ auth_user.roles|first|upper }}
+                  </div>
+                {% endif %}
+              </div>
+              <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400 transition-transform duration-200 group-aria-expanded:rotate-180"></i>
+            </button>
+
+            {# Dropdown #}
+            <div data-admin-user-dropdown
+                 class="absolute right-0 top-full mt-2 w-60
+                        bg-white dark:bg-slate-900
+                        rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40
+                        border border-slate-200/80 dark:border-slate-700/60
+                        divide-y divide-slate-100 dark:divide-slate-800
+                        opacity-0 invisible pointer-events-none z-50 overflow-hidden">
+
+              {# Profile header #}
+              <div class="px-4 py-4 bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900/30">
+                <div class="flex items-center gap-3">
+                  <div class="relative flex-shrink-0">
+                    <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}"
+                         alt="Profile" width="40" height="40"
+                         class="w-10 h-10 rounded-xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-sm"
+                         loading="lazy">
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500
+                                 border-2 border-white dark:border-slate-900"></span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ auth_user.username }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ auth_user.email|default('') }}</div>
+                    {% if auth_user.roles is not empty %}
+                      <span class="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                                   text-[10px] font-semibold
+                                   bg-indigo-100 dark:bg-indigo-900/30
+                                   text-indigo-700 dark:text-indigo-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {{ auth_user.roles|first|title }}
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              {# Menu items #}
+              <div class="p-1.5 space-y-0.5">
+                <a href="/admin/account-settings"
+                   class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
+                          rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
+                          hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
+                  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-settings w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
+                  </div>
+                  <span class="font-medium">Account Settings</span>
+                </a>
+                <a href="/admin/profile"
+                   class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
+                          rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
+                          hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-user-circle w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                  </div>
+                  <span class="font-medium">View Profile</span>
+                </a>
+              </div>
+
+              {# Logout #}
+              <div class="p-1.5">
+                <form method="POST" action="/logout">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button type="submit"
+                          class="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium
+                                 text-red-600 dark:text-red-400 rounded-xl
+                                 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-150 group">
+                    <div class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0
+                                group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
+                      <i class="lucide lucide-log-out w-3.5 h-3.5 text-red-500 dark:text-red-400"></i>
+                    </div>
+                    <span>Sign out</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
-   </div>
   </header>
 
-  {# Sidebar overlay for mobile #}
-  <div id="sidebarOverlay" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
-
-  {# Main container #}
-  <div class="flex flex-1 overflow-hidden">
-
-   {# ===== SIDEBAR ===== #}
-   <aside id="adminSidebar" class="w-[220px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto transition-transform duration-300 ease-out fixed lg:sticky left-0 top-0 h-full z-40 -translate-x-full lg:translate-x-0" aria-label="Primary navigation">
-    {# Sidebar header with compact toggle #}
-    <div class="flex items-center justify-end px-3 py-2.5 border-b border-slate-200 dark:border-slate-800">
-     <button
-      id="sidebarMiniToggle"
-      type="button"
-      class="hidden lg:inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 dark:text-slate-500"
-      aria-label="Toggle compact sidebar"
-      title="Toggle compact sidebar"
-      aria-pressed="false">
-      <i class="lucide lucide-panel-left w-3.5 h-3.5"></i>
-     </button>
-    </div>
-
-    {# Menu items with groups #}
-    <nav class="px-2 py-2 space-y-0.5">
-     {% set settings_children = [
-      {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
-     ] %}
-     {% if auth_user.is_super_admin %}
-      {% set settings_children = settings_children|merge([
-       {'name': 'App Settings', 'url': '/admin/app-settings', 'key': 'app-settings'},
-       {'name': 'AI System', 'url': '/admin/ai-system', 'key': 'ai-settings'},
-       {'name': 'Feature Flags', 'url': '/admin/feature-flags', 'key': 'feature-flags'}
-      ]) %}
-     {% endif %}
-
-     {# Define AI items separately before the main groups array to avoid inline {% if %} in array literal #}
-     {% set ai_items = [
-      {'name': 'AI Conversations', 'icon': 'lucide-message-square', 'url': '/admin/ai-chats', 'key': 'ai-chats'}
-     ] %}
-     {% if auth_user.is_super_admin %}
-      {% set ai_items = ai_items|merge([
-       {'name': 'AI Knowledge', 'icon': 'lucide-book', 'url': '/admin/ai-knowledge', 'key': 'ai-knowledge'},
-       {'name': 'AI Article Writer', 'icon': 'lucide-pencil', 'url': '/admin/ai/article-writer', 'key': 'ai-article-writer'},
-       {'name': 'Live Writer', 'icon': 'lucide-refresh-cw', 'url': '/admin/ai/article-writer-stream', 'key': 'ai-article-writer-stream'},
-       {'name': 'Bulk Article Gen', 'icon': 'lucide-boxes', 'url': '/admin/ai/bulk-article-writer', 'key': 'ai-bulk-article-writer'}
-      ]) %}
-     {% endif %}
-
-     {% set sidebar_groups = [
-      {
-       'label': 'Main',
-       'items': [
-        {'name': 'Dashboard', 'icon': 'lucide-gauge', 'url': '/admin/dashboard', 'key': 'dashboard'},
-        {'name': 'Analytics', 'icon': 'lucide-bar-chart-3', 'url': '/admin/analytics', 'key': 'analytics'},
-        {'name': 'Activity', 'icon': 'lucide-activity', 'url': '/admin/log-activity', 'key': 'log-activity'}
-       ]
-      },
-      {
-       'label': 'Content',
-       'items': [
-        {'name': 'Posts', 'icon': 'lucide-file-text', 'key': 'posts', 'children': [
-         {'name': 'All Posts', 'url': '/admin/posts', 'key': 'all-posts'},
-         {'name': 'Add Post', 'url': '/admin/posts/create', 'key': 'add-post'}
-        ]},
-        {'name': 'Pages', 'icon': 'lucide-file-text', 'url': '/admin/pages', 'key': 'pages'},
-        {'name': 'Categories', 'icon': 'lucide-tags', 'url': '/admin/categories', 'key': 'categories'},
-        {'name': 'Tags', 'icon': 'lucide-hash', 'url': '/admin/tags', 'key': 'tags'},
-        {'name': 'Media Manager', 'icon': 'lucide-image', 'url': '/admin/media', 'key': 'media'}
-       ]
-      },
-      {
-       'label': 'Services',
-       'items': [
-        {'name': 'Services', 'icon': 'lucide-award', 'key': 'services', 'children': [
-         {'name': 'All Services', 'url': '/admin/services', 'key': 'all-services'},
-         {'name': 'Create Service', 'url': '/admin/services/create', 'key': 'create-service'}
-        ]},
-        {'name': 'Applications', 'icon': 'lucide-briefcase', 'key': 'applications', 'children': [
-         {'name': 'All Applications', 'url': '/admin/applications', 'key': 'all-applications'},
-         {'name': 'Pending', 'url': '/admin/applications?status=pending', 'key': 'pending-applications'},
-         {'name': 'Approved', 'url': '/admin/applications?status=approved', 'key': 'approved-applications'},
-         {'name': 'Rejected', 'url': '/admin/applications?status=rejected', 'key': 'rejected-applications'},
-         {'name': 'Receipts', 'url': '/admin/applications/receipts', 'key': 'applications-receipts'}
-        ]}
-       ]
-      },
-      {
-       'label': 'AI',
-       'items': ai_items
-      },
-      {
-       'label': 'System',
-       'items': [
-        {'name': 'Settings', 'icon': 'lucide-settings', 'key': 'settings','url': '/admin/account-settings', 'children': settings_children },
-        {'name': 'Users', 'icon': 'lucide-users', 'url': '/admin/users', 'key': 'users'},
-        {'name': 'Roles', 'icon': 'lucide-share-2', 'url': '/admin/roles', 'key': 'roles'},
-        {'name': 'Permissions', 'icon': 'lucide-shield', 'url': '/admin/permissions', 'key': 'permissions'}
-       ]
-      },
-      {
-       'label': 'Extras',
-       'items': [
-        {'name': 'Mobiles', 'icon': 'lucide-smartphone', 'key': 'mobiles', 'children': [
-         {'name': 'All Mobiles', 'url': '/admin/mobiles/all', 'key': 'mobiles-list'},
-         {'name': 'Add Mobile', 'url': '/admin/mobiles/insert', 'key': 'add-mobile'}
-        ]},
-        {'name': 'CV Management', 'icon': 'lucide-user', 'key': 'cv-management', 'children': [
-         {'name': 'CVs', 'url': '/admin/cvs', 'key': 'cvs'},
-         {'name': 'Personal Info', 'url': '/admin/cv-personal-info', 'key': 'cv-personal-info'},
-         {'name': 'Templates', 'url': '/admin/cv-templates', 'key': 'cv-templates'},
-         {'name': 'Job Positions', 'url': '/admin/job-positions', 'key': 'job-positions'}
-        ]},
-        {'name': 'Notifications', 'icon': 'lucide-bell', 'key': 'notifications', 'children': [
-         {'name': 'My Notifications', 'url': '/admin/my/notifications', 'key': 'my-notifications'},
-         {'name': 'Dashboard', 'url': '/admin/notifications', 'key': 'notif-dashboard'},
-         {'name': 'Send', 'url': '/admin/notifications/send', 'key': 'send-notif'},
-         {'name': 'All', 'url': '/admin/notifications/list', 'key': 'all-notif'},
-         {'name': 'Subscribers', 'url': '/admin/notification-subscribers', 'key': 'notif-subscribers'},
-         {'name': 'Templates', 'url': '/admin/notification-templates', 'key': 'notification-templates'}
-        ]},
-        {'name': 'Scrap Control', 'icon': 'lucide-cloud-download', 'url': '/admin/scrap-control-center', 'key': 'scrap-control-center'},
-        {'name': 'Comments', 'icon': 'lucide-message-circle', 'url': '/admin/comments', 'key': 'comments'},
-        {'name': 'Contact', 'icon': 'lucide-mail', 'url': '/admin/contact', 'key': 'contact'},
-        {'name': 'Email Templates', 'icon': 'lucide-file-text', 'url': '/admin/email-templates', 'key': 'email-templates'}
-       ]
-      }
-     ] %}
-
-     {% for group in sidebar_groups %}
-      <div class="sidebar-group-label">{{ group.label }}</div>
-      {% for item in group.items %}
-       {% if item.children is defined %}
-        {% set is_child_active = false %}
-        {% for child in item.children %}
-         {% if current_page == child.key %}
-          {% set is_child_active = true %}
-         {% endif %}
-        {% endfor %}
-        <div>
-         <button type="button"
-          data-menu-toggle="submenu-{{ item.key }}"
-          aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
-          aria-controls="submenu-{{ item.key }}"
-          class="sidebar-link-modern w-full {{ is_child_active ? 'active' : '' }}">
-          <i class="lucide {{ item.icon }} sidebar-icon"></i>
-          <span class="truncate">{{ item.name }}</span>
-          <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
-          <i class="lucide lucide-chevron-down sidebar-chevron"></i>
-         </button>
-         <div id="submenu-{{ item.key }}" class="sidebar-submenu {{ is_child_active ? 'open' : '' }}">
-          {% for child in item.children %}
-           <a href="{{ child.url }}" class="sidebar-sublink {{ current_page == child.key ? 'active' : '' }}" {{ current_page == child.key ? 'aria-current="page"' : '' }}>{{ child.name }}</a>
-          {% endfor %}
-         </div>
-        </div>
-       {% else %}
-        <a href="{{ item.url }}" class="sidebar-link-modern {{ current_page == item.key ? 'active' : '' }}" {{ current_page == item.key ? 'aria-current="page"' : '' }}>
-         <i class="lucide {{ item.icon }} sidebar-icon"></i>
-         <span class="truncate">{{ item.name }}</span>
-         <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
-        </a>
-       {% endif %}
-      {% endfor %}
-     {% endfor %}
-    </nav>
-   </aside>
-
-   {# Sidebar divider/resizer #}
-   <div id="adminColumnResizer" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" tabindex="0" class="hidden lg:block w-px bg-slate-200 dark:bg-slate-700 hover:bg-indigo-500 dark:hover:bg-indigo-500 cursor-col-resize transition-colors flex-shrink-0"></div>
-
-   {# ===== MAIN CONTENT AREA ===== #}
-   <main class="flex-1 overflow-auto" role="main">
-    <div class="admin-content-inner">
-     {% if skip_auto_breadcrumb is not defined or skip_auto_breadcrumb == false %}
-      {% if breadcrumbs is not defined %}
-       {% set breadcrumbs = auto_admin_breadcrumbs() %}
-      {% endif %}
-      {% include 'admin/partials/breadcrumb.twig' %}
-     {% endif %}
-
-     {% set flash_data = flash_message|default(flash|default(null)) %}
-     {{ flash_macros.render_flash(flash_data) }}
-     {% include 'admin/partials/_offline_draft_recover.twig' %}
-
-     {% block content %}{% endblock %}
-    </div>
-   </main>
+  {# Mobile overlay #}
+  <div id="sidebarOverlay"
+       class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300">
   </div>
 
-  {# ===== FOOTER ===== #}
-  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-   &copy; {{"now"|date("Y") }} Admin Panel. All rights reserved.
+  {# ══════════════════════════════════════════
+     MAIN WRAPPER
+  ══════════════════════════════════════════ #}
+  <div class="flex flex-1 overflow-hidden">
+
+    {# ══════════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════════ #}
+    <aside id="adminSidebar"
+           class="w-[220px] flex-shrink-0
+                  bg-white dark:bg-slate-950
+                  border-r border-slate-200/70 dark:border-slate-800/70
+                  overflow-y-auto overflow-x-hidden
+                  transition-all duration-300 ease-out
+                  fixed lg:sticky left-0 top-0 h-full z-40
+                  -translate-x-full lg:translate-x-0"
+           aria-label="Primary navigation">
+
+      {# Sidebar header #}
+      <div class="flex items-center justify-between h-10 px-3.5
+                  border-b border-slate-100 dark:border-slate-800/80
+                  bg-slate-50/60 dark:bg-slate-900/30">
+        <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-600 select-none flex items-center gap-1.5">
+          <i class="lucide lucide-layout-dashboard w-3 h-3"></i>
+          Navigation
+        </span>
+        <button id="sidebarMiniToggle" type="button"
+                class="hidden lg:inline-flex items-center justify-center w-6 h-6 rounded-lg
+                       hover:bg-slate-200 dark:hover:bg-slate-800
+                       text-slate-400 dark:text-slate-600
+                       hover:text-indigo-600 dark:hover:text-indigo-400
+                       transition-all duration-150
+                       focus-visible:ring-2 focus-visible:ring-indigo-500/30 focus-visible:outline-none"
+                aria-label="Collapse sidebar" aria-pressed="false">
+          <i class="lucide lucide-chevrons-left w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      {# Nav #}
+      <nav class="px-2 py-2 space-y-0.5">
+        {% set settings_children = [
+          {'name': 'Account Settings', 'url': '/admin/account-settings', 'key': 'account-settings'}
+        ] %}
+        {% if auth_user.is_super_admin %}
+          {% set settings_children = settings_children|merge([
+            {'name': 'App Settings',    'url': '/admin/app-settings',   'key': 'app-settings'},
+            {'name': 'AI System',       'url': '/admin/ai-system',      'key': 'ai-settings'},
+            {'name': 'Feature Flags',   'url': '/admin/feature-flags',  'key': 'feature-flags'}
+          ]) %}
+        {% endif %}
+
+        {% set ai_items = [
+          {'name': 'AI Conversations', 'icon': 'lucide-message-square', 'url': '/admin/ai-chats', 'key': 'ai-chats'}
+        ] %}
+        {% if auth_user.is_super_admin %}
+          {% set ai_items = ai_items|merge([
+            {'name': 'AI Knowledge',     'icon': 'lucide-book',        'url': '/admin/ai-knowledge',              'key': 'ai-knowledge'},
+            {'name': 'Article Writer',   'icon': 'lucide-pencil',      'url': '/admin/ai/article-writer',         'key': 'ai-article-writer'},
+            {'name': 'Live Writer',      'icon': 'lucide-refresh-cw',  'url': '/admin/ai/article-writer-stream',  'key': 'ai-article-writer-stream'},
+            {'name': 'Bulk Generator',   'icon': 'lucide-boxes',       'url': '/admin/ai/bulk-article-writer',    'key': 'ai-bulk-article-writer'}
+          ]) %}
+        {% endif %}
+
+        {% set sidebar_groups = [
+          {
+            'label': 'Main',
+            'items': [
+              {'name': 'Dashboard',  'icon': 'lucide-gauge',       'url': '/admin/dashboard',    'key': 'dashboard'},
+              {'name': 'Analytics',  'icon': 'lucide-bar-chart-3', 'url': '/admin/analytics',    'key': 'analytics'},
+              {'name': 'Activity',   'icon': 'lucide-activity',    'url': '/admin/log-activity', 'key': 'log-activity'}
+            ]
+          },
+          {
+            'label': 'Content',
+            'items': [
+              {'name': 'Posts', 'icon': 'lucide-file-text', 'key': 'posts', 'children': [
+                {'name': 'All Posts', 'url': '/admin/posts',        'key': 'all-posts'},
+                {'name': 'New Post',  'url': '/admin/posts/create', 'key': 'add-post'}
+              ]},
+              {'name': 'Pages',      'icon': 'lucide-file',   'url': '/admin/pages',      'key': 'pages'},
+              {'name': 'Categories', 'icon': 'lucide-tags',   'url': '/admin/categories', 'key': 'categories'},
+              {'name': 'Tags',       'icon': 'lucide-hash',   'url': '/admin/tags',       'key': 'tags'},
+              {'name': 'Media',      'icon': 'lucide-image',  'url': '/admin/media',      'key': 'media'}
+            ]
+          },
+          {
+            'label': 'Services',
+            'items': [
+              {'name': 'Services', 'icon': 'lucide-award', 'key': 'services', 'children': [
+                {'name': 'All Services',   'url': '/admin/services',        'key': 'all-services'},
+                {'name': 'New Service',    'url': '/admin/services/create', 'key': 'create-service'}
+              ]},
+              {'name': 'Applications', 'icon': 'lucide-briefcase', 'key': 'applications', 'children': [
+                {'name': 'All',      'url': '/admin/applications',                    'key': 'all-applications'},
+                {'name': 'Pending',  'url': '/admin/applications?status=pending',     'key': 'pending-applications'},
+                {'name': 'Approved', 'url': '/admin/applications?status=approved',    'key': 'approved-applications'},
+                {'name': 'Rejected', 'url': '/admin/applications?status=rejected',    'key': 'rejected-applications'},
+                {'name': 'Receipts', 'url': '/admin/applications/receipts',           'key': 'applications-receipts'}
+              ]}
+            ]
+          },
+          {
+            'label': 'AI',
+            'items': ai_items
+          },
+          {
+            'label': 'System',
+            'items': [
+              {'name': 'Settings',    'icon': 'lucide-settings', 'key': 'settings', 'url': '/admin/account-settings', 'children': settings_children},
+              {'name': 'Users',       'icon': 'lucide-users',    'url': '/admin/users',       'key': 'users'},
+              {'name': 'Roles',       'icon': 'lucide-share-2',  'url': '/admin/roles',       'key': 'roles'},
+              {'name': 'Permissions', 'icon': 'lucide-shield',   'url': '/admin/permissions', 'key': 'permissions'}
+            ]
+          },
+          {
+            'label': 'Extras',
+            'items': [
+              {'name': 'Mobiles', 'icon': 'lucide-smartphone', 'key': 'mobiles', 'children': [
+                {'name': 'All Mobiles', 'url': '/admin/mobiles/all',    'key': 'mobiles-list'},
+                {'name': 'Add Mobile',  'url': '/admin/mobiles/insert', 'key': 'add-mobile'}
+              ]},
+              {'name': 'CV Management', 'icon': 'lucide-user', 'key': 'cv-management', 'children': [
+                {'name': 'CVs',           'url': '/admin/cvs',              'key': 'cvs'},
+                {'name': 'Personal Info', 'url': '/admin/cv-personal-info', 'key': 'cv-personal-info'},
+                {'name': 'Templates',     'url': '/admin/cv-templates',     'key': 'cv-templates'},
+                {'name': 'Job Positions', 'url': '/admin/job-positions',    'key': 'job-positions'}
+              ]},
+              {'name': 'Notifications', 'icon': 'lucide-bell', 'key': 'notifications', 'children': [
+                {'name': 'My Notifications', 'url': '/admin/my/notifications',        'key': 'my-notifications'},
+                {'name': 'Dashboard',        'url': '/admin/notifications',           'key': 'notif-dashboard'},
+                {'name': 'Send',             'url': '/admin/notifications/send',      'key': 'send-notif'},
+                {'name': 'All',              'url': '/admin/notifications/list',      'key': 'all-notif'},
+                {'name': 'Subscribers',      'url': '/admin/notification-subscribers','key': 'notif-subscribers'},
+                {'name': 'Templates',        'url': '/admin/notification-templates',  'key': 'notification-templates'}
+              ]},
+              {'name': 'Scrap Control',    'icon': 'lucide-cloud-download', 'url': '/admin/scrap-control-center', 'key': 'scrap-control-center'},
+              {'name': 'Comments',         'icon': 'lucide-message-circle', 'url': '/admin/comments',            'key': 'comments'},
+              {'name': 'Contact',          'icon': 'lucide-mail',           'url': '/admin/contact',             'key': 'contact'},
+              {'name': 'Email Templates',  'icon': 'lucide-file-text',      'url': '/admin/email-templates',     'key': 'email-templates'}
+            ]
+          }
+        ] %}
+
+        {% for group in sidebar_groups %}
+          <div class="sidebar-group-label">{{ group.label }}</div>
+          {% for item in group.items %}
+            {% if item.children is defined %}
+              {% set is_child_active = false %}
+              {% for child in item.children %}
+                {% if current_page == child.key %}{% set is_child_active = true %}{% endif %}
+              {% endfor %}
+              <div>
+                <button type="button"
+                        data-menu-toggle="submenu-{{ item.key }}"
+                        aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
+                        aria-controls="submenu-{{ item.key }}"
+                        class="sidebar-link-modern {{ is_child_active ? 'active' : '' }}">
+                  <i class="lucide {{ item.icon }} sidebar-icon"></i>
+                  <span class="truncate">{{ item.name }}</span>
+                  <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
+                  <i class="lucide lucide-chevron-down sidebar-chevron"></i>
+                </button>
+                <div id="submenu-{{ item.key }}"
+                     class="sidebar-submenu {{ is_child_active ? 'open' : '' }}">
+                  {% for child in item.children %}
+                    <a href="{{ child.url }}"
+                       class="sidebar-sublink {{ current_page == child.key ? 'active' : '' }}"
+                       {{ current_page == child.key ? 'aria-current="page"' : '' }}>
+                      {{ child.name }}
+                    </a>
+                  {% endfor %}
+                </div>
+              </div>
+            {% else %}
+              <a href="{{ item.url }}"
+                 class="sidebar-link-modern {{ current_page == item.key ? 'active' : '' }}"
+                 {{ current_page == item.key ? 'aria-current="page"' : '' }}>
+                <i class="lucide {{ item.icon }} sidebar-icon"></i>
+                <span class="truncate">{{ item.name }}</span>
+                <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      </nav>
+    </aside>
+
+    {# Sidebar resize handle #}
+    <div id="adminColumnResizer" role="separator" aria-label="Resize sidebar"
+         aria-orientation="vertical" tabindex="0"
+         class="hidden lg:block w-px bg-slate-200 dark:bg-slate-800
+                hover:bg-indigo-500 dark:hover:bg-indigo-500
+                cursor-col-resize transition-colors duration-150 flex-shrink-0">
+    </div>
+
+    {# ══════════════════════════════════════════
+       MAIN CONTENT
+    ══════════════════════════════════════════ #}
+    <main class="flex-1 overflow-auto
+                 bg-slate-50 dark:bg-slate-950
+                 min-h-0"
+          role="main">
+      <div class="admin-content-inner px-4 sm:px-6 lg:px-8 py-5 mx-auto max-w-[1520px]">
+        {% if skip_auto_breadcrumb is not defined or skip_auto_breadcrumb == false %}
+          {% if breadcrumbs is not defined %}
+            {% set breadcrumbs = auto_admin_breadcrumbs() %}
+          {% endif %}
+          {% include 'admin/partials/breadcrumb.twig' %}
+        {% endif %}
+
+        {% set flash_data = flash_message|default(flash|default(null)) %}
+        {{ flash_macros.render_flash(flash_data) }}
+        {% include 'admin/partials/_offline_draft_recover.twig' %}
+
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  {# ══════════════════════════════════════════
+     FOOTER
+  ══════════════════════════════════════════ #}
+  <footer class="border-t border-slate-200/60 dark:border-slate-800/60
+                 bg-white dark:bg-slate-950
+                 px-4 sm:px-6 lg:px-8 py-3">
+    <div class="mx-auto max-w-[1520px] flex flex-col sm:flex-row items-center justify-between gap-2">
+      <span class="text-xs text-slate-400 dark:text-slate-600">
+        &copy; {{ "now"|date("Y") }} BroxLab Admin. All rights reserved.
+      </span>
+      <span class="text-xs text-slate-300 dark:text-slate-700">
+        v{{ app_settings.version|default('2.0') }}
+      </span>
+    </div>
   </footer>
- </div>
+</div>
 
- <script>
- window.__APP_JS_CONFIG_OVERRIDES = {
- notifications: {
- websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
- }
- };
- </script>
- <script type="module" src="{{ asset('/assets/js/dist/app-config.js') }}"></script>
- <script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
- <script type="module" src="{{ asset('/assets/js/dist/brox-ui.js') }}"></script>
+<script>
+  window.__APP_JS_CONFIG_OVERRIDES = {
+    notifications: {
+      websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
+    }
+  };
+</script>
+<script type="module" src="{{ asset('/assets/js/dist/app-config.js') }}"></script>
+<script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
+<script type="module" src="{{ asset('/assets/js/dist/brox-ui.js') }}"></script>
+<script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
+<script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/admin.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/admin/modules/admin-sidebar-polish.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/activity.js') }}"></script>
 
- <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
- <script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
 
-
- <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
- <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}"></script>
- <script type="module" src="{{ asset('/assets/js/admin-sidebar-polish.js') }}"></script>
- <script type="module" src="{{ asset('/assets/js/dist/activity.js') }}"></script>
-
- {# ── Admin: scroll animations, sidebar, table select-all, badge counts ── #}
- <script>
- document.addEventListener('DOMContentLoaded', function () {
-  // ── IntersectionObserver scroll animations ──
-  (function() {
+  /* ── Scroll animations (handled by admin-sidebar-polish.js for sidebar) ── */
+  (function () {
     var els = document.querySelectorAll('.scroll-fade-in, .scroll-slide-up, .scroll-scale-in');
     if (!els.length) return;
     if (!('IntersectionObserver' in window)) {
       els.forEach(function (el) { el.classList.add('visible'); });
       return;
     }
-    var observer = new IntersectionObserver(function (entries) {
+    var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        }
       });
     }, { rootMargin: '0px 0px -60px 0px', threshold: 0.08 });
-    els.forEach(function (el) { observer.observe(el); });
+    els.forEach(function (el) { io.observe(el); });
   })();
 
-  // ── Table select-all checkbox wiring ──
-  const adminMain = document.querySelector('main[role="main"]');
-  if (adminMain) {
-    const ensureSelectAllHeader = function (table) {
-      if (!table || !(table instanceof HTMLElement)) return null;
-      const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
-      const existingSelectAll = table.querySelector('thead [data-select-all-checkbox], thead #select-all-checkbox');
-      if (existingSelectAll || hasRowCheckbox) return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
-      const theadRow = table.querySelector('thead tr');
-      if (!theadRow) return null;
-      const thTexts = Array.from(theadRow.querySelectorAll('th')).map(th => (th.textContent || '').trim().toLowerCase());
-      const isListing = thTexts.includes('actions') || thTexts.includes('action') || table.hasAttribute('data-listing');
-      if (!isListing) return null;
-      const th = document.createElement('th');
-      th.style.width = '40px';
-      th.className = 'text-center';
-      th.innerHTML = '<input type="checkbox" data-select-all-checkbox="true" class="w-4 h-4 border border-slate-300 rounded bg-white checked:bg-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer table-select-checkbox">';
-      theadRow.insertBefore(th, theadRow.firstChild);
-      table.querySelectorAll('tbody tr').forEach(function (tr) {
-        const cells = tr.querySelectorAll('td');
-        if (cells.length === 1 && cells[0] && cells[0].hasAttribute('colspan')) return;
-        let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-row-id') || tr.getAttribute('data-item-id') || '').trim();
-        if (!rowId) {
-          const firstCell = tr.querySelector('td');
-          const txt = firstCell ? (firstCell.textContent || '').trim() : '';
-          const m = txt.match(/(\d{1,12})/);
-          rowId = m ? m[1] : '';
-        }
-        const td = document.createElement('td');
-        td.className = 'text-center';
-        td.innerHTML = rowId
-          ? '<input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 table-select-checkbox item-checkbox" value="' + rowId.replace(/"/g, '&quot;') + '">'
-          : '<input type="checkbox" class="w-4 h-4 border border-slate-300 rounded bg-white opacity-50 cursor-not-allowed table-select-checkbox item-checkbox" disabled>';
-        tr.insertBefore(td, tr.firstChild);
+  /* ── User dropdown (NOT handled by admin-sidebar-polish.js) ── */
+  (function () {
+    var trigger = document.getElementById('adminUserMenu');
+    var dropdown = document.querySelector('[data-admin-user-dropdown]');
+    if (!trigger || !dropdown) return;
+    function toggleDropdown(force) {
+      var open = typeof force === 'boolean' ? force : !dropdown.classList.contains('open');
+      dropdown.classList.toggle('open', open);
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    trigger.addEventListener('click', function (e) { e.stopPropagation(); toggleDropdown(); });
+    document.addEventListener('click', function (e) {
+      if (!trigger.contains(e.target) && !dropdown.contains(e.target)) toggleDropdown(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') toggleDropdown(false);
+    });
+  })();
+
+  /* ── Theme toggle aria-pressed sync ── */
+  (function () {
+    var themeBtn = document.getElementById('broxThemeToggle');
+    if (!themeBtn) return;
+    function syncThemeState() {
+      var theme = document.documentElement.getAttribute('data-theme');
+      var isDark = theme === 'dark';
+      themeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    }
+    syncThemeState();
+    // Watch data-theme attribute mutations — covers all theme change sources
+    var observer = new MutationObserver(function () { syncThemeState(); });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+
+  /* ── Notification bell ARIA state ── */
+  (function () {
+    var notifBtn = document.getElementById('adminNotificationBell');
+    if (!notifBtn) return;
+    // Listen for notification panel open/close events
+    document.addEventListener('notif-panel-toggle', function (e) {
+      notifBtn.setAttribute('aria-expanded', e.detail && e.detail.open ? 'true' : 'false');
+    });
+  })();
+
+  /* ── Server status indicator ARIA state ── */
+  (function () {
+    var statusBtn = document.getElementById('serverStatusIndicator');
+    if (!statusBtn) return;
+    document.addEventListener('server-status-toggle', function (e) {
+      statusBtn.setAttribute('aria-expanded', e.detail && e.detail.open ? 'true' : 'false');
+    });
+  })();
+
+  /* ── Sidebar toggle button initial aria state ── */
+  (function () {
+    var toggleBtn = document.getElementById('sidebarToggle');
+    if (toggleBtn) {
+      // Ensure initial state reflects sidebar visibility
+      var sidebar = document.getElementById('adminSidebar');
+      var isVisible = sidebar && !sidebar.classList.contains('-translate-x-full');
+      toggleBtn.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+    }
+    // Close button — aria state only; actual sidebar close handled by admin-sidebar-polish.js
+    var closeBtn = document.getElementById('sidebarClose');
+    if (closeBtn && toggleBtn) {
+      closeBtn.addEventListener('click', function () {
+        toggleBtn.setAttribute('aria-expanded', 'false');
       });
-      return th.querySelector('[data-select-all-checkbox], #select-all-checkbox');
-    };
-    const wireTableSelection = function (table) {
-      const selectAll = table.querySelector('thead [data-select-all-checkbox].table-select-checkbox, thead #select-all-checkbox.table-select-checkbox');
-      const items = Array.from(table.querySelectorAll('tbody input[type="checkbox"].item-checkbox'));
-      if (!selectAll || items.length === 0) return;
-      if (selectAll.dataset.skipGlobalSelectAll === '1' || selectAll.dataset.selectAllWired === '1') return;
+    }
+  })();
+
+  /* ── Table select-all (for admin tables) ── */
+  (function () {
+    var adminMain = document.querySelector('main[role="main"]');
+    if (!adminMain) return;
+    adminMain.querySelectorAll('table').forEach(function (table) {
+      var selectAll = table.querySelector('thead [data-select-all-checkbox]');
+      var items = Array.from(table.querySelectorAll('tbody input[type="checkbox"].item-checkbox'));
+      if (!selectAll || !items.length) return;
+      if (selectAll.dataset.selectAllWired === '1') return;
       selectAll.dataset.selectAllWired = '1';
-      const updateHeader = function () {
-        const enabledItems = items.filter(function(cb) { return !cb.disabled; });
-        const total = enabledItems.length;
-        const checked = enabledItems.filter(function(cb) { return cb.checked; }).length;
-        selectAll.indeterminate = total > 0 && checked > 0 && checked < total;
-        selectAll.checked = total > 0 && checked === total;
-      };
+      function updateHeader() {
+        var enabled = items.filter(function (cb) { return !cb.disabled; });
+        var checked = enabled.filter(function (cb) { return cb.checked; });
+        selectAll.indeterminate = enabled.length > 0 && checked.length > 0 && checked.length < enabled.length;
+        selectAll.checked = enabled.length > 0 && checked.length === enabled.length;
+      }
       selectAll.addEventListener('change', function () {
         items.forEach(function (cb) { if (!cb.disabled) cb.checked = !!selectAll.checked; });
         updateHeader();
       });
       items.forEach(function (cb) { cb.addEventListener('change', updateHeader); });
       updateHeader();
-    };
-    adminMain.querySelectorAll('table').forEach(function (table) {
-      ensureSelectAllHeader(table);
-      wireTableSelection(table);
     });
-  }
+  })();
 
-  // ── Sidebar badge counts fetch ──
-  fetch('/api/admin/sidebar-counts').then(function (res) { return res.json(); }).then(function (data) {
-    if (!data.success || !data.counts) return;
-    var counts = data.counts;
-    var badges = document.querySelectorAll('.sidebar-badge[data-badge-key]');
-    badges.forEach(function (badge) {
-      var key = badge.getAttribute('data-badge-key');
-      var count = counts[key];
-      if (typeof count === 'number' && count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = 'inline-flex';
-      }
-    });
-  }).catch(function () { /* non-critical */ });
- });
- </script>
+  /* ── Sidebar badge counts (handled separately from admin-sidebar-polish.js) ── */
+  (function () {
+    fetch('/api/admin/sidebar-counts')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success || !data.counts) return;
+        document.querySelectorAll('.sidebar-badge[data-badge-key]').forEach(function (badge) {
+          var count = data.counts[badge.getAttribute('data-badge-key')];
+          if (typeof count === 'number' && count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'inline-flex';
+          }
+        });
+      })
+      .catch(function () {});
+  })();
 
- {% block scripts %}{% endblock %}
+});
+</script>
 
- <script type="module" src="{{ asset('/assets/js/dist/assistant-shell.js') }}"></script>
- <script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
+{% block scripts %}{% endblock %}
 
+<script type="module" src="{{ asset('/assets/js/dist/assistant-shell.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
 
-
- {# Admin Assistant UI #}
- {% set assistant_variant = 'admin' %}
+{% set assistant_variant = 'admin' %}
 {% include 'partials/ai-assistant/assistant.twig' %}
 </body>
 </html>

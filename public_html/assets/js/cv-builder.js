@@ -35,7 +35,7 @@
     STATE.jobData = window.__bldJobPositions || null;
     if (!STATE.cvId) return;
     // Load personal info from the structured cv_personal_info table
-    loadPersonalInfo().then(function () {
+    loadPersonalInfo().then(() => {
       renderStep(0);
       updateProgress();
       setupAutoSave();
@@ -48,22 +48,22 @@
   }
 
   function loadPersonalInfo() {
-    return fetch('/api/cv/' + STATE.cvId + '/personal-info', {
-      headers: { 'X-CSRF-Token': STATE.csrf }
+    return fetch(`/api/cv/${ STATE.cvId }/personal-info`, {
+      headers: { 'X-CSRF-Token': STATE.csrf, },
     })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
+      .then((r) => { return r.json(); })
+      .then((res) => {
         if (res.success && res.data) {
           // Merge personal info from structured table into builder_data
           if (!STATE.data.personal) STATE.data.personal = {};
-          for (var key in res.data) {
-            if (res.data.hasOwnProperty(key) && res.data[key]) {
+          for (const key in res.data) {
+            if (Object.hasOwn(res.data, key) && res.data[key]) {
               STATE.data.personal[key] = res.data[key];
             }
           }
         }
       })
-      .catch(function () { });
+      .catch(() => { });
   }
 
   function renderStep(index) {
@@ -99,7 +99,7 @@
     const rect = container.getBoundingClientRect();
     if (rect.top < headerOffset) {
       const top = window.scrollY + rect.top - headerOffset;
-      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth', });
     }
   }
 
@@ -109,8 +109,8 @@
     const fill = function (key, def) { return d && d[key] !== undefined && d[key] !== null ? escHtml(String(d[key])) : def || ''; };
 
     switch (stepId) {
-      case 'personal':
-        return '<div class="bld-input-group">' +
+    case 'personal':
+      return '<div class="bld-input-group">' +
           `<div class="bld-form-group"><label class="bld-label">Full Name *</label><input class="bld-input" id="bld-field-full_name" value="${fill('full_name')}" placeholder="e.g. John Doe"></div>` +
           `<div class="bld-form-group"><label class="bld-label">Job Title *</label><input class="bld-input" id="bld-field-job_title" value="${fill('job_title')}" placeholder="e.g. Software Engineer"></div></div>` +
           '<div class="bld-input-group">' +
@@ -133,7 +133,7 @@
           `<div class="bld-form-group"><label class="bld-label">Passport No.</label><input class="bld-input" id="bld-field-passport_no" value="${fill('passport_no')}" placeholder="e.g. AB123456"></div></div>` +
           '<div class="bld-input-group">' +
           `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${fill('birth_certificate_no')}" placeholder="Birth certificate number"></div>` +
-          `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>';
+          `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>`;
 
     case 'summary': {
       let s = '';
@@ -151,9 +151,9 @@
         }
       }
       return `${
-          s
-        } <div class="bld-form-group"><label class="bld-label">Professional Summary</label><textarea class="bld-textarea" id="bld-field-professional_summary" placeholder="Write a brief professional summary...">${fill('professional_summary')}</textarea></div>` +
-          `< div class="bld-form-group" ><label class="bld-label">Career Objective</label><textarea class="bld-textarea" id="bld-field-career_objective" placeholder="What are your career aspirations?\">${ fill('career_objective') }</textarea></div > `;
+        s
+      } <div class="bld-form-group"><label class="bld-label">Professional Summary</label><textarea class="bld-textarea" id="bld-field-professional_summary" placeholder="Write a brief professional summary...">${fill('professional_summary')}</textarea></div>` +
+          `< div class="bld-form-group" ><label class="bld-label">Career Objective</label><textarea class="bld-textarea" id="bld-field-career_objective" placeholder="What are your career aspirations?">${ fill('career_objective') }</textarea></div > `;
     }
 
     case 'experience': {
@@ -289,7 +289,7 @@
     // Template selection
     html += '<h4 style="font-size:1rem;font-weight:600;color:var(--bld-gray-700);margin-bottom:0.75rem;">Choose Template</h4>';
     html += '<div class="bld-template-grid">';
-    const templates = window.__bldTemplates || ['modern', 'minimal', 'ats', 'professional'];
+    const templates = window.__bldTemplates || ['modern', 'minimal', 'ats', 'professional',];
     for (let ti = 0; ti < templates.length; ti++) {
       const tmpl = templates[ti];
       const isSelected = STATE.selectedTemplate === tmpl;
@@ -314,7 +314,7 @@
 
   function renderLanguageEntry(lang, idx) {
     const l = lang || {};
-    const proficiencies = ['basic', 'intermediate', 'advanced', 'fluent', 'native'];
+    const proficiencies = ['basic', 'intermediate', 'advanced', 'fluent', 'native',];
     let profOptions = '';
     for (let pi = 0; pi < proficiencies.length; pi++) {
       const p = proficiencies[pi];
@@ -328,7 +328,7 @@
 
   function renderSocialLinkEntry(link, idx) {
     const l = link || {};
-    const platforms = ['linkedin', 'github', 'twitter', 'website', 'facebook', 'instagram', 'youtube', 'dribbble', 'behance', 'other'];
+    const platforms = ['linkedin', 'github', 'twitter', 'website', 'facebook', 'instagram', 'youtube', 'dribbble', 'behance', 'other',];
     let platOptions = '';
     for (let pi = 0; pi < platforms.length; pi++) {
       const p = platforms[pi];
@@ -404,8 +404,8 @@
     let html = '';
     for (let i = 0; i < skills.length; i++) {
       html += `< span class="bld-skill-tag" > ${
-          escHtml(skills[i])
-        } <button class="bld-skill-remove" onclick="window.bldRemoveSkill('${ category }',${ i })\"><i class=\"lucide lucide-x\" style=\"width:0.8em;height:0.8em;\"></i></button ></span > `;
+        escHtml(skills[i])
+      } <button class="bld-skill-remove" onclick="window.bldRemoveSkill('${ category }',${ i })"><i class="lucide lucide-x" style="width:0.8em;height:0.8em;"></i></button ></span > `;
     }
     return html;
   }
@@ -548,9 +548,9 @@
     const payload = { step: stepId, data: stepData, all_data: STATE.data, };
     // First save to the standard builder_data JSON
     fetch(`/ api / cv / builder / ${ STATE.cvId }/step`, {
-        method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
-        body: JSON.stringify(payload),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
+      body: JSON.stringify(payload),
     })
       .then((r) => { return r.json(); })
       .then((res) => {
@@ -567,16 +567,16 @@
   }
 
   function savePersonalInfo(data, silent) {
-    fetch('/api/cv/' + STATE.cvId + '/personal-info', {
+    fetch(`/api/cv/${ STATE.cvId }/personal-info`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
       body: JSON.stringify(data),
     })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
+      .then((r) => { return r.json(); })
+      .then((res) => {
         if (res.success && !silent) showAutoSaveIndicator();
       })
-      .catch(function () { });
+      .catch(() => { });
   }
 
   function completeBuilder() {
@@ -586,7 +586,7 @@
     for (let si = 0; si < STEPS.length; si++) {
       const sid = STEPS[si].id;
       if (sid !== 'review' && !STATE.data[sid]) {
-        STATE.data[sid] = sid === 'skills' ? { technical: [], soft: [] } : [];
+        STATE.data[sid] = sid === 'skills' ? { technical: [], soft: [], } : [];
       }
     }
     STATE.data._template = STATE.selectedTemplate;
@@ -749,7 +749,7 @@
     const activeDot = indicators.querySelector('.bld-step-dot.active');
     if (!activeDot) return;
     if (window.innerWidth > 480) return;
-    activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center', });
   }
 
   function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
@@ -762,13 +762,13 @@
   }
 
   // Keyboard navigation
-  document.addEventListener('keydown', function (e) {
+  document.addEventListener('keydown', (e) => {
     if (!e.target || !e.target.closest('.bld-card')) return;
     const isAdvanceKey = (e.shiftKey || e.altKey) && e.key === 'Enter';
     if (!isAdvanceKey) return;
     const textarea = e.target.closest('textarea');
     if (textarea) { e.preventDefault(); window.bldNextStep(); return; }
-    if (e.target.matches('input:not([type=\"checkbox\"]):not([type=\"radio\"])')) { e.preventDefault(); window.bldNextStep(); }
+    if (e.target.matches('input:not([type="checkbox"]):not([type="radio"])')) { e.preventDefault(); window.bldNextStep(); }
   });
 
   if (document.readyState === 'loading') {

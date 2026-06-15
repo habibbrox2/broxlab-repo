@@ -19,12 +19,13 @@ class StorageCleanupHelper
     private static $echoLogs = false;
 
     // Retention policies (in days)
+    // NOTE: Only directories that physically exist under storage/ are listed.
+    // - 'temp' was removed (project uses 'tmp' for temporary files)
+    // - 'uploads' was removed (uploaded files live in public_html/uploads/, not storage/uploads/)
     private static $retentionPolicies = [
         'logs' => 30,          // Keep logs for 30 days
         'cache' => 7,          // Keep cache for 7 days
-        'temp' => 1,           // Keep temp files for 1 day
         'tmp' => 1,            // Keep tmp files for 1 day
-        'uploads' => 365,      // Keep uploads for 1 year
     ];
 
     /**
@@ -105,9 +106,7 @@ class StorageCleanupHelper
         $policyMap = [
             'logs' => 'STORAGE_LOG_RETENTION_DAYS',
             'cache' => 'STORAGE_CACHE_RETENTION_DAYS',
-            'temp' => 'STORAGE_TEMP_RETENTION_DAYS',
             'tmp' => 'STORAGE_TMP_RETENTION_DAYS',
-            'uploads' => 'STORAGE_UPLOADS_RETENTION_DAYS',
         ];
 
         foreach ($policyMap as $directory => $envKey) {

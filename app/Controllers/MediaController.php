@@ -41,6 +41,8 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
         function () use ($twig, $mediaModel) {
             $page = (int)($_GET['page'] ?? 1);
             $page = max(1, $page);
+            $limit = (int)($_GET['limit'] ?? 20);
+            $limit = in_array($limit, [10, 20, 50, 100]) ? $limit : 20;
 
             $filters = [];
             if (!empty($_GET['type'])) {
@@ -49,8 +51,9 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
             if (!empty($_GET['search'])) {
                 $filters['search'] = sanitize_input($_GET['search']);
             }
+            $filters['limit'] = $limit;
 
-            $data = $mediaModel->getAll($page, 20, $filters);
+            $data = $mediaModel->getAll($page, $limit, $filters);
             $stats = $mediaModel->getStats();
             $typeStats = $mediaModel->getByMediaType();
 
@@ -320,6 +323,48 @@ $router->group('/admin/media', ['middleware' => ['auth', 'admin_only', 'csrf']],
                 showMessage('মুছতে ব্যর্থ: ' . $e->getMessage(), 'error');
             }
 
+            header('Location: /admin/media');
+            exit;
+        }
+    );
+
+    /**
+     * POST /admin/media/bulk-delete
+     * Bulk delete media with error handling
+     */
+    $router->post(
+        '/bulk-delete',
+        function () use ($mediaModel) {
+            $user = AuthManager::isUserAuthenticated();
+            $userId = AuthManager::getCurrentUserId();
+            if (!$user || (int)$userId <= 0) {
+                showMessage('User not authenticated', 'error');
+                header('Location: /admin/media');
+                exit;
+            }
+
+            $ids = $_POST['ids'] ?? [];
+            if (!is_array($ids)) {
+                $ids = explode(',', $ids);
+            }
+            $ids = array_filter(array_map('intval', $ids));
+            if (empty($ids)) {
+                showMessage('No media selected', 'error');
+                header('Location: /admin/media');
+                exit;
+            }
+
+            $result = $mediaModel->bulkDelete($ids);
+            $successCount = count($result['success']);
+            $failedCount = count($result['failed']);
+
+            logActivity('Bulk Delete Media', 'media', 0, [
+                'success_count' => $successCount,
+                'failed_count' => $failedCount,
+                '_performed_by' => $userId
+            ], 'success');
+
+            showMessage("{$successCount} media deleted, {$failedCount} failed", 'success');
             header('Location: /admin/media');
             exit;
         }

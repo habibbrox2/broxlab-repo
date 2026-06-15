@@ -13,19 +13,19 @@
        class="flex items-center gap-1">
 
     {% if not loop.first %}
-     <i class="lucide lucide-chevron-right mx-0.5 text-slate-300" style="width:0.875em;height:0.875em;" aria-hidden="true"></i>
+     <i class="lucide lucide-chevron-right mx-0.5 text-slate-300" w-3.5 h-3.5 aria-hidden="true"></i>
     {% endif %}
 
     {% if loop.last %}
      <span itemprop="item" class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-indigo-700" aria-current="page">
-      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" style="width:0.75em;height:0.75em;"></i>{% endif %}
+      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" w-3 h-3></i>{% endif %}
       <span itemprop="name">{{ crumb.label }}</span>
      </span>
      <meta itemprop="position" content="{{ position }}">
     {% else %}
      <a href="{{ crumb.url }}" itemprop="item"
         class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-slate-500 transition-all duration-150 hover:bg-slate-100 hover:text-indigo-600">
-      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" style="width:0.75em;height:0.75em;"></i>{% endif %}
+      {% if crumb.icon is defined %}<i class="lucide lucide-{{ crumb.icon }}" w-3 h-3></i>{% endif %}
       <span itemprop="name">{{ crumb.label }}</span>
      </a>
      <meta itemprop="position" content="{{ position }}">

@@ -1,235 +1,248 @@
 {% extends 'admin/layout.twig' %}
 {% block title %}Notification Details - Admin Panel{% endblock %}
 {% block content %}
-<div class="w-full px-4 sm:px-6 py-4 space-y-4">
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-  <!-- Gradient Header -->
-  <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8 shadow-lg">
-   <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
-   <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
-   <div class="relative flex flex-wrap items-end justify-between gap-4">
-    <div class="flex items-start gap-4">
-     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-      <i class="lucide lucide-bell text-2xl text-white"></i>
-     </div>
-     <div>
-      <h1 class="text-2xl font-bold text-white sm:text-3xl">Notification #{{ notification.id }}</h1>
-      <p class="mt-1 text-sm text-indigo-200/80">View notification details and delivery statistics.</p>
-     </div>
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-bell w-5 h-5 text-white"></i>
     </div>
-    <a href="/admin/notifications/list" class="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:-translate-y-0.5">
-     <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back to List
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Notification</p>
+     <h1 class="text-xl font-bold text-white">Notification #{{ notification.id }}</h1>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">View notification details and delivery statistics.</p>
+    </div>
+   </div>
+   <div class="flex gap-2">
+    <a href="/admin/notifications/list" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List
     </a>
    </div>
   </div>
+ </div>
 
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-   <!-- Main Content -->
-   <div class="lg:col-span-8 space-y-4">
+ <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.25fr)_340px]">
+  {# ── Main Content ── #}
+  <div class="space-y-5">
 
-    <!-- Notification Info Card -->
-    <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-     <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-       <i class="lucide lucide-info" style="width:0.875em;height:0.875em;"></i>
-      </div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Notification Information</h2>
+   {# Notification Info Card #}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
      </div>
-     <div class="p-5 space-y-5">
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Title</p>
-        <p class="m-0 text-lg font-semibold text-slate-900">{{ notification.title }}</p>
-       </div>
-       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Type</p>
-        <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">{{ notification.type }}</span>
-       </div>
-      </div>
-      <div>
-       <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Message</p>
-       <div class="rounded-lg bg-slate-50 border border-slate-100 p-4 text-sm text-slate-700">{{ notification.message }}</div>
-      </div>
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Created At</p>
-        <p class="m-0 text-sm text-slate-700">{{ notification.created_at|date("d M Y H:i:s") }}</p>
-       </div>
-       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Status</p>
-        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-         {% if notification.sent_to_all_at %}bg-emerald-100 text-emerald-700
-         {% elseif notification.status == 'draft' %}bg-amber-100 text-amber-700
-         {% else %}bg-slate-100 text-slate-700{% endif %}">
-         {% if notification.sent_to_all_at %}Sent{% elseif notification.status == 'draft' %}Draft{% else %}Pending{% endif %}
-        </span>
-       </div>
-      </div>
-      {% if notification.action_url %}
-      <div>
-       <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Action URL</p>
-       <a href="{{ notification.action_url }}" target="_blank" class="text-sm text-indigo-600 hover:underline break-all">{{ notification.action_url }}</a>
-      </div>
-      {% endif %}
-     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notification Information</h3>
     </div>
-
-    <!-- Delivery Statistics Card -->
-    <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-     <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-       <i class="lucide lucide-bar-chart-3" style="width:0.875em;height:0.875em;"></i>
+    <div class="p-5 space-y-5">
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Title</p>
+       <p class="text-lg font-semibold text-slate-900 dark:text-white">{{ notification.title }}</p>
       </div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Delivery Statistics</h2>
+      <div>
+       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Type</p>
+       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ notification.type }}</span>
+      </div>
      </div>
-     <div class="p-5">
-      <div class="grid grid-cols-2 gap-4 md:grid-cols-4 text-center mb-4">
-       <div class="rounded-lg bg-slate-50 p-4">
-        <div class="text-3xl font-bold text-indigo-600">{{ statistics.total ?? 0 }}</div>
-        <p class="mt-1 text-xs text-slate-500">Total Recipients</p>
-       </div>
-       <div class="rounded-lg bg-slate-50 p-4">
-        <div class="text-3xl font-bold text-emerald-600">{{ statistics.sent ?? 0 }}</div>
-        <p class="mt-1 text-xs text-slate-500">Delivered</p>
-       </div>
-       <div class="rounded-lg bg-slate-50 p-4">
-        <div class="text-3xl font-bold text-rose-600">{{ statistics.failed ?? 0 }}</div>
-        <p class="mt-1 text-xs text-slate-500">Failed</p>
-       </div>
-       <div class="rounded-lg bg-slate-50 p-4">
-        <div class="text-3xl font-bold text-amber-600">
-         {% if statistics.total > 0 %}{{ ((statistics.sent ?? 0) / (statistics.total ?? 1) * 100)|round(1) }}%{% else %}0%{% endif %}
-        </div>
-        <p class="mt-1 text-xs text-slate-500">Success Rate</p>
-       </div>
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-2">Message</p>
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-300">{{ notification.message }}</div>
+     </div>
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Created At</p>
+       <p class="text-sm text-slate-700 dark:text-slate-300">{{ notification.created_at|date("d M Y H:i:s") }}</p>
       </div>
-      <!-- Progress Bar -->
-      <div class="overflow-hidden rounded-full bg-slate-100 h-3">
-       {% if statistics.total > 0 %}
-       <div class="flex h-full rounded-full overflow-hidden">
-        <div class="bg-emerald-500 transition-all duration-500" style="width: {{ (statistics.sent ?? 0) / (statistics.total ?? 1) * 100 }}%"></div>
-        <div class="bg-rose-500 transition-all duration-500" style="width: {{ (statistics.failed ?? 0) / (statistics.total ?? 1) * 100 }}%"></div>
-       </div>
+      <div>
+       <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Status</p>
+       {% if notification.sent_to_all_at %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+         <span class="w-1 h-1 rounded-full bg-emerald-500"></span> Sent
+        </span>
+       {% elseif notification.status == 'draft' %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+         <span class="w-1 h-1 rounded-full bg-amber-500"></span> Draft
+        </span>
+       {% else %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+         <span class="w-1 h-1 rounded-full bg-slate-400"></span> Pending
+        </span>
        {% endif %}
       </div>
      </div>
-    </div>
-
-    <!-- Delivery Logs Card -->
-    <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-     <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-       <i class="lucide lucide-list" style="width:0.875em;height:0.875em;"></i>
-      </div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Delivery Logs (Total: {{ delivery_logs|length }})</h2>
+     {% if notification.action_url %}
+     <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">Action URL</p>
+      <a href="{{ notification.action_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{ notification.action_url }}</a>
      </div>
-     <div class="p-5">
-      {% if delivery_logs|length > 0 %}
-      <div class="overflow-x-auto">
-       <table class="w-full text-left text-sm">
-        <thead>
-         <tr class="border-b border-slate-200">
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">User</th>
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Device / Token</th>
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Channel</th>
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-          <th class="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Time</th>
-         </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-         {% for log in delivery_logs|slice(0, 50) %}
-         <tr class="hover:bg-slate-50/50 transition-colors">
-          <td class="px-3 py-3 font-mono text-xs text-slate-500">#{{ log.id }}</td>
-          <td class="px-3 py-3">
-           {% if log.user_id %}
-           <a href="/admin/users/edit?id={{ log.user_id }}" class="text-indigo-600 hover:underline text-sm">User #{{ log.user_id }}</a>
-           {% else %}<span class="text-slate-500 text-sm">Guest</span>{% endif %}
-          </td>
-          <td class="px-3 py-3"><small class="text-slate-500" title="{{ log.token }}">{{ log.device_id ?? (log.token|slice(0, 20) ~ '...') }}</small></td>
-          <td class="px-3 py-3"><span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ log.channel ?? 'push' }}</span></td>
-          <td class="px-3 py-3">
-           <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold
-            {% if log.status == 'sent' %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-700{% endif %}">
-            {{ log.status|upper }}
-           </span>
-          </td>
-          <td class="px-3 py-3"><small class="text-slate-500">{{ log.created_at|date("d M H:i:s") }}</small></td>
-         </tr>
-         {% endfor %}
-        </tbody>
-       </table>
+     {% endif %}
+    </div>
+   </div>
+
+   {# Delivery Statistics Card #}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-bar-chart-3 w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Delivery Statistics</h3>
+    </div>
+    <div class="p-5">
+     <div class="grid grid-cols-2 gap-4 md:grid-cols-4 text-center mb-4">
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
+       <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{{ statistics.total ?? 0 }}</div>
+       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Total Recipients</p>
       </div>
-      {% if delivery_logs|length > 50 %}
-      <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
-       <i class="lucide lucide-info" style="width:1em;height:1em;"></i>
-       Showing first 50 logs out of {{ delivery_logs|length }}
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
+       <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ statistics.sent ?? 0 }}</div>
+       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Delivered</p>
       </div>
-      {% endif %}
-      {% else %}
-      <div class="flex flex-col items-center justify-center py-12 text-slate-500">
-       <i class="lucide lucide-inbox text-3xl text-slate-300 mb-3"></i>
-       <p class="m-0">No delivery logs found</p>
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
+       <div class="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums">{{ statistics.failed ?? 0 }}</div>
+       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Failed</p>
+      </div>
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
+       <div class="text-3xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+        {% if statistics.total > 0 %}{{ ((statistics.sent ?? 0) / (statistics.total ?? 1) * 100)|round(1) }}%{% else %}0%{% endif %}
+       </div>
+       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Success Rate</p>
+      </div>
+     </div>
+     <div class="overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 h-3">
+      {% if statistics.total > 0 %}
+      <div class="flex h-full rounded-full overflow-hidden">
+       <div class="bg-emerald-500 transition-all duration-500" style="width: {{ (statistics.sent ?? 0) / (statistics.total ?? 1) * 100 }}%"></div>
+       <div class="bg-red-500 transition-all duration-500" style="width: {{ (statistics.failed ?? 0) / (statistics.total ?? 1) * 100 }}%"></div>
       </div>
       {% endif %}
      </div>
     </div>
    </div>
 
-   <!-- Sidebar -->
-   <div class="lg:col-span-4 space-y-4">
-
-    <!-- Quick Actions Card -->
-    <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-     <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-       <i class="lucide lucide-zap" style="width:0.875em;height:0.875em;"></i>
-      </div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Quick Actions</h2>
+   {# Delivery Logs Card #}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-list w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
      </div>
-     <div class="p-4 space-y-2">
-      <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]" data-action="resend-notification">
-       <i class="lucide lucide-refresh-cw" style="width:1em;height:1em;"></i> Resend
-      </button>
-      <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]" data-action="duplicate-notification">
-       <i class="lucide lucide-files" style="width:1em;height:1em;"></i> Duplicate
-      </button>
-      <button class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-rose-700 hover:shadow-md active:scale-[0.97]" data-action="delete-notification">
-       <i class="lucide lucide-trash-2" style="width:1em;height:1em;"></i> Delete
-      </button>
-     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Delivery Logs (Total: {{ delivery_logs|length }})</h3>
     </div>
-
-    <!-- Metadata Card -->
-    <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-     <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-3">
-      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
-       <i class="lucide lucide-info" style="width:0.875em;height:0.875em;"></i>
-      </div>
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">Metadata</h2>
+    <div class="p-5">
+     {% if delivery_logs|length > 0 %}
+     <div class="overflow-x-auto">
+      <table class="w-full text-left">
+       <thead>
+        <tr class="border-b border-slate-100 dark:border-slate-800">
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">ID</th>
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">User</th>
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Device / Token</th>
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Channel</th>
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Status</th>
+         <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Time</th>
+        </tr>
+       </thead>
+       <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for log in delivery_logs|slice(0, 50) %}
+        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+         <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">#{{ log.id }}</td>
+         <td class="px-4 py-3">
+          {% if log.user_id %}
+          <a href="/admin/users/edit?id={{ log.user_id }}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">User #{{ log.user_id }}</a>
+          {% else %}<span class="text-sm text-slate-500 dark:text-slate-400">Guest</span>{% endif %}
+         </td>
+         <td class="px-4 py-3"><small class="text-xs text-slate-500 dark:text-slate-400" title="{{ log.token }}">{{ log.device_id ?? (log.token|slice(0, 20) ~ '...') }}</small></td>
+         <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{{ log.channel ?? 'push' }}</span></td>
+         <td class="px-4 py-3">
+          {% if log.status == 'sent' %}
+           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+            <span class="w-1 h-1 rounded-full bg-emerald-500"></span> SENT
+           </span>
+          {% else %}
+           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+            <span class="w-1 h-1 rounded-full bg-red-500"></span> {{ log.status|upper }}
+           </span>
+          {% endif %}
+         </td>
+         <td class="px-4 py-3"><small class="text-xs text-slate-500 dark:text-slate-400">{{ log.created_at|date("d M H:i:s") }}</small></td>
+        </tr>
+        {% endfor %}
+       </tbody>
+      </table>
      </div>
-     <div class="p-5 space-y-3 text-sm">
-      <div class="flex items-center justify-between">
-       <span class="text-slate-500">Notification ID</span>
-       <span class="font-mono text-slate-800 font-semibold">#{{ notification.id }}</span>
-      </div>
-      <div class="flex items-center justify-between">
-       <span class="text-slate-500">Created By</span>
-       <span class="text-slate-800">{% if notification.created_by %}<a href="/admin/users/edit?id={{ notification.created_by }}" class="text-indigo-600 hover:underline">User #{{ notification.created_by }}</a>{% else %}System{% endif %}</span>
-      </div>
-      <div class="flex items-center justify-between">
-       <span class="text-slate-500">Created At</span>
-       <span class="text-slate-800">{{ notification.created_at|date("d M Y H:i") }}</span>
-      </div>
-      <div class="flex items-center justify-between">
-       <span class="text-slate-500">Updated</span>
-       <span class="text-slate-800">{{ notification.updated_at|date("d M Y H:i") }}</span>
-      </div>
+     {% if delivery_logs|length > 50 %}
+     <div class="mt-4 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+      <i class="lucide lucide-info w-4 h-4"></i>
+      Showing first 50 logs out of {{ delivery_logs|length }}
      </div>
+     {% endif %}
+     {% else %}
+     <div class="flex flex-col items-center justify-center py-12 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+       <i class="lucide lucide-inbox w-7 h-7 text-slate-400 dark:text-slate-600"></i>
+      </div>
+      <p class="text-sm text-slate-500 dark:text-slate-400">No delivery logs found</p>
+     </div>
+     {% endif %}
     </div>
    </div>
   </div>
 
-  <div id="notification-view-data" data-notification-id="{{ notification.id }}"></div>
+  {# ── Sidebar ── #}
+  <div class="space-y-4">
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm xl:sticky xl:top-20">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-zap w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
+    </div>
+    <div class="p-4 space-y-2.5">
+     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-action="resend-notification">
+      <i class="lucide lucide-refresh-cw w-4 h-4"></i> Resend
+     </button>
+     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-action="duplicate-notification">
+      <i class="lucide lucide-files w-4 h-4"></i> Duplicate
+     </button>
+     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" data-action="delete-notification">
+      <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
+     </button>
+    </div>
+   </div>
+
+   {# Metadata Card #}
+   <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+     </div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Metadata</h3>
+    </div>
+    <div class="p-5 space-y-3 text-sm">
+     <div class="flex items-center justify-between">
+      <span class="text-slate-500 dark:text-slate-400">Notification ID</span>
+      <span class="font-mono text-slate-800 dark:text-slate-200 font-semibold">#{{ notification.id }}</span>
+     </div>
+     <div class="flex items-center justify-between">
+      <span class="text-slate-500 dark:text-slate-400">Created By</span>
+      <span class="text-slate-800 dark:text-slate-200">{% if notification.created_by %}<a href="/admin/users/edit?id={{ notification.created_by }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">User #{{ notification.created_by }}</a>{% else %}System{% endif %}</span>
+     </div>
+     <div class="flex items-center justify-between">
+      <span class="text-slate-500 dark:text-slate-400">Created At</span>
+      <span class="text-slate-800 dark:text-slate-200">{{ notification.created_at|date("d M Y H:i") }}</span>
+     </div>
+     <div class="flex items-center justify-between">
+      <span class="text-slate-500 dark:text-slate-400">Updated</span>
+      <span class="text-slate-800 dark:text-slate-200">{{ notification.updated_at|date("d M Y H:i") }}</span>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <div id="notification-view-data" data-notification-id="{{ notification.id }}"></div>
 </div>
 {% endblock %}

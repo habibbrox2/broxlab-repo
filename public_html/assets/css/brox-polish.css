@@ -747,6 +747,29 @@ main:not(.admin-main) {
   animation: brox-fade-in 0.35s ease-out;
 }
 
+/* ── Preloader spinner ── */
+@keyframes preloader-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Preloader dot bounce ── */
+@keyframes preloader-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Preloader fade-out state (applied via JS) ── */
+#sitePreloader.preloader-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ── Page transition overlay active state ── */
+#pageTransitionOverlay.is-active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 /* ============================
    12. ACCESSIBILITY
    ============================ */
