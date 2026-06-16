@@ -25,7 +25,12 @@
     isSaving: false,
     saveTimer: null,
     jobData: null,
+    profilePhoto: '',
+    isUploading: false,
   };
+
+  let dragSrcIndex = -1;
+  let dragStepId = '';
 
   function init() {
     STATE.cvId = window.__bldCvId || 0;
@@ -33,6 +38,7 @@
     STATE.selectedTemplate = window.__bldSelectedTemplate || 'modern';
     STATE.data = window.__bldData && typeof window.__bldData === 'object' ? window.__bldData : {};
     STATE.jobData = window.__bldJobPositions || null;
+    STATE.profilePhoto = window.__bldProfilePhoto || '';
     if (!STATE.cvId) return;
     // Load personal info from the structured cv_personal_info table
     loadPersonalInfo().then(() => {
@@ -77,6 +83,7 @@
     html += renderStepContent(index);
     const container = document.getElementById('bld-step-content');
     if (container) container.innerHTML = html;
+    setupDragReorder();
     updateProgress();
     const nextBtn = document.getElementById('bld-btn-next');
     if (nextBtn) {
@@ -89,6 +96,66 @@
       }
     }
     scrollToBuilderTop();
+  }
+
+  function setupDragReorder() {
+    const container = document.getElementById('bld-step-content');
+    if (!container) return;
+    // Remove old listeners by cloning - but we use event delegation, so no need
+    const listItems = container.querySelectorAll('.bld-entry-card[draggable]');
+    listItems.forEach((card) => {
+      card.addEventListener('dragstart', (e) => {
+        dragSrcIndex = parseInt(card.getAttribute('data-idx'), 10);
+        dragStepId = STEPS[STATE.currentStep].id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(dragSrcIndex));
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        container.querySelectorAll('.bld-entry-card.drag-over').forEach((c) => {
+          c.classList.remove('drag-over');
+        });
+        dragSrcIndex = -1;
+        dragStepId = '';
+      });
+      card.addEventListener('dragover', (e) => {
+        if (dragSrcIndex === -1) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      card.addEventListener('dragenter', () => {
+        if (dragSrcIndex === -1) return;
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      });
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('drag-over');
+        if (dragSrcIndex === -1) return;
+        const targetIdx = parseInt(card.getAttribute('data-idx'), 10);
+        if (dragSrcIndex === targetIdx) {
+          dragSrcIndex = -1;
+          return;
+        }
+        // Save current form data before reordering
+        const stepId = dragStepId;
+        if (stepId) {
+          STATE.data[stepId] = collectStepData(stepId);
+          const arr = STATE.data[stepId];
+          if (Array.isArray(arr) && dragSrcIndex >= 0 && dragSrcIndex < arr.length && targetIdx >= 0 && targetIdx < arr.length) {
+            const item = arr.splice(dragSrcIndex, 1)[0];
+            arr.splice(targetIdx, 0, item);
+            window.showMessage('Item reordered', 'success');
+            renderStep(STATE.currentStep);
+          }
+        }
+        dragSrcIndex = -1;
+      });
+    });
   }
 
   function scrollToBuilderTop() {
@@ -109,8 +176,31 @@
     const fill = function (key, def) { return d && d[key] !== undefined && d[key] !== null ? escHtml(String(d[key])) : def || ''; };
 
     switch (stepId) {
-    case 'personal':
-      return '<div class="bld-input-group">' +
+    case 'personal': {
+      const photoUrl = STATE.profilePhoto || '';
+      const hasPhoto = Boolean(photoUrl);
+      let photoHtml = '<div class="bld-form-group">';
+      photoHtml += '<label class="bld-label">Profile Photo</label>';
+      photoHtml += `<div class="bld-photo-upload${ hasPhoto ? ' has-photo' : '' }" id="bld-photo-upload-area">`;
+      photoHtml += '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="bld-photo-file-input" id="bld-photo-input" onchange="window.bldUploadPhoto(this)">';
+      if (hasPhoto) {
+        photoHtml += `<img src="${ escHtml(photoUrl) }" alt="Profile Photo" class="bld-photo-preview" id="bld-photo-preview-img">`;
+      } else {
+        photoHtml += '<div class="bld-photo-placeholder" id="bld-photo-placeholder"><i class="lucide lucide-camera" style="width:1em;height:1em;"></i></div>';
+      }
+      photoHtml += `<div class="bld-photo-label">${ hasPhoto ? 'Change Photo' : 'Add a Profile Photo' }</div>`;
+      photoHtml += '<div class="bld-photo-hint">JPG, PNG, WebP or GIF &middot; Max 5MB</div>';
+      photoHtml += '<div class="bld-photo-actions">';
+      photoHtml += `<button type="button" class="bld-photo-btn bld-photo-btn-upload" onclick="document.getElementById('bld-photo-input').click()"><i class="lucide lucide-upload" style="width:1em;height:1em;"></i> ${ hasPhoto ? 'Change' : 'Upload' }</button>`;
+      if (hasPhoto) {
+        photoHtml += '<button type="button" class="bld-photo-btn bld-photo-btn-remove" onclick="window.bldRemovePhoto()"><i class="lucide lucide-trash-2" style="width:1em;height:1em;"></i> Remove</button>';
+      }
+      photoHtml += '</div>';
+      photoHtml += '<div class="bld-photo-progress" id="bld-photo-progress"><div class="bld-photo-progress-bar" id="bld-photo-progress-bar"></div></div>';
+      photoHtml += '</div></div>';
+
+      return `${photoHtml
+      }<div class="bld-input-group">` +
           `<div class="bld-form-group"><label class="bld-label">Full Name *</label><input class="bld-input" id="bld-field-full_name" value="${fill('full_name')}" placeholder="e.g. John Doe"></div>` +
           `<div class="bld-form-group"><label class="bld-label">Job Title *</label><input class="bld-input" id="bld-field-job_title" value="${fill('job_title')}" placeholder="e.g. Software Engineer"></div></div>` +
           '<div class="bld-input-group">' +
@@ -134,6 +224,7 @@
           '<div class="bld-input-group">' +
           `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${fill('birth_certificate_no')}" placeholder="Birth certificate number"></div>` +
           `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>`;
+    }
 
     case 'summary': {
       let s = '';
@@ -320,8 +411,13 @@
       const p = proficiencies[pi];
       profOptions += `< option value = "${ p }"${ l.proficiency === p ? ' selected' : '' }> ${ p.charAt(0).toUpperCase() + p.slice(1) }</option > `;
     }
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('languages',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('languages',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('languages',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('languages',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Language</label><input class="bld-input lang-name" value="${ escHtml(l.name || '') }" placeholder="e.g. English"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Proficiency</label><select class="bld-select lang-proficiency">${ profOptions }</select></div ></div ></div > `;
   }
@@ -334,24 +430,39 @@
       const p = platforms[pi];
       platOptions += `< option value = "${ p }"${ l.platform === p ? ' selected' : '' }> ${ p.charAt(0).toUpperCase() + p.slice(1) }</option > `;
     }
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('social_links',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('social_links',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('social_links',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('social_links',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Platform</label><select class="bld-select link-platform">${platOptions}</select></div>` +
       `< div class="bld-form-group" ><label class="bld-label">URL</label><input class="bld-input link-url" value="${ escHtml(l.url || '') }" placeholder="https://..."></div></div ></div > `;
   }
 
   function renderCustomSectionEntry(sec, idx) {
     const s = sec || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('custom_sections',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('custom_sections',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('custom_sections',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('custom_sections',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-form-group" ><label class="bld-label">Section Title</label><input class="bld-input custom-title" value="${ escHtml(s.title || '') }" placeholder="e.g. Volunteer Work"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Content</label><textarea class="bld-textarea custom-content" style="min-height:80px;" placeholder="Describe this section...">${ escHtml(s.content || '') }</textarea></div ></div > `;
   }
 
   function renderExperienceEntry(exp, idx) {
     const e = exp || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('experience',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('experience',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('experience',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('experience',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Company</label><input class="bld-input exp-company" value="${ escHtml(e.company || '') }" placeholder="Company name"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Position</label><input class="bld-input exp-position" value="${ escHtml(e.position || '') }" placeholder="Job title"></div></div > ` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Location</label><input class="bld-input exp-location" value="${ escHtml(e.location || '') }" placeholder="City"></div>` +
@@ -363,8 +474,13 @@
 
   function renderEducationEntry(edu, idx) {
     const e = edu || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('education',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('education',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('education',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('education',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Institution</label><input class="bld-input edu-institution" value="${ escHtml(e.institution || '') }" placeholder="University"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Degree</label><input class="bld-input edu-degree" value="${ escHtml(e.degree || '') }" placeholder="B.Sc."></div></div > ` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Field</label><input class="bld-input edu-field" value="${ escHtml(e.field || '') }" placeholder="Computer Science"></div>` +
@@ -373,8 +489,13 @@
 
   function renderProjectEntry(proj, idx) {
     const p = proj || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('projects',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('projects',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('projects',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('projects',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input proj-name" value="${ escHtml(p.name || '') }" placeholder="Project name"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Technologies</label><input class="bld-input proj-technologies" value="${ escHtml(p.technologies || '') }" placeholder="React, Node.js"></div></div > ` +
       `< div class="bld-form-group" ><label class="bld-label">Description</label><textarea class="bld-textarea proj-description" style="min-height:80px;">${ escHtml(p.description || '') }</textarea></div > ` +
@@ -383,8 +504,13 @@
 
   function renderCertificateEntry(cert, idx) {
     const c = cert || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('certificates',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('certificates',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('certificates',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('certificates',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input cert-name" value="${ escHtml(c.name || '') }" placeholder="Certificate name"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Organization</label><input class="bld-input cert-organization" value="${ escHtml(c.organization || '') }" placeholder="Issuing org"></div></div > ` +
       `< div class="bld-form-group" ><label class="bld-label">Date</label><input class="bld-input cert-date" value="${ escHtml(c.date || '') }" placeholder="June 2024"></div></div > `;
@@ -392,8 +518,13 @@
 
   function renderReferenceEntry(ref, idx) {
     const r = ref || {};
-    return `< div class="bld-entry-card" data - idx="${ idx }" > ` +
-      `< button class="bld-entry-remove" onclick = "window.bldRemoveEntry('references',${ idx })" > <i class="lucide lucide-x" style="width:1em;height:1em;"></i></button > ` +
+    return `<div class="bld-entry-card" draggable="true" data-idx="${ idx }">` +
+      '<div class="bld-drag-handle" title="Drag to reorder"><i class="lucide lucide-grip-horizontal" style="width:1em;height:1em;"></i></div>' +
+      '<div class="bld-entry-moves">' +
+      `<button class="bld-entry-move-up" onclick="window.bldMoveEntry('references',${idx},'up')" title="Move up"><i class="lucide lucide-chevron-up" style="width:0.9em;height:0.9em;"></i></button>` +
+      `<button class="bld-entry-move-down" onclick="window.bldMoveEntry('references',${idx},'down')" title="Move down"><i class="lucide lucide-chevron-down" style="width:0.9em;height:0.9em;"></i></button>` +
+      '</div>' +
+      `<button class="bld-entry-remove" onclick="window.bldRemoveEntry('references',${idx})"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Name</label><input class="bld-input ref-name" value="${ escHtml(r.name || '') }" placeholder="Reference name"></div>` +
       `< div class="bld-form-group" ><label class="bld-label">Title</label><input class="bld-input ref-title" value="${ escHtml(r.title || '') }" placeholder="Manager"></div></div > ` +
       `< div class="bld-input-group" > <div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input ref-email" value="${ escHtml(r.email || '') }" placeholder="email@example.com"></div>` +
@@ -529,8 +660,23 @@
           STATE.data[stepId] = collectStepData(stepId);
         }
         saveBuilderData(true);
-      }, 5000);
+      }, 3000);
     });
+  }
+
+  function refreshPreviewIfOpen() {
+    const modal = document.getElementById('cv-preview-modal');
+    const iframe = document.getElementById('cv-preview-iframe');
+    if (!modal || !iframe || modal.classList.contains('hidden')) return;
+    // Reload the iframe to reflect latest saved data
+    // Use a cache-busting query param to force a fresh load
+    const currentSrc = iframe.src;
+    if (currentSrc) {
+      // Strip old cache-buster, preserve all other query params (template, zoom, etc.)
+      const base = currentSrc.replace(/[?&]_t=\d+/g, '');
+      const sep = base.includes('?') ? '&' : '?';
+      iframe.src = `${ base }${ sep }_t=${ Date.now() }`;
+    }
   }
 
   function showAutoSaveIndicator() {
@@ -555,6 +701,8 @@
       .then((r) => { return r.json(); })
       .then((res) => {
         if (!res.success) return;
+        // Refresh preview if open after successful save
+        refreshPreviewIfOpen();
         // If on personal step, also save to the structured cv_personal_info table
         if (stepId === 'personal') {
           savePersonalInfo(stepData, silent);
@@ -677,6 +825,21 @@
     renderStep(STATE.currentStep);
   };
 
+  window.bldMoveEntry = function (step, idx, dir) {
+    const stepId = STEPS[STATE.currentStep].id;
+    STATE.data[stepId] = collectStepData(stepId);
+    const entries = STATE.data[stepId] || [];
+    if (!Array.isArray(entries) || entries.length < 2) return;
+    const targetIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= entries.length) return;
+    // Swap the items
+    const temp = entries[idx];
+    entries[idx] = entries[targetIdx];
+    entries[targetIdx] = temp;
+    window.showMessage(`Item moved ${ dir}`, 'success');
+    renderStep(STATE.currentStep);
+  };
+
   window.bldAddSkill = function (e) {
     if (e.key !== 'Enter') return;
     e.preventDefault();
@@ -725,6 +888,123 @@
     }
   };
 
+  // Drag-and-drop photo upload support
+  document.addEventListener('dragenter', (e) => {
+    const area = document.getElementById('bld-photo-upload-area');
+    if (!area || !area.contains(e.target)) return;
+    e.preventDefault();
+    area.classList.add('dragover');
+  });
+  document.addEventListener('dragleave', (e) => {
+    const area = document.getElementById('bld-photo-upload-area');
+    if (!area || area.contains(e.relatedTarget)) return;
+    e.preventDefault();
+    area.classList.remove('dragover');
+  });
+  document.addEventListener('dragover', (e) => {
+    const area = document.getElementById('bld-photo-upload-area');
+    if (!area || !area.contains(e.target)) return;
+    e.preventDefault();
+  });
+  document.addEventListener('drop', (e) => {
+    const area = document.getElementById('bld-photo-upload-area');
+    if (!area || !area.contains(e.target)) return;
+    e.preventDefault();
+    area.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const input = document.getElementById('bld-photo-input');
+      if (input) {
+        input.files = files;
+        window.bldUploadPhoto(input);
+      }
+    }
+  });
+
+  window.bldUploadPhoto = function (input) {
+    if (!input || !input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif',];
+    const maxSize = 5 * 1024 * 1024;
+    if (allowed.indexOf(file.type) === -1) {
+      window.showMessage('Only JPG, PNG, WebP, and GIF images are allowed.', 'danger');
+      input.value = '';
+      return;
+    }
+    if (file.size > maxSize) {
+      window.showMessage('File size must be under 5MB.', 'danger');
+      input.value = '';
+      return;
+    }
+    const progressBar = document.getElementById('bld-photo-progress');
+    const progressFill = document.getElementById('bld-photo-progress-bar');
+    if (progressBar) progressBar.classList.add('visible');
+    if (STATE.isUploading) return;
+    STATE.isUploading = true;
+    const fd = new FormData();
+    fd.append('photo', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/cv/${ STATE.cvId }/photo`, true);
+    xhr.setRequestHeader('X-CSRF-Token', STATE.csrf);
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable && progressFill) {
+        progressFill.style.width = `${e.loaded / e.total * 100 }%`;
+      }
+    };
+    xhr.onload = function () {
+      STATE.isUploading = false;
+      if (progressBar) progressBar.classList.remove('visible');
+      if (progressFill) progressFill.style.width = '0%';
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (res.success && res.photo_url) {
+          STATE.profilePhoto = res.photo_url;
+          STATE.data.personal = collectStepData('personal');
+          window.showMessage('Photo uploaded successfully!', 'success');
+          renderStep(STATE.currentStep);
+        } else {
+          window.showMessage(res.error || 'Upload failed.', 'danger');
+        }
+      } catch (e) {
+        window.showMessage('Upload failed. Please try again.', 'danger');
+      }
+      input.value = '';
+    };
+    xhr.onerror = function () {
+      STATE.isUploading = false;
+      if (progressBar) progressBar.classList.remove('visible');
+      if (progressFill) progressFill.style.width = '0%';
+      window.showMessage('Upload failed. Please try again.', 'danger');
+      input.value = '';
+    };
+    xhr.send(fd);
+  };
+
+  window.bldRemovePhoto = function () {
+    if (STATE.isUploading) return;
+    if (!confirm('Remove this profile photo?')) return;
+    STATE.isUploading = true;
+    fetch(`/api/cv/${ STATE.cvId }/photo`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': STATE.csrf, },
+    })
+      .then((r) => { return r.json(); })
+      .then((res) => {
+        if (res.success) {
+          STATE.profilePhoto = '';
+          STATE.data.personal = collectStepData('personal');
+          window.showMessage('Photo removed.', 'success');
+          renderStep(STATE.currentStep);
+        } else {
+          window.showMessage(res.error || 'Failed to remove photo.', 'danger');
+        }
+      })
+      .catch(() => {
+        window.showMessage('Failed to remove photo.', 'danger');
+      })
+      .finally(() => { STATE.isUploading = false; });
+  };
+
   function updateProgress() {
     const pct = Math.round((STATE.currentStep / (STEPS.length - 1)) * 100);
     const pctEl = document.getElementById('bld-progress-pct');
@@ -761,8 +1041,21 @@
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
-  // Keyboard navigation
+  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    // Ctrl+P / Cmd+P — Open preview modal
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+      e.preventDefault();
+      window.bldSaveDraft();
+      setTimeout(() => {
+        if (typeof window.openPreviewModal === 'function') {
+          window.openPreviewModal(STATE.cvId);
+        }
+      }, 400);
+      return;
+    }
+
+    // Shift+Enter / Alt+Enter — Advance to next step
     if (!e.target || !e.target.closest('.bld-card')) return;
     const isAdvanceKey = (e.shiftKey || e.altKey) && e.key === 'Enter';
     if (!isAdvanceKey) return;

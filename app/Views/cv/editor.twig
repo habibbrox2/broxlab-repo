@@ -1,0 +1,257 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title|default('Edit CV') }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+.cv-editor-page { min-height: 100vh; background: #f1f5f9; }
+.cv-editor-topbar {
+  background: white; border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 40; gap: 1rem; flex-wrap: wrap;
+}
+.cv-editor-topbar-left { display: flex; align-items: center; gap: 1rem; }
+.cv-editor-title-edit {
+  border: none; background: transparent;
+  font-size: 1.1rem; font-weight: 700; color: #1e293b;
+  padding: 0.25rem 0.5rem; border-radius: 6px;
+  border: 1px solid transparent; transition: all 0.15s; min-width: 150px;
+}
+.cv-editor-title-edit:hover { border-color: #cbd5e1; background: #f8fafc; }
+.cv-editor-title-edit:focus { outline: none; border-color: #6366f1; background: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.cv-editor-topbar-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cv-editor-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1rem; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 600;
+  border: 1px solid #e2e8f0; background: white; color: #475569;
+  cursor: pointer; transition: all 0.15s;
+  text-decoration: none; white-space: nowrap;
+}
+.cv-editor-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.cv-editor-btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
+.cv-editor-btn-primary:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 4px 12px rgba(99,102,241,0.35); }
+.cv-editor-btn-success { background: #10b981; color: white; border: none; }
+.cv-editor-btn-success:hover { background: #059669; }
+.cv-editor-btn-danger { color: #ef4444; }
+.cv-editor-btn-danger:hover { background: #fef2f2; border-color: #fca5a5; }
+.cv-editor-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.cv-editor-main { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: calc(100vh - 60px); }
+@media (max-width: 1024px) { .cv-editor-main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: calc(100vh - 60px); } }
+.cv-editor-sidebar { background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 1rem; }
+@media (max-width: 1024px) { .cv-editor-sidebar { border-right: none; border-bottom: 1px solid #e2e8f0; max-height: 50vh; } }
+.cv-editor-sidebar-section { margin-bottom: 1.5rem; }
+.cv-editor-sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.75rem; padding: 0 0.5rem; }
+.cv-editor-template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.cv-editor-template-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.cv-editor-template-card:hover { border-color: #a5b4fc; background: #eef2ff; }
+.cv-editor-template-card.active { border-color: #6366f1; background: #eef2ff; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+.cv-editor-template-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; color: white; font-size: 1rem; }
+.cv-editor-template-name { font-size: 0.75rem; font-weight: 600; color: #334155; }
+.cv-editor-section-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 0.75rem; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 0.25rem; border: 1px solid transparent; }
+.cv-editor-section-item:hover { background: #f8fafc; border-color: #e2e8f0; }
+.cv-editor-section-item.active { background: #eef2ff; border-color: #a5b4fc; }
+.cv-editor-section-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; color: white; }
+.cv-editor-section-label { flex: 1; font-size: 0.85rem; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-editor-section-badge { font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
+.cv-editor-section-badge.has-data { background: #d1fae5; color: #065f46; }
+.cv-editor-section-badge.empty { background: #f1f5f9; color: #94a3b8; }
+.cv-editor-section-actions { display: flex; gap: 0.15rem; opacity: 0; transition: opacity 0.15s; }
+.cv-editor-section-item:hover .cv-editor-section-actions { opacity: 1; }
+.cv-editor-section-action-btn { width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; transition: all 0.15s; padding: 0; }
+.cv-editor-section-action-btn:hover { background: #f1f5f9; color: #475569; }
+.cv-editor-section-action-btn-danger:hover { background: #fef2f2; color: #ef4444; }
+.cv-editor-pane { display: flex; flex-direction: column; height: calc(100vh - 60px); background: #f8fafc; overflow: hidden; }
+@media (max-width: 1024px) { .cv-editor-pane { height: auto; min-height: 60vh; } }
+.cv-editor-content-panel { flex: 1; overflow-y: auto; padding: 1.5rem; }
+.cv-editor-content-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 300px; text-align: center; color: #94a3b8; gap: 0.75rem; }
+.cv-editor-content-empty i { font-size: 3rem; }
+.cv-editor-content-empty h3 { font-size: 1.1rem; font-weight: 600; color: #64748b; }
+.cv-editor-content-empty p { font-size: 0.9rem; max-width: 320px; }
+.cv-editor-form { max-width: 640px; }
+.cv-editor-form-group { margin-bottom: 1.25rem; }
+.cv-editor-form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+.cv-editor-form-input, .cv-editor-form-select, .cv-editor-form-textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white; color: #1e293b; transition: all 0.15s; font-family: inherit; box-sizing: border-box; }
+.cv-editor-form-input:hover, .cv-editor-form-select:hover, .cv-editor-form-textarea:hover { border-color: #cbd5e1; }
+.cv-editor-form-input:focus, .cv-editor-form-select:focus, .cv-editor-form-textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.cv-editor-form-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+.cv-editor-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.cv-editor-form-hint { font-size: 0.78rem; color: #94a3b8; margin-top: 0.3rem; }
+.cv-editor-subitem { background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; margin-bottom: 0.75rem; position: relative; transition: all 0.15s; }
+.cv-editor-subitem:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.cv-editor-subitem-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.cv-editor-subitem-title { font-size: 0.85rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.4rem; }
+.cv-editor-subitem-remove { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 0.8rem; }
+.cv-editor-subitem-remove:hover { background: #fef2f2; color: #ef4444; }
+.cv-editor-add-subitem { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1.5px dashed #cbd5e1; border-radius: 8px; background: transparent; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 0.5rem; }
+.cv-editor-add-subitem:hover { border-color: #6366f1; color: #6366f1; background: #eef2ff; }
+.cv-editor-preview-body { flex: 1; overflow: auto; position: relative; background: #e2e8f0; }
+.cv-editor-preview-iframe { width: 100%; height: 100%; min-height: 500px; border: none; background: white; }
+.cv-editor-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; background: white; flex-shrink: 0; }
+.cv-editor-tab { padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.cv-editor-tab:hover { color: #334155; background: #f8fafc; }
+.cv-editor-tab.active { color: #6366f1; border-bottom-color: #6366f1; }
+.cv-editor-preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: white; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.cv-editor-preview-title { font-size: 0.8rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.4rem; }
+.cv-editor-preview-controls { display: flex; align-items: center; gap: 0.35rem; }
+.cv-editor-preview-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s; }
+.cv-editor-preview-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.cv-editor-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 3rem; color: #94a3b8; }
+.cv-editor-loading-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: cvSpin 0.8s linear infinite; }
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+.cv-editor-toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; padding: 0.75rem 1.25rem; border-radius: 10px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.5rem; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+.cv-editor-toast.show { transform: translateY(0); opacity: 1; }
+.cv-editor-toast.success { background: #065f46; color: white; }
+.cv-editor-toast.error { background: #991b1b; color: white; }
+.cv-editor-toast.info { background: #1e3a5f; color: white; }
+@media (max-width: 768px) { .cv-editor-topbar { padding: 0.5rem 0.75rem; } .cv-editor-main { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+{% set section_steps = {
+  'personal': {'icon': 'user', 'color': '#6366f1', 'bg': '#eef2ff', 'label': 'Personal Info'},
+  'summary': {'icon': 'file-text', 'color': '#8b5cf6', 'bg': '#f5f3ff', 'label': 'Summary'},
+  'experience': {'icon': 'briefcase', 'color': '#f59e0b', 'bg': '#fffbeb', 'label': 'Experience'},
+  'education': {'icon': 'graduation-cap', 'color': '#10b981', 'bg': '#ecfdf5', 'label': 'Education'},
+  'skills': {'icon': 'zap', 'color': '#06b6d4', 'bg': '#ecfeff', 'label': 'Skills'},
+  'languages': {'icon': 'globe', 'color': '#3b82f6', 'bg': '#eff6ff', 'label': 'Languages'},
+  'certificates': {'icon': 'award', 'color': '#f97316', 'bg': '#fff7ed', 'label': 'Certificates'},
+  'projects': {'icon': 'folder', 'color': '#14b8a6', 'bg': '#f0fdfa', 'label': 'Projects'},
+  'social_links': {'icon': 'share-2', 'color': '#ec4899', 'bg': '#fdf2f8', 'label': 'Social Links'},
+  'custom_sections': {'icon': 'layout', 'color': '#78716c', 'bg': '#fafaf9', 'label': 'Custom'},
+  'references': {'icon': 'users', 'color': '#6366f1', 'bg': '#eef2ff', 'label': 'References'}
+} %}
+{% set template_colors = {
+  'modern': {'from': '#6366f1', 'to': '#8b5cf6', 'icon': 'palette'},
+  'minimal': {'from': '#374151', 'to': '#6b7280', 'icon': 'minus'},
+  'ats': {'from': '#059669', 'to': '#10b981', 'icon': 'bot'},
+  'professional': {'from': '#1e40af', 'to': '#3b82f6', 'icon': 'briefcase'}
+} %}
+<div class="cv-editor-page" id="cv-editor-app">
+  <div class="cv-editor-topbar">
+    <div class="cv-editor-topbar-left">
+      <a href="/cv-builder" class="cv-editor-btn"><i class="lucide lucide-chevron-left" style="width:1em;height:1em;"></i></a>
+      <input type="text" class="cv-editor-title-edit" id="cv-editor-title-input" value="{{ cv.title|default('My CV') }}" placeholder="CV Title">
+    </div>
+    <div class="cv-editor-topbar-right">
+      <button class="cv-editor-btn cv-editor-btn-success" onclick="editor.save()" id="cv-editor-save-btn">
+        <i class="lucide lucide-save" style="width:0.85em;height:0.85em;"></i> <span>Save</span>
+      </button>
+    </div>
+  </div>
+  <div class="cv-editor-main">
+    <div class="cv-editor-sidebar">
+      <div class="cv-editor-sidebar-section">
+        <div class="cv-editor-sidebar-title">Template</div>
+        <div class="cv-editor-template-grid">
+          {% for t in templates %}
+          {% set c = template_colors[t]|default({'from': '#6366f1', 'to': '#8b5cf6', 'icon': 'file-text'}) %}
+          <div class="cv-editor-template-card {{ t == selected_template ? 'active' : '' }}" data-template="{{ t }}" onclick="editor.selectTemplate('{{ t }}')">
+            <div class="cv-editor-template-icon" style="background:linear-gradient(135deg,{{ c.from }},{{ c.to }});">
+              <i class="lucide lucide-{{ c.icon }}" style="width:1em;height:1em;"></i>
+            </div>
+            <div class="cv-editor-template-name">{{ t|capitalize }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="cv-editor-sidebar-section">
+        <div class="cv-editor-sidebar-title">Sections</div>
+        <div id="cv-editor-section-list">
+          {% for key, info in section_steps %}
+          {% set bd = builder_data[key]|default(null) %}
+          {% set has_data = bd and ((bd is iterable and (bd|length > 0)) or (bd is not iterable and bd is not empty)) %}
+          <div class="cv-editor-section-item {{ key == 'personal' ? 'active' : '' }}" data-section="{{ key }}" onclick="editor.selectSection('{{ key }}')">
+            <div class="cv-editor-section-icon" style="background:{{ info.color }};">
+              <i class="lucide lucide-{{ info.icon }}" style="width:0.8em;height:0.8em;"></i>
+            </div>
+            <span class="cv-editor-section-label">{{ info.label }}</span>
+            <span class="cv-editor-section-badge {{ has_data ? 'has-data' : 'empty' }}">{{ has_data ? '&#10003;' : '&mdash;' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="cv-editor-pane" id="cv-editor-pane">
+      <div class="cv-editor-tabs">
+        <div class="cv-editor-tab active" data-tab="content" onclick="editor.switchTab('content')"><i class="lucide lucide-pencil" style="width:0.85em;height:0.85em;"></i> <span>Content</span></div>
+        <div class="cv-editor-tab" data-tab="preview" onclick="editor.switchTab('preview')"><i class="lucide lucide-eye" style="width:0.85em;height:0.85em;"></i> <span>Preview</span></div>
+      </div>
+      <div class="cv-editor-content-panel" id="cv-editor-content-panel">
+        <div class="cv-editor-loading" id="cv-editor-loading">
+          <div class="cv-editor-loading-spinner"></div>
+          <span>Loading editor...</span>
+        </div>
+        <div id="cv-editor-content-body" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="cv-editor-toast" id="cv-editor-toast"></div>
+<script>
+(function(){
+'use strict';
+var cvId={{ cv.id|default('0') }},csrf='{{ csrf_token|default('') }}',builderData={{ builder_data|json_encode|raw }},templates={{ templates|json_encode|raw }},selectedTemplate='{{ selected_template|default('modern') }}',curSec='personal',curTab='content',saveTimer=null,isSaving=false;
+var defSecs=['personal','summary','experience','education','skills','languages','certificates','projects','social_links','custom_sections','references'];
+defSecs.forEach(function(s){if(!builderData[s]){if(s==='skills')builderData[s]={technical:[],soft:[]};else if(['experience','education','languages','certificates','projects','social_links','custom_sections','references'].indexOf(s)!==-1)builderData[s]=[];else builderData[s]={};}});
+var editor={init:function(){this.renderSection('personal');document.getElementById('cv-editor-loading').style.display='none';document.getElementById('cv-editor-content-body').style.display='block';document.getElementById('cv-editor-title-input').addEventListener('change',function(){editor.schedSave();});document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();editor.save();}});},
+selectSection:function(key){curSec=key;document.querySelectorAll('.cv-editor-section-item').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-section')===key);});this.renderSection(key);},
+selectTemplate:function(tmpl){selectedTemplate=tmpl;document.querySelectorAll('.cv-editor-template-card').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-template')===tmpl);});this.schedSave();},
+renderSection:function(key){var body=document.getElementById('cv-editor-content-body'),data=builderData[key]||{},meta=window.__steps&&window.__steps[key]||{icon:'file',color:'#6366f1',label:key.charAt(0).toUpperCase()+key.slice(1)};var self=this,html='';switch(key){
+case'personal':html=self.renderPersonal(data);break;
+case'summary':html=self.renderSummary(data);break;
+case'experience':case'education':case'languages':case'certificates':case'projects':case'social_links':case'custom_sections':case'references':html=self.renderList(key,data);break;
+case'skills':html=self.renderSkills(data);break;
+default:html='<div class="cv-editor-content-empty"><i class="lucide lucide-file-text"></i><h3>Select a section</h3><p>Choose a section from the sidebar.</p></div>';}
+body.innerHTML='<div class="cv-editor-form"><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0;"><div class="cv-editor-section-icon" style="width:36px;height:36px;border-radius:8px;background:'+meta.color+';display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;"><i class="lucide lucide-'+meta.icon+'" style="width:1em;height:1em;"></i></div><div><h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">'+meta.label+'</h3><p style="font-size:0.8rem;color:#94a3b8;margin:0;">Edit your '+meta.label.toLowerCase()+'</p></div></div>'+html+'</div>';
+body.querySelectorAll('input,textarea,select').forEach(function(el){el.addEventListener('change',function(){editor.schedSave();});el.addEventListener('input',function(){if(el.tagName!=='SELECT')editor.schedSave();});});
+body.querySelectorAll('.cv-editor-add-subitem').forEach(function(el){el.addEventListener('click',function(){editor.addItem(el.getAttribute('data-field'));});});
+body.querySelectorAll('.cv-editor-subitem-remove').forEach(function(el){el.addEventListener('click',function(){editor.rmItem(el.getAttribute('data-field'),parseInt(el.getAttribute('data-idx'),10));});});
+body.querySelectorAll('.cv-editor-skill-input').forEach(function(el){el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();editor.addSkill(el.getAttribute('data-category'),el.value.trim());el.value='';}});});
+body.querySelectorAll('.cv-editor-skill-remove').forEach(function(el){el.addEventListener('click',function(){editor.rmSkill(el.getAttribute('data-category'),parseInt(el.getAttribute('data-idx'),10));});});},
+renderPersonal:function(d){function v(k,def){return d[k]!==undefined&&d[k]!==null&&d[k]!==''?esc(String(d[k])):(def||'');}
+return '<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Full Name</label><input class="cv-editor-form-input" data-p="full_name" value="'+v('full_name')+'" placeholder="John Doe"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Job Title</label><input class="cv-editor-form-input" data-p="job_title" value="'+v('job_title')+'" placeholder="Software Engineer"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Email</label><input class="cv-editor-form-input" type="email" data-p="email" value="'+v('email')+'" placeholder="john@example.com"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Phone</label><input class="cv-editor-form-input" type="tel" data-p="phone" value="'+v('phone')+'" placeholder="+1 555-0000"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">DOB</label><input class="cv-editor-form-input" type="date" data-p="date_of_birth" value="'+v('date_of_birth')+'"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Nationality</label><input class="cv-editor-form-input" data-p="nationality" value="'+v('nationality')+'" placeholder="American"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Gender</label><select class="cv-editor-form-select" data-p="gender"><option value="">Select</option><option value="male"'+(d.gender==='male'?' selected':'')+'>Male</option><option value="female"'+(d.gender==='female'?' selected':'')+'>Female</option><option value="other"'+(d.gender==='other'?' selected':'')+'>Other</option></select></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Address</label><input class="cv-editor-form-input" data-p="address" value="'+v('address')+'" placeholder="City, Country"></div></div>';},
+renderSummary:function(d){function v(k,def){return d[k]!==undefined&&d[k]!==null&&d[k]!==''?esc(String(d[k])):(def||'');}
+return '<div class="cv-editor-form-group"><label class="cv-editor-form-label">Professional Summary</label><textarea class="cv-editor-form-textarea" data-s="professional_summary" placeholder="Brief professional summary...">'+v('professional_summary')+'</textarea></div>'+
+'<div class="cv-editor-form-group"><label class="cv-editor-form-label">Career Objective</label><textarea class="cv-editor-form-textarea" data-s="career_objective" placeholder="Career aspirations...">'+v('career_objective')+'</textarea></div>';},
+renderSkills:function(d){var t=Array.isArray(d.technical)?d.technical:[],s=Array.isArray(d.soft)?d.soft:[];var tg=function(a,c){return a.map(function(x,i){return'<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:20px;font-size:0.8rem;font-weight:500;">'+esc(x)+'<button class="cv-editor-skill-remove" data-category="'+c+'" data-idx="'+i+'" style="cursor:pointer;border:none;background:none;color:#9ca3af;padding:0;display:inline-flex;font-size:0.7rem;width:16px;height:16px;align-items:center;justify-content:center;border-radius:50%;">x</button></span>';}).join('');};
+return '<div class="cv-editor-form-group"><label class="cv-editor-form-label">Technical Skills</label><div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;min-height:2.5rem;margin-bottom:0.5rem;" id="cv-edit-skills-tech">'+tg(t,'technical')+'</div><input class="cv-editor-form-input cv-editor-skill-input" data-category="technical" placeholder="Type and press Enter..." style="border-style:dashed;border-radius:20px;"></div>'+
+'<div class="cv-editor-form-group"><label class="cv-editor-form-label">Soft Skills</label><div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;min-height:2.5rem;margin-bottom:0.5rem;" id="cv-edit-skills-soft">'+tg(s,'soft')+'</div><input class="cv-editor-form-input cv-editor-skill-input" data-category="soft" placeholder="Type and press Enter..." style="border-style:dashed;border-radius:20px;"></div>';},
+renderList:function(f,d){var items=Array.isArray(d)?d:[],html='<div id="cv-editor-list-'+f+'">';items.forEach(function(item,i){html+='<div class="cv-editor-subitem"><div class="cv-editor-subitem-header"><span class="cv-editor-subitem-title"><i class="lucide lucide-grip-vertical" style="width:0.8em;height:0.8em;color:#cbd5e1;"></i> Entry '+(i+1)+'</span><button class="cv-editor-subitem-remove" data-field="'+f+'" data-idx="'+i+'"><i class="lucide lucide-x" style="width:0.85em;height:0.85em;"></i></button></div>';
+var keys=f==='experience'?['company','position','location','start_date','end_date','responsibilities']:f==='education'?['institution','degree','field','year']:f==='languages'?['name','proficiency']:f==='certificates'?['name','organization','date']:f==='projects'?['name','description','technologies']:f==='social_links'?['platform','url']:f==='custom_sections'?['title','content']:f==='references'?['name','title','email','phone']:['title','description'];
+html+='<div class="cv-editor-form-row">';keys.forEach(function(k,ki){if(ki>0&&ki%2===0)html+='</div><div class="cv-editor-form-row">';
+if(k==='proficiency'){var profs=['basic','intermediate','advanced','fluent','native'];html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">Proficiency</label><select class="cv-editor-form-select" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'"><option value="">Select</option>';profs.forEach(function(p){html+='<option value="'+p+'"'+(item[k]===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';});html+='</select></div>';}
+else if(k==='platform'){var plats=['linkedin','github','twitter','website','facebook','instagram','youtube','dribbble','behance','other'];html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">Platform</label><select class="cv-editor-form-select" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'"><option value="">Select</option>';plats.forEach(function(p){html+='<option value="'+p+'"'+(item[k]===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';});html+='</select></div>';}
+else if(k==='responsibilities'||k==='description'||k==='content'){html+='<div class="cv-editor-form-group" style="grid-column:1/-1;"><label class="cv-editor-form-label">'+k.charAt(0).toUpperCase()+k.slice(1)+'</label><textarea class="cv-editor-form-textarea" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'" placeholder="'+k.replace(/_/g,' ')+'">'+esc(item[k]||'')+'</textarea></div>';}
+else{html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">'+k.charAt(0).toUpperCase()+k.replace(/_/g,' ')+'</label><input class="cv-editor-form-input" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'" value="'+esc(item[k]||'')+'" placeholder="'+k.replace(/_/g,' ')+'"></div>';}});html+='</div></div>';});
+html+='</div><button class="cv-editor-add-subitem" data-field="'+f+'"><i class="lucide lucide-plus-circle" style="width:0.85em;height:0.85em;"></i> Add Entry</button>';return html;},
+addItem:function(f){if(!Array.isArray(builderData[f]))builderData[f]=[];builderData[f].push({});this.renderSection(curSec);},
+rmItem:function(f,i){if(!Array.isArray(builderData[f]))return;builderData[f].splice(i,1);this.renderSection(curSec);this.schedSave();},
+addSkill:function(c,v){if(!v)return;if(!builderData.skills)builderData.skills={technical:[],soft:[]};if(!Array.isArray(builderData.skills[c]))builderData.skills[c]=[];builderData.skills[c].push(v);this.renderSection(curSec);this.schedSave();},
+rmSkill:function(c,i){if(!builderData.skills||!Array.isArray(builderData.skills[c]))return;builderData.skills[c].splice(i,1);this.renderSection(curSec);this.schedSave();},
+collect:function(){var b=document.getElementById('cv-editor-content-body');if(!b)return;
+b.querySelectorAll('[data-p]').forEach(function(el){builderData.personal[el.getAttribute('data-p')]=el.value;});
+b.querySelectorAll('[data-s]').forEach(function(el){builderData.summary[el.getAttribute('data-s')]=el.value;});
+b.querySelectorAll('[data-l]').forEach(function(el){var f=el.getAttribute('data-l'),i=parseInt(el.getAttribute('data-idx'),10),k=el.getAttribute('data-key');if(!Array.isArray(builderData[f]))builderData[f]=[];if(!builderData[f][i])builderData[f][i]={};builderData[f][i][k]=el.value;});return builderData;},
+schedSave:function(){var self=this;if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(function(){self.save(true);},3000);},
+save:function(silent){if(isSaving)return;isSaving=true;this.collect();var t=document.getElementById('cv-editor-title-input').value.trim()||'My CV',btn=document.getElementById('cv-editor-save-btn');if(!silent&&btn){btn.disabled=true;btn.innerHTML='<i class="lucide lucide-hourglass" style="width:0.85em;height:0.85em;"></i> Saving...';}
+fetch('/cv-builder/'+cvId,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({title:t,template:selectedTemplate,content:builderData})})
+.then(function(r){return r.json();})
+.then(function(res){if(res.success){if(!silent)editor.toast('CV saved successfully!','success');}else{if(!silent)editor.toast(res.error||'Save failed','error');}})
+.catch(function(){if(!silent)editor.toast('Failed to save','error');})
+.finally(function(){isSaving=false;if(!silent&&btn){btn.disabled=false;btn.innerHTML='<i class="lucide lucide-save" style="width:0.85em;height:0.85em;"></i> Save';}});},
+switchTab:function(tab){curTab=tab;document.querySelectorAll('.cv-editor-tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===tab);});
+if(tab==='preview'){document.getElementById('cv-editor-content-panel').innerHTML='<iframe id="cv-editor-preview-iframe" style="width:100%;height:100%;min-height:80vh;border:none;background:white;" sandbox="allow-scripts allow-same-origin"></iframe>';this.loadPreview();}
+else{this.renderSection(curSec);}},
+loadPreview:function(){var ifr=document.getElementById('cv-editor-preview-iframe');if(!ifr)return;ifr.src='/api/cv/'+cvId+'/preview?template='+encodeURIComponent(selectedTemplate)+'&zoom=0.8&t='+Date.now();},
+toast:function(m,t){var el=document.getElementById('cv-editor-toast');if(!el)return;el.textContent=m;el.className='cv-editor-toast '+(t||'info');el.classList.add('show');clearTimeout(el._h);el._h=setTimeout(function(){el.classList.remove('show');},3000);}};
+function esc(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+window.editor=editor;window.__steps={{ section_steps|json_encode|raw }};
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){editor.init();});}else{editor.init();}
+})();
+</script>
+{% endblock %}

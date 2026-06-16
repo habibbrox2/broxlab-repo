@@ -38,7 +38,7 @@ class CvItemModel
     private function getNextOrder(int $sectionId): int
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT MAX(`order`) as max_order FROM cv_items WHERE section_id = ?"
+            "SELECT MAX(`order`) as max_order FROM cv_items WHERE section_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $sectionId);
         $stmt->execute();
@@ -55,7 +55,7 @@ class CvItemModel
     public function getBySectionId(int $sectionId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_items WHERE section_id = ? ORDER BY `order` ASC"
+            "SELECT * FROM cv_items WHERE section_id = ? AND deleted_at IS NULL ORDER BY `order` ASC"
         );
         $stmt->bind_param('i', $sectionId);
         $stmt->execute();
@@ -77,7 +77,7 @@ class CvItemModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_items WHERE id = ? LIMIT 1"
+            "SELECT * FROM cv_items WHERE id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
@@ -139,11 +139,12 @@ class CvItemModel
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_items WHERE id = ?"
+            "UPDATE cv_items SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $id);
 
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        return $ok && $stmt->affected_rows > 0;
     }
 
     /**
@@ -177,7 +178,7 @@ class CvItemModel
     public function belongsToSection(int $itemId, int $sectionId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cv_items WHERE id = ? AND section_id = ? LIMIT 1"
+            "SELECT id FROM cv_items WHERE id = ? AND section_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('ii', $itemId, $sectionId);
         $stmt->execute();

@@ -14,21 +14,80 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 
 ## Project Map
 
-| Layer | Location | Pattern |
-|-------|----------|---------|
-| **Entry Point** | `public_html/index.php` | PHP app bootstrap |
-| **Routing** | `app/Controllers/*.php` (embedded in each controller) | Custom regex router, middleware-aware |
-| **Backend Logic** | `app/Models/`, `app/Services/`, `app/Helpers/` | MVC: Models → Services → Helpers |
-| **Views** | `app/Views/` (Twig templates) | Organized by area: `public/`, `admin/`, `user/`, `auth/` |
-| **Middleware** | `app/Middleware/` | Auth, CSRF, rate limiting, etc. |
-| **Database** | `Database/*.sql` (schemas) | Manual SQL files per table; soft deletes universal |
-| **Node Service** | `src/` (TypeScript) | Unified AI, OCR, tools APIs on Fastify |
-| **Build Tools** | `build/` (esbuild, eslint, vitest, playwright) | JS/CSS bundling, linting, testing |
-| **Frontend Sources** | `public_html/assets/{js,css}/` | **Never edit `dist/`** (auto-generated) |
-| **RTE Editor** | `public_html/rtceditor/` | Rich Text Editor — source files + esbuild bundle |
-| **AI/Prompts** | `system/prompts/` | AI model configs and prompt templates |
-| **Agent Skills** | `.ai/*.skill.md`, `.kilo/skills/**/SKILL.md` | Workflow and task-specific skills for AI agents |
-| **Kilo Agent** | `.kilo/agent/code.md`, `.kilo/kilo.json` | Local coding-agent instructions and runtime config |
+This project uses MVC with 50 Controllers, 51 Models, 25 Helpers, 244 Views, and 74 SQL schema files.
+
+| Layer | Location | Role |
+|-------|----------|------|
+| **Bootstrap** | `public_html/index.php` | Static file serving, Composer autoload, app bootstrap |
+| **Router** | `app/Routes/Router.php` | Custom regex router |
+| **Controllers** | `app/Controllers/*.php` | 50 controllers with embedded routes + middleware |
+| **Models** | `app/Models/*.php` | 51 models using Mysqli prepared statements |
+| **Services** | `app/Services/` | Business logic |
+| **Helpers** | `app/Helpers/*.php` | 25 shared utilities (purify, email, logging, etc.) |
+| **Views** | `app/Views/` | 244 Twig templates (admin, user, public, auth, etc.) |
+| **Middleware** | `app/Middleware/` | Auth, CSRF, rate limiting |
+| **Modules** | `app/Modules/` | PdfTools, AISystem (multiple layers) |
+| **Config** | `Config/` | Twig, DB, uploads, constants |
+| **Database** | `Database/*.sql` | 74 files — one per table; soft deletes universal |
+| **Frontend** | `public_html/assets/{js,css}/` | Source files — never edit `dist/` |
+| **RTE** | `public_html/rtceditor/` | 16 JS source files + esbuild bundle |
+| **AI Prompts** | `system/prompts/` | 8 prompt/config files |
+| **Build** | `build/` | esbuild configs, scripts, tests |
+
+## Complete Controller List
+
+| Controller | Key Responsibility |
+|------------|---------------------|
+| `ActivityController.php` | User activity tracking |
+| `AdminCvPersonalInfoController.php` | Admin CV personal info CRUD |
+| `AdminCvTemplatesController.php` | Admin CV template management |
+| `AdminLogsController.php` | Admin log viewer |
+| `AdminNotificationTemplateController.php` | Notification template admin |
+| `AdminSecurityController.php` | Admin security settings |
+| `AdminServiceApplicationController.php` | Admin service application management |
+| `AdminServicesController.php` | Admin service CRUD |
+| `AdminSetupController.php` | Admin setup wizard |
+| `AISystemController.php` | AI chatbot API endpoints |
+| `AnalyticsController.php` | Analytics data endpoints |
+| `AppSettingsController.php` | App-level settings CRUD |
+| `AuthController.php` | Login, register, password reset, 2FA |
+| `CalculatorController.php` | Calculator tools |
+| `CommentController.php` | Comment CRUD + reactions |
+| `ContentController.php` | Content management |
+| `ContentRatingController.php` | Content rating system |
+| `CvController.php` | CV builder user flows |
+| `DashboardController.php` | User dashboard |
+| `FeatureFlagController.php` | Feature flags API |
+| `FirebaseController.php` | Firebase auth integration |
+| `HomeController.php` | Home page data |
+| `JobPositionController.php` | Job position CRUD |
+| `LanguageController.php` | Language switcher |
+| `MedexController.php` | MedEX: drug details, brands, companies |
+| `MediaController.php` | Media file uploads/serving |
+| `MixedApiController.php` | Miscellaneous API endpoints |
+| `MobilesController.php` | Mobile device CRUD + specs |
+| `MonetizationController.php` | Ads, sponsored, donations |
+| `NotificationController.php` | Notification CRUD |
+| `OCRController.php` | OCR (text extraction) |
+| `PageController.php` | Single page view |
+| `PagesController.php` | CMS pages CRUD |
+| `PaymentController.php` | Payment processing (bKash, Nagad, Rocket) |
+| `PexelsController.php` | Pexels image API proxy |
+| `PhotoStudioController.php` | Photo studio / AI cutout |
+| `PixabayController.php` | Pixabay image API proxy |
+| `PostsController.php` | Blog posts CRUD |
+| `ProfileController.php` | User profile management |
+| `PuterProxyController.php` | Puter desktop proxy |
+| `RbacController.php` | Role-based access control |
+| `ScraperApiController.php` | Scraper pipeline API |
+| `ServicesController.php` | Service listing + application |
+| `SettingsController.php` | User settings |
+| `SimRoutingController.php` | SIM routing for notifications |
+| `SitemapController.php` | Sitemap generation |
+| `TagsCategoriesController.php` | Tags + categories CRUD |
+| `UserController.php` | User management (admin) |
+| `UserSecurityController.php` | User 2FA, sessions, security |
+| `WeatherController.php` | Weather display + API |
 
 ---
 

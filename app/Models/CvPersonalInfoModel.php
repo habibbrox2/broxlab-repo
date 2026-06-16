@@ -23,7 +23,7 @@ class CvPersonalInfoModel
     public function getByCvId(int $cvId): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_personal_info WHERE cv_id = ? LIMIT 1"
+            "SELECT * FROM cv_personal_info WHERE cv_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -40,6 +40,7 @@ class CvPersonalInfoModel
             "SELECT pi.* FROM cv_personal_info pi
              JOIN cvs c ON pi.cv_id = c.id
              WHERE pi.user_id = ?
+             WHERE pi.deleted_at IS NULL AND c.deleted_at IS NULL
              ORDER BY c.updated_at DESC
              LIMIT 1"
         );
@@ -143,19 +144,19 @@ class CvPersonalInfoModel
     public function deleteByCvId(int $cvId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_personal_info WHERE cv_id = ?"
+            "UPDATE cv_personal_info SET deleted_at = NOW() WHERE cv_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $cvId);
         return $stmt->execute();
     }
 
     /**
-     * Delete personal info for a user.
+     * Soft-delete personal info for a user.
      */
     public function deleteByUserId(int $userId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_personal_info WHERE user_id = ?"
+            "UPDATE cv_personal_info SET deleted_at = NOW() WHERE user_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $userId);
         return $stmt->execute();
@@ -198,7 +199,7 @@ class CvPersonalInfoModel
      */
     public function count(): int
     {
-        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cv_personal_info");
+        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cv_personal_info WHERE deleted_at IS NULL");
         $row = $result->fetch_assoc();
         return (int)($row['total'] ?? 0);
     }
@@ -209,7 +210,7 @@ class CvPersonalInfoModel
     public function exists(int $cvId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cv_personal_info WHERE cv_id = ? LIMIT 1"
+            "SELECT id FROM cv_personal_info WHERE cv_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();

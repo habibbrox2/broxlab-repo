@@ -17,9 +17,9 @@ class CvModel
     public function create(int $userId, string $title = 'My CV', string $template = 'modern', ?string $professionalStatus = null): ?int
     {
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cvs (user_id, title, is_active, professional_status) VALUES (?, ?, TRUE, ?)"
+            "INSERT INTO cvs (user_id, title, template, is_active, professional_status) VALUES (?, ?, ?, TRUE, ?)"
         );
-        $stmt->bind_param('iss', $userId, $title, $professionalStatus);
+        $stmt->bind_param('isss', $userId, $title, $template, $professionalStatus);
 
         if ($stmt->execute()) {
             return (int)$stmt->insert_id;
@@ -34,7 +34,7 @@ class CvModel
     public function getByUserId(int $userId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs WHERE user_id = ? ORDER BY updated_at DESC"
+            "SELECT * FROM cvs WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC"
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();
@@ -87,13 +87,12 @@ class CvModel
             $where[] = 'c.is_active = 0';
         }
 
+        $where[] = 'c.deleted_at IS NULL';
         $sql = "SELECT c.id, c.user_id, c.title, c.is_active, c.created_at, c.updated_at,
                        u.username, u.email, u.first_name, u.last_name
                 FROM cvs c
                 LEFT JOIN users u ON c.user_id = u.id";
-        if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
+        $sql .= ' WHERE ' . implode(' AND ', $where);
         $sql .= " ORDER BY {$sortColumn} {$order} LIMIT ? OFFSET ?";
 
         $params[] = $limit;
@@ -137,6 +136,7 @@ class CvModel
             $where[] = 'c.is_active = 0';
         }
 
+        $where[] = 'c.deleted_at IS NULL';
         $sql = "SELECT COUNT(*) as total
                 FROM cvs c
                 LEFT JOIN users u ON c.user_id = u.id";
@@ -164,7 +164,7 @@ class CvModel
         $stats = [];
 
         // Total CVs
-        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs");
+        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs WHERE deleted_at IS NULL");
         $stats['total'] = $result->fetch_assoc()['total'] ?? 0;
 
         // CVs by template (commented out until column is added)
@@ -178,7 +178,7 @@ class CvModel
 
         // Active users with CVs
         $result = $this->mysqli->query(
-            "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs"
+            "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs WHERE deleted_at IS NULL"
         );
         $stats['users_with_cvs'] = $result->fetch_assoc()['users_with_cvs'] ?? 0;
 
@@ -219,7 +219,7 @@ class CvModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs WHERE id = ? LIMIT 1"
+            "SELECT * FROM cvs WHERE id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
@@ -255,6 +255,12 @@ class CvModel
             $types .= 's';
         }
 
+        if (array_key_exists('template', $data)) {
+            $fields[] = 'template = ?';
+            $params[] = $data['template'];
+            $types .= 's';
+        }
+
         if (array_key_exists('builder_data', $data)) {
             if ($data['builder_data'] === null) {
                 $fields[] = 'builder_data = NULL';
@@ -262,6 +268,16 @@ class CvModel
                 $fields[] = 'builder_data = ?';
                 $jsonData = is_array($data['builder_data']) ? json_encode($data['builder_data']) : $data['builder_data'];
                 $params[] = $jsonData;
+                $types .= 's';
+            }
+        }
+
+        if (array_key_exists('profile_photo', $data)) {
+            if ($data['profile_photo'] === null) {
+                $fields[] = 'profile_photo = NULL';
+            } else {
+                $fields[] = 'profile_photo = ?';
+                $params[] = $data['profile_photo'];
                 $types .= 's';
             }
         }
@@ -306,6 +322,7 @@ class CvModel
 
     /**
      * Complete the builder: map builder_data into sections and items.
+     * Also migrates data to V3 normalized tables via CvProfileService.
      * Returns true on success.
      */
     public function completeBuilder(int $cvId, int $userId): bool
@@ -320,6 +337,23 @@ class CvModel
             $this->update($cvId, ['title' => $data['personal']['full_name'] . "'s CV"]);
         }
 
+        // Migrate to V3 normalized tables (write-through bridge)
+        try {
+            require_once dirname(__DIR__, 1) . '/Services/CvProfileService.php';
+            $profileService = new CvProfileService($this->mysqli);
+            $cv = $this->getById($cvId);
+            $template = $cv['template'] ?? 'modern';
+            $profileService->migrateFromBuilderData($cvId, $userId, $data, $template);
+        } catch (\Throwable $e) {
+            // Log but don't fail — old system still works
+            if (function_exists('logError')) {
+                logError('V3 migration failed in completeBuilder', [
+                    'cv_id' => $cvId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return true;
     }
 
@@ -329,7 +363,7 @@ class CvModel
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cvs WHERE id = ?"
+            "UPDATE cvs SET deleted_at = NOW() WHERE id = ?"
         );
         $stmt->bind_param('i', $id);
 
@@ -342,7 +376,7 @@ class CvModel
     public function belongsToUser(int $cvId, int $userId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cvs WHERE id = ? AND user_id = ? LIMIT 1"
+            "SELECT id FROM cvs WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('ii', $cvId, $userId);
         $stmt->execute();

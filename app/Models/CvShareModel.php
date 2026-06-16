@@ -38,7 +38,7 @@ class CvShareModel
         $stmt = $this->mysqli->prepare(
             "SELECT id, cv_id, token, expires_at, created_at, updated_at
              FROM cv_shares
-             WHERE token = ?
+             WHERE token = ? AND deleted_at IS NULL
              LIMIT 1"
         );
         $stmt->bind_param('s', $token);
@@ -70,7 +70,7 @@ class CvShareModel
         $stmt = $this->mysqli->prepare(
             "SELECT id, cv_id, token, expires_at, created_at, updated_at
              FROM cv_shares
-             WHERE cv_id = ?
+             WHERE cv_id = ? AND deleted_at IS NULL
              ORDER BY id DESC
              LIMIT 1"
         );
@@ -100,20 +100,21 @@ class CvShareModel
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_shares WHERE id = ?"
+            "UPDATE cv_shares SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $id);
 
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        return $ok && $stmt->affected_rows > 0;
     }
 
     /**
-     * Delete share by CV ID.
+     * Soft-delete share by CV ID.
      */
     public function deleteByCvId(int $cvId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_shares WHERE cv_id = ?"
+            "UPDATE cv_shares SET deleted_at = NOW() WHERE cv_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $cvId);
 
@@ -126,7 +127,7 @@ class CvShareModel
     public function isShared(int $cvId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cv_shares WHERE cv_id = ? LIMIT 1"
+            "SELECT id FROM cv_shares WHERE cv_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();

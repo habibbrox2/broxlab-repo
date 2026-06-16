@@ -1,0 +1,110 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title|default('Create CV') }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 py-8 px-4">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header Card -->
+    <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-500/20">
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.2),transparent_55%)] pointer-events-none" aria-hidden="true"></div>
+      <div class="relative px-6 py-8 text-center">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 border border-white/20 mb-4 shadow-lg">
+          <i class="lucide lucide-file-earmark-text w-7 h-7 text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-1.5">{{ page_title }}</h1>
+        <p class="text-indigo-100 text-sm max-w-md mx-auto">আপনার পেশাদার সিভি তৈরি করুন এবং ক্যারিয়ারের নতুন দিগন্ত উন্মোচন করুন</p>
+      </div>
+    </div>
+
+    <!-- Create Form -->
+    <form method="POST" action="/cv-builder" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <!-- CV Title -->
+      <div class="card p-5">
+        <label for="title" class="form-label">সিভি শিরোনাম</label>
+        <input type="text" id="title" name="title" value="My CV"
+               class="form-input"
+               placeholder="e.g. My Professional CV">
+        <p class="form-hint">আপনার সিভি সনাক্ত করার জন্য একটি নাম দিন</p>
+      </div>
+
+      <!-- Profession / Job Title -->
+      <div class="card p-5">
+        <label for="profession" class="form-label">পেশা / চাকরির শিরোনাম</label>
+        <input type="text" id="profession" name="profession"
+               class="form-input"
+               placeholder="e.g. Software Engineer, Doctor, Teacher"
+               value="{{ profession|default() }}">
+        <p class="form-hint">আপনার পেশা নির্বাচন করলে প্রিফিলড সাজেশন পাওয়া যাবে</p>
+      </div>
+
+      <!-- Template Selection -->
+      <div class="card p-5">
+        <label class="form-label">টেমপ্লেট নির্বাচন করুন</label>
+        <p class="form-hint mb-4">আপনার পছন্দের টেমপ্লেট বেছে নিন। পরে পরিবর্তন করতে পারবেন।</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <label class="pill-option justify-center text-center !p-4 !flex-col !gap-2" data-active="true">
+            <input type="radio" name="template" value="modern" checked>
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <i class="lucide lucide-palette w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-xs font-semibold">Modern</span>
+          </label>
+          <label class="pill-option justify-center text-center !p-4 !flex-col !gap-2">
+            <input type="radio" name="template" value="minimal">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-500 flex items-center justify-center">
+              <i class="lucide lucide-minus w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-xs font-semibold">Minimal</span>
+          </label>
+          <label class="pill-option justify-center text-center !p-4 !flex-col !gap-2">
+            <input type="radio" name="template" value="ats">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <i class="lucide lucide-bot w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-xs font-semibold">ATS</span>
+          </label>
+          <label class="pill-option justify-center text-center !p-4 !flex-col !gap-2">
+            <input type="radio" name="template" value="professional">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center">
+              <i class="lucide lucide-briefcase w-5 h-5 text-white"></i>
+            </div>
+            <span class="text-xs font-semibold">Professional</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Professional Status -->
+      <div class="card p-5">
+        <label class="form-label">কর্মজীবনের অবস্থা</label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="pill-option" data-active="true">
+            <input type="radio" name="professional_status" value="looking" checked>
+            <i class="lucide lucide-briefcase w-4 h-4"></i>
+            <span>চাকরি খুঁজছি</span>
+          </label>
+          <label class="pill-option">
+            <input type="radio" name="professional_status" value="resting">
+            <i class="lucide lucide-pause w-4 h-4"></i>
+            <span>বিশ্রামে</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <a href="/cv-builder" class="btn-ghost flex-1 justify-center">
+          <i class="lucide lucide-arrow-left w-4 h-4"></i>
+          ফিরে যান
+        </a>
+        <button type="submit" class="btn-primary flex-1 justify-center">
+          <i class="lucide lucide-plus w-4 h-4"></i>
+          সিভি তৈরি করুন
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

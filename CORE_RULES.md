@@ -35,18 +35,23 @@ purpose: Single source of truth for BroxLab dev rules—referenced by all agents
 - Tests: `npm run test:run`
 - Asset check: `npm run check:assets`
 
-## Project Structure
+## Project Structure (50 Controllers, 51 Models, 25 Helpers, 244 Views, 74 SQL)
 
-| Layer | Location | Pattern |
-|-------|----------|---------|
-| Routes | `app/Controllers/` | Embedded routing, middleware-aware |
-| Data | `app/Models/` | Prepared statements, explicit columns |
-| Utils | `app/Helpers/` | Reusable formatting, sanitization |
-| Views | `app/Views/` | Twig templates, organized by area |
-| Middleware | `app/Middleware/` | Auth, CSRF, rate limit |
-| Frontend | `public_html/assets/{js,css}/` | Source only; never edit `dist/` |
-| Node/TS | `src/` | Unified APIs on Fastify |
-| AI Prompts | `system/prompts/` | Model configs and templates |
+| Layer | Location | Count | Purpose |
+|-------|----------|-------|---------|
+| Routes | `app/Routes/Router.php` | 1 | Custom regex router, middleware-aware |
+| Controllers | `app/Controllers/*.php` | 50 | HTTP handlers |
+| Models | `app/Models/*.php` | 51 | Database access (Mysqli, prepared statements) |
+| Services | `app/Services/` | — | Business logic orchestration |
+| Helpers | `app/Helpers/*.php` | 25 | Shared utilities (purify, email, logging, etc.) |
+| Middleware | `app/Middleware/` | 2+ | Auth, CSRF, rate limit |
+| Views | `app/Views/` | 244 | Twig templates by area |
+| Modules | `app/Modules/` | 2 | PdfTools, AISystem (layers) |
+| Config | `Config/` | 8 | Twig, DB, uploads, constants |
+| Database | `Database/*.sql` | 74 | One SQL file per table; soft deletes universal |
+| Frontend | `public_html/assets/{js,css}/` | 108 JS | Source only; never edit `dist/` |
+| RTE | `public_html/rtceditor/` | 16 JS | Source files + esbuild bundle |
+| AI Prompts | `system/prompts/` | 8 | Model configs and templates |
 
 ## Workflow (Always)
 

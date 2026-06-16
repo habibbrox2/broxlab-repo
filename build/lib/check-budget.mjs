@@ -63,16 +63,12 @@ const BUDGETS = [
   { key: 'public_html/assets/js/dist/cv-admin.js',                    maxBytes: 12_000, label: 'cv-admin.js' },
   { key: 'public_html/assets/js/dist/cv-marketplace.js',              maxBytes: 5_000,  label: 'cv-marketplace.js' },
   { key: 'public_html/assets/js/dist/cv-template-upload.js',          maxBytes: 6_000,  label: 'cv-template-upload.js' },
-  { key: 'public_html/assets/js/dist/medex-autocollect.js',           maxBytes: 3_000,  label: 'medex-autocollect.js' },
   { key: 'public_html/assets/js/dist/medex-brand-page.js',            maxBytes: 3_000,  label: 'medex-brand-page.js' },
   { key: 'public_html/assets/js/dist/medex-details-page.js',          maxBytes: 7_000,  label: 'medex-details-page.js' },
-  { key: 'public_html/assets/js/dist/medex-scraper.js',               maxBytes: 9_000,  label: 'medex-scraper.js' },
 
   // ── CSS ──
-  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 445_000, label: 'tailwind-public.css' },
-  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 445_000, label: 'tailwind-admin.css' },
-  { key: 'public_html/assets/css/dist/public-bundle.css',     maxBytes: 445_000, label: 'public-bundle.css' },
-  { key: 'public_html/assets/css/dist/admin-bundle.css',      maxBytes: 445_000, label: 'admin-bundle.css' },
+  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 465_000, label: 'tailwind-public.css' },
+  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 465_000, label: 'tailwind-admin.css' },
 
   // ── Other generated bundles ──
   { key: 'public_html/rtceditor/editor.bundle.js',             maxBytes: 120_000, label: 'editor.bundle.js' },

@@ -562,7 +562,10 @@
 </style>
 {% endblock %}
 
+{% import 'cv/_modal_preview.twig' as modal %}
+
 {% block content %}
+{{ modal.preview_modal(cv.id|default(0), templates|default(['modern','minimal','ats','professional']), selected_template|default('modern')) }}
 <div class="cv-view-page">
  <div class="cv-view-container">
  <!-- Header Section -->
@@ -581,11 +584,14 @@
  <button onclick="downloadCV()" class="cv-action-btn cv-action-success">
  <i class="lucide lucide-download"></i>
  Download PDF
- </button>
- <button onclick="shareCV()" class="cv-action-btn cv-action-secondary">
+ </button><button onclick="openPreviewModal({{ cv.id|default(0) }})" class="cv-action-btn cv-action-primary">
+ <i class="lucide lucide-eye"></i>
+ Preview
+</button>
+<button onclick="shareCV()" class="cv-action-btn cv-action-secondary">
  <i class="lucide lucide-share-2"></i>
  Share
- </button>
+</button>
  <button onclick="duplicateCV()" class="cv-action-btn cv-action-warning">
  <i class="lucide lucide-copy"></i>
  Duplicate

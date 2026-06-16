@@ -70,17 +70,22 @@ class CvProfileService
 
     /**
      * Create a new CV profile for a user.
+     *
+     * @param int         $userId        User ID
+     * @param string      $title         Profile title
+     * @param string|null $templateSlug  Default template slug
+     * @param int|null    $cvId          Link to old cvs table (write-through bridge)
      */
-    public function create(int $userId, string $title = 'My CV', ?string $templateSlug = 'modern'): ?int
+    public function create(int $userId, string $title = 'My CV', ?string $templateSlug = 'modern', ?int $cvId = null): ?int
     {
         $slug = $this->generateUniqueSlug($userId, $title);
         $createdAt = date('Y-m-d H:i:s');
 
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cv_profiles (user_id, title, slug, is_active, created_at, updated_at) 
-             VALUES (?, ?, ?, 1, ?, ?)"
+            "INSERT INTO cv_profiles (user_id, title, slug, is_active, cv_id, created_at, updated_at) 
+             VALUES (?, ?, ?, 1, ?, ?, ?)"
         );
-        $stmt->bind_param('issss', $userId, $title, $slug, $createdAt, $createdAt);
+        $stmt->bind_param('ississ', $userId, $title, $slug, $cvId, $createdAt, $createdAt);
         
         if (!$stmt->execute()) {
             return null;
@@ -155,12 +160,19 @@ class CvProfileService
         $params = [];
         $types = '';
 
-        $allowedFields = ['title', 'is_active'];
+        $allowedFields = ['title', 'is_active', 'cv_id', 'professional_summary', 'active_template_id'];
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
-                $params[] = $data[$field];
-                $types .= is_int($data[$field]) ? 'i' : 's';
+                $val = $data[$field];
+                $params[] = $val;
+                if ($val === null) {
+                    $types .= 's';
+                } elseif (is_int($val) || in_array($field, ['is_active', 'cv_id', 'active_template_id'])) {
+                    $types .= 'i';
+                } else {
+                    $types .= 's';
+                }
             }
         }
 
@@ -779,5 +791,210 @@ class CvProfileService
         $stmt = $this->mysqli->prepare("DELETE FROM {$table} WHERE id = ?");
         $stmt->bind_param('i', $id);
         return $stmt->execute();
+    }
+
+    // ========================================================================
+    //  WRITE-THROUGH BRIDGE: migrateFromBuilderData
+    // ========================================================================
+
+    /**
+     * Migrate data from the old builder_data JSON format into normalized V3 child tables.
+     * Creates a cv_profiles entry linked to the old cvs.id if one doesn't exist.
+     *
+     * This is the core of the write-through bridge: old routes write to builder_data
+     * and normalized old tables; this method copies the data into V3 tables so
+     * CvRendererService can consume it.
+     *
+     * @param int    $cvId        Old cvs.id
+     * @param int    $userId      User ID
+     * @param array  $builderData The decoded builder_data JSON
+     * @param string $template    The template slug (e.g. 'modern')
+     * @return int|null The cv_profiles.id on success, or null on failure
+     */
+    public function migrateFromBuilderData(int $cvId, int $userId, array $builderData, string $template = 'modern'): ?int
+    {
+        // 1. Check if a profile already exists for this cv_id
+        $stmt = $this->mysqli->prepare("SELECT id FROM cv_profiles WHERE cv_id = ? LIMIT 1");
+        $stmt->bind_param('i', $cvId);
+        $stmt->execute();
+        $existing = $stmt->get_result()->fetch_assoc();
+
+        if ($existing) {
+            $profileId = (int)$existing['id'];
+            // Clear existing child data for re-import
+            foreach (self::CHILD_TABLES as $table) {
+                $this->mysqli->query("DELETE FROM {$table} WHERE profile_id = {$profileId}");
+            }
+        } else {
+            // Create title from builder_data personal info
+            $title = $builderData['personal']['full_name'] ?? 'My CV';
+            $title = (trim($title) !== '') ? $title . "'s CV" : 'My CV';
+
+            $profileId = $this->create($userId, $title, $template, $cvId);
+            if (!$profileId) {
+                return null;
+            }
+        }
+
+        // 2. Save professional summary to cv_profiles
+        $summary = $builderData['summary']['professional_summary'] ?? $builderData['personal']['professional_summary'] ?? '';
+        if ($summary !== '') {
+            $stmt = $this->mysqli->prepare("UPDATE cv_profiles SET professional_summary = ? WHERE id = ?");
+            $stmt->bind_param('si', $summary, $profileId);
+            $stmt->execute();
+        }
+
+        // 3. Migrate experiences
+        $experiences = $builderData['experience'] ?? [];
+        foreach ($experiences as $exp) {
+            if (!empty($exp['company'])) {
+                $this->addExperience($profileId, [
+                    'company' => $exp['company'] ?? '',
+                    'position' => $exp['position'] ?? '',
+                    'location' => $exp['location'] ?? '',
+                    'start_date' => $exp['start_date'] ?? '',
+                    'end_date' => $exp['end_date'] ?? '',
+                    'is_current' => !empty($exp['is_current']) ? 1 : 0,
+                    'description' => $exp['responsibilities'] ?? $exp['description'] ?? '',
+                ]);
+            }
+        }
+
+        // 4. Migrate education
+        $educations = $builderData['education'] ?? [];
+        foreach ($educations as $edu) {
+            if (!empty($edu['institution'])) {
+                $this->addEducation($profileId, [
+                    'institution' => $edu['institution'] ?? '',
+                    'degree' => $edu['degree'] ?? '',
+                    'field' => $edu['field'] ?? '',
+                    'start_date' => $edu['start_year'] ?? $edu['start_date'] ?? '',
+                    'end_date' => $edu['end_year'] ?? $edu['end_date'] ?? '',
+                    'gpa' => $edu['gpa'] ?? '',
+                ]);
+            }
+        }
+
+        // 5. Migrate skills
+        $techSkills = $builderData['skills']['technical'] ?? [];
+        $softSkills = $builderData['skills']['soft'] ?? [];
+        foreach ((array)$techSkills as $skill) {
+            $name = is_string($skill) ? trim($skill) : '';
+            if ($name !== '') {
+                $this->addSkill($profileId, 'technical', $name);
+            }
+        }
+        foreach ((array)$softSkills as $skill) {
+            $name = is_string($skill) ? trim($skill) : '';
+            if ($name !== '') {
+                $this->addSkill($profileId, 'soft', $name);
+            }
+        }
+
+        // 6. Migrate languages
+        $languages = $builderData['languages'] ?? [];
+        foreach ($languages as $lang) {
+            if (!empty($lang['name'])) {
+                $this->addLanguage($profileId, $lang['name'], $lang['proficiency'] ?? 'intermediate');
+            }
+        }
+
+        // 7. Migrate certifications
+        $certificates = $builderData['certificates'] ?? [];
+        foreach ($certificates as $cert) {
+            if (!empty($cert['name'])) {
+                $this->addCertification($profileId, [
+                    'name' => $cert['name'] ?? '',
+                    'organization' => $cert['organization'] ?? $cert['issuer'] ?? '',
+                    'date' => $cert['issue_date'] ?? $cert['date'] ?? '',
+                ]);
+            }
+        }
+
+        // 8. Migrate projects
+        $projects = $builderData['projects'] ?? [];
+        foreach ($projects as $proj) {
+            if (!empty($proj['name'])) {
+                $this->addProject($profileId, [
+                    'name' => $proj['name'] ?? '',
+                    'description' => $proj['description'] ?? '',
+                    'technologies' => $proj['technologies'] ?? '',
+                    'url' => $proj['url'] ?? '',
+                ]);
+            }
+        }
+
+        // 9. Migrate references
+        $references = $builderData['references'] ?? [];
+        foreach ($references as $ref) {
+            if (!empty($ref['name'])) {
+                $this->addReference($profileId, [
+                    'name' => $ref['name'] ?? '',
+                    'title' => $ref['title'] ?? '',
+                    'email' => $ref['email'] ?? '',
+                    'phone' => $ref['phone'] ?? '',
+                    'company' => $ref['company'] ?? '',
+                ]);
+            }
+        }
+
+        // 10. Migrate custom sections
+        $customSections = $builderData['custom_sections'] ?? [];
+        foreach ($customSections as $cs) {
+            if (!empty($cs['title'])) {
+                $this->addCustomSection($profileId, [
+                    'title' => $cs['title'] ?? '',
+                    'content' => $cs['content'] ?? '',
+                ]);
+            }
+        }
+
+        // 11. Migrate social links
+        $socialLinks = $builderData['social_links'] ?? [];
+        foreach ($socialLinks as $sl) {
+            if (!empty($sl['url'])) {
+                $this->addSocialLink($profileId, $sl['platform'] ?? '', $sl['url'] ?? '');
+            }
+        }
+
+        // 12. Calculate completion score
+        $this->calculateCompletionScore($profileId);
+
+        // 13. Set active template
+        if ($template !== 'modern') {
+            $templateId = $this->resolveTemplateId($template);
+            if ($templateId !== null) {
+                $this->setActiveTemplate($profileId, $userId, $templateId);
+            }
+        }
+
+        if (function_exists('logActivity')) {
+            logActivity("CV Data Migrated to V3", "cv_profile", $profileId, [
+                'cv_id' => $cvId,
+                'sections' => array_keys(array_filter([
+                    'experience' => !empty($experiences),
+                    'education' => !empty($educations),
+                    'skills' => !empty($techSkills) || !empty($softSkills),
+                    'languages' => !empty($languages),
+                    'certificates' => !empty($certificates),
+                    'projects' => !empty($projects),
+                    'references' => !empty($references),
+                ])),
+            ], 'success');
+        }
+
+        return $profileId;
+    }
+
+    /**
+     * Find the V3 profile ID linked to an old cvs.id.
+     */
+    public function getProfileIdByCvId(int $cvId): ?int
+    {
+        $stmt = $this->mysqli->prepare("SELECT id FROM cv_profiles WHERE cv_id = ? LIMIT 1");
+        $stmt->bind_param('i', $cvId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        return $row ? (int)$row['id'] : null;
     }
 }

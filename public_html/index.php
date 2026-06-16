@@ -489,6 +489,13 @@ foreach ($controllerFiles as $controller) {
     require_once $controller;
 }
 
+$routeFiles = glob(BASE_PATH . 'app/Routes/*.php') ?: [];
+foreach ($routeFiles as $routeFile) {
+    if (basename($routeFile) !== 'Router.php') {
+        require_once $routeFile;
+    }
+}
+
 // ============================================================================
 // Register Routes from Controllers
 // ============================================================================

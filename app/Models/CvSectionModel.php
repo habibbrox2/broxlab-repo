@@ -37,7 +37,7 @@ class CvSectionModel
     private function getNextOrder(int $cvId): int
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT MAX(`order`) as max_order FROM cv_sections WHERE cv_id = ?"
+            "SELECT MAX(`order`) as max_order FROM cv_sections WHERE cv_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -56,7 +56,7 @@ class CvSectionModel
         $stmt = $this->mysqli->prepare(
             "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
              FROM cv_sections
-             WHERE cv_id = ?
+             WHERE cv_id = ? AND deleted_at IS NULL
              ORDER BY `order` ASC"
         );
         $stmt->bind_param('i', $cvId);
@@ -79,7 +79,7 @@ class CvSectionModel
         $stmt = $this->mysqli->prepare(
             "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
              FROM cv_sections
-             WHERE id = ?
+             WHERE id = ? AND deleted_at IS NULL
              LIMIT 1"
         );
         $stmt->bind_param('i', $id);
@@ -142,11 +142,12 @@ class CvSectionModel
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare(
-            "DELETE FROM cv_sections WHERE id = ?"
+            "UPDATE cv_sections SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $id);
 
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        return $ok && $stmt->affected_rows > 0;
     }
 
     /**
@@ -180,7 +181,7 @@ class CvSectionModel
     public function belongsToCv(int $sectionId, int $cvId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cv_sections WHERE id = ? AND cv_id = ? LIMIT 1"
+            "SELECT id FROM cv_sections WHERE id = ? AND cv_id = ? AND deleted_at IS NULL LIMIT 1"
         );
         $stmt->bind_param('ii', $sectionId, $cvId);
         $stmt->execute();

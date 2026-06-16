@@ -365,746 +365,117 @@ $router->get('/admin/contact/delete/{id}', ['middleware' => ['auth', 'admin_only
  * CV Management - Admin list all CVs
  * GET /admin/cvs
  */
-$router->get('/admin/cvs', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
-    try {
-        $cvModel = new CvModel($mysqli);
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
-        $offset = ($page - 1) * $limit;
+$router->get('/admin/cvs', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvList']);
 
-        $search = sanitize_input($_GET['search'] ?? '');
-        $status = $_GET['status'] ?? 'all';
-        $sort = $_GET['sort'] ?? 'updated';
-        $order = strtoupper($_GET['order'] ?? 'DESC');
-        $order = $order === 'ASC' ? 'ASC' : 'DESC';
-        $status = in_array($status, ['all', 'active', 'inactive'], true) ? $status : 'all';
-        $sort = in_array($sort, ['updated', 'created', 'title', 'owner'], true) ? $sort : 'updated';
+/**
+ * Admin CV Create (Form)
+ * GET /admin/cvs/create
+ */
+$router->get('/admin/cvs/create', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvCreateForm']);
 
-        $templates = function_exists('cvGetTemplateAllowlist')
-            ? cvGetTemplateAllowlist()
-            : ['modern', 'minimal', 'ats', 'professional'];
-        $selectedTemplate = $_GET['template'] ?? null;
-        if (function_exists('cvResolveTemplate')) {
-            $selectedTemplate = cvResolveTemplate($selectedTemplate, null, $templates, 'modern');
-        } else {
-            $selectedTemplate = in_array($selectedTemplate, $templates, true) ? $selectedTemplate : 'modern';
-        }
+/**
+ * Admin CV Store (POST)
+ * POST /admin/cvs
+ */
+$router->post('/admin/cvs', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvStore']);
 
-        $cvs = $cvModel->getAll($limit, $offset, $search, $status, $sort, $order);
-        $total = $cvModel->countAll($search, $status);
-        $totalPages = $limit > 0 ? (int)ceil($total / $limit) : 0;
+/**
+ * Admin CV View Details
+ * GET /admin/cvs/view/{id}
+ */
+$router->get('/admin/cvs/view/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvView']);
 
-        $stats = $cvModel->getStatistics();
-        $stats['active'] = $cvModel->countAll('', 'active');
-        $stats['inactive'] = $cvModel->countAll('', 'inactive');
+/**
+ * Admin CV Edit (Form)
+ * GET /admin/cvs/edit/{id}
+ */
+$router->get('/admin/cvs/edit/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvEditForm']);
 
-        $paginationData = [
-            'current_page' => $page,
-            'total_pages' => $totalPages,
-            'per_page' => $limit,
-            'limit' => $limit,
-            'total' => $total,
-            'from' => $total > 0 ? ($offset + 1) : 0,
-            'to' => $total > 0 ? min($offset + $limit, $total) : 0,
-            'search' => $search,
-            'sort' => $sort,
-            'order' => strtolower($order),
-            'status' => $status,
-            'extra_query' => [
-                'template' => $selectedTemplate
-            ]
-        ];
+/**
+ * Admin CV Update (POST)
+ * POST /admin/cvs/{id}
+ */
+$router->post('/admin/cvs/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvUpdate']);
 
-        echo $twig->render('admin/cvs/list.twig', [
-            'cvs' => $cvs,
-            'stats' => $stats,
-            'page' => $page,
-            'limit' => $limit,
-            'page_title' => 'CV Management',
-            'current_page' => 'cvs',
-            'filters' => [
-                'search' => $search,
-                'status' => $status,
-                'sort' => $sort,
-                'order' => strtolower($order),
-                'limit' => $limit,
-                'template' => $selectedTemplate
-            ],
-            'pagination' => $paginationData,
-            'templates' => $templates
-        ]);
-    } catch (Throwable $e) {
-        logError(
-            "Admin CV List Error: " . $e->getMessage(),
-            "ERROR",
-            ['file' => $e->getFile(), 'line' => $e->getLine()]
-        );
-        showMessage("Failed to load CVs", "danger");
-        header("Location: /admin/dashboard");
-        exit;
-    }
-});
+/**
+ * Admin CV Delete
+ * POST /admin/cvs/{id}/delete
+ */
+$router->post('/admin/cvs/{id}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvDelete']);
 
 /**
  * Admin CV Preview (HTML)
  * GET /admin/cvs/{id}/preview
  */
-$router->get('/admin/cvs/{id}/preview', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
-    $cvModel = new CvModel($mysqli);
-    $cvSectionModel = new CvSectionModel($mysqli);
-    $cvItemModel = new CvItemModel($mysqli);
-
-    $id = (int)$id;
-    $cv = $cvModel->getById($id);
-    if (!$cv) {
-        showMessage('CV not found', 'danger');
-        header('Location: /admin/cvs');
-        exit;
-    }
-
-    $sections = $cvSectionModel->getByCvId($id);
-    foreach ($sections as &$section) {
-        $section['items'] = $cvItemModel->getBySectionId($section['id']);
-    }
-
-    $visibleSections = array_filter($sections, function ($s) {
-        return $s['is_visible'];
-    });
-
-    $templates = function_exists('cvGetTemplateAllowlist')
-        ? cvGetTemplateAllowlist()
-        : ['modern', 'minimal', 'ats', 'professional'];
-    $template = $_GET['template'] ?? null;
-    if (function_exists('cvResolveTemplate')) {
-        $template = cvResolveTemplate($template, $cv['template'] ?? null, $templates, 'modern');
-    } else {
-        $template = in_array($template, $templates, true) ? $template : 'modern';
-    }
-
-    echo $twig->render('cv/templates/' . $template . '.twig', [
-        'cv' => $cv,
-        'sections' => $visibleSections
-    ]);
-});
+$router->get('/admin/cvs/{id}/preview', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvPreview']);
 
 /**
  * Admin CV Export (PDF)
  * GET /admin/cvs/{id}/export
  */
-$router->get('/admin/cvs/{id}/export', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli) {
-    $cvModel = new CvModel($mysqli);
-    $cvSectionModel = new CvSectionModel($mysqli);
-    $cvItemModel = new CvItemModel($mysqli);
-
-    $id = (int)$id;
-    $cv = $cvModel->getById($id);
-    if (!$cv) {
-        showMessage('CV not found', 'danger');
-        header('Location: /admin/cvs');
-        exit;
-    }
-
-    $sections = $cvSectionModel->getByCvId($id);
-    foreach ($sections as &$section) {
-        $section['items'] = $cvItemModel->getBySectionId($section['id']);
-    }
-
-    $visibleSections = array_filter($sections, function ($s) {
-        return $s['is_visible'];
-    });
-
-    $templates = function_exists('cvGetTemplateAllowlist')
-        ? cvGetTemplateAllowlist()
-        : ['modern', 'minimal', 'ats', 'professional'];
-    $template = $_GET['template'] ?? null;
-    if (function_exists('cvResolveTemplate')) {
-        $template = cvResolveTemplate($template, $cv['template'] ?? null, $templates, 'modern');
-    } else {
-        $template = in_array($template, $templates, true) ? $template : 'modern';
-    }
-
-    $html = $twig->render('cv/templates/' . $template . '.twig', [
-        'cv' => $cv,
-        'sections' => $visibleSections
-    ]);
-
-    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
-    generatePdf($html, $cv['title'] . '.pdf', ['auto_exit' => false]);
-});
+$router->get('/admin/cvs/{id}/export', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvExport']);
 
 /**
  * Admin bulk export CVs to ZIP (PDF)
  * POST /admin/cvs/bulk/export-zip
  */
-$router->post('/admin/cvs/bulk/export-zip', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig, $mysqli) {
-    $payload = json_decode(file_get_contents('php://input'), true);
-    $cvIds = $payload['cv_ids'] ?? [];
-    $template = $payload['template'] ?? null;
+$router->post('/admin/cvs/bulk/export-zip', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvBulkExportZip']);
 
-    if (!is_array($cvIds) || empty($cvIds)) {
-        http_response_code(400);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'No CV IDs provided']);
-        return;
-    }
-
-    $cvIds = array_values(array_unique(array_map('intval', $cvIds)));
-    if (count($cvIds) > 50) {
-        http_response_code(422);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'Bulk export limited to 50 CVs.']);
-        return;
-    }
-
-    if (!class_exists('ZipArchive')) {
-        http_response_code(500);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'ZipArchive extension not available.']);
-        return;
-    }
-
-    $templates = function_exists('cvGetTemplateAllowlist')
-        ? cvGetTemplateAllowlist()
-        : ['modern', 'minimal', 'ats', 'professional'];
-    if (function_exists('cvResolveTemplate')) {
-        $template = cvResolveTemplate($template, null, $templates, 'modern');
-    } else {
-        $template = in_array($template, $templates, true) ? $template : 'modern';
-    }
-
-    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
-
-    $cvModel = new CvModel($mysqli);
-    $cvSectionModel = new CvSectionModel($mysqli);
-    $cvItemModel = new CvItemModel($mysqli);
-
-    $zipPath = rtrim(sys_get_temp_dir(), '\\/') . DIRECTORY_SEPARATOR . 'cv-exports-' . uniqid() . '.zip';
-    $zip = new ZipArchive();
-    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-        http_response_code(500);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'Failed to create archive.']);
-        return;
-    }
-
-    $added = 0;
-    foreach ($cvIds as $cvId) {
-        $cv = $cvModel->getById((int)$cvId);
-        if (!$cv) {
-            continue;
-        }
-
-        $sections = $cvSectionModel->getByCvId((int)$cvId);
-        foreach ($sections as &$section) {
-            $section['items'] = $cvItemModel->getBySectionId($section['id']);
-        }
-
-        $visibleSections = array_filter($sections, function ($s) {
-            return $s['is_visible'];
-        });
-
-        $html = $twig->render('cv/templates/' . $template . '.twig', [
-            'cv' => $cv,
-            'sections' => $visibleSections
-        ]);
-
-        $pdf = mpdf_render_html_to_string($html, [
-            'title' => (string)($cv['title'] ?? ''),
-        ]);
-        if (!$pdf) {
-            continue;
-        }
-
-        $title = trim((string)($cv['title'] ?? 'cv'));
-        $safeTitle = preg_replace('/[^A-Za-z0-9._-]+/', '-', $title) ?? 'cv';
-        $safeTitle = trim($safeTitle, '-_.');
-        if ($safeTitle === '') {
-            $safeTitle = 'cv';
-        }
-        $safeTitle = substr($safeTitle, 0, 80);
-        $filename = $cvId . '-' . $safeTitle . '.pdf';
-
-        $zip->addFromString($filename, $pdf);
-        $added++;
-    }
-
-    $zip->close();
-
-    if ($added === 0) {
-        @unlink($zipPath);
-        http_response_code(404);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'No CVs could be exported.']);
-        return;
-    }
-
-    $timestamp = date('Ymd-Hi');
-    $zipName = 'cv-exports-' . $timestamp . '-' . $template . '.zip';
-
-    register_shutdown_function(function () use ($zipPath) {
-        if (is_file($zipPath)) {
-            @unlink($zipPath);
-        }
-    });
-
-    header('Content-Type: application/zip');
-    header('Content-Disposition: attachment; filename="' . $zipName . '"');
-    header('Content-Length: ' . filesize($zipPath));
-    readfile($zipPath);
-    exit;
-});
-
-/**
- * CV Template Management - Admin manage templates
- * GET /admin/cv-templates
- */
-$router->get('/admin/cv-templates', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
-    $templates = cvTemplateGetAll();
-
-    echo $twig->render('admin/cv-templates/list.twig', [
-        'templates' => $templates,
-        'page_title' => 'CV Template Management',
-        'current_page' => 'cv-templates'
-    ]);
-});
+$router->get('/admin/cv-templates', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvTemplateList']);
 
 /**
  * Admin CV Template Preview (HTML)
  * GET /admin/cv-templates/preview/{template}
  */
-$router->get('/admin/cv-templates/preview/{template}', ['middleware' => ['auth', 'admin_only']], function ($template) use ($twig) {
-    $templates = function_exists('cvGetTemplateAllowlist')
-        ? cvGetTemplateAllowlist()
-        : ['modern', 'minimal', 'ats', 'professional'];
-
-    if (function_exists('cvResolveTemplate')) {
-        $template = cvResolveTemplate($template, null, $templates, 'modern');
-    } else {
-        $template = in_array($template, $templates, true) ? $template : 'modern';
-    }
-
-    $sampleCv = [
-        'id' => 0,
-        'title' => 'Sample CV',
-        'created_at' => date('Y-m-d H:i:s'),
-        'updated_at' => date('Y-m-d H:i:s')
-    ];
-
-    $sampleSections = [
-        [
-            'id' => 1,
-            'title' => 'Professional Summary',
-            'section_type' => 'summary',
-            'is_visible' => 1,
-            'items' => [
-                [
-                    'id' => 1,
-                    'content' => [
-                        'text' => 'Results-driven professional with 5+ years of experience in product, growth, and operations.',
-                        'email' => 'hello@example.com',
-                        'phone' => '+1 (555) 555-0199',
-                        'location' => 'Dhaka, Bangladesh'
-                    ]
-                ]
-            ]
-        ],
-        [
-            'id' => 2,
-            'title' => 'Experience',
-            'section_type' => 'experience',
-            'is_visible' => 1,
-            'items' => [
-                [
-                    'id' => 2,
-                    'content' => [
-                        'position' => 'Senior Product Manager',
-                        'company' => 'BroxBhai Inc.',
-                        'start_date' => 'Jan 2022',
-                        'end_date' => 'Present',
-                        'description' => "Led cross-functional teams to ship AI-powered CV features.\nImproved conversion by 28%."
-                    ]
-                ]
-            ]
-        ],
-        [
-            'id' => 3,
-            'title' => 'Education',
-            'section_type' => 'education',
-            'is_visible' => 1,
-            'items' => [
-                [
-                    'id' => 3,
-                    'content' => [
-                        'degree' => 'BSc in Computer Science',
-                        'institution' => 'University of Dhaka',
-                        'start_date' => '2016',
-                        'end_date' => '2020',
-                        'gpa' => '3.8/4.0'
-                    ]
-                ]
-            ]
-        ],
-        [
-            'id' => 4,
-            'title' => 'Skills',
-            'section_type' => 'skills',
-            'is_visible' => 1,
-            'items' => [
-                ['id' => 4, 'content' => ['name' => 'Product Strategy']],
-                ['id' => 5, 'content' => ['name' => 'Data Analysis']],
-                ['id' => 6, 'content' => ['name' => 'Team Leadership']]
-            ]
-        ],
-        [
-            'id' => 5,
-            'title' => 'Projects',
-            'section_type' => 'projects',
-            'is_visible' => 1,
-            'items' => [
-                [
-                    'id' => 7,
-                    'content' => [
-                        'name' => 'AI Resume Builder',
-                        'date' => '2024',
-                        'description' => "Built a template-driven resume builder with real-time preview.\nReduced CV build time by 45%.",
-                        'url' => 'https://example.com'
-                    ]
-                ]
-            ]
-        ],
-        [
-            'id' => 6,
-            'title' => 'Certifications',
-            'section_type' => 'certifications',
-            'is_visible' => 1,
-            'items' => [
-                [
-                    'id' => 8,
-                    'content' => [
-                        'name' => 'Product Management Professional',
-                        'issuer' => 'PMI',
-                        'date' => '2023',
-                        'credential_id' => 'PMP-123456'
-                    ]
-                ]
-            ]
-        ]
-    ];
-
-    echo $twig->render('cv/templates/' . $template . '.twig', [
-        'cv' => $sampleCv,
-        'sections' => $sampleSections
-    ]);
-});
+$router->get('/admin/cv-templates/preview/{template}', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvTemplatePreview']);
 
 /**
  * Create CV Template Form
  * GET /admin/cv-templates/create
  */
-$router->get('/admin/cv-templates/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
-    $templates = cvTemplateGetAll();
-    $baseTemplates = array_filter($templates, fn($t) => $t['status'] === 'active');
-
-    echo $twig->render('admin/cv-templates/form.twig', [
-        'mode' => 'create',
-        'base_templates' => $baseTemplates,
-        'page_title' => 'Create CV Template',
-        'current_page' => 'cv-templates'
-    ]);
-});
+$router->get('/admin/cv-templates/create', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvTemplateCreateForm']);
 
 /**
  * Create CV Template
  * POST /admin/cv-templates
  */
-$router->post('/admin/cv-templates', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig) {
-    $name = trim($_POST['name'] ?? '');
-    $slug = trim($_POST['slug'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $baseTemplate = trim($_POST['base_template'] ?? '');
-    $profession = trim($_POST['profession'] ?? '');
-
-    $errors = [];
-
-    if (empty($name)) {
-        $errors[] = 'Name is required';
-    }
-    if (empty($slug)) {
-        $errors[] = 'Slug is required';
-    } elseif (!cvTemplateValidateSlug($slug)) {
-        $errors[] = 'Slug must be lowercase alphanumeric with hyphens, no leading underscore, max 50 characters';
-    }
-    if (empty($baseTemplate)) {
-        $errors[] = 'Base template is required';
-    }
-
-    if (empty($errors)) {
-        if (cvTemplateCreate($slug, $name, $description, $baseTemplate, $profession ?: null)) {
-            header('Location: /admin/cv-templates');
-            exit;
-        } else {
-            $errors[] = 'Failed to create template';
-        }
-    }
-
-    $templates = cvTemplateGetAll();
-    $baseTemplates = array_filter($templates, fn($t) => $t['status'] === 'active');
-
-    echo $twig->render('admin/cv-templates/form.twig', [
-        'mode' => 'create',
-        'base_templates' => $baseTemplates,
-        'errors' => $errors,
-        'form_data' => $_POST,
-        'page_title' => 'Create CV Template',
-        'current_page' => 'cv-templates'
-    ]);
-});
+$router->post('/admin/cv-templates', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateCreate']);
 
 /**
  * Edit CV Template Form
  * GET /admin/cv-templates/{slug}/edit
  */
-$router->get('/admin/cv-templates/{slug}/edit', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig) {
-    $template = cvTemplateGet($slug);
-    if (!$template) {
-        http_response_code(404);
-        echo $twig->render('admin/error.twig', [
-            'error' => 'Template not found',
-            'page_title' => 'Error',
-            'current_page' => 'cv-templates'
-        ]);
-        return;
-    }
-
-    $content = file_get_contents(cvTemplateGetDirectory() . '/' . $slug . '.twig');
-
-    echo $twig->render('admin/cv-templates/form.twig', [
-        'mode' => 'edit',
-        'template' => $template,
-        'template_slug' => $slug,
-        'template_content' => $content,
-        'page_title' => 'Edit CV Template',
-        'current_page' => 'cv-templates'
-    ]);
-});
+$router->get('/admin/cv-templates/{slug}/edit', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvTemplateEditForm']);
 
 /**
  * Update CV Template
  * POST /admin/cv-templates/{slug}
  */
-$router->post('/admin/cv-templates/{slug}', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
-    $template = cvTemplateGet($slug);
-    if (!$template) {
-        http_response_code(404);
-        echo $twig->render('admin/error.twig', [
-            'error' => 'Template not found',
-            'page_title' => 'Error',
-            'current_page' => 'cv-templates'
-        ]);
-        return;
-    }
-
-    $name = trim($_POST['name'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $profession = trim($_POST['profession'] ?? '');
-    $content = $_POST['content'] ?? '';
-
-    $errors = [];
-
-    if (empty($name)) {
-        $errors[] = 'Name is required';
-    }
-
-    if (empty($errors)) {
-        if (cvTemplateUpdate($slug, $name, $description, $profession ?: null, $content)) {
-            header('Location: /admin/cv-templates');
-            exit;
-        } else {
-            $errors[] = 'Failed to update template';
-        }
-    }
-
-    echo $twig->render('admin/cv-templates/form.twig', [
-        'mode' => 'edit',
-        'template' => $template,
-        'template_slug' => $slug,
-        'template_content' => $content,
-        'errors' => $errors,
-        'form_data' => $_POST,
-        'page_title' => 'Edit CV Template',
-        'current_page' => 'cv-templates'
-    ]);
-});
+$router->post('/admin/cv-templates/{slug}', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateUpdate']);
 
 /**
  * Toggle CV Template Status
  * POST /admin/cv-templates/{slug}/toggle
  */
-$router->post('/admin/cv-templates/{slug}/toggle', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
-    $template = cvTemplateGet($slug);
-    if (!$template) {
-        json_response(['error' => 'Template not found'], 404);
-        return;
-    }
-
-    if (cvTemplateToggleStatus($slug)) {
-        json_response(['success' => true, 'status' => cvTemplateGet($slug)['status']]);
-    } else {
-        json_response(['error' => 'Failed to toggle status'], 500);
-    }
-});
+$router->post('/admin/cv-templates/{slug}/toggle', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateToggle']);
 
 /**
  * Upload CV Template via ZIP
  * POST /admin/cv-templates/upload-zip
  */
-$router->post('/admin/cv-templates/upload-zip', ['middleware' => ['auth', 'admin_only', 'csrf']], function () {
-    $file = $_FILES['template_zip'] ?? null;
-
-    if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
-        $errorCode = $file['error'] ?? -1;
-        $errorMessages = [
-            UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit (upload_max_filesize).',
-            UPLOAD_ERR_FORM_SIZE => 'File exceeds form size limit.',
-            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
-            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-            UPLOAD_ERR_NO_TMP_DIR => 'Server temporary directory is missing.',
-            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-        ];
-        $message = $errorMessages[$errorCode] ?? 'Unknown upload error (code: ' . $errorCode . ').';
-        json_response(['success' => false, 'error' => $message], 400);
-        return;
-    }
-
-    // Validate file type
-    $mimeType = $file['type'] ?? '';
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if ($extension !== 'zip' || ($mimeType !== 'application/zip' && $mimeType !== 'application/x-zip-compressed')) {
-        json_response(['success' => false, 'error' => 'Only .zip files are allowed.'], 400);
-        return;
-    }
-
-    // Size limit: 10MB
-    $maxSize = 10 * 1024 * 1024;
-    if ($file['size'] > $maxSize) {
-        json_response(['success' => false, 'error' => 'ZIP file exceeds 10MB limit.'], 400);
-        return;
-    }
-
-    // Move to temp location
-    $tmpDir = defined('TEMP_DIR') ? TEMP_DIR : (sys_get_temp_dir() . '/broxlab-cv-templates');
-    if (!is_dir($tmpDir)) {
-        @mkdir($tmpDir, 0755, true);
-    }
-
-    $tmpPath = rtrim($tmpDir, '\\/') . '/template-upload-' . uniqid() . '.zip';
-    if (!move_uploaded_file($file['tmp_name'], $tmpPath)) {
-        json_response(['success' => false, 'error' => 'Failed to save uploaded file.'], 500);
-        return;
-    }
-
-    // Validate ZIP package
-    $validation = cvTemplateValidateZipPackage($tmpPath);
-
-    if (!$validation['success']) {
-        // Cleanup temp file on failure
-        @unlink($tmpPath);
-        json_response([
-            'success' => false,
-            'error' => 'Template validation failed.',
-            'errors' => $validation['errors'],
-            'warnings' => $validation['warnings']
-        ], 422);
-        return;
-    }
-
-    // Extract and install
-    $result = cvTemplateExtractZipPackage($tmpPath, $validation);
-
-    // Cleanup temp file
-    @unlink($tmpPath);
-
-    if ($result['success']) {
-        logActivity("CV Template Installed via ZIP", "cv-templates", 0, [
-            'slug' => $result['slug'] ?? '',
-            'name' => $validation['config']['name'] ?? ''
-        ], 'success');
-
-        json_response([
-            'success' => true,
-            'message' => $result['message'],
-            'slug' => $result['slug'] ?? null,
-            'warnings' => $validation['warnings']
-        ]);
-    } else {
-        json_response(['success' => false, 'error' => $result['message']], 500);
-    }
-});
+$router->post('/admin/cv-templates/upload-zip', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateUploadZip']);
 
 /**
  * Delete CV Template
  * POST /admin/cv-templates/{slug}/delete
  */
-$router->post('/admin/cv-templates/{slug}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) {
-    $result = cvTemplateDelete($slug);
-    if ($result['success']) {
-        logActivity("CV Template Deleted", "cv-templates", 0, ['slug' => $slug], 'success');
-        json_response($result);
-    } else {
-        json_response($result, 400);
-    }
-});
+$router->post('/admin/cv-templates/{slug}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateDelete']);
 
 /**
  * Bulk Delete CV Templates
  * POST /admin/cv-templates/bulk-delete
  */
-$router->post('/admin/cv-templates/bulk-delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function () {
-    $payload = json_decode(file_get_contents('php://input'), true);
-    $slugs = $payload['slugs'] ?? [];
-
-    if (!is_array($slugs) || empty($slugs)) {
-        json_response(['success' => false, 'error' => 'No template slugs provided.'], 400);
-        return;
-    }
-
-    if (count($slugs) > 50) {
-        json_response(['success' => false, 'error' => 'Bulk delete limited to 50 templates at a time.'], 422);
-        return;
-    }
-
-    $results = [
-        'success' => [],
-        'failures' => []
-    ];
-
-    foreach ($slugs as $slug) {
-        $result = cvTemplateDelete(trim((string)$slug));
-        if ($result['success']) {
-            $results['success'][] = $slug;
-            logActivity("CV Template Bulk Deleted", "cv-templates", 0, ['slug' => $slug], 'success');
-        } else {
-            $results['failures'][] = [
-                'slug' => $slug,
-                'message' => $result['message'] ?? 'Unknown error'
-            ];
-        }
-    }
-
-    $deletedCount = count($results['success']);
-    $failedCount = count($results['failures']);
-
-    $message = "$deletedCount template(s) deleted.";
-    if ($failedCount > 0) {
-        $message .= " $failedCount failed.";
-    }
-
-    json_response([
-        'success' => $failedCount === 0,
-        'message' => $message,
-        'results' => $results
-    ]);
-});
+$router->post('/admin/cv-templates/bulk-delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateBulkDelete']);
 
 
 // ========= USER DASHBOARD ==========
@@ -1282,3 +653,22 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
         exit;
     }
 });
+
+// ════════════════════════════════════════════════════════════
+// ADMIN: PREMIUM TEMPLATE PURCHASE MANAGEMENT
+// (Moved from app/Routes/cv.php)
+// ════════════════════════════════════════════════════════════
+
+$router->get('/admin/cv-purchases', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvPurchaseList']);
+
+/**
+ * Admin: Confirm a premium template purchase.
+ * POST /admin/cv-purchases/{id}/confirm
+ */
+$router->post('/admin/cv-purchases/{id}/confirm', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvPurchaseConfirm']);
+
+/**
+ * Admin: Cancel/reject a premium template purchase.
+ * POST /admin/cv-purchases/{id}/cancel
+ */
+$router->post('/admin/cv-purchases/{id}/cancel', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvPurchaseCancel']);

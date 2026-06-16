@@ -771,8 +771,18 @@
       </div>
 
       <div class="mkt-card-preview" style="background:{{ tmpl.gradient }};">
+        {% if tmpl.thumbnail is defined %}
+        <img src="{{ tmpl.thumbnail }}" alt="{{ tmpl.name }}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" loading="lazy">
+        {% else %}
         <i class="lucide lucide-{{ tmpl.icon }}" style="width:5rem;height:5rem;"></i>
+        {% endif %}
         <span class="mkt-card-badge">{{ tmpl.category }}</span>
+        {% if tmpl.is_premium is defined and tmpl.is_premium %}
+        <span style="position:absolute;top:0.75rem;right:0.75rem;z-index:3;display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.2);background:linear-gradient(135deg,#D4A017,#B8860B);color:white;">
+          <i class="lucide lucide-crown" style="width:0.8em;height:0.8em;"></i>
+          PREMIUM
+        </span>
+        {% endif %}
         {% if tmpl.popularity is defined and tmpl.popularity >= 90 %}
         <span class="mkt-card-popularity"><i class="lucide lucide-trending-up" style="width:0.8em;height:0.8em;"></i> {{ tmpl.popularity }}%</span>
         {% endif %}
@@ -789,13 +799,28 @@
         {% if tmpl.version is defined %}
         <div class="mkt-card-version">v{{ tmpl.version }}</div>
         {% endif %}
+        <div class="flex items-center gap-1.5 mb-2.5">
+          {% if tmpl.is_premium is defined and tmpl.is_premium and tmpl.price is defined %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
+                style="background:linear-gradient(135deg,#FDF3D0,#FEF9E7);color:#B8860B;border:1px solid rgba(212,160,23,0.3);">
+            <i class="lucide lucide-credit-card" style="width:0.8em;height:0.8em;"></i>
+            ৳{{ tmpl.price }} BDT
+          </span>
+          {% endif %}
+        </div>
         <div class="mkt-card-actions">
           <button class="mkt-card-btn mkt-btn-preview" onclick="mktOpenPreview('{{ slug }}')">
             <i class="lucide lucide-eye" style="width:1em;height:1em;"></i> Preview
           </button>
+          {% if tmpl.is_premium is defined and tmpl.is_premium %}
+          <button class="mkt-card-btn mkt-btn-select" onclick="mktOpenPaymentModal('{{ slug }}')" style="background:linear-gradient(135deg,#D4A017,#B8860B);cursor:pointer;">
+            <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Buy
+          </button>
+          {% else %}
           <a href="/cv-builder/new?template={{ slug }}" class="mkt-card-btn mkt-btn-select" style="text-decoration:none;">
             <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Use
           </a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -808,6 +833,121 @@
     <h3>No templates found</h3>
     <p id="mkt-empty-msg">Try adjusting your search or filter to find what you're looking for.</p>
     <button class="mkt-empty-btn" onclick="mktResetAll()">Reset Filters</button>
+  </div>
+</div>
+
+<!-- ─── PAYMENT MODAL ─── -->
+<div class="mkt-modal-overlay" id="mkt-payment-modal">
+  <div class="mkt-modal" style="max-width:500px;">
+    <button class="mkt-modal-close" onclick="mktClosePaymentModal()">
+      <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+    <div class="mkt-modal-preview" style="height:auto;padding:2rem 2rem 1rem;background:linear-gradient(135deg,#1A1A2E,#16213E);">
+      <div style="text-align:center;">
+        <i class="lucide lucide-crown" style="width:3rem;height:3rem;color:#D4A017;"></i>
+        <h3 style="color:white;font-size:1.3rem;font-weight:700;margin-top:0.75rem;">Premium Template</h3>
+        <div style="color:#D4A017;font-size:1.1rem;font-weight:600;margin-top:0.25rem;">
+          <span id="mkt-pay-name">Executive Elite</span>
+        </div>
+        <div style="margin-top:1rem;font-size:2rem;font-weight:800;color:white;">
+          ৳<span id="mkt-pay-amount">50</span> BDT
+        </div>
+        <div style="color:rgba(255,255,255,0.6);font-size:0.8rem;margin-top:0.25rem;">One-time payment, lifetime access</div>
+      </div>
+    </div>
+    <div class="mkt-modal-body" style="padding-top:1.25rem;">
+      <!-- Step 1: Select Method -->
+      <div id="mkt-pay-step-method">
+        <h4 style="font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem;">Choose payment method</h4>
+        <div class="flex flex-col gap-2.5">
+          <button class="mkt-pay-method-btn" data-method="bkash" onclick="mktSelectMethod('bkash')" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+            <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bkash.svg" alt="bKash" style="width:36px;height:36px;" onerror="this.style.display='none'">
+            <span style="font-weight:600;flex:1;">bKash</span>
+            <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
+            <i class="lucide lucide-chevron-right" style="width:1em;height:1em;color:var(--mkt-gray-400);"></i>
+          </button>
+          <button class="mkt-pay-method-btn" data-method="nagad" onclick="mktSelectMethod('nagad')" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+            <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/nagad.svg" alt="Nagad" style="width:36px;height:36px;" onerror="this.style.display='none'">
+            <span style="font-weight:600;flex:1;">Nagad</span>
+            <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
+            <i class="lucide lucide-chevron-right" style="width:1em;height:1em;color:var(--mkt-gray-400);"></i>
+          </button>
+        </div>
+        <div style="margin-top:1.25rem;padding:0.75rem 1rem;background:#FEF3C7;border-radius:10px;font-size:0.8rem;color:#92400e;">
+          <strong>Note:</strong> After sending payment, you'll need to enter your transaction ID for verification. An admin will confirm your purchase.
+        </div>
+      </div>
+
+      <!-- Step 2: Enter Details -->
+      <div id="mkt-pay-step-details" style="display:none;">
+        <h4 style="font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem;">
+          <span id="mkt-pay-method-label">bKash</span> — Payment Details
+        </h4>
+
+        <!-- bKash Checkout (auto-redirect) -->
+        <div id="mkt-pay-bkash-checkout" style="display:none;">
+          <div style="padding:0.75rem 1rem;background:#EBF5FB;border-radius:10px;margin-bottom:1rem;font-size:0.85rem;color:#1E4E79;">
+            <i class="lucide lucide-info" style="width:1em;height:1em;vertical-align:middle;"></i>
+            You'll be redirected to bKash's secure checkout page to complete the payment.
+          </div>
+        </div>
+
+        <!-- Merchant info (manual payment) -->
+        <div id="mkt-pay-merchant-info" style="display:block;">
+          <div style="padding:0.75rem 1rem;background:var(--mkt-gray-50);border-radius:10px;margin-bottom:1rem;font-size:0.85rem;color:var(--mkt-gray-600);">
+            Send exactly <strong>৳<span id="mkt-pay-details-amount">50</span></strong> to this number:
+            <div style="font-size:1.1rem;font-weight:700;color:var(--mkt-gray-800);margin-top:0.25rem;" id="mkt-pay-merchant">01XXXXXXXXX</div>
+          </div>
+        </div>
+
+        <!-- Phone (common for both flows) -->
+        <div style="margin-bottom:0.75rem;">
+          <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Your phone number</label>
+          <input type="text" id="mkt-pay-phone" placeholder="01XXXXXXXXX"
+                 style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
+                 onfocus="this.style.borderColor='var(--mkt-primary)'" onblur="this.style.borderColor='var(--mkt-gray-200)'">
+        </div>
+
+        <!-- Manual flow: Transaction ID (hidden for bKash checkout) -->
+        <div id="mkt-pay-manual-fields" style="display:block;">
+          <div style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Transaction ID (trxID)</label>
+            <input type="text" id="mkt-pay-trxid" placeholder="e.g. TRX123ABC"
+                   style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
+                   onfocus="this.style.borderColor='var(--mkt-primary)'" onblur="this.style.borderColor='var(--mkt-gray-200)'">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;">
+          <button onclick="mktBackToMethods()" class="mkt-modal-btn mkt-modal-btn-secondary" style="flex:0 0 auto;padding:0.7rem 1.25rem;">
+            <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
+          </button>
+          <button onclick="mktSubmitPayment()" id="mkt-pay-submit-btn" class="mkt-modal-btn mkt-modal-btn-primary" style="background:linear-gradient(135deg,#D4A017,#B8860B);flex:1;">
+            <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Submit Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div id="mkt-pay-step-success" style="display:none;text-align:center;padding:2rem 0;">
+        <i class="lucide lucide-check-circle" style="width:3rem;height:3rem;color:#10b981;"></i>
+        <h4 style="font-size:1.1rem;font-weight:700;color:var(--mkt-gray-800);margin-top:0.75rem;">Payment Submitted!</h4>
+        <p style="font-size:0.9rem;color:var(--mkt-gray-500);margin-top:0.5rem;line-height:1.5;">
+          Your transaction ID has been received. An admin will verify your payment and
+          activate the <strong id="mkt-pay-success-template">Executive Elite</strong> template shortly.
+        </p>
+        <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.75rem;">This usually takes less than 24 hours.</p>
+        <button onclick="mktClosePaymentModal()" class="mkt-modal-btn mkt-modal-btn-primary" style="margin-top:1.25rem;max-width:200px;margin-left:auto;margin-right:auto;">
+          Done
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div id="mkt-pay-loading" style="display:none;text-align:center;padding:2rem 0;">
+        <div class="mkt-spinner" style="width:2rem;height:2rem;border:3px solid var(--mkt-gray-200);border-top-color:var(--mkt-primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+        <p style="font-size:0.9rem;color:var(--mkt-gray-500);margin-top:0.75rem;">Processing...</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -838,9 +978,13 @@
         <strong>Best for:</strong> <span id="mkt-modal-best-for">All professionals</span>
       </div>
       <div class="mkt-modal-version" id="mkt-modal-version">v1.0.0</div>
+      <div class="mkt-modal-price" id="mkt-modal-price" style="display:none;margin-bottom:1rem;padding:0.75rem 1rem;background:linear-gradient(135deg,#FDF3D0,#FEF9E7);border:1px solid rgba(212,160,23,0.3);border-radius:10px;font-size:0.95rem;font-weight:600;color:#B8860B;text-align:center;">
+        <i class="lucide lucide-crown" style="width:1em;height:1em;"></i>
+        Premium Template — <span id="mkt-modal-price-value">৳50 BDT</span>
+      </div>
       <div class="mkt-modal-actions">
         <a href="/cv-builder/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn">
-          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create with This Template
+          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> <span id="mkt-modal-btn-text">Create with This Template</span>
         </a>
         <button class="mkt-modal-btn mkt-modal-btn-secondary" onclick="mktClosePreview()">
           <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
@@ -1011,6 +1155,22 @@ function mktRenderPreview(slug) {
     featuresEl.appendChild(item);
   });
   document.getElementById('mkt-modal-select-btn').href = '/cv-builder/new?template=' + slug;
+  var priceEl = document.getElementById('mkt-modal-price');
+  var priceVal = document.getElementById('mkt-modal-price-value');
+  var btnText = document.getElementById('mkt-modal-btn-text');
+  if (tmpl.is_premium) {
+    priceEl.style.display = 'block';
+    priceVal.textContent = '৳' + (tmpl.price || 50) + ' BDT';
+    btnText.textContent = 'Buy Premium Template';
+    document.getElementById('mkt-modal-select-btn').className = 'mkt-modal-btn mkt-modal-btn-primary';
+    document.getElementById('mkt-modal-select-btn').style.background = 'linear-gradient(135deg, #D4A017, #B8860B)';
+  } else {
+    priceEl.style.display = 'none';
+    btnText.textContent = 'Create with This Template';
+    document.getElementById('mkt-modal-select-btn').className = 'mkt-modal-btn mkt-modal-btn-primary';
+    document.getElementById('mkt-modal-select-btn').style.background = '';
+    document.getElementById('mkt-modal-select-btn').style.backgroundImage = '';
+  }
 }
 function mktClosePreview() {
   document.getElementById('mkt-modal').classList.remove('open');
@@ -1169,11 +1329,294 @@ document.addEventListener('click', function(e) {
 // ─── SEARCH ON INPUT ───
 document.getElementById('mkt-search-input').addEventListener('input', mktApplyFilters);
 
+// ─── PAYMENT MODAL ───
+window.__mktPaySlug = '';
+window.__mktPayPurchaseId = 0;
+
+function mktOpenPaymentModal(slug) {
+  var tmpl = window.__mktTemplates[slug];
+  if (!tmpl) return;
+
+  // Check if user is authenticated
+  {% if not is_authenticated %}
+  window.location.href = '/login?redirect=' + encodeURIComponent('/cv-builder/templates');
+  return;
+  {% endif %}
+
+  window.__mktPaySlug = slug;
+  window.__mktPayPurchaseId = 0;
+
+  document.getElementById('mkt-pay-name').textContent = tmpl.name || 'Premium Template';
+  document.getElementById('mkt-pay-amount').textContent = tmpl.price || 50;
+  document.getElementById('mkt-pay-details-amount').textContent = tmpl.price || 50;
+  document.getElementById('mkt-pay-success-template').textContent = tmpl.name || 'Premium Template';
+
+  // Reset to step 1
+  document.getElementById('mkt-pay-step-method').style.display = '';
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-step-success').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = 'none';
+  document.getElementById('mkt-pay-phone').value = '';
+  document.getElementById('mkt-pay-trxid').value = '';
+
+  // Highlight selected method
+  document.querySelectorAll('.mkt-pay-method-btn').forEach(function(b) {
+    b.style.borderColor = 'var(--mkt-gray-200)';
+    b.style.background = 'white';
+  });
+
+  document.getElementById('mkt-payment-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function mktClosePaymentModal() {
+  document.getElementById('mkt-payment-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function mktSelectMethod(method) {
+  window.__mktPayMethod = method;
+  document.querySelectorAll('.mkt-pay-method-btn').forEach(function(b) {
+    if (b.getAttribute('data-method') === method) {
+      b.style.borderColor = '#D4A017';
+      b.style.background = '#FDF3D0';
+    } else {
+      b.style.borderColor = 'var(--mkt-gray-200)';
+      b.style.background = 'white';
+    }
+  });
+
+  var label = method.charAt(0).toUpperCase() + method.slice(1);
+  document.getElementById('mkt-pay-method-label').textContent = label;
+
+  // For bKash: show checkout button; for others: show manual flow with merchant number + trxid
+  var merchants = { bkash: '01XXXXXXXXX', nagad: '01XXXXXXXXX', rocket: '01XXXXXXXXX' };
+  document.getElementById('mkt-pay-merchant').textContent = merchants[method] || '01XXXXXXXXX';
+
+  // Show/hide bKash Checkout elements
+  var bkashCheckoutEl = document.getElementById('mkt-pay-bkash-checkout');
+  var manualFieldsEl = document.getElementById('mkt-pay-manual-fields');
+  var merchantInfoEl = document.getElementById('mkt-pay-merchant-info');
+  
+  if (method === 'bkash') {
+    bkashCheckoutEl.style.display = '';
+    manualFieldsEl.style.display = 'none';
+    merchantInfoEl.style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').textContent = 'Pay via bKash Checkout';
+  } else {
+    bkashCheckoutEl.style.display = 'none';
+    manualFieldsEl.style.display = '';
+    merchantInfoEl.style.display = '';
+    document.getElementById('mkt-pay-submit-btn').textContent = 'Submit Payment';
+  }
+
+  document.getElementById('mkt-pay-step-method').style.display = 'none';
+  document.getElementById('mkt-pay-step-details').style.display = '';
+}
+
+function mktBackToMethods() {
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-step-method').style.display = '';
+}
+
+function mktSubmitPayment() {
+  var method = window.__mktPayMethod || 'bkash';
+  var phone = document.getElementById('mkt-pay-phone').value.trim();
+
+  if (!phone) { alert('Please enter your phone number.'); document.getElementById('mkt-pay-phone').focus(); return; }
+
+  // bKash Checkout API flow
+  if (method === 'bkash') {
+    mktPayWithBkashCheckout(phone);
+    return;
+  }
+
+  // Manual flow for other methods
+  var trxId = document.getElementById('mkt-pay-trxid').value.trim();
+  if (!trxId) { alert('Please enter the transaction ID from your payment.'); document.getElementById('mkt-pay-trxid').focus(); return; }
+
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = '';
+  document.getElementById('mkt-pay-submit-btn').disabled = true;
+
+  var baseUrl = window.location.origin;
+  var csrfToken = '{{ csrf_token }}';
+
+  fetch(baseUrl + '/api/cv/templates/initiate-purchase', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    body: JSON.stringify({ template_slug: window.__mktPaySlug, payment_method: method, phone_number: phone })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success && data.purchase_id) {
+      window.__mktPayPurchaseId = data.purchase_id;
+      return fetch(baseUrl + '/api/cv/templates/verify-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ purchase_id: data.purchase_id, transaction_id: trxId })
+      });
+    } else {
+      throw new Error(data.error || 'Failed to initiate purchase');
+    }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    if (data.success) {
+      document.getElementById('mkt-pay-step-success').style.display = '';
+      if (typeof gtag !== 'undefined') { gtag('event', 'purchase', { currency: 'BDT', value: 50 }); }
+    } else {
+      alert('Error: ' + (data.error || 'Verification failed'));
+      mktBackToMethods();
+    }
+  })
+  .catch(function(err) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    alert('An error occurred: ' + err.message);
+    mktBackToMethods();
+  });
+}
+
+/**
+ * Pay with bKash Checkout API — redirects to bKash hosted checkout page.
+ */
+function mktPayWithBkashCheckout(phone) {
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = '';
+  document.getElementById('mkt-pay-submit-btn').disabled = true;
+
+  var baseUrl = window.location.origin;
+  var csrfToken = '{{ csrf_token }}';
+
+  fetch(baseUrl + '/api/cv/templates/bkash-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    body: JSON.stringify({ template_slug: window.__mktPaySlug, phone_number: phone })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+
+    if (!data.success) {
+      if (data.purchased) {
+        alert('You have already purchased this template!');
+        mktClosePaymentModal();
+        return;
+      }
+      if (data.pending) {
+        alert('You have a pending purchase. Please wait for confirmation.');
+        mktClosePaymentModal();
+        return;
+      }
+      alert('Error: ' + (data.error || 'Failed to initiate bKash checkout'));
+      mktBackToMethods();
+      return;
+    }
+
+    // If we have a checkout URL, redirect to bKash
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+      return;
+    }
+
+    // If gateway is unavailable, fall back to manual flow
+    if (data.manual_fallback) {
+      alert('bKash gateway is currently unavailable. You can make a manual payment instead.');
+      // Switch to manual flow for bKash
+      window.__mktPayMethod = 'bkash';
+      document.getElementById('mkt-pay-merchant').textContent = data.merchant_number || '01XXXXXXXXX';
+      document.getElementById('mkt-pay-bkash-checkout').style.display = 'none';
+      document.getElementById('mkt-pay-merchant-info').style.display = '';
+      document.getElementById('mkt-pay-manual-fields').style.display = '';
+      document.getElementById('mkt-pay-submit-btn').textContent = 'Submit Payment';
+      document.getElementById('mkt-pay-step-details').style.display = '';
+      return;
+    }
+
+    alert('Unexpected response. Please try again.');
+    mktBackToMethods();
+  })
+  .catch(function(err) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    alert('Connection error: ' + err.message);
+    mktBackToMethods();
+  });
+}
+
+// Close payment modal on overlay click
+document.addEventListener('click', function(e) {
+  var modal = document.getElementById('mkt-payment-modal');
+  if (modal && modal.classList.contains('open') && e.target === modal) {
+    mktClosePaymentModal();
+  }
+});
+
+// ─── PREVIEW MODAL BUY BUTTON REDIRECT ───
+// Also update the preview modal's buy button to open payment modal instead
+var origRenderPreview = mktRenderPreview;
+mktRenderPreview = function(slug) {
+  origRenderPreview(slug);
+  var tmpl = window.__mktTemplates[slug];
+  if (tmpl && tmpl.is_premium) {
+    var btn = document.getElementById('mkt-modal-select-btn');
+    btn.href = 'javascript:void(0)';
+    btn.onclick = function() { mktClosePreview(); mktOpenPaymentModal(slug); };
+  } else {
+    var btn = document.getElementById('mkt-modal-select-btn');
+    btn.onclick = null;
+  }
+};
+
+// ─── SPINNER KEYFRAMES ───
+var style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+
 // ─── INIT ───
 function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 document.addEventListener('DOMContentLoaded', function() {
   mktInitFavs();
   mktSortTemplates();
+
+  // Handle bKash callback redirect params
+  var urlParams = new URLSearchParams(window.location.search);
+  var paymentStatus = urlParams.get('payment');
+  if (paymentStatus === 'success') {
+    var purchaseId = urlParams.get('purchase_id') || '';
+    var trxId = urlParams.get('trxid') || '';
+    // Show success notification
+    var msg = 'Payment successful! Your premium template is now available. Transaction ID: ' + trxId;
+    if (typeof window.showMessage !== 'undefined') {
+      window.showMessage(msg, 'success');
+    } else {
+      alert(msg);
+    }
+    // Clean URL without reload
+    if (window.history.replaceState) {
+      urlParams.delete('payment');
+      urlParams.delete('purchase_id');
+      urlParams.delete('trxid');
+      var newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  } else if (paymentStatus === 'cancel' || paymentStatus === 'failure') {
+    var msg = 'Payment was cancelled or failed. You can try again.';
+    if (typeof window.showMessage !== 'undefined') {
+      window.showMessage(msg, 'warning');
+    } else {
+      alert(msg);
+    }
+    if (window.history.replaceState) {
+      urlParams.delete('payment');
+      var newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }
 });
 </script>
 {% endblock %}

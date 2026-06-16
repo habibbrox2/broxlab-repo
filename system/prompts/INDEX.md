@@ -104,7 +104,7 @@ Ensure these placeholders are consistent if adding new master prompts.
 
 ## References
 
-- **PromptLoader implementation:** [`app/Helpers/PromptLoader.php`](../../app/Helpers/PromptLoader.php)
-- **PHPBridge implementation:** [`src/ai/services/PHPBridge.js`](../../src/ai/services/PHPBridge.js)
-- **AI Skills configuration:** `ai-skills.json`
-- **Self-improvement loop:** [`docs/ai/SELF_IMPROVEMENT_LOOP.md`](../../docs/ai/SELF_IMPROVEMENT_LOOP.md)
+- **PromptLoader implementation:** [`app/Helpers/PromptLoader.php`](../app/Helpers/PromptLoader.php)
+- **Helper layer:** `app/Helpers/` (25 utilities including PromptLoader, FirebaseHelper, etc.)
+- **Controller layer:** `app/Controllers/` (50 controllers with routes)
+- **AI configuration:** `ai-skills.json`, `ai-tools.json`

@@ -46,23 +46,9 @@ license: Complete terms in LICENSE.txt
 - Forget to rebuild: `npm run build:prod`
 - Skip validation: `npm run validate`
 
-### Task Types
-
-**Backend (PHP, SQL, routes):**
-1. Create Model: Prepared statements, explicit columns, soft deletes
-2. Create Service: Complex business logic (optional)
-3. Create Controller: Routes with middleware
-4. Update Database: Schema in `Database/table.sql`
-
-**Frontend (Twig, JS, CSS):**
-1. Create Twig template: Use `{{ withAssetVersion() }}`, `{% csrf_token %}`
-2. Create JS: Kebab-case, initialize on `DOMContentLoaded`
-3. Create CSS: Kebab-case, use BEM naming
-4. Rebuild: `npm run build:prod` after changes
-
-**Prompts/Agents:**
+### Prompts/Agents
 - Edit files in `system/prompts/`, `.kilo/`, `.ai/`
-- Reference CORE_RULES.md instead of duplicating content
+- Reference `CORE_RULES.md` instead of duplicating content
 - Keep files concise and linked to core documentation
 
 ### Validation Checklist

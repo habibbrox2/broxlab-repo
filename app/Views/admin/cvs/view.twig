@@ -1,0 +1,149 @@
+{% extends "admin/layout.twig" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-file-user w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Details</p>
+                    <h1 class="text-xl font-bold text-white">{{ cv.title ?? 'Untitled CV' }}</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Owned by {{ cv.user_name ?? 'N/A' }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/admin/cvs" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back</a>
+                <a href="/admin/cvs/edit/{{ cv.id }}" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-all duration-150 shadow-lg shadow-indigo-500/30"><i class="lucide lucide-pencil w-4 h-4"></i> Edit</a>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
+        <div class="space-y-5">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="lucide lucide-info w-4 h-4 text-indigo-500"></i> CV Information</h3>
+                </div>
+                <div class="p-5 grid grid-cols-2 gap-4 text-sm">
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">ID</span><span class="text-slate-900 dark:text-slate-100 font-medium">#{{ cv.id }}</span></div>
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Status</span>{% if cv.is_active %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active</span>{% else %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Inactive</span>{% endif %}</div>
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Owner</span><span class="text-slate-900 dark:text-slate-100">{{ cv.user_name ?? 'N/A' }}</span>{% if cv.user_email %}<span class="block text-xs text-slate-400 dark:text-slate-500">{{ cv.user_email }}</span>{% endif %}</div>
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Username</span><span class="text-slate-900 dark:text-slate-100">{{ cv.username ?? 'N/A' }}</span></div>
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Created</span><span class="text-slate-900 dark:text-slate-100">{{ cv.created_at|date('d M Y, h:i A') }}</span></div>
+                    <div><span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Updated</span><span class="text-slate-900 dark:text-slate-100">{{ cv.updated_at|date('d M Y, h:i A') }}</span></div>
+                </div>
+            </div>
+            {% if sections is defined and sections|length > 0 %}
+                {% for section in sections %}
+                    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                        <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                {% set icons = {'summary':'file-text','experience':'briefcase','education':'graduation-cap','skills':'code','projects':'folder','certifications':'award','languages':'globe','social_links':'share-2','references':'users','custom_sections':'layers'} %}
+                                <i class="lucide lucide-{{ icons[section.section_type] ?? 'file' }} w-4 h-4 text-indigo-500"></i>
+                                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ section.title }}</h3>
+                                {% if not section.is_visible %}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">Hidden</span>{% endif %}
+                            </div>
+                            <span class="text-xs text-slate-400 dark:text-slate-500">{{ section.items|length }} item(s)</span>
+                        </div>
+                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% if section.items|length > 0 %}
+                                {% for item in section.items %}
+                                    <div class="px-5 py-3.5">
+                                        <div class="text-sm text-slate-700 dark:text-slate-300">
+                                            {% if item.content is iterable %}
+                                                {% set c = item.content %}
+                                                {% if c.position is defined and c.company is defined %}
+                                                    <div class="font-medium text-slate-900 dark:text-white">{{ c.position }}</div>
+                                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ c.company }}</div>
+                                                    {% if c.start_date %}<div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ c.start_date }} - {{ c.end_date ?? 'Present' }}</div>{% endif %}
+                                                    {% if c.description %}<div class="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">{{ c.description }}</div>{% endif %}
+                                                {% elseif c.institution is defined %}
+                                                    <div class="font-medium text-slate-900 dark:text-white">{{ c.degree ?? 'Degree' }}</div>
+                                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ c.institution }}</div>
+                                                    {% if c.start_date %}<div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ c.start_date }} - {{ c.end_date ?? '' }}{% if c.gpa %} | GPA: {{ c.gpa }}{% endif %}</div>{% endif %}
+                                                {% elseif c.skills is defined %}
+                                                    <div class="flex flex-wrap gap-1.5">{% for skill in c.skills %}<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-400">{{ skill }}</span>{% endfor %}</div>
+                                                {% elseif c.text is defined and c.text is not iterable %}
+                                                    <div class="whitespace-pre-line">{{ c.text }}</div>
+                                                {% elseif c.content is defined %}
+                                                    <div class="whitespace-pre-line">{{ c.content }}</div>
+                                                {% elseif c.url is defined %}
+                                                    <a href="{{ c.url }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">{{ c.url }}</a>
+                                                {% else %}
+                                                    <pre class="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">{{ c|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="whitespace-pre-line">{{ item.content }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="px-5 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
+                                    <i class="lucide lucide-inbox w-4 h-4 inline-block mr-1"></i> No items in this section.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="px-5 py-8 text-center">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
+                            <i class="lucide lucide-inbox w-6 h-6 text-slate-400 dark:text-slate-600"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">No sections</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">This CV has no sections defined yet.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="space-y-5">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="lucide lucide-settings w-4 h-4 text-indigo-500"></i> Details</h3>
+                </div>
+                <div class="p-5 space-y-4 text-sm">
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Template</span>
+                        <span class="text-slate-900 dark:text-slate-100 font-medium">{{ cv.template ?? 'modern'|capitalize }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Professional Status</span>
+                        <span class="text-slate-900 dark:text-slate-100">{{ cv.professional_status ?? 'Not set' }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Download Count</span>
+                        <span class="text-slate-900 dark:text-slate-100">{{ cv.download_count ?? 0 }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">View Count</span>
+                        <span class="text-slate-900 dark:text-slate-100">{{ cv.view_count ?? 0 }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Completion Score</span>
+                        <span class="text-slate-900 dark:text-slate-100">{{ cv.completion_score ?? 0 }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="lucide lucide-trash-2 w-4 h-4 text-red-500"></i> Danger Zone</h3>
+                </div>
+                <div class="p-5">
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Once you delete a CV, there is no going back. Please be certain.</p>
+                    <form method="POST" action="/admin/cvs/{{ cv.id }}/delete" onsubmit="return confirm('Are you sure you want to delete this CV permanently?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98]">
+                            <i class="lucide lucide-trash-2 w-4 h-4"></i>
+                            Delete CV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

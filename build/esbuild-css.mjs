@@ -59,10 +59,6 @@ async function buildAll() {
   await copyBundle('tailwind-public');
   await copyBundle('tailwind-admin');
 
-  // Backward compatibility
-  await copyBundle('public-bundle');
-  await copyBundle('admin-bundle');
-
   const legacyEntries = ['public-bundle-entry.css', 'admin-bundle-entry.css'];
   for (const file of legacyEntries) {
     const filePath = path.resolve(__dirname, '..', OUTDIR, file);
