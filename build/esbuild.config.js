@@ -35,7 +35,7 @@ const ENTRY_POINTS = {
   calculator: join(ROOT_DIR, 'public_html', 'assets', 'js', 'calculator.js'),
   'bangla-converter': join(ROOT_DIR, 'public_html', 'assets', 'js', 'bangla-converter.js'),
   'cv-admin': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-admin.js'),
-  'cv-builder': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-builder.js'),
+  'cv-builder': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-builder-app.js'),
   'cv-marketplace': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-marketplace.js'),
   'cv-template-upload': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-template-upload.js'),
   'ai-system-admin': join(ROOT_DIR, 'public_html', 'assets', 'js', 'ai-system-admin.js'),
@@ -56,6 +56,7 @@ const ENTRY_POINTS = {
 const buildOptions = {
   entryPoints: ENTRY_POINTS,
   bundle: true,
+  splitting: true,
   minify: !isDev,
   sourcemap: isDev,
   target: ['es2020'],

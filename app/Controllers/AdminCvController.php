@@ -101,7 +101,7 @@ class AdminCvController
             $cvId = $cvModel->create($userId, $title, $template, $professionalStatus);
             if ($cvId) {
                 $cvSectionModel = new CvSectionModel($mysqli);
-                $sectionTypes = function_exists('cvDefaultSectionTypes') ? cvDefaultSectionTypes() : ['summary' => 'Professional Summary', 'experience' => 'Work Experience', 'education' => 'Education', 'skills' => 'Skills', 'projects' => 'Projects', 'certifications' => 'Certifications'];
+                $sectionTypes = function_exists('cvDefaultSectionTypes') ? cvDefaultSectionTypes() : ['summary' => 'Professional Summary', 'experience' => 'Work Experience', 'education' => 'Education', 'skills' => 'Skills'];
                 foreach ($sectionTypes as $type => $sectionTitle) $cvSectionModel->create($cvId, $type, $sectionTitle);
                 if (!$isActive) $cvModel->update($cvId, ['is_active' => 0]);
                 logActivity("Admin CV Created", "cv", $cvId, ['user_id' => $userId, 'title' => $title, 'template' => $template], 'success');
@@ -382,8 +382,7 @@ class AdminCvController
             ['id' => 2, 'title' => 'Experience', 'section_type' => 'experience', 'is_visible' => 1, 'items' => [['id' => 2, 'content' => ['position' => 'Senior Product Manager', 'company' => 'BroxBhai Inc.', 'start_date' => 'Jan 2022', 'end_date' => 'Present', 'description' => "Led cross-functional teams to ship AI-powered CV features.\nImproved conversion by 28%."]]]],
             ['id' => 3, 'title' => 'Education', 'section_type' => 'education', 'is_visible' => 1, 'items' => [['id' => 3, 'content' => ['degree' => 'BSc in Computer Science', 'institution' => 'University of Dhaka', 'start_date' => '2016', 'end_date' => '2020', 'gpa' => '3.8/4.0']]]],
             ['id' => 4, 'title' => 'Skills', 'section_type' => 'skills', 'is_visible' => 1, 'items' => [['id' => 4, 'content' => ['name' => 'Product Strategy']], ['id' => 5, 'content' => ['name' => 'Data Analysis']], ['id' => 6, 'content' => ['name' => 'Team Leadership']]]],
-            ['id' => 5, 'title' => 'Projects', 'section_type' => 'projects', 'is_visible' => 1, 'items' => [['id' => 7, 'content' => ['name' => 'AI Resume Builder', 'date' => '2024', 'description' => "Built a template-driven resume builder.\nReduced CV build time by 45%.", 'url' => 'https://example.com']]]],
-            ['id' => 6, 'title' => 'Certifications', 'section_type' => 'certifications', 'is_visible' => 1, 'items' => [['id' => 8, 'content' => ['name' => 'Product Management Professional', 'issuer' => 'PMI', 'date' => '2023', 'credential_id' => 'PMP-123456']]]]
+            ['id' => 5, 'title' => 'Projects', 'section_type' => 'projects', 'is_visible' => 1, 'items' => [['id' => 7, 'content' => ['name' => 'AI Resume Builder', 'date' => '2024', 'description' => "Built a template-driven resume builder.\nReduced CV build time by 45%.", 'url' => 'https://example.com']]]]
         ];
         echo $twig->render('cv/templates/' . $template . '.twig', ['cv' => $sampleCv, 'sections' => $sampleSections]);
     }

@@ -116,6 +116,9 @@ $router->post('/api/cv/migrate-all-to-v3', ['middleware' => ['auth', 'csrf']], [
 $router->post('/api/cv/{id}/photo', ['middleware'=>['auth']], ['CvPurchaseController', 'uploadPhoto']);
 $router->delete('/api/cv/{id}/photo', ['middleware'=>['auth']], ['CvPurchaseController', 'deletePhoto']);
 
+// ── Template Preview API (public, no auth) ──
+$router->get('/api/cv/templates/{slug}/preview', ['CvController', 'templatePreview']);
+
 // ── Premium Template Purchases (User-facing) ──
 $router->get('/api/cv/templates/purchased/{slug}', ['middleware' => ['auth']], ['CvPurchaseController', 'checkPurchased']);
 $router->get('/api/cv/templates/my-purchases', ['middleware' => ['auth']], ['CvPurchaseController', 'myPurchases']);

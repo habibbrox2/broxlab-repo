@@ -305,6 +305,30 @@ class CvController
         exit;
     }
 
+    /** GET /api/cv/templates/{slug}/preview — Render template preview with sample data */
+    public static function templatePreview(string $slug): void
+    {
+        global $mysqli, $twig;
+        $slug = basename($slug); // prevent path traversal
+        try {
+            $previewService = new CvPreviewService($mysqli, $twig);
+            $result = $previewService->renderTemplatePreview($slug);
+            if (!$result['success']) {
+                http_response_code(404);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => $result['error'] ?? 'Template not found']);
+                return;
+            }
+            header('Content-Type: text/html; charset=utf-8');
+            echo $result['html'];
+        } catch (Throwable $e) {
+            logError('Template preview error: ' . $e->getMessage(), 'ERROR', ['slug' => $slug]);
+            http_response_code(500);
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#6b7280;"><p>Failed to load template preview.</p></body></html>';
+        }
+    }
+
     /** GET /cv-builder/{id} — Redirect to builder wizard */
     public static function redirectToBuilder(string $id): void
     {
@@ -348,7 +372,7 @@ class CvController
         $id = (int)$id;
         $cvModel = new CvModel($mysqli);
         if (!$cvModel->belongsToUser($id,$userId)) { http_response_code(403); echo 'Forbidden'; exit; }
-        $ud = ['title'=>!empty($_POST['title'])?sanitize_input($_POST['title']):'My CV','template'=>sanitize_input($_POST['template']??'modern'),'professional_status'=>!empty($_POST['professional_status'])?sanitize_input($_POST['professional_status']):null,'builder_data'=>['summary'=>sanitize_input($_POST['summary']??''),'skills'=>sanitize_input($_POST['skills']??''),'experience'=>sanitize_input($_POST['experience']??''),'education'=>sanitize_input($_POST['education']??''),'projects'=>sanitize_input($_POST['projects']??''),'certifications'=>sanitize_input($_POST['certifications']??'')]];
+        $ud = ['title'=>!empty($_POST['title'])?sanitize_input($_POST['title']):'My CV','template'=>sanitize_input($_POST['template']??'modern'),'professional_status'=>!empty($_POST['professional_status'])?sanitize_input($_POST['professional_status']):null,'builder_data'=>['summary'=>sanitize_input($_POST['summary']??''),'skills'=>sanitize_input($_POST['skills']??''),'experience'=>sanitize_input($_POST['experience']??''),'education'=>sanitize_input($_POST['education']??'')]];
         $ok = $cvModel->update($id,$ud);
         showMessage($ok ? 'CV updated successfully' : 'Failed to update CV', $ok ? 'success' : 'danger');
         header('Location: /cv-builder/'.$id);
@@ -541,8 +565,6 @@ if (!function_exists('cvDefaultSectionTypes')) {
             'experience' => 'Work Experience',
             'education' => 'Education',
             'skills' => 'Skills',
-            'projects' => 'Projects',
-            'certifications' => 'Certifications'
         ];
     }
 }

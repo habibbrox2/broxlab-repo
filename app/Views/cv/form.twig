@@ -1,5 +1,4 @@
 {% extends 'layout.twig' %}
-{% import 'cv/_modal_preview.twig' as modal %}
 
 {% block title %}{{ page_title|default('Build Your CV') }}{% endblock %}
 
@@ -207,29 +206,6 @@
   transform: translateY(0) !important;
 }
 
-/* ── Template card selected state (toggled by cv-builder.js) ── */
-.bld-template-card.selected {
-  border-color: #6366f1 !important;
-  background: #eef2ff !important;
-  box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 8px 24px rgba(99,102,241,0.12) !important;
-}
-.bld-template-card.selected::after {
-  content: '✓';
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #6366f1;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
 /* ── Step card accent bar ── */
 .bld-card-accent::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
@@ -363,10 +339,50 @@
 .bld-photo-progress.visible { display: block; }
 .bld-photo-file-input { display: none; }
 
+/* ── Next button (styled via class instead of inline) ── */
+.bld-btn-next {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.5rem; border-radius: 9999px;
+  font-weight: 600; font-size: 0.875rem; border: none;
+  cursor: pointer; transition: all 0.2s ease; line-height: 1;
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: white; box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+  white-space: nowrap;
+}
+.bld-btn-next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(99,102,241,0.45);
+}
+.bld-btn-next:active { transform: scale(0.97); }
+.bld-btn-next:disabled {
+  opacity: 0.5; cursor: not-allowed;
+  transform: none !important; box-shadow: none !important;
+}
+
+/* ── Template pills (review step) ── */
+.bld-template-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1.25rem; border-radius: 9999px;
+  font-size: 0.85rem; font-weight: 600; border: 2px solid #e5e7eb;
+  background: white; color: #4b5563; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.bld-template-pill:hover { border-color: #c7d2fe; background: #f5f3ff; color: #4f46e5; }
+.bld-template-pill.selected {
+  background: #6366f1; color: white; border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+
+/* ── Spin animation for preview loading ── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Touch device optimizations ── */
 @media (hover: none) and (pointer: coarse) {
   .bld-input, .bld-select, .bld-textarea { font-size: 16px !important; }
-  .bld-btn, .bld-add-entry, .bld-template-card { min-height: 44px; }
+  .bld-add-entry { min-height: 44px; }
 }
 </style>
 {% endblock %}
@@ -400,7 +416,7 @@
       <div class="flex justify-between items-center mb-3.5">
         <span class="text-white font-semibold flex items-center gap-2">
           <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-[0.8rem] font-bold" id="bld-current-step">1</span>
-          <span>Step 1 of 12</span>
+          <span>Step 1 of 6</span>
         </span>
         <span class="text-white/85 text-sm font-medium bg-white/10 px-3 py-1 rounded-full">
           <span id="bld-progress-pct">0</span>% Complete
@@ -413,10 +429,9 @@
         <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2 pointer-events-none"></div>
         {# Step indicators #}
         {% set steps = [
-          {'label': 'Personal', 'num': '1'}, {'label': 'Summary', 'num': '2'}, {'label': 'Experience', 'num': '3'},
-          {'label': 'Education', 'num': '4'}, {'label': 'Skills', 'num': '5'}, {'label': 'Languages', 'num': '6'},
-          {'label': 'Certifications', 'num': '7'}, {'label': 'Projects', 'num': '8'}, {'label': 'Social', 'num': '9'},
-          {'label': 'Custom', 'num': '10'}, {'label': 'References', 'num': '11'}, {'label': 'Review', 'num': '12'}
+          {'label': 'Personal', 'num': '1'}, {'label': 'Professional', 'num': '2'},
+          {'label': 'Social', 'num': '3'}, {'label': 'Custom', 'num': '4'},
+          {'label': 'References', 'num': '5'}, {'label': 'Review', 'num': '6'}
         ] %}
         {% for step in steps %}
         <div class="flex flex-col items-center gap-1.5 relative z-10 cursor-pointer transition-transform duration-300 hover:-translate-y-0.5 min-h-[44px] md:min-h-0 justify-center" title="{{ step.label }}">
@@ -436,52 +451,19 @@
       <!-- JavaScript populates this -->
     </div>
 
-    <!-- Template Selector (shown before finish) -->
-    <div id="bld-template-selector" style="display:none;" class="bg-white rounded-2xl p-6 md:p-10 shadow-2xl border border-white/20 relative overflow-hidden bld-card-accent mt-6">
-      <div class="mb-8 pb-6 border-b-2 border-gray-100">
-        <div class="inline-flex items-center gap-2 text-sm text-indigo-600 font-semibold mb-2 uppercase tracking-wide">
-          <i class="lucide lucide-palette w-4 h-4"></i> Final Step
-        </div>
-        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1.5 leading-tight">Choose Your Template</h2>
-        <p class="text-gray-500">Select a template style that best presents your professional profile.</p>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {% for tmpl in templates %}
-        <div class="bld-template-card border-2 border-gray-200 rounded-xl p-5 text-center cursor-pointer transition-all duration-300 relative hover:border-gray-300 hover:bg-gray-50 hover:-translate-y-0.5 hover:shadow-lg {{ tmpl == selected_template ? 'border-indigo-500 bg-indigo-50 shadow-[0_0_0_4px_rgba(99,102,241,0.12)] selected' : '' }}"
-             data-template="{{ tmpl }}" onclick="window.bldSelectTemplate('{{ tmpl }}')">
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2.5 text-white text-xl transition-transform duration-300 group-hover:scale-110"
-               style="background: linear-gradient(135deg, {{ tmpl == 'modern' ? '#6366f1,#8b5cf6' : tmpl == 'minimal' ? '#374151,#6b7280' : tmpl == 'ats' ? '#059669,#10b981' : '#1e40af,#3b82f6' }});">
-            <i class="lucide lucide-{{ tmpl == 'modern' ? 'palette' : tmpl == 'minimal' ? 'minus' : tmpl == 'ats' ? 'bot' : 'briefcase' }} w-5 h-5"></i>
-          </div>
-          <div class="font-semibold text-gray-800">{{ tmpl|capitalize }}</div>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="mt-4 text-center">
-        <a href="/cv-builder/templates"
-           class="inline-flex items-center gap-2 text-indigo-600 text-sm font-semibold no-underline px-4 py-2 rounded-lg transition-all duration-200 hover:bg-indigo-50">
-          <i class="lucide lucide-external-link w-4 h-4"></i>
-          Browse Full Template Marketplace
-        </a>
-      </div>
-    </div>
-
     <!-- Navigation -->
     <div class="flex justify-between items-center mt-8 pt-6 border-t-2 border-white/15 gap-3 flex-wrap">
       <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-none cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white/15 text-white/80 hover:bg-white/25 hover:text-white" id="bld-btn-prev" onclick="window.bldPrevStep()">
         <i class="lucide lucide-chevron-left w-4 h-4"></i> Back
       </button>
       <div class="flex gap-3">
-        <button class="flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm border-2 border-white/30 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white/10 text-white/90 hover:bg-white/20 hover:text-white hover:border-white/50" onclick="window.bldSaveDraft();setTimeout(function(){openPreviewModal({{ cv_id }})},400)">
-          <i class="lucide lucide-eye w-4 h-4"></i> Preview
-        </button>
         <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-white/20 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5" id="bld-btn-save-draft" onclick="window.bldSaveDraft()">
           <i class="lucide lucide-save w-4 h-4"></i> Save
         </button>
         <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-white/20 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-transparent text-white/80 hover:bg-white/10 hover:text-white hover:border-white/30" id="bld-btn-skip" onclick="window.bldSkipStep()">
           Skip <i class="lucide lucide-skip-forward w-4 h-4"></i>
         </button>
-        <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-none cursor-pointer transition-all duration-200 active:scale-[0.97] bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-[0_4px_16px_rgba(99,102,241,0.35)] hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] disabled:opacity-50 disabled:cursor-not-allowed disabled:!translate-y-0 disabled:!shadow-none" id="bld-btn-next" onclick="window.bldNextStep()">
+        <button class="bld-btn-next" id="bld-btn-next" onclick="window.bldNextStep()">
           Next <i class="lucide lucide-chevron-right w-4 h-4"></i>
         </button>
       </div>
@@ -494,9 +476,6 @@
     </div>
   </div>
 </div>
-
-<!-- CV Preview Modal -->
-{{ modal.preview_modal(cv_id, templates, selected_template) }}
 
 <script src="/assets/js/dist/cv-builder.js?v={{ random() }}" defer></script>
 <script>

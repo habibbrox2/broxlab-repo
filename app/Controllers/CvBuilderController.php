@@ -34,11 +34,11 @@ class CvBuilderController
         $cvModel = new CvModel($mysqli);
         if (!$cvModel->belongsToUser($id, $userId)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
         $d = $cvModel->getBuilderData($id);
-        $steps = ['personal','summary','experience','education','skills','languages','certificates','projects','social_links','custom_sections','references'];
+        $steps = ['personal','summary','experience','education','skills','languages','social_links','custom_sections','references'];
         $p = [];
         foreach ($steps as $s) {
             $v = $d[$s] ?? [];
-            $p[$s] = $s === 'skills' ? (!empty($v['technical'])||!empty($v['soft'])) : (in_array($s,['languages','certificates','projects','social_links','custom_sections','references']) ? is_array($v)&&count($v)>0 : !empty($v));
+            $p[$s] = $s === 'skills' ? (!empty($v['technical'])||!empty($v['soft'])) : (in_array($s,['languages','social_links','custom_sections','references']) ? is_array($v)&&count($v)>0 : !empty($v));
         }
         jsonResponse(['success' => true, 'progress' => $p, 'total_steps' => count($steps), 'completed_steps' => count(array_filter($p))]);
     }
@@ -58,7 +58,7 @@ class CvBuilderController
         try { $cvVersionModel->createVersion($id, $userId); } catch (Throwable $e) {}
         if (!empty($data['personal']['full_name'])) $cvModel->update($id, ['title' => sanitize_input($data['personal']['full_name']) . "'s CV"]);
         try { foreach ($cvSectionModel->getByCvId($id) as $s) $cvSectionModel->delete($s['id']); } catch (Throwable $e) {}
-        $map = ['summary'=>['title'=>'Summary','steps'=>['personal','summary']],'experience'=>['title'=>'Work Experience','steps'=>['experience']],'education'=>['title'=>'Education','steps'=>['education']],'skills'=>['title'=>'Skills','steps'=>['skills']],'languages'=>['title'=>'Languages','steps'=>['languages']],'projects'=>['title'=>'Projects','steps'=>['projects']],'certifications'=>['title'=>'Certifications','steps'=>['certificates']],'social_links'=>['title'=>'Social Links','steps'=>['social_links']],'custom_sections'=>['title'=>'Custom Sections','steps'=>['custom_sections']],'references'=>['title'=>'References','steps'=>['references']]];
+        $map = ['summary'=>['title'=>'Summary','steps'=>['personal','summary']],'experience'=>['title'=>'Work Experience','steps'=>['experience']],'education'=>['title'=>'Education','steps'=>['education']],'skills'=>['title'=>'Skills','steps'=>['skills']],'languages'=>['title'=>'Languages','steps'=>['languages']],'social_links'=>['title'=>'Social Links','steps'=>['social_links']],'custom_sections'=>['title'=>'Custom Sections','steps'=>['custom_sections']],'references'=>['title'=>'References','steps'=>['references']]];
         foreach ($map as $st => $cfg) {
             $hd = false; foreach ($cfg['steps'] as $sp) { if (!empty($data[$sp])) { $hd = true; break; } } if (!$hd) continue;
             $sid = $cvSectionModel->create($id, $st, $cfg['title']); if (!$sid) continue;
@@ -82,10 +82,6 @@ class CvBuilderController
                     foreach (($data['social_links']??[]) as $l) { if (!empty($l['url'])) $cvItemModel->create($sid, 'social_link', ['platform'=>sanitize_input($l['platform']??''),'url'=>sanitize_input($l['url']??'')]); } break;
                 case 'custom_sections':
                     foreach (($data['custom_sections']??[]) as $s) { if (!empty($s['title'])) $cvItemModel->create($sid, 'custom_section', ['title'=>sanitize_input($s['title']??''),'content'=>sanitize_input($s['content']??'')]); } break;
-                case 'projects':
-                    foreach (($data['projects']??[]) as $p) { if (!empty($p['name'])) $cvItemModel->create($sid, 'project', ['name'=>sanitize_input($p['name']??''),'description'=>sanitize_input($p['description']??''),'technologies'=>sanitize_input($p['technologies']??''),'url'=>sanitize_input($p['url']??'')]); } break;
-                case 'certifications':
-                    foreach (($data['certificates']??[]) as $c) { if (!empty($c['name'])) $cvItemModel->create($sid, 'certification', ['name'=>sanitize_input($c['name']??''),'issuer'=>sanitize_input($c['organization']??$c['issuer']??''),'date'=>sanitize_input($c['issue_date']??$c['date']??'')]); } break;
                 case 'references':
                     foreach (($data['references']??[]) as $r) { if (!empty($r['name'])) $cvItemModel->create($sid, 'reference', ['name'=>sanitize_input($r['name']??''),'title'=>sanitize_input($r['title']??''),'email'=>sanitize_input($r['email']??''),'phone'=>sanitize_input($r['phone']??''),'company'=>sanitize_input($r['company']??'')]); } break;
             }

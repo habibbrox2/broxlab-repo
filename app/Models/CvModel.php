@@ -5,10 +5,53 @@
 class CvModel
 {
     private $mysqli;
+    private ?bool $hasDeletedAtColumn = null;
 
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+    }
+
+    /**
+     * Ensure the `deleted_at` column exists on the `cvs` table.
+     */
+    private function ensureDeletedAtColumnExists(): bool
+    {
+        if ($this->hasDeletedAtColumn !== null) {
+            return $this->hasDeletedAtColumn;
+        }
+
+        $stmt = $this->mysqli->prepare("SHOW COLUMNS FROM cvs LIKE 'deleted_at'");
+        if (!$stmt) {
+            $this->hasDeletedAtColumn = false;
+            return false;
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $hasColumn = $result && $result->num_rows > 0;
+        $stmt->close();
+
+        if (!$hasColumn) {
+            $this->mysqli->query(
+                "ALTER TABLE cvs ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER last_viewed_at"
+            );
+            $hasColumn = $this->mysqli->errno === 0
+                || stripos($this->mysqli->error ?? '', 'duplicate column name') !== false;
+        }
+
+        $this->hasDeletedAtColumn = $hasColumn;
+        return $hasColumn;
+    }
+
+    /**
+     * Return the active row filter for `deleted_at`.
+     */
+    private function getDeletedAtCondition(string $alias = 'c'): string
+    {
+        return $this->ensureDeletedAtColumnExists()
+            ? "{$alias}.deleted_at IS NULL"
+            : '1=1';
     }
 
     /**
@@ -34,7 +77,7 @@ class CvModel
     public function getByUserId(int $userId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC"
+            "SELECT * FROM cvs c WHERE user_id = ? AND {$this->getDeletedAtCondition()} ORDER BY c.updated_at DESC"
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();
@@ -87,7 +130,7 @@ class CvModel
             $where[] = 'c.is_active = 0';
         }
 
-        $where[] = 'c.deleted_at IS NULL';
+        $where[] = $this->getDeletedAtCondition('c');
         $sql = "SELECT c.id, c.user_id, c.title, c.is_active, c.created_at, c.updated_at,
                        u.username, u.email, u.first_name, u.last_name
                 FROM cvs c
@@ -136,7 +179,7 @@ class CvModel
             $where[] = 'c.is_active = 0';
         }
 
-        $where[] = 'c.deleted_at IS NULL';
+        $where[] = $this->getDeletedAtCondition('c');
         $sql = "SELECT COUNT(*) as total
                 FROM cvs c
                 LEFT JOIN users u ON c.user_id = u.id";
@@ -164,7 +207,11 @@ class CvModel
         $stats = [];
 
         // Total CVs
-        $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs WHERE deleted_at IS NULL");
+        if ($this->ensureDeletedAtColumnExists()) {
+            $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs WHERE deleted_at IS NULL");
+        } else {
+            $result = $this->mysqli->query("SELECT COUNT(*) as total FROM cvs");
+        }
         $stats['total'] = $result->fetch_assoc()['total'] ?? 0;
 
         // CVs by template (commented out until column is added)
@@ -177,9 +224,15 @@ class CvModel
         // }
 
         // Active users with CVs
-        $result = $this->mysqli->query(
-            "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs WHERE deleted_at IS NULL"
-        );
+        if ($this->ensureDeletedAtColumnExists()) {
+            $result = $this->mysqli->query(
+                "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs WHERE deleted_at IS NULL"
+            );
+        } else {
+            $result = $this->mysqli->query(
+                "SELECT COUNT(DISTINCT user_id) as users_with_cvs FROM cvs"
+            );
+        }
         $stats['users_with_cvs'] = $result->fetch_assoc()['users_with_cvs'] ?? 0;
 
         return $stats;
@@ -219,7 +272,7 @@ class CvModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs WHERE id = ? AND deleted_at IS NULL LIMIT 1"
+            "SELECT * FROM cvs c WHERE id = ? AND {$this->getDeletedAtCondition()} LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
@@ -362,9 +415,16 @@ class CvModel
      */
     public function delete(int $id): bool
     {
-        $stmt = $this->mysqli->prepare(
-            "UPDATE cvs SET deleted_at = NOW() WHERE id = ?"
-        );
+        if ($this->ensureDeletedAtColumnExists()) {
+            $stmt = $this->mysqli->prepare(
+                "UPDATE cvs SET deleted_at = NOW() WHERE id = ?"
+            );
+        } else {
+            $stmt = $this->mysqli->prepare(
+                "DELETE FROM cvs WHERE id = ?"
+            );
+        }
+
         $stmt->bind_param('i', $id);
 
         return $stmt->execute();
@@ -376,7 +436,7 @@ class CvModel
     public function belongsToUser(int $cvId, int $userId): bool
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id FROM cvs WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1"
+            "SELECT id FROM cvs c WHERE id = ? AND user_id = ? AND {$this->getDeletedAtCondition()} LIMIT 1"
         );
         $stmt->bind_param('ii', $cvId, $userId);
         $stmt->execute();

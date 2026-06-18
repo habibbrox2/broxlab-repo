@@ -32,17 +32,17 @@ class CvProfileService
     ];
 
     // Points per completed section for completion score (out of 100)
+    // Projects (11) and certificates (8) were removed from the builder; their
+    // 19 points were redistributed across remaining sections in 2025-06.
     private const COMPLETION_WEIGHTS = [
-        'personal'    => 11,  // name + email + phone + address
+        'personal'    => 15,  // +4 — name + email + phone + address
         'contact'     => 5,   // website + linkedin + social
-        'summary'     => 11,
-        'education'   => 11,
-        'experience'  => 15,
-        'skills'      => 11,
-        'projects'    => 11,
-        'certificates' => 8,
-        'languages'   => 6,
-        'references'  => 6,
+        'summary'     => 13,  // +2
+        'education'   => 14,  // +3
+        'experience'  => 19,  // +4 — most important section
+        'skills'      => 14,  // +3
+        'languages'   => 8,   // +2
+        'references'  => 7,   // +1
         'custom'      => 5,
     ];
 
@@ -588,16 +588,6 @@ class CvProfileService
         // Skills
         if (!empty($profileData['skills'])) {
             $score += $this::COMPLETION_WEIGHTS['skills'];
-        }
-
-        // Projects
-        if (!empty($profileData['projects'])) {
-            $score += $this::COMPLETION_WEIGHTS['projects'];
-        }
-
-        // Certifications
-        if (!empty($profileData['certifications'])) {
-            $score += $this::COMPLETION_WEIGHTS['certificates'];
         }
 
         // Languages

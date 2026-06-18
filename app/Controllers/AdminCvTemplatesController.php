@@ -153,7 +153,7 @@ $router->post('/admin/cv-templates', ['middleware' => ['auth', 'admin_only', 'cs
             'slug' => $slug, 'name' => $name, 'description' => $description,
             'category' => 'custom', 'status' => 'active', 'version' => '1.0.0',
             'is_free' => 1, 'author' => 'Admin', 'installed_via' => 'admin',
-            'supported_sections' => ['personal','contact','summary','education','experience','skills','projects','certificates','languages','references','custom_sections'],
+            'supported_sections' => ['personal','contact','summary','education','experience','skills','languages','references','custom_sections'],
             'features' => [], 'tags' => ['custom'],
         ]);
         if ($id) {

@@ -404,8 +404,6 @@
   animation: mktSlideUp 0.3s ease;
 }
 @keyframes mktSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.mkt-modal-preview { height: 280px; position: relative; display: flex; align-items: center; justify-content: center; }
-.mkt-modal-preview i { font-size: 6rem; color: rgba(255,255,255,0.4); }
 .mkt-modal-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 36px; height: 36px; border-radius: 50%;
@@ -427,29 +425,12 @@
 }
 .mkt-modal-close:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
 .mkt-modal-body { padding: 2rem; }
-.mkt-modal-name { font-size: 1.5rem; font-weight: 700; color: var(--mkt-gray-800); margin-bottom: 0.25rem; }
-.mkt-modal-category { font-size: 0.85rem; color: var(--mkt-primary); font-weight: 600; margin-bottom: 1rem; text-transform: uppercase; }
-.mkt-modal-desc { font-size: 1rem; color: var(--mkt-gray-500); line-height: 1.6; margin-bottom: 1.5rem; }
-.mkt-modal-features { margin-bottom: 1.5rem; }
-.mkt-modal-features h4 { font-size: 0.9rem; font-weight: 600; color: var(--mkt-gray-700); margin-bottom: 0.75rem; }
-.mkt-modal-feature-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.mkt-modal-feature-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.9rem; color: var(--mkt-gray-600);
-  padding: 0.35rem 0.5rem; border-radius: 6px;
-  transition: background 0.2s;
-}
-.mkt-modal-feature-item:hover { background: var(--mkt-gray-50); }
-.mkt-modal-feature-item i { color: var(--mkt-success); flex-shrink: 0; }
 .mkt-modal-best {
   background: var(--mkt-gray-50); border-radius: 10px;
   padding: 0.75rem 1rem; margin-bottom: 1.5rem;
   font-size: 0.9rem; color: var(--mkt-gray-600);
 }
 .mkt-modal-best strong { color: var(--mkt-gray-800); }
-.mkt-modal-version {
-  font-size: 0.8rem; color: var(--mkt-gray-400); margin-bottom: 1rem;
-}
 .mkt-modal-actions { display: flex; gap: 0.75rem; }
 .mkt-modal-btn {
   flex: 1; padding: 0.875rem; border-radius: 12px;
@@ -613,6 +594,9 @@
   .mkt-sort { width: 100%; }
   .mkt-sort select { width: 100%; }
   .mkt-card-actions { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  #mkt-preview-iframe { width: 100% !important; min-height: 80vh !important; border-radius: 4px; }
 }
 </style>
 {% endblock %}
@@ -951,7 +935,7 @@
   </div>
 </div>
 
-<!-- ─── PREVIEW MODAL ─── -->
+<!-- ─── PREVIEW MODAL (iframe-based rendered preview) ─── -->
 <div class="mkt-modal-overlay" id="mkt-modal">
   <div class="mkt-modal">
     <button class="mkt-modal-nav mkt-modal-prev" id="mkt-modal-prev" onclick="mktNavPreview(-1)" title="Previous template">
@@ -963,32 +947,76 @@
     <button class="mkt-modal-close" onclick="mktClosePreview()">
       <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
     </button>
-    <div class="mkt-modal-preview" id="mkt-modal-preview" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
-      <i class="lucide lucide-file-text" style="width:6rem;height:6rem;"></i>
-    </div>
-    <div class="mkt-modal-body">
-      <h2 class="mkt-modal-name" id="mkt-modal-name">Template Name</h2>
-      <div class="mkt-modal-category" id="mkt-modal-category">Category</div>
-      <p class="mkt-modal-desc" id="mkt-modal-desc">Description</p>
-      <div class="mkt-modal-features">
-        <h4>Features</h4>
-        <div class="mkt-modal-feature-list" id="mkt-modal-features"></div>
+
+    <!-- Preview header bar -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <i class="lucide lucide-eye w-4 h-4 text-indigo-600"></i>
+        <select id="mkt-modal-template-select" onchange="mktSwitchTemplate(this.value)"
+                class="text-sm border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none min-w-[140px] cursor-pointer">
+          {% for slug, tmpl in templates %}
+          <option value="{{ slug }}">{{ tmpl.name }}</option>
+          {% endfor %}
+        </select>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-200">
+          <i class="lucide lucide-maximize-2 w-3 h-3"></i>
+          A4 Preview
+        </span>
       </div>
-      <div class="mkt-modal-best" id="mkt-modal-best">
-        <strong>Best for:</strong> <span id="mkt-modal-best-for">All professionals</span>
-      </div>
-      <div class="mkt-modal-version" id="mkt-modal-version">v1.0.0</div>
-      <div class="mkt-modal-price" id="mkt-modal-price" style="display:none;margin-bottom:1rem;padding:0.75rem 1rem;background:linear-gradient(135deg,#FDF3D0,#FEF9E7);border:1px solid rgba(212,160,23,0.3);border-radius:10px;font-size:0.95rem;font-weight:600;color:#B8860B;text-align:center;">
-        <i class="lucide lucide-crown" style="width:1em;height:1em;"></i>
-        Premium Template — <span id="mkt-modal-price-value">৳50 BDT</span>
-      </div>
-      <div class="mkt-modal-actions">
-        <a href="/cv-builder/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn">
-          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> <span id="mkt-modal-btn-text">Create with This Template</span>
-        </a>
-        <button class="mkt-modal-btn mkt-modal-btn-secondary" onclick="mktClosePreview()">
-          <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
+      <div class="flex items-center gap-2">
+        <!-- Zoom controls -->
+        <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          <button onclick="mktZoomOut()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom out (Ctrl+-)">
+            <i class="lucide lucide-zoom-out w-3.5 h-3.5"></i>
+          </button>
+          <span class="text-xs font-medium text-gray-600 min-w-[44px] text-center select-none border-x border-gray-100 px-1.5 py-1" id="mkt-zoom-level">100%</span>
+          <button onclick="mktZoomIn()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom in (Ctrl++)">
+            <i class="lucide lucide-zoom-in w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="mktZoomReset()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors border-l border-gray-100" title="Reset zoom (Ctrl+0)">
+            <i class="lucide lucide-rotate-ccw w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <span class="text-xs text-gray-400" id="mkt-modal-counter"></span>
+        <button onclick="mktClosePreview()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Close (Esc)">
+          <i class="lucide lucide-x w-4 h-4"></i>
         </button>
+      </div>
+    </div>
+
+    <!-- Iframe body -->
+    <div class="relative bg-gray-100" style="height:70vh;overflow:hidden;">
+      <!-- Loading overlay -->
+      <div id="mkt-preview-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10 transition-opacity duration-300">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <span class="text-sm text-gray-500 font-medium">Loading preview...</span>
+        </div>
+      </div>
+      <!-- Scrollable iframe container -->
+      <div class="w-full h-full overflow-auto" id="mkt-preview-scroll">
+        <div class="flex items-start justify-center p-4 sm:p-8" id="mkt-preview-stage" style="transition:transform 0.15s ease;">
+          <iframe id="mkt-preview-iframe"
+                  class="bg-white rounded-lg shadow-lg origin-top"
+                  style="width:210mm;min-height:297mm;border:none;"
+                  sandbox="allow-scripts allow-same-origin"
+                  title="Template Preview"
+                  loading="lazy">
+          </iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer action bar -->
+    <div class="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        <i class="lucide lucide-info w-3.5 h-3.5"></i>
+        <span>Scroll to navigate · <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-[10px] font-mono">Esc</kbd> to close</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/cv-builder/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn" style="padding:0.5rem 1.25rem;font-size:0.85rem;border-radius:10px;">
+          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> <span id="mkt-modal-btn-text">Use This Template</span>
+        </a>
       </div>
     </div>
   </div>
@@ -1123,6 +1151,8 @@ function mktOpenPreview(slug) {
   var idx = window.__mktSlugs.indexOf(slug);
   if (idx === -1) return;
   window.__mktCurrentPreviewIdx = idx;
+  window.__mktZoom = 1;
+  updateZoomDisplay();
   mktRenderPreview(slug);
   document.getElementById('mkt-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1140,44 +1170,90 @@ function mktNavPreview(dir) {
 function mktRenderPreview(slug) {
   var tmpl = window.__mktTemplates[slug];
   if (!tmpl) return;
-  document.getElementById('mkt-modal-name').textContent = tmpl.name;
-  document.getElementById('mkt-modal-category').textContent = tmpl.category;
-  document.getElementById('mkt-modal-desc').textContent = tmpl.description;
-  document.getElementById('mkt-modal-best-for').textContent = tmpl.best_for || 'All professionals';
-  document.getElementById('mkt-modal-version').textContent = 'v' + (tmpl.version || '1.0.0');
-  document.getElementById('mkt-modal-preview').style.background = tmpl.gradient;
-  var featuresEl = document.getElementById('mkt-modal-features');
-  featuresEl.innerHTML = '';
-  (tmpl.features || []).forEach(function(f) {
-    var item = document.createElement('div');
-    item.className = 'mkt-modal-feature-item';
-    item.innerHTML = '<i class="lucide lucide-check" style="width:1em;height:1em;"></i> ' + escHtml(f);
-    featuresEl.appendChild(item);
-  });
-  document.getElementById('mkt-modal-select-btn').href = '/cv-builder/new?template=' + slug;
-  var priceEl = document.getElementById('mkt-modal-price');
-  var priceVal = document.getElementById('mkt-modal-price-value');
+  var loading = document.getElementById('mkt-preview-loading');
+  var iframe = document.getElementById('mkt-preview-iframe');
+  if (loading) loading.classList.remove('hidden');
+  // Update header — sync dropdown selection and counter
+  var select = document.getElementById('mkt-modal-template-select');
+  if (select) select.value = slug;
+  document.getElementById('mkt-modal-counter').textContent = (window.__mktCurrentPreviewIdx + 1) + ' of ' + window.__mktSlugs.length;
+  // Update select button
+  var btn = document.getElementById('mkt-modal-select-btn');
   var btnText = document.getElementById('mkt-modal-btn-text');
   if (tmpl.is_premium) {
-    priceEl.style.display = 'block';
-    priceVal.textContent = '৳' + (tmpl.price || 50) + ' BDT';
     btnText.textContent = 'Buy Premium Template';
-    document.getElementById('mkt-modal-select-btn').className = 'mkt-modal-btn mkt-modal-btn-primary';
-    document.getElementById('mkt-modal-select-btn').style.background = 'linear-gradient(135deg, #D4A017, #B8860B)';
+    btn.href = 'javascript:void(0)';
+    btn.onclick = function() { mktClosePreview(); mktOpenPaymentModal(slug); };
+    btn.style.background = 'linear-gradient(135deg, #D4A017, #B8860B)';
   } else {
-    priceEl.style.display = 'none';
-    btnText.textContent = 'Create with This Template';
-    document.getElementById('mkt-modal-select-btn').className = 'mkt-modal-btn mkt-modal-btn-primary';
-    document.getElementById('mkt-modal-select-btn').style.background = '';
-    document.getElementById('mkt-modal-select-btn').style.backgroundImage = '';
+    btnText.textContent = 'Use This Template';
+    btn.href = '/cv-builder/new?template=' + slug;
+    btn.onclick = null;
+    btn.style.background = '';
   }
+  // Load preview iframe
+  var previewUrl = '/api/cv/templates/' + encodeURIComponent(slug) + '/preview?t=' + Date.now();
+  iframe.src = previewUrl;
+  iframe.onload = function() {
+    if (loading) loading.classList.add('hidden');
+  };
+  // Fallback: hide loading after 10s even if iframe doesn't fire onload
+  setTimeout(function() {
+    if (loading && !loading.classList.contains('hidden')) {
+      loading.classList.add('hidden');
+    }
+  }, 10000);
+}
+
+function mktSwitchTemplate(slug) {
+  if (!slug) return;
+  var idx = window.__mktSlugs.indexOf(slug);
+  if (idx === -1) return;
+  window.__mktCurrentPreviewIdx = idx;
+  mktRenderPreview(slug);
+  document.getElementById('mkt-modal-prev').style.display = idx > 0 ? '' : 'none';
+  document.getElementById('mkt-modal-next').style.display = idx < window.__mktSlugs.length - 1 ? '' : 'none';
 }
 function mktClosePreview() {
   document.getElementById('mkt-modal').classList.remove('open');
   document.body.style.overflow = '';
+  // Clear iframe to stop loading
+  var iframe = document.getElementById('mkt-preview-iframe');
+  if (iframe) iframe.src = '';
+  // Reset zoom
+  window.__mktZoom = 1;
+  updateZoomDisplay();
 }
 
-// ─── COMPARISON ───
+// ─── ZOOM CONTROLS ───
+window.__mktZoom = 1;
+var MKT_ZOOM_MIN = 0.25;
+var MKT_ZOOM_MAX = 2.5;
+var MKT_ZOOM_STEP = 0.1;
+
+function updateZoomDisplay() {
+  var el = document.getElementById('mkt-zoom-level');
+  if (el) el.textContent = Math.round(window.__mktZoom * 100) + '%';
+  var stage = document.getElementById('mkt-preview-stage');
+  if (!stage) return;
+  var iframe = document.getElementById('mkt-preview-iframe');
+  // Scale the iframe using CSS transform on the wrapping stage
+  stage.style.transform = 'scale(' + window.__mktZoom + ')';
+  stage.style.transformOrigin = 'top center';
+}
+
+function mktZoomIn() {
+  window.__mktZoom = Math.min(window.__mktZoom + MKT_ZOOM_STEP, MKT_ZOOM_MAX);
+  updateZoomDisplay();
+}
+function mktZoomOut() {
+  window.__mktZoom = Math.max(window.__mktZoom - MKT_ZOOM_STEP, MKT_ZOOM_MIN);
+  updateZoomDisplay();
+}
+function mktZoomReset() {
+  window.__mktZoom = 1;
+  updateZoomDisplay();
+}
 function mktToggleCompareMode() {
   window.__mktCompareMode = !window.__mktCompareMode;
   document.getElementById('mkt-compare-btn').classList.toggle('active');
@@ -1305,16 +1381,31 @@ function mktCompareNow() {
   document.body.appendChild(overlay);
 }
 
-// ─── KEYBOARD NAV ───
+// ─── KEYBOARD NAV & ZOOM ───
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     mktClosePreview();
   }
-  if (e.key === 'ArrowLeft' && document.getElementById('mkt-modal').classList.contains('open')) {
+  var modalOpen = document.getElementById('mkt-modal').classList.contains('open');
+  if (!modalOpen) return;
+  if (e.key === 'ArrowLeft') {
     mktNavPreview(-1);
   }
-  if (e.key === 'ArrowRight' && document.getElementById('mkt-modal').classList.contains('open')) {
+  if (e.key === 'ArrowRight') {
     mktNavPreview(1);
+  }
+  // Zoom shortcuts (Ctrl/Meta +)
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === '=' || e.key === '+') {
+      e.preventDefault();
+      mktZoomIn();
+    } else if (e.key === '-') {
+      e.preventDefault();
+      mktZoomOut();
+    } else if (e.key === '0') {
+      e.preventDefault();
+      mktZoomReset();
+    }
   }
 });
 
@@ -1556,21 +1647,20 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// ─── PREVIEW MODAL BUY BUTTON REDIRECT ───
-// Also update the preview modal's buy button to open payment modal instead
-var origRenderPreview = mktRenderPreview;
-mktRenderPreview = function(slug) {
-  origRenderPreview(slug);
-  var tmpl = window.__mktTemplates[slug];
-  if (tmpl && tmpl.is_premium) {
-    var btn = document.getElementById('mkt-modal-select-btn');
-    btn.href = 'javascript:void(0)';
-    btn.onclick = function() { mktClosePreview(); mktOpenPaymentModal(slug); };
-  } else {
-    var btn = document.getElementById('mkt-modal-select-btn');
-    btn.onclick = null;
+// ─── GLOBAL TEMPLATE PREVIEW BUTTON HANDLER ───
+// Wire up .template-preview-btn buttons (used in template-preview-card.twig component)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.template-preview-btn');
+  if (btn) {
+    var slug = btn.getAttribute('data-template');
+    if (slug && window.__mktSlugs && window.__mktSlugs.indexOf(slug) !== -1) {
+      mktOpenPreview(slug);
+    } else if (slug) {
+      // If slug isn't in the current marketplace data, redirect to builder
+      window.location.href = '/cv-builder/new?template=' + encodeURIComponent(slug);
+    }
   }
-};
+});
 
 // ─── SPINNER KEYFRAMES ───
 var style = document.createElement('style');
