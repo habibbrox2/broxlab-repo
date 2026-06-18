@@ -507,7 +507,7 @@
     } catch (err) {
       if (reset) {
         convList.innerHTML =
-          '<div class="flex items-center justify-center h-full p-6"><div class="text-center"><i class="lucide lucide-alert-circle text-red-400 w-8 h-8 mx-auto mb-2"></i><p class="text-sm text-red-500">Failed to load conversations</p><button onclick="loadConversations(true)" class="mt-2 text-xs text-indigo-600 hover:underline">Retry</button></div></div>';
+          '<div class="flex items-center justify-center h-full p-6"><div class="text-center"><i class="lucide lucide-alert-circle text-red-400 w-8 h-8 mx-auto mb-2"></i><p class="text-sm text-red-500">Failed to load conversations</p><button data-action="loadConversations" data-id="true" class="mt-2 text-xs text-indigo-600 hover:underline">Retry</button></div></div>';
       }
       showToast(err.message, 'error');
     } finally {

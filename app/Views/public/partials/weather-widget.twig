@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
  <i class="lucide lucide-cloud-off text-4xl mb-3"></i>
  <h5 class="mb-2">Unable to load weather</h5>
  <p class="mb-3 opacity-75">${escapeHtml(message)}</p>
- <button class="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100" onclick="location.reload()">
+ <button class="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100" data-action="location.reload">
  <i class="lucide lucide-rotate-ccw mr-1"></i>Retry
  </button>
  </div>

@@ -52,27 +52,27 @@
         <div class="hero-badge">
           <span>
             <i class="lucide lucide-sparkles" aria-hidden="true"></i>
-            Explore What's New
+            {{ t('Explore What\'s New') }}
           </span>
         </div>
 
-        <h1 id="hero-title" class="hero-title">
-          Discover the <span class="hero-gradient-text">Future</span> of Mobile Technology
+        <h1 id="hero-title" class="hero-title" data-i18n="Discover the Future of Mobile Technology" data-i18n-en="Discover the <span class=&quot;hero-gradient-text&quot;>Future</span> of Mobile Technology" data-i18n-bn="মোবাইল প্রযুক্তির <span class=&quot;hero-gradient-text&quot;>ভবিষ্যৎ</span> আবিষ্কার করুন">
+          {{ t('Discover the Future of Mobile Technology')|raw }}
         </h1>
 
-        <p class="hero-subtitle">
-          Curated latest updates, in-depth insights, and exclusive services that keep you ahead of the curve.
+        <p class="hero-subtitle" data-i18n="Curated latest updates, in-depth insights, and exclusive services that keep you ahead of the curve.">
+          {{ t('Curated latest updates, in-depth insights, and exclusive services that keep you ahead of the curve.') }}
         </p>
 
         {# CTA Buttons #}
         <div class="mb-4 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
           <a href="#latest-updates" class="hero-cta-primary">
             <i class="lucide lucide-rocket" aria-hidden="true"></i>
-            Explore Now
+            {{ t('Explore Now') }}
           </a>
           <a href="/services" class="hero-cta-secondary">
             <i class="lucide lucide-award" aria-hidden="true"></i>
-            Browse Services
+            {{ t('Browse Services') }}
           </a>
         </div>
 
@@ -84,7 +84,7 @@
             </div>
             <div>
               <div class="stat-value">1200+</div>
-              <div class="stat-label">Devices</div>
+              <div class="stat-label" data-i18n="Devices">{{ t('Devices') }}</div>
             </div>
           </div>
           <div class="hero-stat">
@@ -93,7 +93,7 @@
             </div>
             <div>
               <div class="stat-value">850+</div>
-              <div class="stat-label">Articles</div>
+              <div class="stat-label" data-i18n="Articles">{{ t('Articles') }}</div>
             </div>
           </div>
           <div class="hero-stat">
@@ -102,7 +102,7 @@
             </div>
             <div>
               <div class="stat-value">150+</div>
-              <div class="stat-label">Services</div>
+              <div class="stat-label" data-i18n="Services">{{ t('Services') }}</div>
             </div>
           </div>
         </div>
@@ -185,11 +185,11 @@
    <div class="grid items-center gap-4 lg:grid-cols-2">
      <div>
        <div class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-         <span class="mb-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-primary">Calculator categories</span>
-         <h2 class="text-3xl font-bold sm:text-4xl">Quick access to calculators and converters</h2>
-         <p class="mb-4 text-slate-500">Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.</p>
+         <span data-i18n="Calculator categories" >{{ t('Calculator categories') }}</span>
+         <h2 data-i18n="Quick access to calculators and converters" >{{ t('Quick access to calculators and converters') }}</h2>
+         <p data-i18n="Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub." >{{ t('Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.') }}</p>
          <a href="/calculators" class="inline-flex w-fit items-center justify-center rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
-           <i class="lucide lucide-calculator mr-2"></i>Browse all calculators
+           <i class="lucide lucide-calculator mr-2"></i>{{ t('Browse all calculators') }}
          </a>
        </div>
      </div>
@@ -203,8 +203,8 @@
                    <i class="lucide lucide-calculator"></i>
                  </span>
                </div>
-<h3 class="font-semibold text-base">Math Calculators</h3>
-                <p class="text-sm text-slate-500">Standard, scientific, graphing, and programmer tools.</p>
+<h3 data-i18n="Math Calculators" >{{ t('Math Calculators') }}</h3>
+                <p data-i18n="Standard, scientific, graphing, and programmer tools." >{{ t('Standard, scientific, graphing, and programmer tools.') }}</p>
               </div>
             </div>
           </div>
@@ -216,8 +216,8 @@
                     <i class="lucide lucide-dollar-sign"></i>
                   </span>
                 </div>
-                <h3 class="font-semibold text-base">Finance Tools</h3>
-                <p class="text-sm text-slate-500">Loans, interest, mortgage, percentage, and GPA calculators.</p>
+                <h3 data-i18n="Finance Tools" >{{ t('Finance Tools') }}</h3>
+                <p data-i18n="Loans, interest, mortgage, percentage, and GPA calculators." >{{ t('Loans, interest, mortgage, percentage, and GPA calculators.') }}</p>
               </div>
             </div>
           </div>
@@ -229,8 +229,8 @@
                     <i class="lucide lucide-heart-pulse"></i>
                   </span>
                 </div>
-                <h3 class="font-semibold text-base">Health &amp; Lifestyle</h3>
-                <p class="text-sm text-slate-500">BMI, date calculations, and personal planning tools.</p>
+                <h3 data-i18n="Health & Lifestyle" >{{ t('Health & Lifestyle') }}</h3>
+                <p data-i18n="BMI, date calculations, and personal planning tools." >{{ t('BMI, date calculations, and personal planning tools.') }}</p>
              </div>
            </div>
          </div>
@@ -242,8 +242,8 @@
                    <i class="lucide lucide-expand mr-2 opacity-75"></i>
                  </span>
                </div>
-<h3 class="font-semibold text-base">Converters</h3>
-                <p class="text-sm text-slate-500">Currency, length, weight, temperature and more unit conversions.</p>
+<h3 data-i18n="Converters" >{{ t('Converters') }}</h3>
+                <p data-i18n="Currency, length, weight, temperature and more unit conversions." >{{ t('Currency, length, weight, temperature and more unit conversions.') }}</p>
              </div>
            </div>
          </div>
@@ -341,7 +341,7 @@
         <div class="mt-4 text-center">
           <div class="inline-flex items-center rounded-full bg-white/20 px-3 py-2 backdrop-blur-[10px]">
             <div class="live-dot me-2 h-2 w-2 rounded-full bg-rose-500 animate-pulse"></div>
-            <small class="font-semibold text-white/75">Live Update</small>
+            <small class="font-semibold text-white/75" data-i18n="Live Update">{{ t('Live Update') }}</small>
           </div>
         </div>
       </div>
@@ -447,9 +447,9 @@
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h2 id="top-carousel-title">
-          <span>Top</span> Picks
+          <span data-i18n="Top Picks" >{{ t('Top Picks') }}</span>
         </h2>
-        <p class="mt-1 text-slate-500">Highest-rated posts and services curated for you</p>
+        <p data-i18n="Highest-rated posts and services curated for you" >{{ t('Highest-rated posts and services curated for you') }}</p>
       </div>
       {# Tab Switcher #}
       <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="Switch between top posts and top services">
@@ -459,9 +459,9 @@
                 id="tab-posts"
                 aria-selected="true"
                 aria-controls="panel-posts"
-                onclick="(function(b) { var p = b.closest('.top-carousel-section'); p.querySelectorAll('.top-carousel-tab').forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected','false'); }); b.classList.add('active'); b.setAttribute('aria-selected','true'); p.querySelectorAll('.top-carousel-panel').forEach(function(pan) { pan.classList.add('hidden'); }); document.getElementById('panel-posts').classList.remove('hidden'); })(this)">
+                data-action="top-picks-tab" data-panel="panel-posts">
 <i class="lucide lucide-file-text inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
-          Top Posts
+          {{ t('Top Posts') }}
         </button>
         <button type="button"
                 class="top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
@@ -469,9 +469,9 @@
                 id="tab-services"
                 aria-selected="false"
                 aria-controls="panel-services"
-                onclick="(function(b) { var p = b.closest('.top-carousel-section'); p.querySelectorAll('.top-carousel-tab').forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected','false'); }); b.classList.add('active'); b.setAttribute('aria-selected','true'); p.querySelectorAll('.top-carousel-panel').forEach(function(pan) { pan.classList.add('hidden'); }); document.getElementById('panel-services').classList.remove('hidden'); })(this)">
+                data-action="top-picks-tab" data-panel="panel-services">
 <i class="lucide lucide-star inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
-          Top Services
+          {{ t('Top Services') }}
         </button>
       </div>
     </div>
@@ -509,10 +509,10 @@
                   <div class="top-carousel-card__footer">
                     <span class="top-carousel-card__meta">
 <i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
-                      {{ post.rating_total|default(0) }} reviews
+                      {{ post.rating_total|default(0) }} {{ t('reviews') }}
                     </span>
-                    <a href="/posts/{{ post.id }}/{{ post.slug|url_encode }}" class="top-carousel-card__cta" aria-label="Read {{ post.title|striptags }}">
-                      Read
+                    <a >
+                      {{ t('Read') }}
 <i class="lucide lucide-arrow-right" style="width:14px;height:14px" aria-hidden="true"></i>
                     </a>
                   </div>
@@ -532,8 +532,8 @@
           <div class="feed-state__icon">
 <i class="lucide lucide-file-text" style="width:28px;height:28px" aria-hidden="true"></i>
           </div>
-          <h3 class="feed-state__title">No top posts yet</h3>
-          <p class="feed-state__desc">Top posts will appear here once they receive ratings.</p>
+          <h3 data-i18n="No top posts yet" >{{ t('No top posts yet') }}</h3>
+          <p data-i18n="Top posts will appear here once they receive ratings." >{{ t('Top posts will appear here once they receive ratings.') }}</p>
         </div>
       {% endif %}
     </div>
@@ -597,8 +597,8 @@
           <div class="feed-state__icon">
 <i class="lucide lucide-star" style="width:28px;height:28px" aria-hidden="true"></i>
           </div>
-          <h3 class="feed-state__title">No services yet</h3>
-          <p class="feed-state__desc">Top services will appear here once they receive ratings.</p>
+          <h3 data-i18n="No services yet" >{{ t('No services yet') }}</h3>
+          <p data-i18n="Top services will appear here once they receive ratings." >{{ t('Top services will appear here once they receive ratings.') }}</p>
         </div>
       {% endif %}
     </div>
@@ -612,9 +612,9 @@
     {# Section Header #}
     <div class="mb-5">
       <h2 id="discovery-feed-title">
-        <span>Content</span> Discovery
+        <span data-i18n="Content Discovery" >{{ t('Content Discovery') }}</span>
       </h2>
-      <p class="mt-2 text-slate-500">Explore our latest posts, articles, and services</p>
+      <p data-i18n="Explore our latest posts, articles, and services" >{{ t('Explore our latest posts, articles, and services') }}</p>
     </div>
 
     {# ==================== FEED TOOLBAR ==================== #}
@@ -633,7 +633,7 @@
 
           {# Category Filter #}
           <select id="feed-category" class="toolbar-select" aria-label="Filter by category">
-            <option value="">All Categories</option>
+            <option data-i18n="All Categories" >{{ t('All Categories') }}</option>
             {% for cat in categories|default([]) %}
               <option value="{{ cat.slug }}">{{ cat.name }}</option>
             {% endfor %}
@@ -641,10 +641,10 @@
 
           {# Sort #}
           <select id="feed-sort" class="toolbar-select" aria-label="Sort content">
-            <option value="latest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="popular">Most Viewed</option>
-            <option value="trending">Trending</option>
+            <option data-i18n="Newest" >{{ t('Newest') }}</option>
+            <option data-i18n="Oldest" >{{ t('Oldest') }}</option>
+            <option data-i18n="Most Viewed" >{{ t('Most Viewed') }}</option>
+            <option data-i18n="Trending" >{{ t('Trending') }}</option>
           </select>
         </div>
 
@@ -654,7 +654,7 @@
             {# View Toggle #}
             <button type="button" id="feed-view-toggle" class="toolbar-btn active" aria-label="Toggle grid/list view" title="Toggle view">
 <i class="lucide lucide-grid-3x3" style="width:18px;height:18px" aria-hidden="true"></i>
-              <span class="btn-label">Grid</span>
+              <span data-i18n="Grid" >{{ t('Grid') }}</span>
             </button>
 
             {# Auto-Refresh Toggle #}
@@ -663,7 +663,7 @@
                 <input type="checkbox" id="feed-auto-refresh" aria-label="Toggle auto-refresh">
                 <span class="toggle-slider"></span>
               </label>
-              <span class="hidden sm:inline" id="feed-auto-refresh-label">Auto-refresh off</span>
+              <span data-i18n="Auto-refresh off" >{{ t('Auto-refresh off') }}</span>
             </div>
           </div>
         </div>
@@ -704,11 +704,11 @@
         <div class="feed-state__icon">
 <i class="lucide lucide-alert-circle" style="width:28px;height:28px" aria-hidden="true"></i>
         </div>
-        <h3 class="feed-state__title">Something went wrong</h3>
-        <p class="feed-state__desc" data-error-message>Failed to load content. Please try again.</p>
-        <button type="button" class="feed-state__action" onclick="window.location.reload()" aria-label="Retry">
+        <h3 data-i18n="Something went wrong" >{{ t('Something went wrong') }}</h3>
+        <p data-i18n="Failed to load content. Please try again." >{{ t('Failed to load content. Please try again.') }}</p>
+        <button type="button" class="feed-state__action" data-action="reload-page" aria-label="Retry">
 <i class="lucide lucide-refresh-ccw" style="width:16px;height:16px" aria-hidden="true"></i>
-          Try Again
+          {{ t('Try Again') }}
         </button>
       </div>
 
@@ -717,10 +717,10 @@
         <div class="feed-state__icon">
 <i class="lucide lucide-file-text" style="width:28px;height:28px" aria-hidden="true"></i>
         </div>
-        <h3 class="feed-state__title">No results found</h3>
-        <p class="feed-state__desc" data-empty-message>Try adjusting your search or filter criteria.</p>
-        <button type="button" class="feed-state__action" onclick="window.FeedDiscovery && FeedDiscovery.resetFeed()" aria-label="Reset filters">
-          Reset Filters
+        <h3 data-i18n="No results found" >{{ t('No results found') }}</h3>
+        <p data-i18n="Try adjusting your search or filter criteria." >{{ t('Try adjusting your search or filter criteria.') }}</p>
+        <button >
+          {{ t('Reset Filters') }}
         </button>
       </div>
 
@@ -729,7 +729,7 @@
         <div id="feed-scroll-sentinel" class="h-4" aria-hidden="true"></div>
         <button type="button" id="feed-load-more" class="toolbar-btn" aria-label="Load more content">
 <i class="lucide lucide-arrow-down" style="width:16px;height:16px" aria-hidden="true"></i>
-          <span id="feed-load-more-text">Load More</span>
+          <span data-i18n="Load More" >{{ t('Load More') }}</span>
         </button>
         <div id="feed-status" class="mt-2 text-sm text-slate-500">
           {% if contents|length > 0 %}
@@ -738,7 +738,7 @@
         </div>
         <div id="feed-end" class="mt-3 hidden text-sm text-slate-500">
 <i class="lucide lucide-check inline-block mr-1" style="width:16px;height:16px" aria-hidden="true"></i>
-          You've viewed all available content
+          {{ t("You've viewed all available content") }}
         </div>
       </div>
     </div>
@@ -747,15 +747,15 @@
 
 {# ==================== SHARE MODAL ==================== #}
 <div id="discovery-share-modal" class="discovery-modal" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true">
-  <div class="discovery-modal__backdrop" onclick="FeedDiscovery && FeedDiscovery.closeModal()"></div>
+  <div class="discovery-modal__backdrop" data-action="close-share-modal"></div>
   <div class="discovery-modal__content">
-    <button type="button" class="discovery-modal__close" onclick="FeedDiscovery && FeedDiscovery.closeModal()" aria-label="Close">
+    <button type="button" class="discovery-modal__close" data-action="close-share-modal" aria-label="Close">
 <i class="lucide lucide-x" style="width:18px;height:18px" aria-hidden="true"></i>
     </button>
-    <h3 id="share-modal-title" class="discovery-modal__title" data-share-title>Share</h3>
-    <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm" data-share-url readonly onclick="this.select()">
-    <button type="button" class="mt-3 feed-state__action" onclick="var u=document.querySelector('[data-share-url]'); FeedDiscovery && FeedDiscovery.copyToClipboard(u.value, this)">
-      Copy Link
+    <h3 data-i18n="Share" >{{ t('Share') }}</h3>
+    <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm" data-share-url readonly data-action="select-input">
+    <button >
+      {{ t('Copy Link') }}
     </button>
   </div>
 </div>
@@ -765,10 +765,10 @@
 <section class="py-12 home-featured-section" aria-labelledby="featured-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
-      <h2 id="featured-title">
-        Featured Highlights
+      <h2 >
+        {{ t('Featured Highlights') }}
       </h2>
-      <p class="text-lg text-slate-500">Hand-picked content curated just for you</p>
+      <p data-i18n="Hand-picked content curated just for you" >{{ t('Hand-picked content curated just for you') }}</p>
     </div>
 
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Featured content highlights">
@@ -778,10 +778,10 @@
             <i class="lucide lucide-smartphone text-5xl text-primary" aria-hidden="true"></i>
           </div>
           <div class="flex flex-1 flex-col p-6">
-            <h3 class="mb-2 text-lg font-bold">Latest Phones</h3>
-            <p class="mb-4 flex-1 text-sm text-slate-500">Explore the newest smartphones and their specifications</p>
-            <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="Browse latest phones">
-              Browse Phones
+            <h3 data-i18n="Latest Phones" >{{ t('Latest Phones') }}</h3>
+            <p data-i18n="Explore the newest smartphones and their specifications" >{{ t('Explore the newest smartphones and their specifications') }}</p>
+            <a >
+              {{ t('Browse Phones') }}
             </a>
           </div>
         </article>
@@ -793,10 +793,10 @@
             <i class="lucide lucide-book-open text-5xl text-emerald-600" aria-hidden="true"></i>
           </div>
           <div class="flex flex-1 flex-col p-6">
-            <h3 class="mb-2 text-lg font-bold">Tech News</h3>
-            <p class="mb-4 flex-1 text-sm text-slate-500">Stay updated with the latest technology news and trends</p>
-            <a href="/category/news" class="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700" aria-label="Read tech news">
-              Read News
+            <h3 data-i18n="Tech News" >{{ t('Tech News') }}</h3>
+            <p data-i18n="Stay updated with the latest technology news and trends" >{{ t('Stay updated with the latest technology news and trends') }}</p>
+            <a >
+              {{ t('Read News') }}
             </a>
           </div>
         </article>
@@ -808,10 +808,10 @@
             <i class="lucide lucide-briefcase text-5xl text-amber-600" aria-hidden="true"></i>
           </div>
           <div class="flex flex-1 flex-col p-6">
-            <h3 class="mb-2 text-lg font-bold">Job Opportunities</h3>
-            <p class="mb-4 flex-1 text-sm text-slate-500">Find exciting career opportunities in tech industry</p>
-            <a href="/category/chakribd" class="inline-flex items-center justify-center gap-2 rounded-full bg-amber-500 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600" aria-label="View job opportunities">
-              View Jobs
+            <h3 data-i18n="Job Opportunities" >{{ t('Job Opportunities') }}</h3>
+            <p data-i18n="Find exciting career opportunities in tech industry" >{{ t('Find exciting career opportunities in tech industry') }}</p>
+            <a >
+              {{ t('View Jobs') }}
             </a>
           </div>
         </article>
@@ -826,12 +826,12 @@
     <div class="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h2 id="latest-mobiles-title">
-          <span>Latest</span> Mobile Phones
+          <span data-i18n="Latest" >{{ t('Latest') }}</span> {{ t('Mobile Phones') }}
         </h2>
-        <p class="text-slate-500">Discover the newest smartphones with detailed specifications and pricing</p>
+        <p data-i18n="Discover the newest smartphones with detailed specifications and pricing" >{{ t('Discover the newest smartphones with detailed specifications and pricing') }}</p>
       </div>
       <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="View all mobile phones">
-        <i class="lucide lucide-arrow-right mr-2"></i>View All
+        <i class="lucide lucide-arrow-right mr-2"></i>{{ t('View All') }}
       </a>
     </div>
 
@@ -849,10 +849,10 @@
 <section class="py-12 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
-      <h2 id="services-title">
-        Explore Our Services
+      <h2 >
+        {{ t('Explore Our Services') }}
       </h2>
-      <p class="text-lg text-slate-500">Discover and apply for exclusive services tailored to your needs</p>
+      <p data-i18n="Discover and apply for exclusive services tailored to your needs" >{{ t('Discover and apply for exclusive services tailored to your needs') }}</p>
     </div>
 
     <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
@@ -861,16 +861,16 @@
           <div class="mb-4 inline-flex rounded-2xl bg-white/20 p-4">
             <i class="lucide lucide-award text-4xl text-white"></i>
           </div>
-          <h3 class="mb-3 text-xl font-bold">Professional Services</h3>
-          <p class="mb-4 text-white/80">Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes.</p>
+          <h3 data-i18n="Professional Services" >{{ t('Professional Services') }}</h3>
+          <p data-i18n="Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes." >{{ t('Browse our comprehensive catalog of professional services designed to help you achieve your goals. Each service is carefully curated with specific eligibility requirements and application processes.') }}</p>
           <ul class="mb-4 space-y-2 text-white/80">
-            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Easy Application Process</strong></li>
-            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Real-time Status Tracking</strong></li>
-            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Expert Support Team</strong></li>
-            <li class="flex items-center"><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>Quick Approval Process</strong></li>
+            <li ><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>{{ t('Easy Application Process') }}</strong></li>
+            <li ><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>{{ t('Real-time Status Tracking') }}</strong></li>
+            <li ><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>{{ t('Expert Support Team') }}</strong></li>
+            <li ><i class="lucide lucide-check-circle mr-2 text-emerald-400"></i><strong>{{ t('Quick Approval Process') }}</strong></li>
           </ul>
           <a href="/services" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
-            <i class="lucide lucide-arrow-right mr-2"></i>Explore Services
+            <i class="lucide lucide-arrow-right mr-2"></i>{{ t('Explore Services') }}
           </a>
         </div>
       </div>
@@ -883,8 +883,8 @@
                 <i class="lucide lucide-search text-primary text-lg"></i>
               </div>
               <div>
-                <h5 class="mb-1 font-bold">Browse Services</h5>
-                <p class="mb-0 text-sm text-slate-500">Explore all available services by category and filter by your preferences</p>
+                <h5 data-i18n="Browse Services" >{{ t('Browse Services') }}</h5>
+                <p data-i18n="Browse all available services by category and filter by your preferences" >{{ t('Browse all available services by category and filter by your preferences') }}</p>
               </div>
             </div>
           </div>
@@ -894,8 +894,8 @@
                 <i class="lucide lucide-clipboard-check text-emerald-600 text-lg"></i>
               </div>
               <div>
-                <h5 class="mb-1 font-bold">Apply Easily</h5>
-                <p class="mb-0 text-sm text-slate-500">Submit applications with simple forms and instant confirmation</p>
+                <h5 data-i18n="Apply Easily" >{{ t('Apply Easily') }}</h5>
+                <p data-i18n="Submit applications with simple forms and instant confirmation" >{{ t('Submit applications with simple forms and instant confirmation') }}</p>
               </div>
             </div>
           </div>
@@ -905,8 +905,8 @@
                 <i class="lucide lucide-history text-amber-600 text-lg"></i>
               </div>
               <div>
-                <h5 class="mb-1 font-bold">Track Status</h5>
-                <p class="mb-0 text-sm text-slate-500">Monitor progress with real-time status updates and notifications</p>
+                <h5 data-i18n="Track Status" >{{ t('Track Status') }}</h5>
+                <p data-i18n="Monitor progress with real-time status updates and notifications" >{{ t('Monitor progress with real-time status updates and notifications') }}</p>
               </div>
             </div>
           </div>
@@ -934,10 +934,10 @@
 <section class="py-12 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-bg-slate-900/20" id="categories" aria-labelledby="categories-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
-      <h2 id="categories-title">
-        Browse by Category
+      <h2 >
+        {{ t('Browse by Category') }}
       </h2>
-      <p class="text-lg text-slate-500">Explore content across different categories</p>
+      <p data-i18n="Explore content across different categories" >{{ t('Explore content across different categories') }}</p>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Content categories">
@@ -946,8 +946,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-flame mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Breaking News</h3>
-          <p class="text-sm opacity-75">Latest updates from the tech world</p>
+          <h3 data-i18n="Breaking News" >{{ t('Breaking News') }}</h3>
+          <p data-i18n="Latest updates from the tech world" >{{ t('Latest updates from the tech world') }}</p>
         </div>
       </a>
 
@@ -956,8 +956,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-star mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Reviews</h3>
-          <p class="text-sm opacity-75">In-depth product reviews and analysis</p>
+          <h3 data-i18n="Reviews" >{{ t('Reviews') }}</h3>
+          <p data-i18n="In-depth product reviews and analysis" >{{ t('In-depth product reviews and analysis') }}</p>
         </div>
       </a>
 
@@ -966,8 +966,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-lightbulb mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Tips & Tricks</h3>
-          <p class="text-sm opacity-75">Helpful tips to maximize your devices</p>
+          <h3 data-i18n="Tips & Tricks" >{{ t('Tips & Tricks') }}</h3>
+          <p data-i18n="Helpful tips to maximize your devices" >{{ t('Helpful tips to maximize your devices') }}</p>
         </div>
       </a>
 
@@ -976,8 +976,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-graduation-cap mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Tutorials</h3>
-          <p class="text-sm opacity-75">Step-by-step guides and tutorials</p>
+          <h3 data-i18n="Tutorials" >{{ t('Tutorials') }}</h3>
+          <p data-i18n="Step-by-step guides and tutorials" >{{ t('Step-by-step guides and tutorials') }}</p>
         </div>
       </a>
 
@@ -986,8 +986,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-code mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Comparison</h3>
-          <p class="text-sm opacity-75">Compare devices side by side</p>
+          <h3 data-i18n="Comparison" >{{ t('Comparison') }}</h3>
+          <p data-i18n="Compare devices side by side" >{{ t('Compare devices side by side') }}</p>
         </div>
       </a>
 
@@ -996,8 +996,8 @@
              role="button"
              tabindex="0">
           <i class="lucide lucide-trending-up mb-2 text-3xl" aria-hidden="true"></i>
-          <h3 class="mb-2 font-bold text-lg">Trending</h3>
-          <p class="text-sm opacity-75">What's trending in the mobile world</p>
+          <h3 data-i18n="Trending" >{{ t('Trending') }}</h3>
+          <p data-i18n="What's trending in the mobile world" >{{ t("What's trending in the mobile world") }}</p>
         </div>
       </a>
     </div>
@@ -1016,11 +1016,11 @@
     <div class="grid gap-6 text-center md:grid-cols-4" role="region" aria-label="Platform statistics">
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Active users">{{ stats.active_users|default('500') }}+</p>
-        <p class="mb-0 opacity-75">Active Users</p>
+        <p data-i18n="Active Users" >{{ t('Active Users') }}</p>
       </div>
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Device specifications">{{ stats.device_specs|default('1200') }}+</p>
-        <p class="mb-0 opacity-75">Device Specs</p>
+        <p data-i18n="Device Specs" >{{ t('Device Specs') }}</p>
       </div>
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Published articles">{{ stats.articles|default('850') }}+</p>
@@ -1028,7 +1028,7 @@
       </div>
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Job postings">{{ stats.job_posts|default('320') }}+</p>
-        <p class="mb-0 opacity-75">Job Posts</p>
+        <p data-i18n="Job Posts" >{{ t('Job Posts') }}</p>
       </div>
     </div>
   </div>
@@ -1040,7 +1040,7 @@
     <div class="flex justify-center">
       <div class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl home-share-card">
         <h2 id="share-title">
-          <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>Share This Page
+          <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>{{ t('Share This Page') }}
         </h2>
 
         <div class="flex flex-wrap justify-center gap-3 mb-4" role="group" aria-label="Share on social media">
@@ -1083,13 +1083,13 @@
                   class="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50"
                   id="copyLinkBtnHome"
                   aria-label="Copy link to clipboard"
-                  onclick="copyToClipboardHome()">
+                  data-action="copy-page-url">
             <i class="lucide lucide-link mr-2" aria-hidden="true"></i>Copy Link
           </button>
         </div>
 
         <p class="text-center text-sm text-slate-500">
-          <i class="lucide lucide-info mr-1" aria-hidden="true"></i>Help us spread the word by sharing this page with your friends and followers
+          <i class="lucide lucide-info mr-1" aria-hidden="true"></i>{{ t('Help us spread the word by sharing this page with your friends and followers') }}
         </p>
       </div>
     </div>
@@ -1104,8 +1104,8 @@
         <div class="mb-4 inline-flex rounded-full bg-primary p-4">
           <i class="lucide lucide-mail-plus text-3xl text-white" aria-hidden="true"></i>
         </div>
-        <h2 id="newsletter-title" class="mb-2 text-2xl font-bold">Get Latest Updates</h2>
-        <p class="mb-6 text-slate-500">Subscribe for the latest news, reviews, and exclusive offers</p>
+        <h2 data-i18n="Get Latest Updates" >{{ t('Get Latest Updates') }}</h2>
+        <p data-i18n="Subscribe for the latest news, reviews, and exclusive offers" >{{ t('Subscribe for the latest news, reviews, and exclusive offers') }}</p>
         <form id="home-newsletter-form" class="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-2" aria-label="Newsletter subscription form">
           <div class="flex-1 sm:max-w-md">
             <label for="newsletter-email" class="sr-only">Email address</label>
@@ -1113,12 +1113,12 @@
                    id="newsletter-email"
                    name="email"
                    class="w-full rounded-full border border-slate-300 px-5 py-3 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
-                   placeholder="Your email address"
+                   placeholder="{{ t('Your email address') }}"
                    aria-label="Enter your email address"
                    required>
           </div>
           <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
-            <i class="lucide lucide-send mr-2" aria-hidden="true"></i>Subscribe
+            <i class="lucide lucide-send mr-2" aria-hidden="true"></i>{{ t('Subscribe') }}
           </button>
         </form>
       </div>
@@ -1131,9 +1131,9 @@
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="mb-12 text-center">
       <h2 id="recommended-title" class="mb-3 text-4xl font-bold md:text-5xl">
-        <span class="text-primary">Recommended</span> for You
+        <span data-i18n="Recommended for You" >{{ t('Recommended for You') }}</span>
       </h2>
-      <p class="text-lg text-slate-500">Hand-picked content just for your interests</p>
+      <p data-i18n="Hand-picked content just for your interests" >{{ t('Hand-picked content just for your interests') }}</p>
     </div>
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Recommended content">
       {% if featured_content %}
@@ -1223,6 +1223,51 @@
   } else {
     initTopPicksAutoSwitch();
   }
+
+  // Event delegation — replaces inline onclick handlers
+  document.addEventListener('click', function(e) {
+    var target = e.target.closest('[data-action]');
+    if (!target) return;
+    var action = target.getAttribute('data-action');
+
+    switch (action) {
+    case 'top-picks-tab':
+      // Switch tab panels
+      (function(btn) {
+        var section = btn.closest('.top-carousel-section');
+        section.querySelectorAll('.top-carousel-tab').forEach(function(t) {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        section.querySelectorAll('.top-carousel-panel').forEach(function(pan) {
+          pan.classList.add('hidden');
+        });
+        document.getElementById(target.getAttribute('data-panel')).classList.remove('hidden');
+      })(target);
+      break;
+    case 'reload-page':
+      window.location.reload();
+      break;
+    case 'reset-feed':
+      window.FeedDiscovery && FeedDiscovery.resetFeed();
+      break;
+    case 'close-share-modal':
+      window.FeedDiscovery && FeedDiscovery.closeModal();
+      break;
+    case 'select-input':
+      target.select();
+      break;
+    case 'copy-share-url':
+      var urlInput = document.querySelector('[data-share-url]');
+      window.FeedDiscovery && FeedDiscovery.copyToClipboard(urlInput.value, target);
+      break;
+    case 'copy-page-url':
+      copyToClipboardHome();
+      break;
+    }
+  });
 
   // Copy to clipboard function
   function copyToClipboardHome() {

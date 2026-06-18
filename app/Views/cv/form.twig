@@ -388,21 +388,14 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 md:p-8 relative overflow-hidden" id="bld-app">
-  <!-- Decorative gradient orbs -->
-  <div class="absolute inset-0 pointer-events-none"
-       style="background: radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
-                     radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 50%),
-                     radial-gradient(ellipse at 50% 80%, rgba(255,255,255,0.06) 0%, transparent 50%);">
-  </div>
-
+<div class="min-h-screen bg-slate-50 p-6 md:p-8 relative overflow-hidden" id="bld-app">
   <div class="max-w-4xl mx-auto relative z-10">
 
     <!-- Job Position Selector -->
     <div class="mb-6 sticky top-3 z-20">
-      <select id="bld-job-title" onchange="window.bldSelectJob(this.value)"
-              class="w-full px-5 py-3.5 border-2 border-white/25 rounded-xl bg-white/15 backdrop-blur-md text-white text-base font-medium cursor-pointer appearance-none transition-all duration-300 hover:bg-white/20 hover:border-white/40 focus:outline-none focus:border-white/60 focus:bg-white/25 focus:ring-4 focus:ring-white/10"
-              style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2720%27 height=%2720%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27white%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27%3E%3C/polyline%3E%3C/svg%3E');
+      <select id="bld-job-title" data-action="select-job"
+              class="w-full px-5 py-3.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-base font-medium cursor-pointer appearance-none transition-all duration-300 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+              style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2720%27 height=%2720%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23334155%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27%3E%3C/polyline%3E%3C/svg%3E');
                      background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.25rem; padding-right: 3rem;">
         <option value="" class="text-gray-800 bg-white">🎯 Select your job title for personalized suggestions...</option>
         {% for pos in job_positions %}
@@ -412,58 +405,57 @@
     </div>
 
     <!-- Progress Bar -->
-    <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/15 shadow-lg">
+    <div class="bg-white rounded-2xl p-6 mb-6 border border-slate-200 shadow-sm">
       <div class="flex justify-between items-center mb-3.5">
-        <span class="text-white font-semibold flex items-center gap-2">
-          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 text-[0.8rem] font-bold" id="bld-current-step">1</span>
-          <span>Step 1 of 6</span>
+        <span class="text-slate-900 font-semibold flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-[0.8rem] font-bold" id="bld-current-step">1</span>
+          <span>Step <span id="bld-current-step-num">1</span> of <span id="bld-total-steps">{{ steps|length }}</span></span>
         </span>
-        <span class="text-white/85 text-sm font-medium bg-white/10 px-3 py-1 rounded-full">
+        <span class="text-slate-600 text-sm font-medium bg-slate-100 px-3 py-1 rounded-full">
           <span id="bld-progress-pct">0</span>% Complete
         </span>
       </div>
-      <div class="h-1.5 bg-white/12 rounded-full overflow-hidden mb-4 relative">
+      <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-4 relative">
         <div class="h-full bg-gradient-to-r from-indigo-300 to-white rounded-full transition-all duration-[0.6s] ease-out relative bld-progress-fill" id="bld-progress-fill" style="width: 0%;"></div>
       </div>
       <div class="flex justify-between relative py-1 bld-step-indicators-scroll" id="bld-step-dots">
-        <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white/10 -translate-y-1/2 pointer-events-none"></div>
-        {# Step indicators #}
+        <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 pointer-events-none"></div>
+        {# Step indicators — must match JS STEPS array (personal, professional, extras) #}
         {% set steps = [
           {'label': 'Personal', 'num': '1'}, {'label': 'Professional', 'num': '2'},
-          {'label': 'Social', 'num': '3'}, {'label': 'Custom', 'num': '4'},
-          {'label': 'References', 'num': '5'}, {'label': 'Review', 'num': '6'}
+          {'label': 'Extras', 'num': '3'}
         ] %}
         {% for step in steps %}
         <div class="flex flex-col items-center gap-1.5 relative z-10 cursor-pointer transition-transform duration-300 hover:-translate-y-0.5 min-h-[44px] md:min-h-0 justify-center" title="{{ step.label }}">
-          <div class="bld-step-dot w-8 h-8 md:w-8 md:h-8 rounded-full bg-white/15 border-2 border-white/25 transition-all duration-[0.4s] ease-out flex items-center justify-center text-xs font-bold text-white/50 relative {{ step.num == '1' ? 'bg-white border-white text-indigo-700 scale-110 shadow-[0_0_16px_rgba(255,255,255,0.5)]' : '' }}"
+          <div class="bld-step-dot w-8 h-8 md:w-8 md:h-8 rounded-full bg-slate-100 border-2 border-slate-200 transition-all duration-[0.4s] ease-out flex items-center justify-center text-xs font-bold text-slate-400 relative {{ step.num == '1' ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-[0_0_16px_rgba(99,102,241,0.2)]' : '' }}"
                data-step="{{ step.num }}"
-               style="{% if step.num == '1' %}color: #4f46e5;{% endif %}">
+               style="{% if step.num == '1' %}color: white;{% endif %}">
             <span {{ step.num }}</span>
           </div>
-          <span class="text-[0.6rem] text-white/60 whitespace-nowrap font-medium tracking-wide hidden sm:block">{{ step.label }}</span>
+          <span class="text-[0.6rem] text-slate-500 whitespace-nowrap font-medium tracking-wide hidden sm:block">{{ step.label }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
 
     <!-- Step Content -->
-    <div class="bg-white rounded-2xl p-6 md:p-10 shadow-2xl border border-white/20 relative overflow-hidden bld-card-accent" id="bld-step-content">
+    <div class="bg-white rounded-2xl p-6 md:p-10 shadow-xl border border-slate-200 relative overflow-hidden bld-card-accent" id="bld-step-content">
       <!-- JavaScript populates this -->
     </div>
 
     <!-- Navigation -->
-    <div class="flex justify-between items-center mt-8 pt-6 border-t-2 border-white/15 gap-3 flex-wrap">
-      <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-none cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white/15 text-white/80 hover:bg-white/25 hover:text-white" id="bld-btn-prev" onclick="window.bldPrevStep()">
+    <div class="flex justify-between items-center mt-8 pt-6 border-t-2 border-slate-200 gap-3 flex-wrap">
+      <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-none cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="bld-btn-prev" data-action="prev-step">
         <i class="lucide lucide-chevron-left w-4 h-4"></i> Back
       </button>
       <div class="flex gap-3">
-        <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-white/20 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5" id="bld-btn-save-draft" onclick="window.bldSaveDraft()">
+        <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-slate-200 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5" id="bld-btn-save-draft" data-action="save-draft">
           <i class="lucide lucide-save w-4 h-4"></i> Save
         </button>
-        <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-white/20 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-transparent text-white/80 hover:bg-white/10 hover:text-white hover:border-white/30" id="bld-btn-skip" onclick="window.bldSkipStep()">
+        <button class="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm border-2 border-slate-200 cursor-pointer transition-all duration-200 active:scale-[0.97] bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300" id="bld-btn-skip" data-action="skip-step">
           Skip <i class="lucide lucide-skip-forward w-4 h-4"></i>
         </button>
-        <button class="bld-btn-next" id="bld-btn-next" onclick="window.bldNextStep()">
+        <button class="bld-btn-next" id="bld-btn-next" data-action="next-step">
           Next <i class="lucide lucide-chevron-right w-4 h-4"></i>
         </button>
       </div>
@@ -477,7 +469,7 @@
   </div>
 </div>
 
-<script src="/assets/js/dist/cv-builder.js?v={{ random() }}" defer></script>
+<script type="module" src="/assets/js/dist/cv-builder.js?v={{ random() }}"></script>
 <script>
 window.__bldData = {{ builder_data|json_encode|raw }};
 window.__bldCvId = {{ cv_id|raw }};

@@ -143,16 +143,30 @@
  <hr class="border-slate-700/50 opacity-50" role="doc-pagebreak" aria-hidden="true">
 
  {# ===== FOOTER BOTTOM: Copyright & Contact ===== #}
- <div class="mt-6 text-center md:text-left">
+ <div class="mt-6 flex flex-col gap-3 text-center sm:flex-row sm:items-center sm:justify-between md:text-left">
  <p class="footer-copyright text-sm text-slate-400">
- &copy; {{"now"|date("Y") }} <strong class="text-white">{{ app_settings.site_name }}</strong>. All rights reserved.
+ &copy; {{"now"|date("Y") }} <strong class="text-white">{{ app_settings.site_name }}</strong>. {{ t('All rights reserved') }}.
  {% if app_settings.contact_email %}
  | <a href="mailto:{{ app_settings.contact_email }}"
  class="text-slate-400 hover:text-white transition-colors"
  title="Email us">{{ app_settings.contact_email }}</a>
  {% endif %}
- <span class="footer-tagline ml-2 inline-block text-slate-500">Designed for maximum performance &amp; accessibility.</span>
+ <span class="footer-tagline ml-2 inline-block text-slate-500">{{ t('Designed for maximum performance & accessibility.') }}</span>
  </p>
+
+ {# ── Footer Language Switcher ── #}
+ {% if available_languages is defined and available_languages|length > 1 %}
+ <div class="flex items-center gap-2">
+  <i class="lucide lucide-globe h-4 w-4 text-slate-500" aria-hidden="true"></i>
+  <span class="text-xs text-slate-500" data-i18n="Language">{{ t('Language') }}</span>
+  <button type="button"
+          data-lang-btn="{{ current_lang == 'bn' ? 'en' : 'bn' }}"
+          aria-label="{{ current_lang == 'bn' ? 'Switch to English' : 'Switch to Bangla' }}"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:border-indigo-500/50 hover:bg-slate-800 hover:text-white hover:shadow-lg hover:shadow-indigo-500/10">
+   <span data-i18n="{{ current_lang == 'bn' ? 'English' : 'বাংলা' }}">{{ current_lang == 'bn' ? t('English') : t('বাংলা') }}</span>
+  </button>
+ </div>
+ {% endif %}
  </div>
  </div>
 </footer>

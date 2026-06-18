@@ -66,7 +66,7 @@
      </select>
     </div>
     <div class="md:col-span-1 flex items-end">
-     <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700" onclick="applySubsFilter()">Filter</button>
+     <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700" data-action="applySubsFilter">Filter</button>
     </div>
    </form>
   </div>
@@ -119,8 +119,8 @@
        <td data-label="Created" class="px-3 py-3"><small class="text-slate-500">{{ s.created_at ?: '-' }}</small></td>
        <td class="px-3 py-3 text-right" data-label="Action">
         <div class="inline-flex gap-2">
-         <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700 hover:-translate-y-0.5 hover:shadow-md" onclick="revokeDevice('{{ s.device_id }}', this)">Revoke</button>
-         <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 hover:-translate-y-0.5 hover:shadow-md" onclick="deleteDevicePermanent('{{ s.device_id }}', this)">Delete</button>
+         <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700 hover:-translate-y-0.5 hover:shadow-md" data-action="revokeDevice"{{ s.device_id }}', this)">Revoke</button>
+         <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 hover:-translate-y-0.5 hover:shadow-md" data-action="deleteDevicePermanent"{{ s.device_id }}', this)">Delete</button>
         </div>
        </td>
       </tr>
@@ -132,4 +132,14 @@
   </div>
  </section>
 </div>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
 {% endblock %}

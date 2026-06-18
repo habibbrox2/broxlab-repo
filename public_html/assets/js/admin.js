@@ -12,13 +12,10 @@ import {
 import { initPasswordModals } from './modules/security.js';
 import { initPresetAutoSelector } from './modules/preset-selector.js';
 import { runWhenReady } from './modules/utils.js';
-import { initDatepickerLoader } from './datepicker-loader.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  // Initialize datepicker lazy loader
-  initDatepickerLoader();
 
   // Initialize modules
   initAdminNotificationRuntime();
@@ -317,29 +314,29 @@ runWhenReady(() => {
 
   const moduleCache = new Map();
   const moduleImporters = {
-    core: () => import('./admin/modules/core.js'),
-    slug: () => import('./admin/modules/slug.js'),
-    autosave: () => import('./admin/modules/autosave.js'),
-    drafts: () => import('./admin/modules/drafts.js'),
-    mobile: () => import('./admin/modules/mobile.js'),
-    tagCombobox: () => import('./admin/modules/tag-combobox.js'),
-    categoryCombobox: () => import('./admin/modules/category-combobox.js'),
-    mediaUpload: () => import('./admin/modules/media-upload.js'),
-    notificationsAnalytics: () => import('./admin/modules/notifications-analytics.js'),
-    notificationsWorkflows: () => import('./admin/modules/notifications-workflows.js'),
-    rbacUsers: () => import('./admin/modules/rbac-users.js'),
-    security2fa: () => import('./admin/modules/security-2fa.js'),
-    activityLog: () => import('./admin/modules/activity-log.js'),
-    services: () => import('./admin/modules/services.js'),
-    settings: () => import('./admin/modules/settings.js'),
-    emailTemplates: () => import('./admin/modules/email-templates.js'),
-    applications: () => import('./admin/modules/applications.js'),
-    oauth: () => import('./admin/modules/oauth.js'),
-    shared: () => import('./admin/modules/shared.js'),
-    subscribers: () => import('./admin/modules/subscribers.js'),
-    misc: () => import('./admin/modules/misc.js'),
-    serverStatus: () => import('./admin/modules/server-status.js'),
-    realtimeMonitoring: () => import('./admin/modules/realtime-monitoring.js'),
+    core: () => import('./modules/core.js'),
+    slug: () => import('./modules/slug.js'),
+    autosave: () => import('./modules/autosave.js'),
+    drafts: () => import('./modules/drafts.js'),
+    mobile: () => import('./modules/mobile.js'),
+    tagCombobox: () => import('./modules/tag-combobox.js'),
+    categoryCombobox: () => import('./modules/category-combobox.js'),
+    mediaUpload: () => import('./modules/media-upload.js'),
+    notificationsAnalytics: () => import('./modules/notifications-analytics.js'),
+    notificationsWorkflows: () => import('./modules/notifications-workflows.js'),
+    rbacUsers: () => import('./modules/rbac-users.js'),
+    security2fa: () => import('./modules/security-2fa.js'),
+    activityLog: () => import('./modules/activity-log.js'),
+    services: () => import('./modules/services.js'),
+    settings: () => import('./modules/settings.js'),
+    emailTemplates: () => import('./modules/email-templates.js'),
+    applications: () => import('./modules/applications.js'),
+    oauth: () => import('./modules/oauth.js'),
+    shared: () => import('./modules/shared.js'),
+    subscribers: () => import('./modules/subscribers.js'),
+    misc: () => import('./modules/misc.js'),
+    serverStatus: () => import('./modules/server-status.js'),
+    realtimeMonitoring: () => import('./modules/realtime-monitoring.js'),
   };
 
   function logModuleError(moduleName, error) {

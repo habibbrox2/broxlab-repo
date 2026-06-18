@@ -161,22 +161,33 @@ class CvPurchaseController {
 
     public static function uploadPhoto(string $id): void
     {
-        global $mysqli;
-        $userId=requireAuth();$id=(int)$id;
-        $cvModel=new CvModel($mysqli);
-        if(!$cvModel->belongsToUser($id,$userId)){jsonResponse(['error'=>'Forbidden'],403);return;}
-        if(empty($_FILES['photo'])||$_FILES['photo']['error']!==UPLOAD_ERR_OK){jsonResponse(['error'=>'No file uploaded'],400);return;}
-        $f=$_FILES['photo'];
-        if(!in_array($f['type'],['image/jpeg','image/png','image/webp','image/gif'])){jsonResponse(['error'=>'Only JPG, PNG, WebP, GIF allowed'],400);return;}
-        if($f['size']>5*1024*1024){jsonResponse(['error'=>'File too large (max 5MB)'],400);return;}
-        $dir=dirname(__DIR__,1).'/../uploads/cv-photos';
-        if(!is_dir($dir))mkdir($dir,0755,true);
-        $filename='cv_'.$id.'_'.time().'_'.bin2hex(random_bytes(4)).'.'.pathinfo($f['name'],PATHINFO_EXTENSION);
-        if(!move_uploaded_file($f['tmp_name'],$dir.'/'.$filename)){jsonResponse(['error'=>'Failed to save file'],500);return;}
-        $path='/uploads/cv-photos/'.$filename;
-        $cvModel->update($id,['profile_photo'=>$path]);
-        logActivity("CV Photo Uploaded","cv",$id,['filename'=>$filename],'success');
-        jsonResponse(['success'=>true,'message'=>'Photo uploaded','photo_url'=>$path]);
+        try {
+            global $mysqli;
+            $userId=requireAuth();$id=(int)$id;
+            $cvModel=new CvModel($mysqli);
+            if(!$cvModel->belongsToUser($id,$userId)){jsonResponse(['error'=>'Forbidden'],403);return;}
+            if(empty($_FILES['photo'])||$_FILES['photo']['error']!==UPLOAD_ERR_OK){
+                $errCode=empty($_FILES['photo'])?-1:$_FILES['photo']['error'];
+                jsonResponse(['error'=>'No file uploaded','upload_error'=>$errCode],400);return;
+            }
+            $f=$_FILES['photo'];
+            $allowed=['image/jpeg','image/png','image/webp','image/gif'];
+            if(!in_array($f['type'],$allowed)){jsonResponse(['error'=>'Only JPG, PNG, WebP, GIF allowed','got'=>$f['type']],400);return;}
+            if($f['size']>5*1024*1024){jsonResponse(['error'=>'File too large (max 5MB)','size'=>$f['size']],400);return;}
+            $dir=dirname(__DIR__,1).'/../uploads/cv-photos';
+            if(!is_dir($dir)){@mkdir($dir,0755,true);}
+            if(!is_dir($dir)){jsonResponse(['error'=>'Upload directory not writable'],500);return;}
+            $ext=pathinfo($f['name'],PATHINFO_EXTENSION);
+            $filename='cv_'.$id.'_'.time().'_'.bin2hex(random_bytes(4)).'.'.$ext;
+            if(!move_uploaded_file($f['tmp_name'],$dir.'/'.$filename)){jsonResponse(['error'=>'Failed to save file'],500);return;}
+            $path='/uploads/cv-photos/'.$filename;
+            $cvModel->update($id,['profile_photo'=>$path]);
+            logActivity("CV Photo Uploaded","cv",$id,['filename'=>$filename],'success');
+            jsonResponse(['success'=>true,'message'=>'Photo uploaded','photo_url'=>$path]);
+        } catch(\Throwable $e) {
+            logError('CV Photo Upload Error: '.$e->getMessage(),'error',['cv_id'=>$id,'trace'=>$e->getTraceAsString()]);
+            jsonResponse(['error'=>'Upload failed: '.$e->getMessage()],500);
+        }
     }
 
     public static function deletePhoto(string $id): void

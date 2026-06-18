@@ -534,9 +534,10 @@
  </div>
  {% elseif field.field_type == 'date' %}
  <input type="date"
- class="w-full rounded-lg border-2 border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+ class="w-full rounded-lg border-2 border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 datepicker"
  id="field_{{ field.form_field_name }}"
  name="{{ field.form_field_name }}"
+ data-disable-past="true"
  {% if field.required %}required{% endif %}
 >
  {% else %}

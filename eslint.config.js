@@ -44,6 +44,11 @@ export default [
         showToast: 'readonly',
         MessageHandlerConfig: 'readonly',
         Apex: 'readonly',
+        delegateClick: 'readonly',
+        delegateChange: 'readonly',
+        delegateKeydown: 'readonly',
+        delegateAll: 'readonly',
+        delegateEvent: 'readonly',
       },
     },
     rules: {

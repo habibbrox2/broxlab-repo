@@ -21,7 +21,26 @@
 {% block schema %}
  <script type="application/ld+json">
 {{ page_schema|schema_json }}
- </script>
+ 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  switch (t.getAttribute("data-action")) {
+  case "delete-mobile": deleteMobile(t.dataset.id); break;
+  case "toggle-mobile": toggleMobile(t.dataset.id); break;
+  }
+});
+</script>
+
+<script>
+document.addEventListener("change", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (t && t.getAttribute("data-action") === "auto-submit" && t.form) t.form.submit();
+});
+</script>
+</script>
 {% endblock %}
 {% block content %}
  {# ================= Hero Section ================= #}
@@ -64,12 +83,12 @@
         </svg>
         <input type="search" name="search" value="{{ search|default("") }}" placeholder="Search mobiles..." autocomplete="off">
       </div>
-      <select name="per_page" class="toolbar-select" onchange="this.form.submit()" aria-label="Items per page">
+      <select name="per_page" class="toolbar-select" data-action="auto-submit" aria-label="Items per page">
         {% for opt in available_per_page|default([12, 24, 36, 48]) %}
           <option value="{{ opt }}" {% if per_page == opt %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
       </select>
-      <select name="sort" class="toolbar-select" onchange="this.form.submit()" aria-label="Sort mobiles">
+      <select name="sort" class="toolbar-select" data-action="auto-submit" aria-label="Sort mobiles">
         <option value="release_date" {% if sort == 'release_date' %}selected{% endif %}>Release Date</option>
         <option value="brand_name" {% if sort == 'brand_name' %}selected{% endif %}>Brand</option>
         <option value="model_name" {% if sort == 'model_name' %}selected{% endif %}>Model</option>

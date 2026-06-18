@@ -1,6 +1,7 @@
+import { validateFile } from '../shared/form-validators.js';
+
 const byIdDefault = (id) => document.getElementById(id);
 
-import { validateFile } from '../../shared/form-validators.js';
 
 export function initMediaUpload(options = {}) {
   const byId = options.byId || byIdDefault;
@@ -65,6 +66,7 @@ export function initMediaUpload(options = {}) {
     event.preventDefault();
 
     const file = fileInput?.files?.[0];
+    if (!file) return;
     const validation = validateFile(file);
     if (!validation.valid) {
       window.showAlert(validation.error, 'danger');

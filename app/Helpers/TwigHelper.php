@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Functions.php';
-require_once dirname(__DIR__, 1) . '/app/Helpers/ErrorLogging.php';
-require_once dirname(__DIR__, 1) . '/app/Models/UserModel.php';
+require_once dirname(__DIR__, 2) . '/Config/Functions.php';
+require_once __DIR__ . '/ErrorLogging.php';
+require_once dirname(__DIR__, 1) . '/Models/UserModel.php';
 
 if (!function_exists('env')) {
     function env(string $key, mixed $default = null)
@@ -1353,6 +1353,20 @@ if (!function_exists("registerTwigHelpers")) {
 
         $twig->addFunction(new \Twig\TwigFunction('translate', function ($text, $from = 'en', $to = null) {
             return LanguageHelper::translate((string) $text, $from, $to, false);
+        }));
+
+        $twig->addFunction(new \Twig\TwigFunction('t', function (string $key, array $params = []): string {
+            $translated = LanguageHelper::translate($key, 'en', null, false);
+            if (!empty($params)) {
+                foreach ($params as $k => $v) {
+                    $translated = str_replace('{' . $k . '}', (string) $v, $translated);
+                }
+            }
+            return $translated;
+        }));
+
+        $twig->addFunction(new \Twig\TwigFunction('lang', function (): string {
+            return LanguageHelper::getCurrentLang();
         }));
 
         $twig->addFilter(new \Twig\TwigFilter('trans', function ($text, $from = 'en', $to = null) {

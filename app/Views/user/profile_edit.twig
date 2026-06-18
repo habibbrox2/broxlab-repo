@@ -118,7 +118,7 @@
  </p>
  <button type="button"
  class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors"
- onclick="document.getElementById('profile_pic').click()">
+ data-action="trigger-profile-pic">
  <i class="lucide lucide-upload mr-1"></i> Upload Photo
  </button>
  </div>
@@ -198,11 +198,12 @@
  <div>
  <label for="dob" class="block text-sm font-medium mb-1.5">Date of Birth</label>
  <input type="date"
- class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary datepicker"
  id="dob"
  name="dob"
  value="{{ user.dob ? user.dob|date("Y-m-d") : '' }}"
  data-format="YYYY-MM-DD"
+ data-disable-future="true"
  placeholder="YYYY-MM-DD">
  </div>
  </div>
@@ -384,7 +385,7 @@
  </div>
  <button type="reset"
    class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-100 hover:-translate-y-0.5"
-   onclick="return window.confirmAction(event, this, 'Are you sure you want to reset all changes?')">
+   data-action="confirm-reset-changes">
  <i class="lucide lucide-rotate-ccw" style="width:0.875em;height:0.875em;"></i>Reset Form
  </button>
  </div>
@@ -498,7 +499,38 @@
  }
  // Bootstrap's was-validated removed; manual validation done via checkValidity
  });
- </script>
+ 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}
 
 

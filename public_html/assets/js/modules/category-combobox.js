@@ -1,4 +1,4 @@
-import { escapeHtml } from '../../shared/utils.js';
+import { escapeHtml } from '../shared/utils.js';
 
 const DEFAULT_OPTIONS = {
   allowCreate: true,

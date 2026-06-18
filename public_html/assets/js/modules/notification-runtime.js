@@ -16,7 +16,7 @@ const NAV_DROPDOWN_OPEN_EVENT = 'brox:navbar-dropdown-open';
 // Injected by initPublicNotificationRuntime — references the navbar's emitNavbarDropdownState
 let _emitNavbarDropdownState = function () {};
 
-import { escapeHtml, getCsrfToken } from '../../shared/utils.js';
+import { escapeHtml, getCsrfToken } from '../shared/utils.js';
 
 // Injected by initPublicNotificationRuntime
 let _runWhenReady = function () {};

@@ -62,12 +62,12 @@
  <!-- Action Buttons -->
  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div>
- <button type="button" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 transition-colors" onclick="copyAllCodes()">
+ <button type="button" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 transition-colors" data-action="copyAllCodes">
  <i class="lucide lucide-clipboard"></i> সবগুলি কপি করুন
  </button>
  </div>
  <div>
- <button type="button" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors" onclick="printCodes()">
+ <button type="button" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors" data-action="printCodes">
  <i class="lucide lucide-printer"></i> প্রিন্ট করুন
  </button>
  </div>
@@ -180,7 +180,18 @@ document.querySelectorAll('.code-item').forEach(item => {
  });
  });
 });
- </script>
+ 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}
 
 

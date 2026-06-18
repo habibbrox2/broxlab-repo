@@ -1,5 +1,5 @@
 import { escapeHtml } from './core.js';
-import { getCsrfToken } from '../../shared/utils.js';
+import { getCsrfToken } from '../shared/utils.js';
 
 const byId = (id) => document.getElementById(id);
 

@@ -27,22 +27,22 @@
       <p class="text-sm text-slate-500 mt-1">Passport, visa, job, exam, and print-ready photo workflow</p>
     </div>
     <div class="flex items-center gap-2">
-      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="undo()" id="undoBtn" disabled>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" data-action="undo" id="undoBtn" disabled>
         <i class="lucide lucide-undo-2 w-4 h-4"></i><span>Undo</span>
       </button>
-      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="redo()" id="redoBtn" disabled>
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" data-action="redo" id="redoBtn" disabled>
         <i class="lucide lucide-redo w-4 h-4"></i><span>Redo</span>
       </button>
-      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="document.getElementById('imageUploadInput').click()">
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" data-action="trigger-upload">
         <i class="lucide lucide-upload w-4 h-4"></i><span>Upload</span>
       </button>
-      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" onclick="preparePrintReady()">
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm" data-action="prepare-print-ready">
         <i class="lucide lucide-sparkles w-4 h-4"></i><span>Prepare</span>
       </button>
-      <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm" onclick="downloadImage()">
+      <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm" data-action="download-image">
         <i class="lucide lucide-download w-4 h-4"></i><span>Export</span>
       </button>
-      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors shadow-sm" onclick="openPrintSheetModal()">
+      <button type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors shadow-sm" data-action="open-print-sheet">
         <i class="lucide lucide-printer w-4 h-4"></i><span>Print Sheet</span>
       </button>
     </div>
@@ -58,13 +58,13 @@
           <p class="text-sm text-slate-500" id="presetDescription">Choose a preset, align the face inside the guide box, then export or place on a print sheet.</p>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="toggleGuides()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="toggle-guides">
             <i class="lucide lucide-crop w-3.5 h-3.5"></i><span id="guideToggleLabel">Hide Guides</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="fitToGuide()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="fit-to-guide">
             <i class="lucide lucide-frame w-3.5 h-3.5"></i><span>Fit To Guide</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="centerSubject()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="center-subject">
             <i class="lucide lucide-align-center-horizontal w-3.5 h-3.5"></i><span>Center</span>
           </button>
         </div>
@@ -79,7 +79,7 @@
         </div>
 
         {# Upload placeholder #}
-        <div class="absolute inset-0 flex items-center justify-center cursor-pointer p-6" id="uploadPlaceholder" onclick="document.getElementById('imageUploadInput').click()">
+        <div class="absolute inset-0 flex items-center justify-center cursor-pointer p-6" id="uploadPlaceholder" data-action="trigger-upload">
           <div class="text-center max-w-sm">
             <i class="lucide lucide-cloud-upload text-5xl text-slate-300 mx-auto block mb-3"></i>
             <h3 class="text-lg font-semibold text-slate-700 mb-1">Drop or upload a portrait photo</h3>
@@ -103,22 +103,22 @@
       {# Status bar #}
       <div class="flex items-center justify-between gap-4 mt-4 p-3 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="flex items-center gap-1">
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="zoomOut()" title="Zoom out">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="zoom-out" title="Zoom out">
             <i class="lucide lucide-minus w-4 h-4"></i>
           </button>
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="zoomIn()" title="Zoom in">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="zoom-in" title="Zoom in">
             <i class="lucide lucide-plus w-4 h-4"></i>
           </button>
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="resetZoom()" title="Reset zoom">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="reset-zoom" title="Reset zoom">
             <i class="lucide lucide-maximize w-4 h-4"></i>
           </button>
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="rotateImage()" title="Rotate 90 degrees">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="rotate-image" title="Rotate 90 degrees">
             <i class="lucide lucide-repeat w-4 h-4"></i>
           </button>
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="flipImage('horizontal')" title="Flip horizontal">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="flip-image" data-direction="horizontal" title="Flip horizontal">
             <i class="lucide lucide-flip-horizontal w-4 h-4"></i>
           </button>
-          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="flipImage('vertical')" title="Flip vertical">
+          <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="flip-image" data-direction="vertical" title="Flip vertical">
             <i class="lucide lucide-flip-vertical w-4 h-4"></i>
           </button>
         </div>
@@ -149,10 +149,10 @@
         <h3 class="text-sm font-semibold text-slate-900 mb-1">Image Tray</h3>
         <p class="text-xs text-slate-500 mb-3">Keep multiple portraits and switch between them.</p>
         <div class="flex items-center gap-2 mb-3">
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="document.getElementById('imageUploadInput').click()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" data-action="trigger-upload">
             <i class="lucide lucide-images w-3.5 h-3.5"></i><span>Add Photo</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="deleteCurrentImage()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="delete-current-image">
             <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i><span>Delete Active</span>
           </button>
         </div>
@@ -164,42 +164,42 @@
         <h3 class="text-sm font-semibold text-slate-900 mb-1">Editing Tools</h3>
         <p class="text-xs text-slate-500 mb-3">Select, crop, retouch, annotate, and isolate the subject.</p>
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors active" data-tool-button="select" onclick="setTool('select')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors active" data-tool-button="select" data-action="set-tool" data-tool="select">
             <i class="lucide lucide-mouse-pointer w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Select</strong>
             <span class="text-[11px] text-slate-500">Move and scale</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="crop" onclick="setTool('crop')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="crop" data-action="set-tool" data-tool="crop">
             <i class="lucide lucide-crop w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Crop</strong>
             <span class="text-[11px] text-slate-500">Drag box with handles</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="brush" onclick="setTool('brush')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="brush" data-action="set-tool" data-tool="brush">
             <i class="lucide lucide-paintbrush w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Brush</strong>
             <span class="text-[11px] text-slate-500">Retouch and highlight</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="eraser" onclick="setTool('eraser')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="eraser" data-action="set-tool" data-tool="eraser">
             <i class="lucide lucide-eraser w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Eraser</strong>
             <span class="text-[11px] text-slate-500">Refine edges</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="text" onclick="setTool('text')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="text" data-action="set-tool" data-tool="text">
             <i class="lucide lucide-type w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Text</strong>
             <span class="text-[11px] text-slate-500">Add label</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="shape" onclick="setTool('shape')">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-tool-button="shape" data-action="set-tool" data-tool="shape">
             <i class="lucide lucide-frame w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Shape</strong>
             <span class="text-[11px] text-slate-500">Rectangle or circle</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" onclick="bgRemove()">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-action="bg-remove">
             <i class="lucide lucide-wand-sparkles w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Cutout</strong>
             <span class="text-[11px] text-slate-500">Remove background</span>
           </button>
-          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" onclick="openPrintSheetModal()">
+          <button type="button" class="flex flex-col items-start gap-0.5 p-3 rounded-lg border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors" data-action="open-print-sheet">
             <i class="lucide lucide-grid-3x3 w-4 h-4 text-slate-600"></i>
             <strong class="text-xs font-semibold text-slate-800">Print</strong>
             <span class="text-[11px] text-slate-500">Live sheet preview</span>
@@ -220,7 +220,7 @@
             <input id="foregroundScaleSlider" type="range" min="40" max="220" value="100" class="w-full">
           </div>
         </div>
-        <button type="button" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="applyCrop()">
+        <button type="button" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="apply-crop">
           <i class="lucide lucide-check-square w-3.5 h-3.5"></i><span>Apply Crop</span>
         </button>
       </div>
@@ -273,10 +273,10 @@
           <input id="saturationSlider" type="range" min="-100" max="100" value="0" class="w-full">
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="applyAllFilters()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" data-action="apply-all-filters">
             <i class="lucide lucide-check w-3.5 h-3.5"></i><span>Apply Preview</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="resetFilters()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="reset-filters">
             <i class="lucide lucide-undo-2 w-3.5 h-3.5"></i><span>Reset</span>
           </button>
         </div>
@@ -297,10 +297,10 @@
         </div>
         <div class="grid grid-cols-5 gap-2 mb-3" id="backgroundPresetGrid"></div>
         <div class="flex items-center gap-2">
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="clearBackgroundLayer()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="clear-bg-layer">
             <i class="lucide lucide-layers w-3.5 h-3.5"></i><span>Transparent</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" onclick="setBackgroundColor(document.getElementById('backgroundColorPicker').value)">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-action="set-bg-color-from-picker">
             <i class="lucide lucide-palette w-3.5 h-3.5"></i><span>Use Color</span>
           </button>
         </div>
@@ -335,10 +335,10 @@
           <input id="printSpacing" type="number" min="0" max="12" step="0.5" value="4" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" onclick="downloadImage()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors" data-action="download-image">
             <i class="lucide lucide-download w-3.5 h-3.5"></i><span>Download Active</span>
           </button>
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition-colors" onclick="openPrintSheetModal()">
+          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition-colors" data-action="open-print-sheet">
             <i class="lucide lucide-file-text w-3.5 h-3.5"></i><span>Generate PDF</span>
           </button>
         </div>
@@ -354,7 +354,7 @@
           <h3 class="text-lg font-semibold text-slate-900" style="margin:0;">Print Sheet Preview</h3>
           <p class="text-sm text-slate-500" style="margin:0.25rem 0 0;">Select tray images, confirm paper settings, then generate a PDF.</p>
         </div>
-        <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" onclick="closePrintSheetModal()">
+        <button type="button" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors" data-action="close-print-sheet">
           <i class="lucide lucide-x w-4 h-4"></i>
         </button>
       </div>
@@ -369,8 +369,8 @@
       </div>
 
       <div class="flex items-center justify-end gap-2">
-        <button type="button" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" onclick="closePrintSheetModal()">Cancel</button>
-        <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" onclick="generatePrintSheet()">
+        <button type="button" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" data-action="close-print-sheet">Cancel</button>
+        <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" data-action="generate-print-sheet">
           <i class="lucide lucide-download w-4 h-4"></i><span>Generate PDF</span>
         </button>
       </div>

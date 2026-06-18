@@ -445,8 +445,10 @@
      ───────────────────────────────────────────── #}
 
   {# ── Inline: core UI behaviours (no deps, runs immediately) ── #}
-  {# debounce/throttle are provided by public_html/assets/js/shared/dom-helpers.js #}
+  {# debounce/throttle are provided by shared/dom-helpers.js; delegateClick/change/keydown by shared/events.js #}
   <script src="{{ asset('/assets/js/shared/dom-helpers.js') }}"></script>
+  <script src="{{ asset('/assets/js/shared/events.js') }}"></script>
+  <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
   <script>
   (function () {
     'use strict';

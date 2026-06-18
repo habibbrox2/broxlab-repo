@@ -111,7 +111,7 @@
 <div class="medex-section-nav inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
  <span class="text-slate-500 small font-bold mr-2" data-i18n-en="Quick jump:" data-i18n-bn="দ্রুত যান:">{{ current_lang == 'bn' ? 'দ্রুত যান:' : 'Quick jump:' }}</span>
  {% for key, section in sections %}
- <a href="#section-{{ key }}" class="medex-section-nav inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" onclick="event.preventDefault(); document.getElementById('section-{{ key }}').scrollIntoView({behavior:'smooth'});">
+ <a href="#section-{{ key }}" class="medex-section-nav inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-action="scroll-to-section" data-section="section-{{ key }}">
  <i class="lucide lucide-chevron-right"></i> {{ section.title_en|length > 20 ? section.title_en|slice(0, 20) ~ '...' : section.title_en }}
  </a>
  {% endfor %}
@@ -123,7 +123,7 @@
  <div class="col-span-12">
  {% for key, section in sections %}
  <div class="medex-section{% if loop.first %} active{% endif" id="section-{{ key }}">
- <div class="medex-section-header" onclick="toggleSection('{{ key }}')" tabindex="0" role="button" aria-expanded="{{ loop.first ? 'true' : 'false' }}">
+ <div class="medex-section-header" data-action="toggleSection"{{ key }}')" tabindex="0" role="button" aria-expanded="{{ loop.first ? 'true' : 'false' }}">
  <div class="flex items-center">
  <i class="lucide lucide-chevron-down section-toggle" id="toggle-{{ key }}"></i>
  <h6>{{ section.title_en }}</h6>
@@ -181,7 +181,38 @@
 
 {% block extra_scripts %}
 <script type="module" src="{{ asset('/assets/js/dist/medex-brand-page.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}">
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}
 
 

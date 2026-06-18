@@ -38,7 +38,7 @@ const BUDGETS = [
   { key: 'public_html/assets/js/dist/ai-system-admin.js',        maxBytes: 35_000,  label: 'ai-system-admin.js' },
   { key: 'public_html/assets/js/dist/analytics-dashboard.js',    maxBytes: 25_000,  label: 'analytics-dashboard.js' },
   { key: 'public_html/assets/js/dist/account-settings-shared.js', maxBytes: 28_000, label: 'account-settings-shared.js' },
-  { key: 'public_html/assets/js/dist/cv-builder.js',             maxBytes: 35_000,  label: 'cv-builder.js' },
+  { key: 'public_html/assets/js/dist/cv-builder.js',             maxBytes: 55_000,  label: 'cv-builder.js (app + renderers bundled)' },
   { key: 'public_html/assets/js/dist/datepicker.js',             maxBytes: 28_000,  label: 'datepicker.js' },
 
   // ── Other JS bundles ──

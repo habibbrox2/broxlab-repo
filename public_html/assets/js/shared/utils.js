@@ -1,7 +1,7 @@
 /**
  * Shared Utility Functions
  * Consolidated from: account-settings-shared.js, linked-emails.js, media-upload.js,
- * admin/modules/dom-utils.js, analytics-dashboard.js
+ * modules/dom-utils.js, analytics-dashboard.js
  */
 
 const HTML_ESCAPE_MAP = Object.freeze({

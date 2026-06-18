@@ -1,5 +1,5 @@
 import { escapeHtml, setText, toSafeId } from './core.js';
-import { debounce } from '../../shared/utils.js';
+import { debounce } from '../shared/utils.js';
 
 const byIdDefault = (id) => document.getElementById(id);
 

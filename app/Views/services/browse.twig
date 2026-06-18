@@ -23,7 +23,25 @@
 } %}
 
 {% block schema %}
-  <script type="application/ld+json">{{ page_schema|schema_json }}</script>
+  <script type="application/ld+json">{{ page_schema|schema_json }}
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  if (t.getAttribute("data-action") === "scroll-to-filter") {
+    document.querySelector("#services-filter")?.scrollIntoView({behavior:"smooth"});
+  }
+});
+document.addEventListener("change", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  if (t.getAttribute("data-action") === "auto-submit") {
+    if (t.form) t.form.submit();
+  }
+});
+</script>
+</script>
 {% endblock %}
 
 {% block content %}
@@ -66,7 +84,7 @@
 
         <div class="flex flex-wrap gap-3 pt-2">
           <button
-            onclick="document.querySelector('#services-filter').scrollIntoView({behavior:'smooth'})"
+            data-action="scroll-to-filter"
             class="group inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/40 transition-all duration-300 hover:bg-indigo-500 hover:shadow-indigo-500/50 active:scale-[0.97]"
           >
             <i class="lucide lucide-search w-4 h-4 transition-transform group-hover:scale-110"></i>
@@ -162,7 +180,7 @@
         {# Category #}
         <div class="relative">
           <select
-            name="category" onchange="this.form.submit()"
+            name="category" data-action="auto-submit"
             class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-9 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/15 cursor-pointer sm:w-48"
             aria-label="Filter by category"
           >
@@ -177,7 +195,7 @@
         {# Sort #}
         <div class="relative">
           <select
-            name="sort" onchange="this.form.submit()"
+            name="sort" data-action="auto-submit"
             class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-9 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/15 cursor-pointer sm:w-44"
             aria-label="Sort services"
           >

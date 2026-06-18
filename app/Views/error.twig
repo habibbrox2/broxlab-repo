@@ -58,7 +58,7 @@
             <a href="{{ home_url|default('/') }}" class="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
               <i class="lucide lucide-house"></i>{{ 'Go Home'|trans }}
             </a>
-            <button type="button" onclick="history.back()" class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+            <button type="button" data-action="history.back" class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
               <i class="lucide lucide-arrow-left"></i>{{ 'Go Back'|trans }}
             </button>
           </div>

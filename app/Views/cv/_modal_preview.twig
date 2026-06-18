@@ -21,25 +21,25 @@
         </div>
         <div class="flex items-center gap-2">
           <!-- Template Switcher -->
-          <select id="modal-template-select" onchange="changeModalTemplate(this.value)"
+          <select id="modal-template-select" data-action="change-modal-template"
                   class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
             {% for t in templates %}
             <option value="{{ t }}" {{ t == selected_template ? 'selected' : '' }}>{{ t|capitalize }}</option>
             {% endfor %}
           </select>
           <div class="hidden sm:flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
-            <button onclick="modalZoomOut()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom Out">
+            <button data-action="modal-zoom-out" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom Out">
               <i class="lucide lucide-zoom-out w-4 h-4"></i>
             </button>
             <span id="modal-zoom-level" class="text-xs font-medium text-gray-600 min-w-[3rem] text-center select-none">100%</span>
-            <button onclick="modalZoomIn()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom In">
+            <button data-action="modal-zoom-in" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom In">
               <i class="lucide lucide-zoom-in w-4 h-4"></i>
             </button>
-            <button onclick="modalZoomReset()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Reset Zoom">
+            <button data-action="modal-zoom-reset" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Reset Zoom">
               <i class="lucide lucide-rotate-ccw w-4 h-4"></i>
             </button>
           </div>
-          <button onclick="closePreviewModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ml-1" title="Close Preview">
+          <button data-action="close-preview-modal" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ml-1" title="Close Preview">
             <i class="lucide lucide-x w-5 h-5"></i>
           </button>
         </div>
@@ -196,5 +196,15 @@
     init();
   }
 })();
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
 </script>
 {% endmacro %}

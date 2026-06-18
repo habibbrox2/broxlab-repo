@@ -185,28 +185,28 @@
          </a>
          <button type="button"
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-all"
-          onclick="editCommentQuick({{ comment.id }})"
+          data-action="edit-comment-quick" data-comment-id="{{ comment.id }}"
           title="Edit">
           <i class="lucide lucide-pencil text-sm"></i>
          </button>
          {% if comment.status != 'hidden' %}
          <button type="button"
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all"
-          onclick="hideCommentQuick({{ comment.id }})"
+          data-action="hide-comment-quick" data-comment-id="{{ comment.id }}"
           title="Hide">
           <i class="lucide lucide-eye-off text-sm"></i>
          </button>
          {% else %}
          <button type="button"
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
-          onclick="unhideCommentQuick({{ comment.id }})"
+          data-action="unhide-comment-quick" data-comment-id="{{ comment.id }}"
           title="Unhide">
           <i class="lucide lucide-eye text-sm"></i>
          </button>
          {% endif %}
          <button type="button"
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
-          onclick="deleteComment({{ comment.id }})"
+          data-action="delete-comment" data-comment-id="{{ comment.id }}"
           title="Delete">
           <i class="lucide lucide-trash-2 text-sm"></i>
          </button>
@@ -228,7 +228,7 @@
        </select>
        <button type="button"
         class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-        onclick="executeBulkAction()">Apply</button>
+        data-action="execute-bulk-action">Apply</button>
       </div>
       <div class="text-sm text-slate-500 font-medium">
        <span id="selectedCount">0</span> selected
@@ -429,5 +429,22 @@ async function executeBulkAction() {
  })
  .catch(() => window.showMessage('Error executing bulk action', 'danger'));
 }
- </script>
+ 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.getAttribute("data-comment-id");
+  switch (a) {
+  case "edit-comment-quick": editCommentQuick(id); break;
+  case "hide-comment-quick": hideCommentQuick(id); break;
+  case "unhide-comment-quick": unhideCommentQuick(id); break;
+  case "delete-comment": deleteComment(id); break;
+  case "execute-bulk-action": executeBulkAction(); break;
+  }
+});
+</script>
+</script>
 {% endblock %}

@@ -716,7 +716,7 @@
               <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">&nbsp;</label>
               <button type="button"
                class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 w-full"
-               onclick="removeImage(this)">
+               data-action="remove-image">
                <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
               </button>
              </div>
@@ -804,7 +804,7 @@
            <div class="md:col-span-1">
             <button type="button"
              class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150"
-             onclick="removeFormField(this)">
+             data-action="remove-form-field">
              <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
             </button>
            </div>
@@ -855,7 +855,7 @@
          <div class="md:col-span-1">
           <button type="button"
            class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150"
-           onclick="removeMetadata(this)">
+           data-action="remove-metadata">
            <i class="lucide lucide-x w-3.5 h-3.5"></i>
           </button>
          </div>
@@ -1896,7 +1896,7 @@
        '</div>' +
        '<div class="md:col-span-3">' +
        '<label class="block text-sm font-medium text-slate-700 mb-1 small font-semibold">&nbsp;</label>' +
-       '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700 w-full" onclick="removeImage(this)"><i class="lucide lucide-trash-2 mr-1"></i>Delete</button>' +
+       '<button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition px-3 py-1.5 text-xs bg-red-600 text-white hover:bg-red-700 w-full" data-action="remove-image"><i class="lucide lucide-trash-2 mr-1"></i>Delete</button>' +
        '</div>' +
        '<input type="hidden" name="pexels_images[]" value="' + escapeHtml(data.url) + '">' +
        '</div>' +
@@ -2169,5 +2169,16 @@
    }
   });
  })();
- </script>
+ 
+// Event delegation
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  switch (t.getAttribute("data-action")) {
+  case "remove-image": removeImage(t); break;
+  case "remove-form-field": removeFormField(t); break;
+  case "remove-metadata": removeMetadata(t); break;
+  }
+});
+</script>
 {% endblock %}

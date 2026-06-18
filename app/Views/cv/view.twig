@@ -4,23 +4,876 @@
 
 {% block extra_styles %}
 <style>
- :root {
- --cv-view-primary: #4F46E5;
- --cv-view-secondary: #7C3AED;
- --cv-view-success: #059669;
- --cv-view-warning: #F59E0B;
- --cv-view-danger: #DC2626;
- --cv-view-gray-50: #F9FAFB;
- --cv-view-gray-100: #F3F4F6;
- --cv-view-gray-200: #E5E7EB;
- --cv-view-gray-300: #D1D5DB;
- --cv-view-gray-400: #9CA3AF;
- --cv-view-gray-500: #6B7280;
- --cv-view-gray-600: #4B5563;
- --cv-view-gray-700: #374151;
- --cv-view-gray-800: #1F2937;
- --cv-view-gray-900: #111827;
- }
+:root {
+  --cv-view-primary: #4F46E5;
+  --cv-view-secondary: #7C3AED;
+  --cv-view-success: #059669;
+  --cv-view-warning: #F59E0B;
+  --cv-view-danger: #DC2626;
+  --cv-view-gray-50: #F9FAFB;
+  --cv-view-gray-100: #F3F4F6;
+  --cv-view-gray-200: #E5E7EB;
+  --cv-view-gray-300: #D1D5DB;
+  --cv-view-gray-400: #9CA3AF;
+  --cv-view-gray-500: #6B7280;
+  --cv-view-gray-600: #4B5563;
+  --cv-view-gray-700: #374151;
+  --cv-view-gray-800: #1F2937;
+  --cv-view-gray-900: #111827;
+}
+
+.cv-view-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--cv-view-gray-50) 0%, var(--cv-view-gray-100) 100%);
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.cv-view-page::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cv-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.cv-view-header {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 20px rgba(79, 70, 229, 0.06);
+  border: 1px solid var(--cv-view-gray-200);
+  position: relative;
+  overflow: hidden;
+}
+
+.cv-view-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4F46E5, #7C3AED, #10B981);
+}
+
+.cv-view-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--cv-view-gray-900);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cv-view-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.cv-view-meta {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  color: var(--cv-view-gray-500);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.cv-view-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--cv-view-gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--cv-view-gray-200);
+}
+
+.cv-view-meta-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--cv-view-gray-400);
+}
+
+.cv-view-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.cv-action-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  min-width: 120px;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cv-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.cv-action-btn:active {
+  transform: translateY(0);
+}
+
+.cv-action-primary {
+  background: linear-gradient(135deg, var(--cv-view-primary) 0%, var(--cv-view-secondary) 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+}
+
+.cv-action-primary:hover {
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+}
+
+.cv-action-secondary {
+  background: white;
+  color: var(--cv-view-gray-700);
+  border: 2px solid var(--cv-view-gray-200);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.cv-action-secondary:hover {
+  background: var(--cv-view-gray-50);
+  border-color: var(--cv-view-gray-300);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cv-action-success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.cv-action-success:hover {
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+.cv-action-warning {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.cv-action-warning:hover {
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+}
+
+.cv-action-danger {
+  background: white;
+  color: var(--cv-view-danger);
+  border: 2px solid #FECACA;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+}
+
+.cv-action-danger:hover {
+  background: #FEF2F2;
+  border-color: #EF4444;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.cv-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.cv-preview-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 20px rgba(79, 70, 229, 0.04);
+  border: 1px solid var(--cv-view-gray-200);
+  overflow: hidden;
+  position: relative;
+}
+
+.cv-preview-header {
+  background: linear-gradient(135deg, var(--cv-view-primary) 0%, var(--cv-view-secondary) 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cv-preview-title {
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.cv-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cv-zoom-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.cv-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.cv-preview-content {
+  padding: 0;
+  overflow: auto;
+  max-height: 80vh;
+  background: var(--cv-view-gray-100);
+}
+
+.cv-preview-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  border: none;
+  background: white;
+}
+
+.cv-sidebar {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 20px rgba(79, 70, 229, 0.04);
+  border: 1px solid var(--cv-view-gray-200);
+  position: sticky;
+  top: 2rem;
+}
+
+.cv-sidebar-section {
+  margin-bottom: 2rem;
+}
+
+.cv-sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.cv-sidebar-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cv-view-gray-500);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--cv-view-gray-100);
+}
+
+.cv-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cv-stat {
+  text-align: center;
+  padding: 1rem 0.75rem;
+  background: linear-gradient(135deg, var(--cv-view-gray-50) 0%, white 100%);
+  border-radius: 12px;
+  border: 1px solid var(--cv-view-gray-200);
+  transition: all 0.2s ease;
+}
+
+.cv-stat:hover {
+  border-color: var(--cv-view-gray-300);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.cv-stat-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--cv-view-primary);
+  display: block;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--cv-view-primary), var(--cv-view-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cv-stat-label {
+  font-size: 0.75rem;
+  color: var(--cv-view-gray-500);
+  margin-top: 0.25rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cv-share-section {
+  margin-bottom: 2rem;
+}
+
+.cv-share-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--cv-view-gray-200);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: var(--cv-view-gray-50);
+  transition: all 0.2s ease;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--cv-view-gray-600);
+}
+
+.cv-share-input:focus {
+  outline: none;
+  border-color: var(--cv-view-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.cv-share-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cv-share-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1.5px solid var(--cv-view-gray-200);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cv-view-gray-600);
+  min-width: 44px;
+}
+
+.cv-share-btn:hover {
+  background: var(--cv-view-gray-50);
+  border-color: var(--cv-view-gray-300);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cv-share-btn i {
+  font-size: 1.1rem;
+}
+
+.cv-recent-activity {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cv-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--cv-view-gray-100);
+  transition: all 0.2s ease;
+}
+
+.cv-activity-item:hover {
+  background: var(--cv-view-gray-50);
+  margin: 0 -0.75rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  border-radius: 8px;
+}
+
+.cv-activity-item:last-child {
+  border-bottom: none;
+}
+
+.cv-activity-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--cv-view-primary), var(--cv-view-secondary));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  flex-shrink: 0;
+}
+
+.cv-activity-content {
+  flex: 1;
+}
+
+.cv-activity-text {
+  font-size: 0.85rem;
+  color: var(--cv-view-gray-700);
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.cv-activity-time {
+  font-size: 0.75rem;
+  color: var(--cv-view-gray-400);
+}
+
+.cv-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: var(--cv-view-gray-500);
+}
+
+.cv-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--cv-view-gray-200);
+  border-top: 4px solid var(--cv-view-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .cv-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .cv-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .cv-view-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .cv-view-header {
+    padding: 1.5rem;
+  }
+
+  .cv-view-title {
+    font-size: 1.5rem;
+  }
+
+  .cv-view-actions {
+    flex-direction: column;
+  }
+
+  .cv-action-btn {
+    width: 100%;
+  }
+
+  .cv-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cv-preview-content {
+    max-height: 60vh;
+  }
+}
+
+@media print {
+  .cv-view-page,
+  .cv-view-header,
+  .cv-sidebar,
+  .cv-preview-header {
+    display: none !important;
+  }
+
+  .cv-preview-container {
+    box-shadow: none;
+    border: none;
+  }
+}
+
+/* ── ATS Scorecard Modal ── */
+.ats-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+  animation: atsFadeInOverlay 0.2s ease;
+}
+
+@keyframes atsFadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ats-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  animation: atsSlideUp 0.3s ease;
+  border: 1px solid var(--cv-view-gray-200);
+}
+
+@keyframes atsSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--cv-view-gray-200);
+  background: linear-gradient(135deg, var(--cv-view-gray-50) 0%, white 100%);
+  border-radius: 20px 20px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ats-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cv-view-gray-800);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.ats-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--cv-view-gray-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ats-close-btn:hover { background: var(--cv-view-gray-100); color: var(--cv-view-gray-800); }
+
+.ats-body { padding: 1.5rem; }
+
+/* Score ring */
+.ats-score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--cv-view-gray-50) 0%, var(--cv-view-gray-100) 100%);
+  border-radius: 16px;
+  border: 1px solid var(--cv-view-gray-200);
+}
+
+.ats-ring-svg {
+  width: 120px;
+  height: 120px;
+  transform: rotate(-90deg);
+}
+
+.ats-ring-bg { fill: none; stroke: var(--cv-view-gray-200); stroke-width: 8; }
+.ats-ring-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease;
+}
+
+.ats-score-value {
+  position: absolute;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--cv-view-gray-900);
+  letter-spacing: -0.025em;
+}
+
+.ats-score-label { font-size: 0.8rem; color: var(--cv-view-gray-500); margin-top: 0.5rem; }
+
+.ats-score-grade {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.ats-grade-excellent { background: #d1fae5; color: #065f46; }
+.ats-grade-good { background: #dbeafe; color: #1d4ed8; }
+.ats-grade-average { background: #fef3c7; color: #92400e; }
+.ats-grade-poor { background: #fee2e2; color: #991b1b; }
+
+/* Section scores */
+.ats-sections { margin-bottom: 1.5rem; }
+.ats-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--cv-view-gray-800);
+  margin-bottom: 0.75rem;
+}
+
+.ats-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.ats-section-card {
+  border: 1px solid var(--cv-view-gray-200);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s;
+  background: white;
+}
+
+.ats-section-card:hover { border-color: var(--cv-view-gray-300); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+.ats-section-name { font-size: 0.85rem; font-weight: 600; color: var(--cv-view-gray-700); }
+
+.ats-section-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--cv-view-gray-100);
+  overflow: hidden;
+}
+
+.ats-section-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+.ats-section-pct {
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Keywords */
+.ats-keywords { margin-bottom: 1.5rem; }
+.ats-kw-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--cv-view-gray-800);
+  margin-bottom: 0.5rem;
+}
+
+.ats-kw-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.ats-kw-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ats-kw-found { background: #d1fae5; color: #065f46; }
+.ats-kw-missing { background: #fee2e2; color: #991b1b; }
+.ats-kw-suggestion { background: #fef3c7; color: #92400e; }
+
+/* Suggestions */
+.ats-suggestions { margin-bottom: 1.5rem; }
+.ats-sug-title { font-size: 0.9rem; font-weight: 700; color: var(--cv-view-gray-800); margin-bottom: 0.5rem; }
+.ats-sug-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--cv-view-gray-100);
+}
+
+.ats-sug-item:last-child { border-bottom: none; }
+.ats-sug-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.ats-sug-icon-improve { background: #fef3c7; color: #92400e; }
+.ats-sug-icon-add { background: #dbeafe; color: #1d4ed8; }
+.ats-sug-icon-fix { background: #fee2e2; color: #991b1b; }
+.ats-sug-text { font-size: 0.85rem; color: var(--cv-view-gray-600); line-height: 1.5; }
+.ats-sug-action { margin-top: 0.3rem; }
+
+.ats-sug-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--cv-view-gray-200);
+  background: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cv-view-gray-600);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ats-sug-btn:hover { border-color: var(--cv-view-gray-300); background: var(--cv-view-gray-50); }
+
+/* Readability meter */
+.ats-readability {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--cv-view-gray-50);
+  border: 1px solid var(--cv-view-gray-200);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.ats-read-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.ats-read-text { font-size: 0.85rem; color: var(--cv-view-gray-700); font-weight: 600; }
+.ats-read-label { font-size: 0.75rem; color: var(--cv-view-gray-500); }
+
+/* Loading state */
+.ats-loading {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.ats-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--cv-view-gray-200);
+  border-top: 4px solid var(--cv-view-primary);
+  border-radius: 50%;
+  animation: atsSpin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes atsSpin { to { transform: rotate(360deg); } }
+
+.ats-loading-text { font-size: 0.9rem; color: var(--cv-view-gray-500); }
+
+/* Error state */
+.ats-error {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.ats-error-icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
+.ats-error-text { font-size: 0.9rem; color: var(--cv-view-danger); margin-bottom: 1rem; font-weight: 500; }
+
+.ats-retry-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--cv-view-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ats-retry-btn:hover { background: var(--cv-view-secondary); }
+
+/* Rate limit warning */
+.ats-rate-limit {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.ats-rate-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+.ats-rate-text { font-size: 0.9rem; color: #92400e; font-weight: 600; }
+.ats-rate-sub { font-size: 0.8rem; color: var(--cv-view-gray-500); margin-top: 0.5rem; }
+
+@media (max-width: 640px) {
+  .ats-section-grid { grid-template-columns: 1fr; }
+  .ats-modal { max-height: 95vh; border-radius: 16px; }
+}
+</style>
+{% endblock %}
 
  .cv-view-page {
  min-height: 100vh;
@@ -581,22 +1434,22 @@
  <i class="lucide lucide-pencil"></i>
  Edit CV
  </a>
- <button onclick="downloadCV()" class="cv-action-btn cv-action-success">
+ <button data-action="download-cv" class="cv-action-btn cv-action-success">
  <i class="lucide lucide-download"></i>
  Download PDF
- </button><button onclick="openPreviewModal({{ cv.id|default(0) }})" class="cv-action-btn cv-action-primary">
+ </button><button data-action="open-preview" data-cv-id="{{ cv.id|default(0) }}" class="cv-action-btn cv-action-primary">
  <i class="lucide lucide-eye"></i>
  Preview
 </button>
-<button onclick="shareCV()" class="cv-action-btn cv-action-secondary">
+<button data-action="share-cv" class="cv-action-btn cv-action-secondary">
  <i class="lucide lucide-share-2"></i>
  Share
 </button>
- <button onclick="duplicateCV()" class="cv-action-btn cv-action-warning">
+ <button data-action="duplicate-cv" class="cv-action-btn cv-action-warning">
  <i class="lucide lucide-copy"></i>
  Duplicate
  </button>
- <button onclick="deleteCV()" class="cv-action-btn cv-action-secondary" style="background: var(--cv-view-danger); color: white;">
+ <button data-action="delete-cv" class="cv-action-btn cv-action-secondary" style="background: var(--cv-view-danger); color: white;">
  <i class="lucide lucide-trash-2"></i>
  Delete
  </button>
@@ -609,16 +1462,16 @@
  <div class="cv-preview-header">
  <span class="cv-preview-title">CV Preview</span>
  <div class="cv-preview-controls">
- <select id="templateSelector" onchange="switchTemplate(this.value)" class="cv-zoom-btn" style="width:auto;padding:0 8px;font-size:12px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;">
+ <select id="templateSelector" data-action="switch-template" class="cv-zoom-btn" style="width:auto;padding:0 8px;font-size:12px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;">
  {% for t in templates %}
  <option value="{{ t }}"{{ t == selected_template ? ' selected' : '' }} style="color:#1f2937;background:white;">{{ t|capitalize }}</option>
  {% endfor %}
  </select>
  <span style="color:rgba(255,255,255,0.6);font-size:12px;">|</span>
- <button onclick="previewZoomOut()" class="cv-zoom-btn" title="Zoom Out">−</button>
+ <button data-action="zoom-out" class="cv-zoom-btn" title="Zoom Out">−</button>
  <span id="zoomLevel" style="color:white;font-size:12px;min-width:40px;text-align:center;">100%</span>
- <button onclick="previewZoomIn()" class="cv-zoom-btn" title="Zoom In">+</button>
- <button onclick="previewZoomReset()" class="cv-zoom-btn" title="Reset Zoom">↺</button>
+ <button data-action="zoom-in" class="cv-zoom-btn" title="Zoom In">+</button>
+ <button data-action="zoom-reset" class="cv-zoom-btn" title="Reset Zoom">↺</button>
  </div>
  </div>
  <div class="cv-preview-content" id="previewContent" style="overflow:hidden;">
@@ -667,16 +1520,16 @@
  <input type="text" id="shareUrl" class="cv-share-input" readonly
  value="{{ app_url }}/cv/{{ cv.id }}/public">
  <div class="cv-share-buttons">
- <button onclick="copyShareUrl()" class="cv-share-btn" title="Copy Link">
+ <button data-action="copy-share-url" class="cv-share-btn" title="Copy Link">
  <i class="lucide lucide-clipboard"></i>
  </button>
- <button onclick="shareToLinkedIn()" class="cv-share-btn" title="Share on LinkedIn">
+ <button data-action="share-linkedin" class="cv-share-btn" title="Share on LinkedIn">
  <i class="lucide lucide-briefcase"></i>
  </button>
- <button onclick="shareToTwitter()" class="cv-share-btn" title="Share on Twitter">
+ <button data-action="share-twitter" class="cv-share-btn" title="Share on Twitter">
  <i class="lucide lucide-share-2"></i>
  </button>
- <button onclick="shareViaEmail()" class="cv-share-btn" title="Share via Email">
+ <button data-action="share-email" class="cv-share-btn" title="Share via Email">
  <i class="lucide lucide-mail"></i>
  </button>
  </div>
@@ -721,15 +1574,15 @@
  Quick Actions
  </h3>
  <div style="display: grid; gap: 0.5rem;">
- <button onclick="openAtsScorecard()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button data-action="open-ats" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-bot"></i>
  ATS Scorecard
  </button>
- <button onclick="checkGrammar(event)" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button data-action="check-grammar" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-check-circle"></i>
  Check Grammar
  </button>
- <button onclick="openCoverLetter()" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
+ <button data-action="open-cover-letter" class="cv-action-btn cv-action-secondary" style="width: 100%; justify-content: flex-start;">
  <i class="lucide lucide-file-text"></i>
  Generate Cover Letter
  </button>
@@ -754,19 +1607,19 @@
  <label class="block text-sm font-medium text-neutral-700 mb-1.5">Share Link</label>
  <div class="flex rounded-lg border border-neutral-300 overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
  <input type="text" class="flex-1 px-3 py-2 border-0 outline-none text-sm" id="shareLinkInput" readonly>
- <button class="inline-flex items-center px-3 py-2 text-sm font-medium text-neutral-700 bg-neutral-50 hover:bg-neutral-100 transition-colors border-l border-neutral-300" onclick="copyShareLink()">
+ <button class="inline-flex items-center px-3 py-2 text-sm font-medium text-neutral-700 bg-neutral-50 hover:bg-neutral-100 transition-colors border-l border-neutral-300" data-action="copy-share-link">
  <i class="lucide lucide-clipboard"></i>
  </button>
  </div>
  </div>
  <div class="flex flex-col gap-2">
- <button onclick="shareToLinkedIn()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-600/90 transition-colors">
+ <button data-action="share-linkedin" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-600/90 transition-colors">
  <i class="lucide lucide-briefcase"></i> Share on LinkedIn
  </button>
- <button onclick="shareToTwitter()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sky-500 text-white text-sm font-semibold hover:bg-sky-600 transition-colors">
+ <button data-action="share-twitter" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sky-500 text-white text-sm font-semibold hover:bg-sky-600 transition-colors">
  <i class="lucide lucide-share-2"></i> Share on Twitter
  </button>
- <button onclick="shareViaEmail()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-semibold hover:bg-neutral-100 transition-colors">
+ <button data-action="share-email" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-semibold hover:bg-neutral-100 transition-colors">
  <i class="lucide lucide-mail"></i> Share via Email
  </button>
  </div>
@@ -776,11 +1629,11 @@
 </div>
 
 <!-- Cover Letter Modal -->
-<div class="ats-overlay" id="clOverlay" style="display:none;" onclick="if(event.target===this)closeCoverLetter()">
- <div class="ats-modal" onclick="event.stopPropagation()">
+<div class="ats-overlay" id="clOverlay" style="display:none;" data-action="close-cl-backdrop">
+ <div class="ats-modal" data-action="stop-propagation">
   <div class="ats-header">
    <h2><i class="lucide lucide-file-text"></i> Cover Letter Generator</h2>
-   <button class="ats-close-btn" onclick="closeCoverLetter()" title="Close"><i class="lucide lucide-x"></i></button>
+   <button class="ats-close-btn" data-action="close-cover-letter" title="Close"><i class="lucide lucide-x"></i></button>
   </div>
   <div class="ats-body" id="clBody">
    <!-- Form -->
@@ -789,23 +1642,23 @@
      <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Company Name <span style="color:#dc2626;">*</span></label>
      <input type="text" id="clCompany" placeholder="e.g. Google, Microsoft, Acme Corp"
       style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;transition:border-color 0.15s;"
-      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'">
+      class="cv-focus-input">
     </div>
     <div style="margin-bottom:1rem;">
      <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Job Title <span style="color:#dc2626;">*</span></label>
      <input type="text" id="clJobTitle" placeholder="e.g. Senior Software Engineer"
       style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;transition:border-color 0.15s;"
-      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'">
+      class="cv-focus-input">
     </div>
     <div style="margin-bottom:1.25rem;">
      <label style="display:block;font-size:0.85rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Job Description <span style="color:#6b7280;font-weight:400;">(optional — better results)</span></label>
      <textarea id="clJobDesc" rows="4" placeholder="Paste the job description here for a more tailored cover letter..."
       style="width:100%;padding:0.65rem 0.8rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.9rem;outline:none;resize:vertical;font-family:inherit;transition:border-color 0.15s;"
-      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#d1d5db'"></textarea>
+      class="cv-focus-input"></textarea>
     </div>
-    <button id="clGenerateBtn" onclick="generateCoverLetter()"
+    <button id="clGenerateBtn" data-action="generate-cl"
      style="width:100%;padding:0.75rem;border:none;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;"
-     onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+     class="cv-hover-opacity">
      <i class="lucide lucide-sparkles"></i> Generate Cover Letter
     </button>
    </div>
@@ -814,10 +1667,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
      <span style="font-size:0.85rem;color:#6b7280;">Your personalized cover letter</span>
      <div style="display:flex;gap:0.4rem;">
-      <button onclick="copyCoverLetter(event)" class="ats-sug-btn" title="Copy to clipboard">
+      <button data-action="copy-cl" class="ats-sug-btn" title="Copy to clipboard">
        <i class="lucide lucide-copy" style="width:14px;height:14px;"></i> Copy
       </button>
-      <button onclick="downloadCoverLetter()" class="ats-sug-btn" title="Download as text file">
+      <button data-action="download-cl" class="ats-sug-btn" title="Download as text file">
        <i class="lucide lucide-download" style="width:14px;height:14px;"></i> Download
       </button>
      </div>
@@ -826,9 +1679,9 @@
      style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;font-size:0.9rem;line-height:1.7;color:#374151;white-space:pre-wrap;font-family:Georgia,serif;max-height:55vh;overflow-y:auto;">
     </div>
     <div id="clMeta" style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;font-size:0.8rem;color:#6b7280;"></div>
-    <button onclick="resetCoverLetterForm()"
+    <button data-action="reset-cl"
      style="margin-top:1rem;width:100%;padding:0.6rem;border:1px solid #d1d5db;border-radius:8px;background:white;color:#374151;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:0.4rem;"
-     onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#d1d5db'">
+     class="cv-hover-border">
      <i class="lucide lucide-refresh-cw" style="width:14px;height:14px;"></i> Generate New
     </button>
    </div>
@@ -841,18 +1694,18 @@
    <div id="clError" style="display:none;text-align:center;padding:2rem 1rem;">
     <span style="font-size:2.5rem;display:block;margin-bottom:0.5rem;"><i class="lucide lucide-alert-circle" style="width:2.5rem;height:2.5rem;color:#dc2626;"></i></span>
     <div id="clErrorText" style="font-size:0.9rem;color:#dc2626;margin-bottom:1rem;"></div>
-    <button onclick="resetCoverLetterForm()" class="ats-retry-btn">Try Again</button>
+    <button data-action="reset-cl" class="ats-retry-btn">Try Again</button>
    </div>
   </div>
  </div>
 </div>
 
 <!-- ATS Scorecard Modal -->
-<div class="ats-overlay" id="atsOverlay" style="display:none;" onclick="if(event.target===this)closeAtsScorecard()">
- <div class="ats-modal" onclick="event.stopPropagation()">
+<div class="ats-overlay" id="atsOverlay" style="display:none;" data-action="close-ats-backdrop">
+ <div class="ats-modal" data-action="stop-propagation">
  <div class="ats-header">
  <h2><i class="lucide lucide-bot"></i> ATS Scorecard</h2>
- <button class="ats-close-btn" onclick="closeAtsScorecard()" title="Close"><i class="lucide lucide-x"></i></button>
+ <button class="ats-close-btn" data-action="close-ats" title="Close"><i class="lucide lucide-x"></i></button>
  </div>
  <div class="ats-body" id="atsBody">
  <div class="ats-loading" id="atsLoading">
@@ -864,6 +1717,13 @@
 </div>
 
 <script>
+
+.cv-focus-input:focus { border-color: #4f46e5 !important; }
+.cv-hover-opacity { transition: opacity 0.15s; }
+.cv-hover-opacity:hover { opacity: 0.9; }
+.cv-hover-border { transition: border-color 0.15s; }
+.cv-hover-border:hover { border-color: #9ca3af !important; }
+
 // CV View — Live Preview with Template Switching
 const cvId = {{ cv.id|default('0') }};
 let currentTemplate = '{{ selected_template|default('modern') }}';
@@ -875,6 +1735,48 @@ const maxZoom = 2.0;
 document.addEventListener('DOMContentLoaded', function() {
   loadPreview(currentTemplate);
   setupPostMessageListener();
+
+  // Event delegation for data-action elements
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+    switch (action) {
+      case 'download-cv': downloadCV(); break;
+      case 'open-preview': openPreviewModal(target.dataset.cvId || cvId); break;
+      case 'share-cv': shareCV(); break;
+      case 'duplicate-cv': duplicateCV(); break;
+      case 'delete-cv': deleteCV(); break;
+      case 'zoom-out': previewZoomOut(); break;
+      case 'zoom-in': previewZoomIn(); break;
+      case 'zoom-reset': previewZoomReset(); break;
+      case 'copy-share-url': copyShareUrl(target); break;
+      case 'copy-share-link': copyShareLink(target); break;
+      case 'share-linkedin': shareToLinkedIn(); break;
+      case 'share-twitter': shareToTwitter(); break;
+      case 'share-email': shareViaEmail(); break;
+      case 'open-ats': openAtsScorecard(); break;
+      case 'check-grammar': checkGrammar(e); break;
+      case 'open-cover-letter': openCoverLetter(); break;
+      case 'close-cover-letter': closeCoverLetter(); break;
+      case 'close-cl-backdrop': if (e.target === target) closeCoverLetter(); break;
+      case 'generate-cl': generateCoverLetter(); break;
+      case 'copy-cl': copyCoverLetter(e); break;
+      case 'download-cl': downloadCoverLetter(); break;
+      case 'reset-cl': resetCoverLetterForm(); break;
+      case 'close-ats': closeAtsScorecard(); break;
+      case 'close-ats-backdrop': if (e.target === target) closeAtsScorecard(); break;
+      case 'stop-propagation': e.stopPropagation(); break;
+      case 'fetch-ats': fetchAtsScore(); break;
+    }
+  });
+
+  // Event delegation for change events (template selector)
+  document.addEventListener('change', (e) => {
+    if (e.target.closest('[data-action="switch-template"]')) {
+      switchTemplate(e.target.value);
+    }
+  });
 });
 
 function getPreviewUrl(template, zoom) {
@@ -1285,7 +2187,7 @@ function renderError(message) {
     <div class="ats-error">
       <span class="ats-error-icon"><i class="lucide lucide-alert-circle" style="width:3rem;height:3rem;color:#dc2626;"></i></span>
       <div class="ats-error-text">${escapeHtml(message)}</div>
-      <button class="ats-retry-btn" onclick="fetchAtsScore()">Try Again</button>
+      <button class="ats-retry-btn" data-action="fetch-ats">Try Again</button>
     </div>
   `;
 }
@@ -1298,7 +2200,7 @@ function renderRateLimit(data) {
       <span class="ats-rate-icon"><i class="lucide lucide-hourglass" style="width:2.5rem;height:2.5rem;color:#f59e0b;"></i></span>
       <div class="ats-rate-text">Rate limit reached. Please wait before analyzing again.</div>
       <div class="ats-rate-sub">You can still edit your CV in the meantime.</div>
-      <button class="ats-retry-btn" style="margin-top:1rem;" onclick="fetchAtsScore()">Check Again</button>
+      <button class="ats-retry-btn" style="margin-top:1rem;" data-action="fetch-ats">Check Again</button>
     </div>
   `;
 }

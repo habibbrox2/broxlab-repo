@@ -760,7 +760,7 @@
  <p class="text-slate-500 small mb-0">Set the frontend assistant, backend content pipeline, prompts, and failover controls.</p>
  </div>
  <div class="flex flex-wrap gap-2">
- <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" onclick="location.reload()">
+ <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" data-action="location.reload">
  <i class="lucide lucide-refresh-cw"></i>Reset
  </button>
  <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700" id="aiSettingsSaveBtn">
@@ -988,7 +988,7 @@
  <button type="button" class="inline-flex items-center gap-3 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 quick-action" data-brox-toggle="modal" data-brox-target="#addProviderModal">
  <i class="lucide lucide-plus-circle mr-2"></i>Add provider
  </button>
- <button type="button" class="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 quick-action" onclick="document.getElementById('resetModelDefaults')?.click();">
+ <button type="button" class="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 quick-action" data-action="trigger-reset-model">
  <i class="lucide lucide-rotate-ccw mr-2"></i>Reset model defaults
  </button>
  <a href="#aiSettingsForm" class="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 quick-action">
@@ -1219,7 +1219,38 @@
  data-providers='{{ providers|json_encode|e("html_attr") }}'
  data-settings='{{ {"frontend_model": settings.frontend_model|default(""),"backend_model": settings.backend_model|default(""),"default_model": settings.default_model|default("")
  }|json_encode|e("html_attr") }}'></div>
-<script type="module" src="{{ asset('/assets/js/dist/ai-system-admin.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/ai-system-admin.js') }}">
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}
 
 

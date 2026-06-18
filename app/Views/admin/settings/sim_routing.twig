@@ -47,7 +47,7 @@
     data-brox-toggle="modal"
     data-brox-target="#routeModal"
     id="addRouteBtn"
-    onclick="resetRouteForm()">
+    data-action="reset-route-form">
     <i class="lucide lucide-plus w-3.5 h-3.5"></i> Add Rule
    </button>
   </div>
@@ -75,7 +75,7 @@
          <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No routes configured</h3>
          <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Add your first routing rule to get started.</p>
          <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"
-          data-brox-toggle="modal" data-brox-target="#routeModal" onclick="resetRouteForm()">
+          data-brox-toggle="modal" data-brox-target="#routeModal" data-action="reset-route-form">
           <i class="lucide lucide-plus w-4 h-4"></i> Add Rule
          </button>
         </div>
@@ -108,11 +108,11 @@
        <td class="px-4 py-3 text-right">
         <div class="flex items-center justify-end gap-1">
          <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150"
-          onclick="editRoute({{ route|json_encode }})" title="Edit">
+          data-action="edit-route" data-route="{{ route|json_encode }}" title="Edit">
           <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
          </button>
          <form action="/admin/sim-routing/delete" method="POST" class="inline"
-          onsubmit="return window.confirmAction(event, this, 'Delete this route?')">
+          data-action="confirm-delete-route">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="id" value="{{ route.id }}">
           <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
@@ -158,7 +158,7 @@
      </div>
      <div>
       <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Match Type</label>
-      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="match_type" id="route_match_type" onchange="toggleMatchValue(this.value)">
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="match_type" id="route_match_type" data-action="toggle-match-value">
        <option value="any">Any SMS</option>
        <option value="sender">Sender Number</option>
        <option value="keyword">Keyword in Message</option>
@@ -172,7 +172,7 @@
      </div>
      <div>
       <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Action</label>
-      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="action" id="route_action" onchange="toggleActionFields(this.value)">
+      <select class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" name="action" id="route_action" data-action="toggle-action-fields">
        <option value="reply_sms">Auto-Reply SMS</option>
        <option value="both">Both</option>
       </select>
@@ -262,5 +262,30 @@ function toggleActionFields(action) {
  var fields = document.getElementById('reply_fields');
  fields.style.display = (action === 'reply_sms' || action === 'both') ? 'block' : 'none';
 }
+
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  if (a === "reset-route-form") resetRouteForm();
+  if (a === "edit-route") editRoute(JSON.parse(t.getAttribute("data-route")));
+});
+document.addEventListener("change", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  if (a === "toggle-match-value") toggleMatchValue(t.value);
+  if (a === "toggle-action-fields") toggleActionFields(t.value);
+});
+document.addEventListener("submit", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  if (t.getAttribute("data-action") === "confirm-delete-route") {
+    if (!confirm("Delete this route?")) e.preventDefault();
+  }
+});
+</script>
 </script>
 {% endblock %}

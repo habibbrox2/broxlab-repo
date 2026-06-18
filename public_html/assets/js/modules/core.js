@@ -1,4 +1,4 @@
-export { escapeHtml } from '../../shared/utils.js';
+export { escapeHtml } from '../shared/utils.js';
 
 export const byId = (id) => document.getElementById(id);
 

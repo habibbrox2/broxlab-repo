@@ -16,10 +16,10 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" onclick="manualSync()">
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="manual-sync">
                     <i class="lucide lucide-repeat"></i> Manual Sync
                 </button>
-                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" onclick="refreshDeviceList()">
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="refresh-device-list">
                     <i class="lucide lucide-refresh-cw"></i> Refresh
                 </button>
             </div>
@@ -94,10 +94,10 @@
                             <h2 class="text-sm font-semibold text-slate-900">Sync Logs</h2>
                         </div>
                         <div class="flex flex-wrap gap-1.5">
-                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" onclick="filterSyncLog('all')">All</button>
-                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" onclick="filterSyncLog('sync')">Sync</button>
-                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" onclick="filterSyncLog('read')">Read</button>
-                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" onclick="clearSyncLog()">Clear</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="all">All</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="sync">Sync</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="read">Read</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" data-action="clear-sync-log">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -121,4 +121,19 @@
         </div>
     </section>
 </div>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var f = t.getAttribute("data-filter");
+  switch (a) {
+  case "manual-sync": manualSync(); break;
+  case "refresh-device-list": refreshDeviceList(); break;
+  case "filter-sync-log": filterSyncLog(f); break;
+  case "clear-sync-log": clearSyncLog(); break;
+  }
+});
+</script>
 {% endblock %}

@@ -132,7 +132,7 @@
       <input type="text" class="cv-editor-title-edit" id="cv-editor-title-input" value="{{ cv.title|default('My CV') }}" placeholder="CV Title">
     </div>
     <div class="cv-editor-topbar-right">
-      <button class="cv-editor-btn cv-editor-btn-success" onclick="editor.save()" id="cv-editor-save-btn">
+      <button class="cv-editor-btn cv-editor-btn-success" data-action="editor-save" id="cv-editor-save-btn">
         <i class="lucide lucide-save" style="width:0.85em;height:0.85em;"></i> <span>Save</span>
       </button>
     </div>
@@ -144,7 +144,7 @@
         <div class="cv-editor-template-grid">
           {% for t in templates %}
           {% set c = template_colors[t]|default({'from': '#6366f1', 'to': '#8b5cf6', 'icon': 'file-text'}) %}
-          <div class="cv-editor-template-card {{ t == selected_template ? 'active' : '' }}" data-template="{{ t }}" onclick="editor.selectTemplate('{{ t }}')">
+          <div class="cv-editor-template-card {{ t == selected_template ? 'active' : '' }}" data-template="{{ t }}" data-action="editor-select-template" data-template="{{ t }}">
             <div class="cv-editor-template-icon" style="background:linear-gradient(135deg,{{ c.from }},{{ c.to }});">
               <i class="lucide lucide-{{ c.icon }}" style="width:1em;height:1em;"></i>
             </div>
@@ -159,7 +159,7 @@
           {% for key, info in section_steps %}
           {% set bd = builder_data[key]|default(null) %}
           {% set has_data = bd and ((bd is iterable and (bd|length > 0)) or (bd is not iterable and bd is not empty)) %}
-          <div class="cv-editor-section-item {{ key == 'personal' ? 'active' : '' }}" data-section="{{ key }}" onclick="editor.selectSection('{{ key }}')">
+          <div class="cv-editor-section-item {{ key == 'personal' ? 'active' : '' }}" data-section="{{ key }}" data-action="editor-select-section" data-section="{{ key }}">
             <div class="cv-editor-section-icon" style="background:{{ info.color }};">
               <i class="lucide lucide-{{ info.icon }}" style="width:0.8em;height:0.8em;"></i>
             </div>
@@ -172,8 +172,8 @@
     </div>
     <div class="cv-editor-pane" id="cv-editor-pane">
       <div class="cv-editor-tabs">
-        <div class="cv-editor-tab active" data-tab="content" onclick="editor.switchTab('content')"><i class="lucide lucide-pencil" style="width:0.85em;height:0.85em;"></i> <span>Content</span></div>
-        <div class="cv-editor-tab" data-tab="preview" onclick="editor.switchTab('preview')"><i class="lucide lucide-eye" style="width:0.85em;height:0.85em;"></i> <span>Preview</span></div>
+        <div class="cv-editor-tab active" data-tab="content" data-action="editor-switch-tab" data-tab="content"><i class="lucide lucide-pencil" style="width:0.85em;height:0.85em;"></i> <span>Content</span></div>
+        <div class="cv-editor-tab" data-tab="preview" data-action="editor-switch-tab" data-tab="preview"><i class="lucide lucide-eye" style="width:0.85em;height:0.85em;"></i> <span>Preview</span></div>
       </div>
       <div class="cv-editor-content-panel" id="cv-editor-content-panel">
         <div class="cv-editor-loading" id="cv-editor-loading">
@@ -209,7 +209,7 @@ body.querySelectorAll('.cv-editor-skill-remove').forEach(function(el){el.addEven
 renderPersonal:function(d){function v(k,def){return d[k]!==undefined&&d[k]!==null&&d[k]!==''?esc(String(d[k])):(def||'');}
 return '<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Full Name</label><input class="cv-editor-form-input" data-p="full_name" value="'+v('full_name')+'" placeholder="John Doe"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Job Title</label><input class="cv-editor-form-input" data-p="job_title" value="'+v('job_title')+'" placeholder="Software Engineer"></div></div>'+
 '<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Email</label><input class="cv-editor-form-input" type="email" data-p="email" value="'+v('email')+'" placeholder="john@example.com"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Phone</label><input class="cv-editor-form-input" type="tel" data-p="phone" value="'+v('phone')+'" placeholder="+1 555-0000"></div></div>'+
-'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">DOB</label><input class="cv-editor-form-input" type="date" data-p="date_of_birth" value="'+v('date_of_birth')+'"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Nationality</label><input class="cv-editor-form-input" data-p="nationality" value="'+v('nationality')+'" placeholder="American"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">DOB</label><input class="cv-editor-form-input datepicker" type="date" data-p="date_of_birth" data-disable-future="true" value="'+v('date_of_birth')+'" class="datepicker"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Nationality</label><input class="cv-editor-form-input" data-p="nationality" value="'+v('nationality')+'" placeholder="American"></div></div>'+
 '<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Gender</label><select class="cv-editor-form-select" data-p="gender"><option value="">Select</option><option value="male"'+(d.gender==='male'?' selected':'')+'>Male</option><option value="female"'+(d.gender==='female'?' selected':'')+'>Female</option><option value="other"'+(d.gender==='other'?' selected':'')+'>Other</option></select></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Address</label><input class="cv-editor-form-input" data-p="address" value="'+v('address')+'" placeholder="City, Country"></div></div>';},
 renderSkills:function(d){var t=Array.isArray(d.technical)?d.technical:[],s=Array.isArray(d.soft)?d.soft:[];var tg=function(a,c){return a.map(function(x,i){return'<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:20px;font-size:0.8rem;font-weight:500;">'+esc(x)+'<button class="cv-editor-skill-remove" data-category="'+c+'" data-idx="'+i+'" style="cursor:pointer;border:none;background:none;color:#9ca3af;padding:0;display:inline-flex;font-size:0.7rem;width:16px;height:16px;align-items:center;justify-content:center;border-radius:50%;">x</button></span>';}).join('');};
 return '<div class="cv-editor-form-group"><label class="cv-editor-form-label">Technical Skills</label><div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;min-height:2.5rem;margin-bottom:0.5rem;" id="cv-edit-skills-tech">'+tg(t,'technical')+'</div><input class="cv-editor-form-input cv-editor-skill-input" data-category="technical" placeholder="Type and press Enter..." style="border-style:dashed;border-radius:20px;"></div>'+
@@ -245,5 +245,15 @@ function esc(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').repl
 window.editor=editor;window.__steps={{ section_steps|json_encode|raw }};
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){editor.init();});}else{editor.init();}
 })();
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
 </script>
 {% endblock %}

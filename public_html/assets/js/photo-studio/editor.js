@@ -1791,6 +1791,44 @@ document.addEventListener('DOMContentLoaded', () => {
   window.setBackgroundColor = (color) => window.studioInstance.setBackgroundColor(color);
   window.toggleGuides = () => window.studioInstance.toggleGuides();
   window.applyCrop = () => void window.studioInstance.applyRectCrop();
+
+  // Event delegation — replaces all inline onclick handlers from the Twig template
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+
+    switch (action) {
+    case 'undo': window.undo(); break;
+    case 'redo': window.redo(); break;
+    case 'trigger-upload':
+      document.getElementById('imageUploadInput')?.click();
+      break;
+    case 'prepare-print-ready': window.preparePrintReady(); break;
+    case 'download-image': window.downloadImage(); break;
+    case 'open-print-sheet': window.openPrintSheetModal(); break;
+    case 'toggle-guides': window.toggleGuides(); break;
+    case 'fit-to-guide': window.fitToGuide(); break;
+    case 'center-subject': window.centerSubject(); break;
+    case 'delete-current-image': window.deleteCurrentImage(); break;
+    case 'bg-remove': window.bgRemove(); break;
+    case 'set-tool': window.setTool(target.dataset.tool); break;
+    case 'zoom-out': window.zoomOut(); break;
+    case 'zoom-in': window.zoomIn(); break;
+    case 'reset-zoom': window.resetZoom(); break;
+    case 'rotate-image': window.rotateImage(); break;
+    case 'flip-image': window.flipImage(target.dataset.direction); break;
+    case 'apply-crop': window.applyCrop(); break;
+    case 'apply-all-filters': window.applyAllFilters(); break;
+    case 'reset-filters': window.resetFilters(); break;
+    case 'clear-bg-layer': window.clearBackgroundLayer(); break;
+    case 'set-bg-color-from-picker':
+      window.setBackgroundColor(document.getElementById('backgroundColorPicker').value);
+      break;
+    case 'close-print-sheet': window.closePrintSheetModal(); break;
+    case 'generate-print-sheet': window.generatePrintSheet(); break;
+    }
+  });
 });
 
 // ES module export (window compat already set up above)

@@ -20,7 +20,7 @@
                 <a href="/admin/contact" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
                     <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List
                 </a>
-                <button type="button" onclick="if(confirm('Delete this submission?')) window.location='/admin/contact/delete/{{ contact.id }}'" class="inline-flex items-center gap-1.5 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500/30 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                <button type="button" data-action="confirm-delete-contact" class="inline-flex items-center gap-1.5 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500/30 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
                     <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
                 </button>
             </div>
@@ -64,4 +64,13 @@
     </div>
 
 </div>
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
 {% endblock %}

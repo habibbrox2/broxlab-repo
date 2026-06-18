@@ -11,7 +11,7 @@
  rel="noopener noreferrer"
  class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-sky-50 hover:border-sky-300 hover:text-sky-600 shadow-sm"
  title="Share on Twitter/X"
- onclick="window.open(this.href, 'twitter-share', 'width=600,height=400'); return false;">
+ data-action="open-share" data-share="twitter" target="_blank">
  <i class="lucide lucide-share-2 mr-2"></i>Twitter/X
  </a>
 
@@ -21,7 +21,7 @@
  rel="noopener noreferrer"
  class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 shadow-sm"
  title="Share on LinkedIn"
- onclick="window.open(this.href, 'linkedin-share', 'width=600,height=400'); return false;">
+ data-action="open-share" data-share="linkedin" target="_blank">
  <i class="lucide lucide-briefcase mr-2"></i>LinkedIn
  </a>
 
@@ -31,7 +31,7 @@
  rel="noopener noreferrer"
  class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 shadow-sm"
  title="Share on WhatsApp"
- onclick="window.open(this.href, 'whatsapp-share', 'width=600,height=400'); return false;">
+ data-action="open-share" data-share="whatsapp" target="_blank">
  <i class="lucide lucide-message-circle mr-2"></i>WhatsApp
  </a>
 
@@ -48,7 +48,7 @@
  class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:border-slate-300 shadow-sm"
  id="copyLinkBtn"
  title="Copy link to clipboard"
- onclick="copyToClipboard('{{ url|default(request.url) }}')">
+ data-action="copy-to-clipboard" data-url="{{ url|default(request.url) }}">
  <i class="lucide lucide-link mr-2"></i>Copy Link
  </button>
  </div>
@@ -100,6 +100,23 @@
  btn.classList.add('inline-flex', 'items-center', 'justify-center', 'gap-2', 'rounded-lg', 'px-4', 'py-2', 'text-sm', 'font-semibold', 'text-slate-600 hover:bg-slate-100');
  }, 2000);
  }
+
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  if (a === "open-share") {
+    var url = t.href;
+    if (url) window.open(url, t.getAttribute("data-share") + "-share", "width=600,height=400");
+    e.preventDefault();
+  }
+  if (a === "copy-to-clipboard") {
+    copyToClipboard(t.getAttribute("data-url"));
+  }
+});
+</script>
 </script>
 
 

@@ -576,6 +576,13 @@
 }
 .mkt-featured-card:hover .mkt-featured-use { gap: 0.5rem; }
 
+/* ─── INPUT FOCUS CLASS (replaces inline onfocus/onblur) ─── */
+.mkt-input-focus:focus {
+  border-color: var(--mkt-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  outline: none;
+}
+
 /* ─── RESPONSIVE ─── */
 @media(max-width: 768px) {
   .mkt-hero { padding: 3rem 1rem 2.5rem; }
@@ -670,7 +677,7 @@
         {% if tmpl %}
         <div class="mkt-featured-card"
              data-slug="{{ slug }}"
-             onclick="mktOpenPreview('{{ slug }}')">
+             data-action="mkt-open-preview" data-slug="{{ slug }}">
           <div class="mkt-featured-card-preview" style="background:{{ tmpl.gradient }};">
             <i class="lucide lucide-{{ tmpl.icon }}" style="width:4rem;height:4rem;"></i>
             <span class="mkt-featured-top-pick"><i class="lucide lucide-crown" style="width:0.8em;height:0.8em;"></i> Top Pick</span>
@@ -697,10 +704,10 @@
     <div class="mkt-search">
       <i class="lucide lucide-search mkt-search-icon" style="width:1em;height:1em;"></i>
       <input type="text" id="mkt-search-input" placeholder="Search templates by name or keyword..." autocomplete="off">
-      <button class="mkt-search-clear" onclick="mktClearSearch()">&times;</button>
+      <button class="mkt-search-clear" data-action="mkt-clear-search">&times;</button>
     </div>
     <div class="mkt-sort">
-      <select id="mkt-sort-select" onchange="mktSortTemplates()">
+      <select id="mkt-sort-select" data-action="mkt-sort-templates">
         <option value="name">Sort by Name</option>
         <option value="popularity" selected>Sort by Popularity</option>
         <option value="category">Sort by Category</option>
@@ -710,11 +717,11 @@
 
   <!-- ─── CATEGORY FILTERS ─── -->
   <div class="mkt-filters" id="mkt-filters">
-    <button class="mkt-filter-btn active" data-filter="all" onclick="mktSetFilter('all', this)">
+    <button class="mkt-filter-btn active" data-filter="all" data-action="mkt-set-filter" data-filter="all">
       All <span class="mkt-filter-count">({{ templates|length }})</span>
     </button>
     {% for cat in categories %}
-    <button class="mkt-filter-btn" data-filter="{{ cat }}" onclick="mktSetFilter('{{ cat }}', this)">
+    <button class="mkt-filter-btn" data-filter="{{ cat }}" data-action="mkt-set-filter" data-filter="{{ cat }}">
       {{ cat }} <span class="mkt-filter-count">({{ category_counts[cat]|default(0) }})</span>
     </button>
     {% endfor %}
@@ -724,10 +731,10 @@
   <div class="mkt-toolbar">
     <span class="mkt-result-count" id="mkt-result-count">Showing {{ templates|length }} template(s)</span>
     <div class="mkt-actions">
-      <button class="mkt-action-btn" id="mkt-fav-filter-btn" onclick="mktToggleFavFilter()">
+      <button class="mkt-action-btn" id="mkt-fav-filter-btn" data-action="mkt-toggle-fav-filter">
         <i class="lucide lucide-heart" style="width:1em;height:1em;"></i> Favorites
       </button>
-      <button class="mkt-action-btn" id="mkt-compare-btn" onclick="mktToggleCompareMode()">
+      <button class="mkt-action-btn" id="mkt-compare-btn" data-action="mkt-toggle-compare-mode">
         <i class="lucide lucide-bar-chart-2" style="width:1em;height:1em;"></i> Compare
       </button>
     </div>
@@ -742,14 +749,14 @@
          data-popularity="{{ tmpl.popularity|default(0) }}"
          data-slug="{{ slug }}">
       <!-- Favorite button -->
-      <button class="mkt-card-favorite" data-slug="{{ slug }}" onclick="mktToggleFav('{{ slug }}', this)" title="Add to favorites">
+      <button class="mkt-card-favorite" data-slug="{{ slug }}" data-action="mkt-toggle-fav" data-slug="{{ slug }}" title="Add to favorites">
         <i class="lucide lucide-heart" style="width:1em;height:1em;"></i>
       </button>
 
       <!-- Compare checkbox -->
       <div class="mkt-card-compare" id="compare-{{ slug }}" style="display:none;">
         <label>
-          <input type="checkbox" onchange="if(this.checked)mktAddToCompare('{{ slug }}');else mktRemoveFromCompare('{{ slug }}')">
+          <input type="checkbox" data-action="mkt-compare-toggle" data-slug="{{ slug }}">
           Compare
         </label>
       </div>
@@ -793,11 +800,11 @@
           {% endif %}
         </div>
         <div class="mkt-card-actions">
-          <button class="mkt-card-btn mkt-btn-preview" onclick="mktOpenPreview('{{ slug }}')">
+          <button class="mkt-card-btn mkt-btn-preview" data-action="mkt-open-preview" data-slug="{{ slug }}">
             <i class="lucide lucide-eye" style="width:1em;height:1em;"></i> Preview
           </button>
           {% if tmpl.is_premium is defined and tmpl.is_premium %}
-          <button class="mkt-card-btn mkt-btn-select" onclick="mktOpenPaymentModal('{{ slug }}')" style="background:linear-gradient(135deg,#D4A017,#B8860B);cursor:pointer;">
+          <button class="mkt-card-btn mkt-btn-select" data-action="mkt-open-payment" data-slug="{{ slug }}" style="background:linear-gradient(135deg,#D4A017,#B8860B);cursor:pointer;">
             <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Buy
           </button>
           {% else %}
@@ -816,14 +823,14 @@
     <i class="lucide lucide-search-x" style="width:3rem;height:3rem;"></i>
     <h3>No templates found</h3>
     <p id="mkt-empty-msg">Try adjusting your search or filter to find what you're looking for.</p>
-    <button class="mkt-empty-btn" onclick="mktResetAll()">Reset Filters</button>
+    <button class="mkt-empty-btn" data-action="mkt-reset-all">Reset Filters</button>
   </div>
 </div>
 
 <!-- ─── PAYMENT MODAL ─── -->
 <div class="mkt-modal-overlay" id="mkt-payment-modal">
   <div class="mkt-modal" style="max-width:500px;">
-    <button class="mkt-modal-close" onclick="mktClosePaymentModal()">
+    <button class="mkt-modal-close" data-action="mkt-close-payment">
       <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
     </button>
     <div class="mkt-modal-preview" style="height:auto;padding:2rem 2rem 1rem;background:linear-gradient(135deg,#1A1A2E,#16213E);">
@@ -844,13 +851,13 @@
       <div id="mkt-pay-step-method">
         <h4 style="font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem;">Choose payment method</h4>
         <div class="flex flex-col gap-2.5">
-          <button class="mkt-pay-method-btn" data-method="bkash" onclick="mktSelectMethod('bkash')" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+          <button class="mkt-pay-method-btn" data-method="bkash" data-action="mkt-select-method" data-method="bkash" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
             <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bkash.svg" alt="bKash" style="width:36px;height:36px;" onerror="this.style.display='none'">
             <span style="font-weight:600;flex:1;">bKash</span>
             <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
             <i class="lucide lucide-chevron-right" style="width:1em;height:1em;color:var(--mkt-gray-400);"></i>
           </button>
-          <button class="mkt-pay-method-btn" data-method="nagad" onclick="mktSelectMethod('nagad')" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+          <button class="mkt-pay-method-btn" data-method="nagad" data-action="mkt-select-method" data-method="nagad" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
             <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/nagad.svg" alt="Nagad" style="width:36px;height:36px;" onerror="this.style.display='none'">
             <span style="font-weight:600;flex:1;">Nagad</span>
             <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
@@ -889,7 +896,7 @@
           <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Your phone number</label>
           <input type="text" id="mkt-pay-phone" placeholder="01XXXXXXXXX"
                  style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
-                 onfocus="this.style.borderColor='var(--mkt-primary)'" onblur="this.style.borderColor='var(--mkt-gray-200)'">
+                 class="mkt-input-focus">
         </div>
 
         <!-- Manual flow: Transaction ID (hidden for bKash checkout) -->
@@ -898,15 +905,15 @@
             <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Transaction ID (trxID)</label>
             <input type="text" id="mkt-pay-trxid" placeholder="e.g. TRX123ABC"
                    style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
-                   onfocus="this.style.borderColor='var(--mkt-primary)'" onblur="this.style.borderColor='var(--mkt-gray-200)'">
+                   class="mkt-input-focus">
           </div>
         </div>
 
         <div style="display:flex;gap:0.75rem;">
-          <button onclick="mktBackToMethods()" class="mkt-modal-btn mkt-modal-btn-secondary" style="flex:0 0 auto;padding:0.7rem 1.25rem;">
+          <button data-action="mkt-back-to-methods" class="mkt-modal-btn mkt-modal-btn-secondary" style="flex:0 0 auto;padding:0.7rem 1.25rem;">
             <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
           </button>
-          <button onclick="mktSubmitPayment()" id="mkt-pay-submit-btn" class="mkt-modal-btn mkt-modal-btn-primary" style="background:linear-gradient(135deg,#D4A017,#B8860B);flex:1;">
+          <button data-action="mkt-submit-payment" id="mkt-pay-submit-btn" class="mkt-modal-btn mkt-modal-btn-primary" style="background:linear-gradient(135deg,#D4A017,#B8860B);flex:1;">
             <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Submit Payment
           </button>
         </div>
@@ -921,7 +928,7 @@
           activate the <strong id="mkt-pay-success-template">Executive Elite</strong> template shortly.
         </p>
         <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.75rem;">This usually takes less than 24 hours.</p>
-        <button onclick="mktClosePaymentModal()" class="mkt-modal-btn mkt-modal-btn-primary" style="margin-top:1.25rem;max-width:200px;margin-left:auto;margin-right:auto;">
+        <button data-action="mkt-close-payment" class="mkt-modal-btn mkt-modal-btn-primary" style="margin-top:1.25rem;max-width:200px;margin-left:auto;margin-right:auto;">
           Done
         </button>
       </div>
@@ -938,13 +945,13 @@
 <!-- ─── PREVIEW MODAL (iframe-based rendered preview) ─── -->
 <div class="mkt-modal-overlay" id="mkt-modal">
   <div class="mkt-modal">
-    <button class="mkt-modal-nav mkt-modal-prev" id="mkt-modal-prev" onclick="mktNavPreview(-1)" title="Previous template">
+    <button class="mkt-modal-nav mkt-modal-prev" id="mkt-modal-prev" data-action="mkt-nav-preview" data-dir="-1" title="Previous template">
       <i class="lucide lucide-chevron-left" style="width:1.25rem;height:1.25rem;"></i>
     </button>
-    <button class="mkt-modal-nav mkt-modal-next" id="mkt-modal-next" onclick="mktNavPreview(1)" title="Next template">
+    <button class="mkt-modal-nav mkt-modal-next" id="mkt-modal-next" data-action="mkt-nav-preview" data-dir="1" title="Next template">
       <i class="lucide lucide-chevron-right" style="width:1.25rem;height:1.25rem;"></i>
     </button>
-    <button class="mkt-modal-close" onclick="mktClosePreview()">
+    <button class="mkt-modal-close" data-action="mkt-close-preview">
       <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
     </button>
 
@@ -952,7 +959,7 @@
     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
       <div class="flex items-center gap-3">
         <i class="lucide lucide-eye w-4 h-4 text-indigo-600"></i>
-        <select id="mkt-modal-template-select" onchange="mktSwitchTemplate(this.value)"
+        <select id="mkt-modal-template-select" data-action="mkt-switch-template"
                 class="text-sm border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none min-w-[140px] cursor-pointer">
           {% for slug, tmpl in templates %}
           <option value="{{ slug }}">{{ tmpl.name }}</option>
@@ -966,19 +973,19 @@
       <div class="flex items-center gap-2">
         <!-- Zoom controls -->
         <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <button onclick="mktZoomOut()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom out (Ctrl+-)">
+          <button data-action="mkt-zoom-out" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom out (Ctrl+-)">
             <i class="lucide lucide-zoom-out w-3.5 h-3.5"></i>
           </button>
           <span class="text-xs font-medium text-gray-600 min-w-[44px] text-center select-none border-x border-gray-100 px-1.5 py-1" id="mkt-zoom-level">100%</span>
-          <button onclick="mktZoomIn()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom in (Ctrl++)">
+          <button data-action="mkt-zoom-in" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom in (Ctrl++)">
             <i class="lucide lucide-zoom-in w-3.5 h-3.5"></i>
           </button>
-          <button onclick="mktZoomReset()" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors border-l border-gray-100" title="Reset zoom (Ctrl+0)">
+          <button data-action="mkt-zoom-reset" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors border-l border-gray-100" title="Reset zoom (Ctrl+0)">
             <i class="lucide lucide-rotate-ccw w-3.5 h-3.5"></i>
           </button>
         </div>
         <span class="text-xs text-gray-400" id="mkt-modal-counter"></span>
-        <button onclick="mktClosePreview()" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Close (Esc)">
+        <button data-action="mkt-close-preview" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Close (Esc)">
           <i class="lucide lucide-x w-4 h-4"></i>
         </button>
       </div>
@@ -1028,8 +1035,8 @@
     <span style="color:var(--mkt-gray-500);font-size:0.9rem;">Select templates to compare</span>
   </div>
   <div class="mkt-compare-actions">
-    <button class="mkt-compare-btn mkt-compare-btn-secondary" onclick="mktClearCompare()">Clear</button>
-    <button class="mkt-compare-btn mkt-compare-btn-primary" onclick="mktCompareNow()" disabled id="mkt-compare-now">Compare</button>
+    <button class="mkt-compare-btn mkt-compare-btn-secondary" data-action="mkt-clear-compare">Clear</button>
+    <button class="mkt-compare-btn mkt-compare-btn-primary" data-action="mkt-compare-now" disabled id="mkt-compare-now">Compare</button>
   </div>
 </div>
 
@@ -1282,10 +1289,7 @@ function mktRemoveFromCompare(slug) {
   window.__mktCompareList.splice(idx, 1);
   mktRenderCompareBar();
 }
-function mktClearCompare() {
-  window.__mktCompareList = [];
-  mktRenderCompareBar();
-}
+
 function mktRenderCompareBar() {
   var container = document.getElementById('mkt-compare-items');
   var btn = document.getElementById('mkt-compare-now');
@@ -1299,7 +1303,7 @@ function mktRenderCompareBar() {
   window.__mktCompareList.forEach(function(slug) {
     var tmpl = window.__mktTemplates[slug];
     if (!tmpl) return;
-    html += '<div class="mkt-compare-item"><span>' + escHtml(tmpl.name) + '</span><button onclick="mktRemoveFromCompare(\'' + slug + '\')">&times;</button></div>';
+    html += '<div class="mkt-compare-item"><span>' + escHtml(tmpl.name) + '</span><button data-action="mkt-remove-compare" data-slug="' + slug + '">&times;</button></div>';
   });
   container.innerHTML = html;
 }
@@ -1371,7 +1375,7 @@ function mktCompareNow() {
   html += '</tr>';
 
   html += '</tbody></table>';
-  html += '<div style="margin-top:1.5rem;text-align:center;"><button class="mkt-modal-btn mkt-modal-btn-secondary" onclick="document.body.removeChild(this.closest(\'div\').parentNode)">Close Comparison</button></div>';
+  html += '<div style="margin-top:1.5rem;text-align:center;"><button class="mkt-modal-btn mkt-modal-btn-secondary" data-action="mkt-close-comparison">Close Comparison</button></div>';
   html += '</div>';
 
   var overlay = document.createElement('div');
@@ -1406,6 +1410,101 @@ document.addEventListener('keydown', function(e) {
       e.preventDefault();
       mktZoomReset();
     }
+  }
+});
+
+// ─── EVENT DELEGATION (replaces all inline onclick/onchange handlers) ───
+document.addEventListener('click', function(e) {
+  var target = e.target.closest('[data-action]');
+  if (!target) return;
+  var action = target.getAttribute('data-action');
+
+  switch (action) {
+  case 'mkt-open-preview':
+    mktOpenPreview(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-clear-search':
+    mktClearSearch();
+    break;
+  case 'mkt-set-filter':
+    mktSetFilter(target.getAttribute('data-filter'), target);
+    break;
+  case 'mkt-toggle-fav-filter':
+    mktToggleFavFilter();
+    break;
+  case 'mkt-toggle-compare-mode':
+    mktToggleCompareMode();
+    break;
+  case 'mkt-toggle-fav':
+    mktToggleFav(target.getAttribute('data-slug'), target);
+    break;
+  case 'mkt-open-payment':
+    mktOpenPaymentModal(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-reset-all':
+    mktResetAll();
+    break;
+  case 'mkt-close-payment':
+    mktClosePaymentModal();
+    break;
+  case 'mkt-select-method':
+    mktSelectMethod(target.getAttribute('data-method'));
+    break;
+  case 'mkt-back-to-methods':
+    mktBackToMethods();
+    break;
+  case 'mkt-submit-payment':
+    mktSubmitPayment();
+    break;
+  case 'mkt-nav-preview':
+    mktNavPreview(parseInt(target.getAttribute('data-dir'), 10));
+    break;
+  case 'mkt-close-preview':
+    mktClosePreview();
+    break;
+  case 'mkt-zoom-out':
+    mktZoomOut();
+    break;
+  case 'mkt-zoom-in':
+    mktZoomIn();
+    break;
+  case 'mkt-zoom-reset':
+    mktZoomReset();
+    break;
+  case 'mkt-clear-compare':
+    mktClearCompare();
+    break;
+  case 'mkt-compare-now':
+    mktCompareNow();
+    break;
+  case 'mkt-remove-compare':
+    mktRemoveFromCompare(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-close-comparison':
+    document.body.removeChild(target.closest('div').parentNode);
+    break;
+  }
+});
+
+document.addEventListener('change', function(e) {
+  var target = e.target.closest('[data-action]');
+  if (!target) return;
+  var action = target.getAttribute('data-action');
+
+  switch (action) {
+  case 'mkt-sort-templates':
+    mktSortTemplates();
+    break;
+  case 'mkt-switch-template':
+    mktSwitchTemplate(target.value);
+    break;
+  case 'mkt-compare-toggle':
+    if (target.checked) {
+      mktAddToCompare(target.getAttribute('data-slug'));
+    } else {
+      mktRemoveFromCompare(target.getAttribute('data-slug'));
+    }
+    break;
   }
 });
 

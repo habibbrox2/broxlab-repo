@@ -256,7 +256,7 @@
  <small class="text-neutral-500">Add an extra layer of security to your account</small>
  </div>
  <button class="inline-flex items-center px-3 py-1.5 rounded-lg text-indigo-600 text-sm font-medium hover:bg-indigo-600/10 transition-colors"
- onclick="window.location.href='/user/security/2fa'">
+ data-action="navigate-2fa">
  <i class="lucide lucide-shield mr-1"></i> Setup 2FA
  </button>
  </div>
@@ -1025,7 +1025,7 @@ function loadUserDevices() {
  <small class="text-neutral-500 block"><strong>Tokens:</strong> ${device.token_count || 1}</small>
  </div>
  ${!isCurrent ? `
- <button class="inline-flex items-center px-3 py-1.5 rounded-lg text-red-600 text-sm font-medium hover:bg-red-50 transition-colors" onclick="revokeDevice('${device.device_id}')">
+ <button class="inline-flex items-center px-3 py-1.5 rounded-lg text-red-600 text-sm font-medium hover:bg-red-50 transition-colors" data-action="revokeDevice"${device.device_id}')">
  <i class="lucide lucide-trash-2 mr-1"></i> Revoke
  </button>
  ` : ''}
@@ -1191,7 +1191,38 @@ document.addEventListener('brox:shown', function(e) {
  loadUserDevices();
  }
 });
- </script>
+ 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}
 
 

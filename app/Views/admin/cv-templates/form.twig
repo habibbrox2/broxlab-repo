@@ -205,7 +205,7 @@
                     {% if mode == 'create' %}Create Template{% else %}Save Changes{% endif %}
                 </button>
                 {% if mode == 'edit' %}
-                <button type="button" onclick="window.open('/admin/cv-templates/preview/{{ template_slug }}', '_blank')" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out">
+                <button type="button" data-action="open-template-preview" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out">
                     <i class="lucide lucide-eye w-4 h-4"></i> Preview
                 </button>
                 {% endif %}
@@ -360,5 +360,25 @@
         updatePreview();
     }
 })();
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
 </script>
 {% endblock %}

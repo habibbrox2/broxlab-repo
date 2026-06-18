@@ -21,7 +21,7 @@
  </div>
  </div>
  </div>
- <button class="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:shadow-md active:scale-[0.97]" id="refreshMainBtn" onclick="refreshAllData()">
+ <button class="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:shadow-md active:scale-[0.97]" id="refreshMainBtn" data-action="refreshAllData">
  <i class="lucide lucide-refresh-cw" w-4 h-4></i>
  Refresh Now
  </button>
@@ -149,7 +149,7 @@
  </div>
  <div class="flex flex-wrap items-center gap-4 p-4">
  <label class="flex cursor-pointer items-center gap-3">
- <input type="checkbox" id="autoRefreshToggle" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/30" onchange="toggleAutoRefresh()" checked>
+ <input type="checkbox" id="autoRefreshToggle" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/30" data-action="toggleAutoRefresh" checked>
  <span class="text-sm text-slate-700">Enable auto-refresh every
  <input type="number" id="refreshInterval" value="10" min="5" max="60" class="mx-1 inline-block w-16 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-center text-sm text-slate-700 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"> seconds
  </span>
@@ -161,6 +161,23 @@
 
 
 
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+
+<script>
+document.addEventListener("change", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (t && t.getAttribute("data-action") === "toggleAutoRefresh") toggleAutoRefresh();
+});
+</script>
+</script>
 {% endblock %}
 
 

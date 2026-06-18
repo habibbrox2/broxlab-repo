@@ -1,6 +1,5 @@
 import './shared/logout-runtime.js';
 import { initPublicHeaderDropdowns } from './modules/public-header.js';
-import { initDatepickerLoader } from './datepicker-loader.js';
 
 
 const getUserId = () => document.querySelector('meta[name="user-id"]')?.content || null;
@@ -22,8 +21,6 @@ const NAV_DROPDOWN_CLOSE_EVENT = 'brox:navbar-dropdown-close';
 const SITE_LANG = document.documentElement?.dataset.lang || 'en';
 const SITE_TRANSLATIONS = window.__broxSiteTranslations || {};
 
-// Initialize datepicker lazy loader
-initDatepickerLoader();
 
 function getCurrentSiteLanguage() {
   return document.documentElement?.dataset.lang || SITE_LANG || 'en';
@@ -90,7 +87,7 @@ runWhenReady(() => {
 });
 
 // Lazy-load notification runtime on non-auth pages
-import('./public/modules/notification-runtime.js').then(mod => {
+import('./modules/notification-runtime.js').then(mod => {
   mod.initPublicNotificationRuntime({
     runWhenReady,
     getUserId,

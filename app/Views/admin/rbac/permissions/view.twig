@@ -22,7 +22,7 @@
     <a href="/admin/permissions/{{ permission.id }}/edit" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
      <i class="lucide lucide-pencil w-4 h-4"></i> Edit
     </a>
-    <form method="POST" action="/admin/permissions/{{ permission.id }}/delete" class="inline" onsubmit="return window.confirmAction(event, this, 'Delete this permission?')">
+    <form method="POST" action="/admin/permissions/{{ permission.id }}/delete" class="inline" data-action="confirm-delete-permission">
      <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl bg-red-500/20 border border-red-500/20 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/30 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
       <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
      </button>
@@ -76,4 +76,21 @@
   </div>
  </div>
 </div>
+<script>
+document.addEventListener("submit", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (t && t.getAttribute("data-action") === "confirm-delete-permission") {
+    if (!confirm("Delete this permission?")) e.preventDefault();
+  }
+});
+
+<script>
+document.addEventListener("submit", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (t && t.getAttribute("data-action") === "confirm-delete-permission") {
+    if (!confirm("Delete this permission?")) e.preventDefault();
+  }
+});
+</script>
+</script>
 {% endblock %}

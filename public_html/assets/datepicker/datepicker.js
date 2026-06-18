@@ -163,6 +163,7 @@
             this.rangeStart = null;
             this.rangeEnd = null;
             this.isOpen = false;
+            this._closing = false;
             this.init();
         }
 
@@ -235,6 +236,7 @@
         createCalendar() {
             this.calendar = document.createElement('div');
             this.calendar.className = CLS.cal;
+            this.calendar.id = this.input.id ? `dp-${this.input.id}` : '';
             if (this.config.rtl) this.calendar.setAttribute('dir', 'rtl');
             this.calendar.setAttribute('role', 'dialog');
             this.calendar.setAttribute('aria-modal', 'true');
@@ -677,6 +679,7 @@
 
         close() {
             if (!this.isOpen) return;
+            this._closing = true;
             this.isOpen = false;
             this.calendar.classList.remove(CLS.open);
             this.input.setAttribute('aria-expanded', 'false');
@@ -686,6 +689,7 @@
                 this.input.focus({ preventScroll: true });
             }
             if (this.config.onClose) this.config.onClose(this);
+            this._closing = false;
         }
 
         positionCalendar() {
@@ -726,7 +730,7 @@
                 this.input.focus({ preventScroll: true });
                 this.open();
             });
-            this.input.addEventListener('focus', () => this.open());
+            this.input.addEventListener('focus', () => { if (!this._closing) this.open(); });
             this.input.addEventListener('click', (e) => { if (!this.config.allowManual) e.preventDefault(); this.open(); });
             this.input.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab' || e.ctrlKey || e.metaKey || e.altKey) return;
