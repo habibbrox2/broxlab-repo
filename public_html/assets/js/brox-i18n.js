@@ -80,7 +80,7 @@ function applyTranslation(root) {
     const attr = `data-i18n-${_currentLang}`;
     const translation = el.getAttribute(attr);
     if (translation !== null && translation !== '') {
-      el.textContent = translation;
+      el.innerHTML = translation;
     }
   });
 
@@ -92,7 +92,7 @@ function applyTranslation(root) {
     if (!key) return;
     const cached = getCached(key, _currentLang);
     if (cached) {
-      el.textContent = cached;
+      el.innerHTML = cached;
       return;
     }
     el.dataset.i18nPending = key;
@@ -149,7 +149,7 @@ function fetchPendingBatch() {
     const t = el.dataset.i18nPending;
     if (t && texts.indexOf(t) === -1) {
       texts.push(t);
-      items.push({ el: el, attr: 'textContent', key: t, });
+      items.push({ el: el, attr: 'innerHTML', key: t, });
     }
     delete el.dataset.i18nPending;
   });
@@ -203,7 +203,7 @@ function fetchPendingBatch() {
             if (!translated) return;
             setCached(item.key, _currentLang, translated);
             if (item.el && item.el.isConnected) {
-              if (item.attr === 'textContent') item.el.textContent = translated;
+              if (item.attr === 'innerHTML') item.el.innerHTML = translated;
               else if (item.attr === 'title') item.el.setAttribute('title', translated);
               else if (item.attr === 'ariaLabel') item.el.setAttribute('aria-label', translated);
               else if (item.attr === 'placeholder') item.el.setAttribute('placeholder', translated);
@@ -238,6 +238,60 @@ function handleLangBtnClick(e) {
   const lang = this.getAttribute('data-lang-btn');
   if (!lang) return;
   switchLanguage(lang);
+}
+
+// ======================== Flag SVG Templates ========================
+
+/** @type {string} Bangladesh flag inner SVG content */
+const FLAG_BD_INNER = '<rect width="60" height="40" fill="#006a4e"/><circle cx="23" cy="20" r="12" fill="#f42a41"/>';
+
+/** @type {string} USA flag inner SVG content */
+const FLAG_US_INNER = '<rect width="60" height="40" fill="#fff"/><g fill="#b22234"><rect y="0" width="60" height="3.08"/><rect y="6.15" width="60" height="3.08"/><rect y="12.31" width="60" height="3.08"/><rect y="18.46" width="60" height="3.08"/><rect y="24.62" width="60" height="3.08"/><rect y="30.77" width="60" height="3.08"/><rect y="36.92" width="60" height="3.08"/></g><rect width="24" height="21.54" fill="#3c3b6e"/>';
+
+/**
+ * Get the correct flag SVG markup for the currently active language.
+ * @param {string} currentLang - The currently active language ('en' | 'bn')
+ * @returns {string}
+ */
+function getFlagSvgMarkup(currentLang) {
+  return currentLang === 'bn' ? FLAG_BD_INNER : FLAG_US_INNER;
+}
+
+/**
+ * Keep toggle buttons visually and semantically in sync with the active language.
+ * @param {HTMLElement} btn
+ * @param {string} currentLang
+ */
+function updateLangToggleButton(btn, currentLang) {
+  if (!btn || !btn.matches('[data-lang-btn]')) return;
+
+  const targetLang = currentLang === 'bn' ? 'en' : 'bn';
+  btn.setAttribute('data-lang-btn', targetLang);
+  btn.setAttribute(
+    'aria-label',
+    currentLang === 'bn' ? 'Switch to English' : 'বাংলায় পরিবর্তন করুন'
+  );
+  btn.setAttribute(
+    'title',
+    currentLang === 'bn' ? 'English' : 'বাংলা'
+  );
+
+  const svg = btn.querySelector('svg');
+  if (svg) {
+    svg.innerHTML = getFlagSvgMarkup(currentLang);
+  }
+}
+
+/**
+ * Swap the inline flag SVG content inside [data-lang-btn] buttons
+ * so the flag reflects the CURRENT active language.
+ * @param {string} currentLang - The currently active language ('en' | 'bn')
+ */
+function swapFlagSvgs(currentLang) {
+  const toggleBtns = document.querySelectorAll('[data-lang-btn]');
+  for (let i = 0; i < toggleBtns.length; i++) {
+    updateLangToggleButton(toggleBtns[i], currentLang);
+  }
 }
 
 // ======================== Language Switch ========================
@@ -288,12 +342,8 @@ function switchLanguage(lang) {
     window.medexTogglePageLang(lang);
   }
 
-  // Flip toggle button data-lang-btn attributes to point to the opposite language
-  const oppositeLang = lang === 'en' ? 'bn' : 'en';
-  const toggleBtns = document.querySelectorAll('[data-lang-btn]');
-  for (let i = 0; i < toggleBtns.length; i++) {
-    toggleBtns[i].setAttribute('data-lang-btn', oppositeLang);
-  }
+  // Swap flag SVGs to show the current language's flag
+  swapFlagSvgs(lang);
 }
 
 // ======================== SEO Link Updates ========================

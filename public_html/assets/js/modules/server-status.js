@@ -19,31 +19,31 @@ export function initServerStatusIndicator() {
     indicator.classList.remove('online', 'offline', 'warning', 'checking');
 
     switch (status) {
-    case 'online':
-      indicator.classList.add('online');
-      icon.className = 'lucide lucide-server';
-      text.textContent = 'Online';
-      indicator.title = 'All systems operational';
-      break;
-    case 'offline':
-      indicator.classList.add('offline');
-      icon.className = 'lucide lucide-triangle-alert';
-      text.textContent = 'Offline';
-      indicator.title = message || 'Server offline';
-      break;
-    case 'warning':
-      indicator.classList.add('warning');
-      icon.className = 'lucide lucide-triangle-alert';
-      text.textContent = 'Warning';
-      indicator.title = message || 'Some services may be degraded';
-      break;
-    case 'checking':
-    default:
-      indicator.classList.add('checking');
-      icon.className = 'lucide lucide-refresh-cw';
-      text.textContent = 'Checking...';
-      indicator.title = 'Checking server status...';
-      break;
+      case 'online':
+        indicator.classList.add('online');
+        icon.className = 'lucide lucide-server';
+        text.textContent = 'Online';
+        indicator.title = 'All systems operational';
+        break;
+      case 'offline':
+        indicator.classList.add('offline');
+        icon.className = 'lucide lucide-triangle-alert';
+        text.textContent = 'Offline';
+        indicator.title = message || 'Server offline';
+        break;
+      case 'warning':
+        indicator.classList.add('warning');
+        icon.className = 'lucide lucide-triangle-alert';
+        text.textContent = 'Warning';
+        indicator.title = message || 'Some services may be degraded';
+        break;
+      case 'checking':
+      default:
+        indicator.classList.add('checking');
+        icon.className = 'lucide lucide-refresh-cw';
+        text.textContent = 'Checking...';
+        indicator.title = 'Checking server status...';
+        break;
     }
   };
 

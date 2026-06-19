@@ -1,7 +1,6 @@
 /* eslint-disable */
-'use strict';
 
-  var d = document;
+var d = document;
   function g(id) { return d.getElementById(id); }
   function csrf() {
     var tok = d.querySelector('meta[name="csrf-token"]');

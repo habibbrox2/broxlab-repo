@@ -6,6 +6,7 @@
  */
 import js from '@eslint/js';
 import globals from 'globals';
+import stylistic from '@stylistic/eslint-plugin';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -29,6 +30,9 @@ export default [
   // ── JavaScript / MJS files ─────────────────────────────────────────────────
   {
     files: ['public_html/assets/js/**/*.js', 'public_html/assets/js/**/*.mjs'],
+    plugins: {
+      '@stylistic': stylistic,
+    },
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -72,19 +76,19 @@ export default [
       'prefer-template': 'warn',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-implicit-coercion': 'warn',
-      'no-multi-spaces': 'warn',
-      'keyword-spacing': 'warn',
-      'space-before-function-paren': ['warn', { anonymous: 'always', named: 'never' }],
-      semi: ['error', 'always'],
-      quotes: ['warn', 'single', { avoidEscape: true }],
-      indent: ['warn', 2],
-      'comma-dangle': ['warn', { arrays: 'always', objects: 'always', functions: 'never' }],
-      'object-curly-spacing': ['warn', 'always'],
-      'array-bracket-spacing': ['warn', 'never'],
-      'space-in-parens': ['warn', 'never'],
-      'key-spacing': ['warn', { beforeColon: false, afterColon: true }],
-      'no-trailing-spaces': 'warn',
-      'no-multiple-empty-lines': ['warn', { max: 2 }],
+      '@stylistic/no-multi-spaces': 'warn',
+      '@stylistic/keyword-spacing': 'warn',
+      '@stylistic/space-before-function-paren': ['warn', { anonymous: 'always', named: 'never' }],
+      '@stylistic/semi': ['error', 'always'],
+      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true }],
+      '@stylistic/indent': ['warn', 2],
+      '@stylistic/comma-dangle': ['warn', { arrays: 'always', objects: 'always', functions: 'never' }],
+      '@stylistic/object-curly-spacing': ['warn', 'always'],
+      '@stylistic/array-bracket-spacing': ['warn', 'never'],
+      '@stylistic/space-in-parens': ['warn', 'never'],
+      '@stylistic/key-spacing': ['warn', { beforeColon: false, afterColon: true }],
+      '@stylistic/no-trailing-spaces': 'warn',
+      '@stylistic/no-multiple-empty-lines': ['warn', { max: 2 }],
       'no-constant-condition': ['error', { checkLoops: false }],
     },
   },

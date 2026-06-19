@@ -7,31 +7,31 @@ export function createCvBuilderRenderers(deps) {
     const fill = function (key, def) { return d && d[key] !== undefined && d[key] !== null ? escHtml(String(d[key])) : def || ''; };
 
     switch (stepId) {
-    case 'personal': {
-      const photoUrl = STATE.profilePhoto || '';
-      const hasPhoto = Boolean(photoUrl);
-      let photoHtml = '<div class="bld-form-group">';
-      photoHtml += '<label class="bld-label">Profile Photo</label>';
-      photoHtml += `<div class="bld-photo-upload${ hasPhoto ? ' has-photo' : '' }" id="bld-photo-upload-area">`;
-      photoHtml += '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="bld-photo-file-input" id="bld-photo-input" data-action="upload-photo">';
-      if (hasPhoto) {
-        photoHtml += `<img src="${ escHtml(photoUrl) }" alt="Profile Photo" class="bld-photo-preview" id="bld-photo-preview-img">`;
-      } else {
-        photoHtml += '<div class="bld-photo-placeholder" id="bld-photo-placeholder"><i class="lucide lucide-camera" style="width:1em;height:1em;"></i></div>';
-      }
-      photoHtml += `<div class="bld-photo-label">${ hasPhoto ? 'Change Photo' : 'Add a Profile Photo' }</div>`;
-      photoHtml += '<div class="bld-photo-hint">JPG, PNG, WebP or GIF &middot; Max 5MB</div>';
-      photoHtml += '<div class="bld-photo-actions">';
-      photoHtml += `<button type="button" class="bld-photo-btn bld-photo-btn-upload" data-action="trigger-photo-input"><i class="lucide lucide-upload" style="width:1em;height:1em;"></i> ${ hasPhoto ? 'Change' : 'Upload' }</button>`;
-      if (hasPhoto) {
-        photoHtml += '<button type="button" class="bld-photo-btn bld-photo-btn-remove" data-action="remove-photo"><i class="lucide lucide-trash-2" style="width:1em;height:1em;"></i> Remove</button>';
-      }
-      photoHtml += '</div>';
-      photoHtml += '<div class="bld-photo-progress" id="bld-photo-progress"><div class="bld-photo-progress-bar" id="bld-photo-progress-bar"></div></div>';
-      photoHtml += '</div></div>';
+      case 'personal': {
+        const photoUrl = STATE.profilePhoto || '';
+        const hasPhoto = Boolean(photoUrl);
+        let photoHtml = '<div class="bld-form-group">';
+        photoHtml += '<label class="bld-label">Profile Photo</label>';
+        photoHtml += `<div class="bld-photo-upload${ hasPhoto ? ' has-photo' : '' }" id="bld-photo-upload-area">`;
+        photoHtml += '<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="bld-photo-file-input" id="bld-photo-input" data-action="upload-photo">';
+        if (hasPhoto) {
+          photoHtml += `<img src="${ escHtml(photoUrl) }" alt="Profile Photo" class="bld-photo-preview" id="bld-photo-preview-img">`;
+        } else {
+          photoHtml += '<div class="bld-photo-placeholder" id="bld-photo-placeholder"><i class="lucide lucide-camera" style="width:1em;height:1em;"></i></div>';
+        }
+        photoHtml += `<div class="bld-photo-label">${ hasPhoto ? 'Change Photo' : 'Add a Profile Photo' }</div>`;
+        photoHtml += '<div class="bld-photo-hint">JPG, PNG, WebP or GIF &middot; Max 5MB</div>';
+        photoHtml += '<div class="bld-photo-actions">';
+        photoHtml += `<button type="button" class="bld-photo-btn bld-photo-btn-upload" data-action="trigger-photo-input"><i class="lucide lucide-upload" style="width:1em;height:1em;"></i> ${ hasPhoto ? 'Change' : 'Upload' }</button>`;
+        if (hasPhoto) {
+          photoHtml += '<button type="button" class="bld-photo-btn bld-photo-btn-remove" data-action="remove-photo"><i class="lucide lucide-trash-2" style="width:1em;height:1em;"></i> Remove</button>';
+        }
+        photoHtml += '</div>';
+        photoHtml += '<div class="bld-photo-progress" id="bld-photo-progress"><div class="bld-photo-progress-bar" id="bld-photo-progress-bar"></div></div>';
+        photoHtml += '</div></div>';
 
-      return `${photoHtml
-      }<div class="bld-input-group">` +
+        return `${photoHtml
+        }<div class="bld-input-group">` +
           `<div class="bld-form-group"><label class="bld-label">Full Name *</label><input class="bld-input" id="bld-field-full_name" value="${fill('full_name')}" placeholder="e.g. John Doe"></div>` +
           `<div class="bld-form-group"><label class="bld-label">Job Title *</label><input class="bld-input" id="bld-field-job_title" value="${fill('job_title')}" placeholder="e.g. Software Engineer"></div></div>` +
           '<div class="bld-input-group">' +
@@ -55,28 +55,28 @@ export function createCvBuilderRenderers(deps) {
           '<div class="bld-input-group">' +
           `<div class="bld-form-group"><label class="bld-label">Birth Certificate No.</label><input class="bld-input" id="bld-field-birth_certificate_no" value="${fill('birth_certificate_no')}" placeholder="Birth certificate number"></div>` +
           `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>`;
-    }
+      }
 
-    case 'professional': {
-      const exps = Array.isArray(STATE.data.experience) ? STATE.data.experience : [];
-      let expHtml = '';
-      for (let ei = 0; ei < exps.length; ei++) {
-        expHtml += renderExperienceEntry(exps[ei], ei);
-      }
-      const eds = Array.isArray(STATE.data.education) ? STATE.data.education : [];
-      let eduHtml = '';
-      for (let edi = 0; edi < eds.length; edi++) {
-        eduHtml += renderEducationEntry(eds[edi], edi);
-      }
-      const sk = STATE.data.skills || {};
-      const technical = Array.isArray(sk.technical) ? sk.technical : [];
-      const soft = Array.isArray(sk.soft) ? sk.soft : [];
-      const langs = Array.isArray(STATE.data.languages) ? STATE.data.languages : [];
-      let langHtml = '';
-      for (let li = 0; li < langs.length; li++) {
-        langHtml += renderLanguageEntry(langs[li], li);
-      }
-      return '<div style="margin-bottom:2rem;">' +
+      case 'professional': {
+        const exps = Array.isArray(STATE.data.experience) ? STATE.data.experience : [];
+        let expHtml = '';
+        for (let ei = 0; ei < exps.length; ei++) {
+          expHtml += renderExperienceEntry(exps[ei], ei);
+        }
+        const eds = Array.isArray(STATE.data.education) ? STATE.data.education : [];
+        let eduHtml = '';
+        for (let edi = 0; edi < eds.length; edi++) {
+          eduHtml += renderEducationEntry(eds[edi], edi);
+        }
+        const sk = STATE.data.skills || {};
+        const technical = Array.isArray(sk.technical) ? sk.technical : [];
+        const soft = Array.isArray(sk.soft) ? sk.soft : [];
+        const langs = Array.isArray(STATE.data.languages) ? STATE.data.languages : [];
+        let langHtml = '';
+        for (let li = 0; li < langs.length; li++) {
+          langHtml += renderLanguageEntry(langs[li], li);
+        }
+        return '<div style="margin-bottom:2rem;">' +
           '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
           '<i class="lucide lucide-briefcase" style="width:1.2em;height:1.2em;color:#f59e0b;"></i> Work Experience</h3>' +
           `<div id="bld-experience-list">${ expHtml }</div>` +
@@ -101,26 +101,26 @@ export function createCvBuilderRenderers(deps) {
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Add languages you speak and your proficiency level.</p>' +
           `<div id="bld-languages-list">${ langHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-language"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Language</button></div>';
-    }
+      }
 
-    case 'extras': {
+      case 'extras': {
       // Combined step: Social Links + Custom Sections + References
-      const socialLinks = Array.isArray(STATE.data.social_links) ? STATE.data.social_links : [];
-      let linkHtml = '';
-      for (let li = 0; li < socialLinks.length; li++) {
-        linkHtml += renderSocialLinkEntry(socialLinks[li], li);
-      }
-      const customSecs = Array.isArray(STATE.data.custom_sections) ? STATE.data.custom_sections : [];
-      let secHtml = '';
-      for (let si = 0; si < customSecs.length; si++) {
-        secHtml += renderCustomSectionEntry(customSecs[si], si);
-      }
-      const refs = Array.isArray(STATE.data.references) ? STATE.data.references : [];
-      let refHtml = '';
-      for (let ri = 0; ri < refs.length; ri++) {
-        refHtml += renderReferenceEntry(refs[ri], ri);
-      }
-      return '<div style="margin-bottom:2rem;">' +
+        const socialLinks = Array.isArray(STATE.data.social_links) ? STATE.data.social_links : [];
+        let linkHtml = '';
+        for (let li = 0; li < socialLinks.length; li++) {
+          linkHtml += renderSocialLinkEntry(socialLinks[li], li);
+        }
+        const customSecs = Array.isArray(STATE.data.custom_sections) ? STATE.data.custom_sections : [];
+        let secHtml = '';
+        for (let si = 0; si < customSecs.length; si++) {
+          secHtml += renderCustomSectionEntry(customSecs[si], si);
+        }
+        const refs = Array.isArray(STATE.data.references) ? STATE.data.references : [];
+        let refHtml = '';
+        for (let ri = 0; ri < refs.length; ri++) {
+          refHtml += renderReferenceEntry(refs[ri], ri);
+        }
+        return '<div style="margin-bottom:2rem;">' +
           '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
           '<i class="lucide lucide-share-2" style="width:1.2em;height:1.2em;color:#6366f1;"></i> Social Links</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Add your social media profiles and online presence links.</p>' +
@@ -138,14 +138,14 @@ export function createCvBuilderRenderers(deps) {
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">References are optional. You can skip this step.</p>' +
           `<div id="bld-references-list">${ refHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-reference"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Reference</button></div>';
-    }
+      }
 
-    case 'review': {
-      return renderReviewStep();
-    }
+      case 'review': {
+        return renderReviewStep();
+      }
 
-    default:
-      return '<p>Step not available.</p>';
+      default:
+        return '<p>Step not available.</p>';
     }
   }
 

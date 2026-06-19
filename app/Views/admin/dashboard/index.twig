@@ -32,6 +32,154 @@
   </div>
 </div>
 
+{# ── Guest CVs Claimed Notification ── #}
+{% if guest_cvs_claimed is defined and guest_cvs_claimed > 0 %}
+<div id="claimed-guest-notification"
+     class="animate-fade-in relative overflow-hidden rounded-2xl border border-emerald-200/70 dark:border-emerald-800/40 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/20 shadow-sm">
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.08),transparent_60%)]" aria-hidden="true"></div>
+  <div class="relative px-5 py-4 flex items-start gap-3.5">
+    <div class="mt-0.5 flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex-shrink-0">
+      <i class="lucide lucide-check-circle w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-1">
+        <h3 class="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+          Guest CVs Claimed!
+        </h3>
+        <span id="claimed-countdown" class="text-[11px] font-semibold text-emerald-500 dark:text-emerald-400 tabular-nums">8s</span>
+      </div>
+      <p class="text-sm text-emerald-700 dark:text-emerald-300">
+        <strong>{{ guest_cvs_claimed }}</strong> guest CV(s) have been transferred to your account.
+        <a href="/cv-builder" class="font-semibold underline underline-offset-2 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors">View in CV Builder</a>
+      </p>
+    </div>
+    <button type="button"
+            id="dismiss-claimed-notification"
+            class="flex items-center justify-center w-8 h-8 rounded-lg text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all duration-200 flex-shrink-0"
+            aria-label="Dismiss">
+      <i class="lucide lucide-x w-4 h-4"></i>
+    </button>
+  </div>
+  <div id="claimed-timer-bar"
+       class="h-0.5 bg-emerald-400/50 dark:bg-emerald-500/40 rounded-full"
+       style="width:100%;transition:width 8s linear;"></div>
+</div>
+
+<style>
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script>
+(function(){
+  var notif = document.getElementById('claimed-guest-notification');
+  if (!notif) return;
+
+  var timerBar = document.getElementById('claimed-timer-bar');
+  var countdownEl = document.getElementById('claimed-countdown');
+  var dismissBtn = document.getElementById('dismiss-claimed-notification');
+  var isDismissing = false;
+  var dismissTimer, countdownInterval;
+
+  function dismissNotif() {
+    if (isDismissing) return;
+    isDismissing = true;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    notif.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    notif.style.opacity = '0';
+    notif.style.transform = 'translateY(-10px)';
+    setTimeout(function() { notif.style.display = 'none'; }, 350);
+  }
+
+  function startTimer() {
+    var remaining = 8000;
+    var startTime = Date.now();
+
+    countdownInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var left = Math.max(0, Math.ceil((remaining - elapsed) / 1000));
+      if (countdownEl) countdownEl.textContent = left + 's';
+    }, 200);
+
+    dismissTimer = setTimeout(dismissNotif, remaining);
+
+    // Store references for pause/resume
+    notif._timerStart = startTime;
+    notif._timerRemaining = remaining;
+    notif._dismissTimer = dismissTimer;
+    notif._countdownInterval = countdownInterval;
+  }
+
+  // Hover pause
+  notif.addEventListener('mouseenter', function() {
+    if (isDismissing) return;
+    clearTimeout(notif._dismissTimer);
+    clearInterval(notif._countdownInterval);
+    var elapsed = Date.now() - (notif._timerStart || Date.now());
+    notif._timerRemaining = Math.max(0, 8000 - elapsed);
+    // Freeze timer bar at current width
+    if (timerBar) {
+      var currentWidth = timerBar.offsetWidth;
+      var parentWidth = timerBar.parentElement ? timerBar.parentElement.offsetWidth : 1;
+      timerBar.style.transition = 'none';
+      timerBar.style.width = currentWidth + 'px';
+    }
+    if (countdownEl) countdownEl.textContent = '\u2713';
+  });
+
+  notif.addEventListener('mouseleave', function() {
+    if (isDismissing) return;
+    var remaining = notif._timerRemaining || 8000;
+    if (remaining <= 0) { dismissNotif(); return; }
+
+    notif._timerStart = Date.now();
+
+    // Resume timer bar
+    if (timerBar) {
+      var currentPx = parseFloat(timerBar.style.width) || 0;
+      var parentW = timerBar.parentElement ? timerBar.parentElement.offsetWidth : 1;
+      var fraction = currentPx / parentW;
+      var remainingMs = fraction * 8000;
+      timerBar.style.transition = 'width ' + remainingMs + 'ms linear';
+      requestAnimationFrame(function() {
+        timerBar.style.width = '0%';
+      });
+    }
+
+    // Resume countdown
+    countdownInterval = setInterval(function() {
+      var elapsed = Date.now() - notif._timerStart;
+      var left = Math.max(0, Math.ceil((remaining - elapsed) / 1000));
+      if (countdownEl) countdownEl.textContent = left + 's';
+    }, 200);
+
+    dismissTimer = setTimeout(dismissNotif, remaining);
+    notif._dismissTimer = dismissTimer;
+    notif._countdownInterval = countdownInterval;
+  });
+
+  // Manual dismiss
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', dismissNotif);
+  }
+
+  // Start the timer bar transition
+  requestAnimationFrame(function() {
+    if (timerBar) timerBar.style.width = '0%';
+  });
+
+  // Start auto-dismiss countdown
+  startTimer();
+})();
+</script>
+{% endif %}
+
 {% if user_roles and user_roles|length > 0 %}
 <div class="scroll-fade-in flex items-start gap-4 rounded-2xl border border-indigo-200/50 dark:border-indigo-800/40 bg-gradient-to-r from-indigo-50/80 to-sky-50/80 dark:from-indigo-950/30 dark:to-sky-950/30 p-4 shadow-sm" role="alert">
   <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">

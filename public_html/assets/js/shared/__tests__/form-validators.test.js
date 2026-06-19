@@ -10,11 +10,11 @@ import {
   validateConfirmation,
   validateFile,
   validateFiles,
-  formatFileSize,
+  formatFileSize
 } from '../form-validators.js';
 
 function mockFile(name, size, type) {
-  return { name, size, type };
+  return { name, size, type, };
 }
 
 // ======================== PASSWORD_REQUIREMENTS ========================
@@ -161,7 +161,7 @@ describe('validateFile', () => {
   });
 
   it('should reject files below minSize', () => {
-    const r = validateFile(mockFile('tiny.jpg', 100, 'image/jpeg'), { minSize: 1024 });
+    const r = validateFile(mockFile('tiny.jpg', 100, 'image/jpeg'), { minSize: 1024, });
     expect(r.valid).toBe(false);
     expect(r.code).toBe('TOO_SMALL');
   });
@@ -178,8 +178,8 @@ describe('validateFile', () => {
 
   it('should reject disallowed file extensions', () => {
     const r = validateFile(mockFile('script.exe', 1024, 'application/x-executable'), {
-      allowedTypes: ['application/x-executable'],
-      allowedExtensions: ['.jpg', '.png'],
+      allowedTypes: ['application/x-executable',],
+      allowedExtensions: ['.jpg', '.png',],
     });
     expect(r.valid).toBe(false);
     expect(r.code).toBe('INVALID_EXTENSION');
@@ -187,7 +187,7 @@ describe('validateFile', () => {
 
   it('should reject when extension does not match MIME type', () => {
     const r = validateFile(mockFile('malware.jpg', 1024, 'application/x-executable'), {
-      allowedTypes: ['application/x-executable'],
+      allowedTypes: ['application/x-executable',],
     });
     expect(r.valid).toBe(false);
     expect(r.code).toBe('EXTENSION_MIME_MISMATCH');
@@ -195,24 +195,24 @@ describe('validateFile', () => {
 
   it('should skip extension-MIME check when disabled', () => {
     const r = validateFile(mockFile('malware.jpg', 1024, 'application/x-executable'), {
-      allowedTypes: ['application/x-executable'],
+      allowedTypes: ['application/x-executable',],
       checkExtensionMatch: false,
     });
     expect(r.valid).toBe(true);
   });
 
   it('should accept video when video group allowed', () => {
-    expect(validateFile(mockFile('clip.mp4', 1048576, 'video/mp4'), { allowedGroups: ['video'] }).valid).toBe(true);
+    expect(validateFile(mockFile('clip.mp4', 1048576, 'video/mp4'), { allowedGroups: ['video',], }).valid).toBe(true);
   });
 
   it('should reject video when only image group allowed', () => {
-    const r = validateFile(mockFile('clip.mp4', 1048576, 'video/mp4'), { allowedGroups: ['image'] });
+    const r = validateFile(mockFile('clip.mp4', 1048576, 'video/mp4'), { allowedGroups: ['image',], });
     expect(r.valid).toBe(false);
     expect(r.code).toBe('INVALID_TYPE');
   });
 
   it('should use custom label in error messages', () => {
-    const r = validateFile(mockFile('big.jpg', 20971520, 'image/jpeg'), { label: 'Avatar' });
+    const r = validateFile(mockFile('big.jpg', 20971520, 'image/jpeg'), { label: 'Avatar', });
     expect(r.error).toContain('Avatar');
   });
 
@@ -237,13 +237,13 @@ describe('validateFiles', () => {
   });
 
   it('should return valid for all valid files', () => {
-    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.png', 2048, 'image/png')]);
+    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.png', 2048, 'image/png'),]);
     expect(r.valid).toBe(true);
     expect(r.errors).toHaveLength(0);
   });
 
   it('should return errors for invalid files', () => {
-    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.exe', 1024, 'application/x-executable')]);
+    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.exe', 1024, 'application/x-executable'),]);
     expect(r.valid).toBe(false);
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0].index).toBe(1);
@@ -251,13 +251,13 @@ describe('validateFiles', () => {
   });
 
   it('should report errors for multiple invalid files', () => {
-    const r = validateFiles([mockFile('a.exe', 1024, 'application/x-executable'), mockFile('b.exe', 1024, 'application/x-executable')]);
+    const r = validateFiles([mockFile('a.exe', 1024, 'application/x-executable'), mockFile('b.exe', 1024, 'application/x-executable'),]);
     expect(r.valid).toBe(false);
     expect(r.errors).toHaveLength(2);
   });
 
   it('should pass options through', () => {
-    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.mp4', 1024, 'video/mp4')], { allowedGroups: ['image'] });
+    const r = validateFiles([mockFile('a.jpg', 1024, 'image/jpeg'), mockFile('b.mp4', 1024, 'video/mp4'),], { allowedGroups: ['image',], });
     expect(r.valid).toBe(false);
     expect(r.errors).toHaveLength(1);
     expect(r.errors[0].file).toBe('b.mp4');

@@ -1,9 +1,9 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Bangla Converter - Unicode to Bijoy | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}{{ t('Bangla Converter') }} - {{ t('Unicode to Bijoy') }} | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
- { label: 'Bangla Converter', url: '/bangla-converter', icon: 'translate' }
+ { label: t('Bangla Converter'), url: '/bangla-converter', icon: 'translate' }
 ] %}
 
 {% block content %}
@@ -13,10 +13,10 @@
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
  <div class="lg:col-span-8">
  <h1 class="text-4xl font-bold text-slate-900 mb-3">
- <i class="lucide lucide-languages mr-2"></i>Bangla Converter
+ <i class="lucide lucide-languages mr-2"></i>{{ t('Bangla Converter') }}
  </h1>
  <p class="text-lg text-slate-900 mb-0">
- Convert Bangla text between Unicode and Bijoy formats instantly.
+ {{ t('Convert Bangla text between Unicode and Bijoy formats instantly.') }}
  </p>
  </div>
  <div class="lg:col-span-4 text-center">
@@ -34,7 +34,7 @@
  <div class="rounded-xl border border-slate-200 bg-white shadow-sm public-surface-rounded-xl border-0">
  <div class="border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
  <h2 class="h4 mb-0">
- <i class="lucide lucide-arrow-left-right mr-2"></i>Bangla Text Converter
+ <i class="lucide lucide-arrow-left-right mr-2"></i>{{ t('Bangla Text Converter') }}
  </h2>
  </div>
  <div class="p-4">
@@ -42,7 +42,7 @@
  <!-- Unicode Input -->
  <div class="md:col-span-6">
  <h5 class="font-bold mb-3 text-indigo-600">
- <i class="lucide lucide-cursor mr-2"></i>Unicode Input
+ <i class="lucide lucide-cursor mr-2"></i>{{ t('Unicode Input') }}
  </h5>
  <textarea
  id="unicode-input"
@@ -53,10 +53,10 @@
  ></textarea>
  <div class="mt-2">
  <button id="unicode-to-bijoy" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700 mr-2">
- <i class="lucide lucide-arrow-right mr-1"></i>Convert to Bijoy
+ <i class="lucide lucide-arrow-right mr-1"></i>{{ t('Convert to Bijoy') }}
  </button>
  <button id="clear-unicode" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
- <i class="lucide lucide-trash-2 mr-1"></i>Clear
+ <i class="lucide lucide-trash-2 mr-1"></i>{{ t('Clear') }}
  </button>
  </div>
  </div>
@@ -64,7 +64,7 @@
  <!-- Bijoy Output -->
  <div class="md:col-span-6">
  <h5 class="font-bold mb-3 text-emerald-600">
- <i class="lucide lucide-log-out mr-2"></i>Bijoy Output
+ <i class="lucide lucide-log-out mr-2"></i>{{ t('Bijoy Output') }}
  </h5>
  <textarea
  id="bijoy-output"
@@ -75,10 +75,10 @@
  ></textarea>
  <div class="mt-2">
  <button id="bijoy-to-unicode" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-emerald-600 text-white hover:bg-emerald-700 mr-2">
- <i class="lucide lucide-arrow-left mr-1"></i>Convert to Unicode
+ <i class="lucide lucide-arrow-left mr-1"></i>{{ t('Convert to Unicode') }}
  </button>
  <button id="clear-bijoy" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition text-slate-600 hover:bg-slate-100">
- <i class="lucide lucide-trash-2 mr-1"></i>Clear
+ <i class="lucide lucide-trash-2 mr-1"></i>{{ t('Clear') }}
  </button>
  </div>
  </div>
@@ -90,14 +90,14 @@
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="col-span-12">
  <h5 class="font-bold mb-3">
- <i class="lucide lucide-info mr-2"></i>How to Use
+ <i class="lucide lucide-info mr-2"></i>{{ t('How to Use') }}
  </h5>
  <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
  <ul class="mb-0">
- <li><strong>Unicode to Bijoy:</strong> Paste your Unicode Bangla text in the left box and click"Convert to Bijoy"</li>
- <li><strong>Bijoy to Unicode:</strong> Paste your Bijoy text in the right box and click"Convert to Unicode"</li>
- <li><strong>Note:</strong> Bijoy output may not display correctly without Bijoy fonts installed</li>
- <li><strong>Tip:</strong> Use SutonnyMJ font for proper Bijoy text display</li>
+ <li><strong>{{ t('Unicode to Bijoy:') }}</strong> {{ t('Paste your Unicode Bangla text in the left box and click "Convert to Bijoy"') }}</li>
+ <li><strong>{{ t('Bijoy to Unicode:') }}</strong> {{ t('Paste your Bijoy text in the right box and click "Convert to Unicode"') }}</li>
+ <li><strong>{{ t('Note:') }}</strong> {{ t('Bijoy output may not display correctly without Bijoy fonts installed') }}</li>
+ <li><strong>{{ t('Tip:') }}</strong> {{ t('Use SutonnyMJ font for proper Bijoy text display') }}</li>
  </ul>
  </div>
  </div>
@@ -113,10 +113,9 @@
  <div class="text-indigo-600 mb-3">
  <i class="lucide lucide-globe text-5xl"></i>
  </div>
- <h6 class="font-bold">Unicode (UTF-8)</h6>
+ <h6 class="font-bold">{{ t('Unicode (UTF-8)') }}</h6>
  <p class="text-slate-500 text-xs mb-0">
- Modern standard used on websites, mobile apps, and modern software.
- Compatible with all platforms and devices.
+ {{ t('Modern standard used on websites, mobile apps, and modern software. Compatible with all platforms and devices.') }}
  </p>
  </div>
  </div>
@@ -127,10 +126,9 @@
  <div class="text-emerald-600 mb-3">
  <i class="lucide lucide-type text-5xl"></i>
  </div>
- <h6 class="font-bold">Bijoy (ANSI)</h6>
+ <h6 class="font-bold">{{ t('Bijoy (ANSI)') }}</h6>
  <p class="text-slate-500 text-xs mb-0">
- Legacy encoding used in printing presses, newspapers, and older
- Bangladeshi software. Requires specific fonts to display correctly.
+ {{ t('Legacy encoding used in printing presses, newspapers, and older Bangladeshi software. Requires specific fonts to display correctly.') }}
  </p>
  </div>
  </div>

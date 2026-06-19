@@ -29,6 +29,29 @@ $authManager = new AuthManager($mysqli);
 $securityManager = new SecurityManager($mysqli);
 
 /**
+ * Claim any guest CVs in the session for the given user.
+ * Called automatically after login/register to transfer ownership.
+ * Sets a session flash so the dashboard can show a notification.
+ */
+function autoClaimGuestCvs(int $userId, \mysqli $mysqli): int
+{
+    $cvModelFile = dirname(__DIR__, 1) . '/Models/CvModel.php';
+    if (!file_exists($cvModelFile)) {
+        return 0;
+    }
+    require_once $cvModelFile;
+    $cvModel = new CvModel($mysqli);
+    $claimed = $cvModel->claimGuestCvsForUser($userId);
+    if ($claimed > 0) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION['guest_cvs_just_claimed'] = $claimed;
+    }
+    return $claimed;
+}
+
+/**
  * Display login form
  */
 $router->get('/login', ['middleware' => ['guest_only']], function () use ($twig, $authManager, $securityManager, $userModel) {
@@ -39,6 +62,10 @@ $router->get('/login', ['middleware' => ['guest_only']], function () use ($twig,
     if ($rememberUser) {
         // Create session and redirect
         $authManager->createSession($rememberUser['id']);
+
+        // Auto-claim any guest CVs from session
+        autoClaimGuestCvs((int)$rememberUser['id'], $mysqli);
+
         if ($oauthRedirect !== '') {
             $redirectUrl = $oauthRedirect;
         } elseif ($userModel->isSuperAdmin($rememberUser['id']) || $userModel->hasRole($rememberUser['id'], 'admin')) {
@@ -380,6 +407,9 @@ $router->post('/login', ['middleware' => ['guest_only']], function () use ($auth
     // Create session
     $authManager->createSession($result['user_id']);
 
+    // Auto-claim any guest CVs from session
+    autoClaimGuestCvs((int)$result['user_id'], $mysqli);
+
     // Migrate guest FCM tokens to logged-in user
     $notificationModel = new NotificationModel($mysqli);
     $guestDeviceId = sanitize_input($_COOKIE['guest_device_id'] ?? '');
@@ -604,6 +634,9 @@ $router->post('/register', ['middleware' => ['guest_only']], function () use ($u
     } else {
         // Create session and auto-login
         $authManager->createSession($userId);
+
+        // Auto-claim any guest CVs from session
+        autoClaimGuestCvs($userId, $mysqli);
 
         // Send welcome email using template
         sendWelcomeEmail($mysqli, $email, $first_name ?: $username, getAppUrl() . "/verify-email");
@@ -919,6 +952,9 @@ $router->post('/verify-2fa', function () use ($securityManager, $authManager) {
 
         // Create session
         $authManager->createSession($userId);
+
+        // Auto-claim any guest CVs from session
+        autoClaimGuestCvs($userId, $GLOBALS['mysqli']);
 
         authSuccessResponse(['redirect' => '/dashboard'], '2FA verified successfully', 'json', 200);
     } else {

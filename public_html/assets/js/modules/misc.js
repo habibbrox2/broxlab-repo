@@ -69,9 +69,9 @@ export async function initNotificationsDashboardRealtime() {
 
     const ScheduledNotifications = scheduledMod.ScheduledNotifications || scheduledMod.default;
     const MultiDeviceSync =
-        notificationSystemMod.MultiDeviceSync || notificationSystemMod.default?.MultiDeviceSync;
+      notificationSystemMod.MultiDeviceSync || notificationSystemMod.default?.MultiDeviceSync;
     const OfflineNotificationHandler =
-        offlineMod.OfflineNotificationHandler || offlineMod.default;
+      offlineMod.OfflineNotificationHandler || offlineMod.default;
 
     console.info('Notifications dashboard modules loaded');
     console.info('Available modules:', {

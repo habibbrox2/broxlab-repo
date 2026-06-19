@@ -34,10 +34,10 @@
  </div>
  <div class="block sm:flex md:flex lg:flex xl:flex 2xl:flex">
  <div class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold mb-2.5 min-w-[140px]">
- <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[#71bd44]">Status: Live</span>
+ <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[#71bd44]">{{ t('Status: Live') }}</span>
  </div>
  <div class="job-no">
- <p>ADV NO: {{ job.job_id }}</p>
+ <p>{{ t('ADV NO:') }} {{ job.job_id }}</p>
  </div>
  </div>
  </div>
@@ -48,10 +48,10 @@
  <svg xmlns="http://www.w3.org/2000/svg" width="13.337" height="12.465" viewBox="0 0 17.337 16.465" class="inline-block">
  <path id="love-svgrepo-com" d="M18.033,4.327a5.036,5.036,0,0,0-3.9-1.828,4.983,4.983,0,0,0-3.467,1.261A4.983,4.983,0,0,0,7.2,2.5,5.036,5.036,0,0,0,3.3,4.327,6.666,6.666,0,0,0,2.183,10.1c.914,4.721,7.771,8.595,8.06,8.753a.867.867,0,0,0,.844,0c.291-.162,7.147-4.036,8.06-8.753A6.656,6.656,0,0,0,18.033,4.327ZM17.449,9.77c-.647,3.338-5.346,6.442-6.783,7.324C8.642,15.873,4.477,12.8,3.888,9.77a5.009,5.009,0,0,1,.753-4.339A3.31,3.31,0,0,1,7.2,4.233,3.027,3.027,0,0,1,9.9,5.506a.871.871,0,0,0,1.525.01,3.024,3.024,0,0,1,2.708-1.283,3.31,3.31,0,0,1,2.565,1.2A5.016,5.016,0,0,1,17.449,9.77Z" transform="translate(-1.997 -2.497)" fill="#fff"></path>
  </svg>
- <span>&nbsp; Wish list</span>
+ <span>&nbsp; {{ t('Wish list') }}</span>
  </a>
  </div>
- <a class="border-0 text-center min-w-[170px] rounded-[24px] px-[30px] py-[10px] bg-[#007456] text-[#fff] text-[18px] inline-block mt-2 sm:mt-0 md:mt-0 lg:mt-0 xl:mt-0 2xl:mt-0" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">&nbsp; Apply now &nbsp;</a>
+ <a class="border-0 text-center min-w-[170px] rounded-[24px] px-[30px] py-[10px] bg-[#007456] text-[#fff] text-[18px] inline-block mt-2 sm:mt-0 md:mt-0 lg:mt-0 xl:mt-0 2xl:mt-0" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">&nbsp; {{ t('Apply now') }} &nbsp;</a>
  </div>
  </div>
  
@@ -64,7 +64,7 @@
  </svg>
  </div>
  <div class="application-action">
- <h6>Application Start Date</h6>
+ <h6>{{ t('Application Start Date') }}</h6>
  <span>{{ job.scraped_at|time_ago }}</span>
  </div>
  </div>
@@ -75,7 +75,7 @@
  </svg>
  </div>
  <div class="application-action">
- <h6>Application End Date</h6>
+ <h6>{{ t('Application End Date') }}</h6>
  <span>{{ job.updated_at|time_ago }}</span>
  </div>
  </div>
@@ -86,7 +86,7 @@
  </svg>
  </div>
  <div class="application-action">
- <h6>Viewed By</h6>
+ <h6>{{ t('Viewed By') }}</h6>
  <span>{{ job.openings|default(0) }}</span>
  </div>
  </div>
@@ -96,38 +96,38 @@
  <div class="job-description-wrapper mt-4">
  <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
  <div class="border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
- <h5 class=" mb-0">Job Details</h5>
+ <h5 class=" mb-0">{{ t('Job Details') }}</h5>
  </div>
  <div class="p-4">
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="md:col-span-6 mb-3">
- <strong>Organization:</strong>
+ <strong>{{ t('Organization:') }}</strong>
  <p>{{ job.organization }}</p>
  </div>
  <div class="md:col-span-6 mb-3">
- <strong>Job Title:</strong>
+ <strong>{{ t('Job Title:') }}</strong>
  <p>{{ job.title }}</p>
  </div>
  <div class="md:col-span-6 mb-3">
- <strong>Job ID:</strong>
+ <strong>{{ t('Job ID:') }}</strong>
  <p>{{ job.job_id }}</p>
  </div>
  <div class="md:col-span-6 mb-3">
- <strong>Openings:</strong>
+ <strong>{{ t('Openings:') }}</strong>
  <p>{{ job.openings|default('N/A') }}</p>
  </div>
  <div class="md:col-span-6 mb-3">
- <strong>Posted Date:</strong>
+ <strong>{{ t('Posted Date:') }}</strong>
  <p>{{ job.scraped_at|time_ago }}</p>
  </div>
  <div class="md:col-span-6 mb-3">
- <strong>Last Updated:</strong>
+ <strong>{{ t('Last Updated:') }}</strong>
  <p>{{ job.updated_at|time_ago }}</p>
  </div>
  </div>
  <div class="mt-4">
  <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-indigo-600 text-white hover:bg-indigo-700">
- <i class="lucide lucide-external-link mr-2"></i>View Original Job Posting
+ <i class="lucide lucide-external-link mr-2"></i>{{ t('View Original Job Posting') }}
  </a>
  </div>
  </div>
@@ -139,24 +139,24 @@
  <div class="read-before-apply">
  <div class="top-content flex justify-between items-center">
  <div class="heading">
- <h1 class="title">Read Before Apply</h1>
+ <h1 class="title">{{ t('Read Before Apply') }}</h1>
  </div>
  <div class="follow items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold ">
  <a class="text-white inline-block bg-[#fdaa29] text-[12px] mb-[20px] px-[10px] lg:px-[15px] py-[5px] rounded-[22px] mt-4" href="/login?id={{ job.id }}&jobId={{ job.job_id }}">
  <svg xmlns="http://www.w3.org/2000/svg" width="8.4" height="8.4" viewBox="0 0 10.4 10.4">
  <path id="Path_2655" data-name="Path 2655" d="M436.967,329.723h-3.9v-3.9a.417.417,0,0,0-.433-.433h-.867a.417.417,0,0,0-.433.433v3.9h-3.9a.417.417,0,0,0-.433.433v.867a.418.418,0,0,0,.433.433h3.9v3.9a.418.418,0,0,0,.433.433h.867a.418.418,0,0,0,.433-.433v-3.9h3.9a.418.418,0,0,0,.433-.433v-.867a.417.417,0,0,0-.433-.433Z" transform="translate(-427 -325.39)" fill="#fff"></path>
  </svg>
- <span> follow </span>
+ <span> {{ t('follow') }} </span>
  </a>
  </div>
  </div>
  <div class="apply-info">
- <p>Teletalk Job does not charge any fee at any stage of the recruitment process. Please note that Teletalk Job is an equal employment organization. Any form of persuasion will disqualify the candidature.</p>
- <p class="deadline">Application Deadline: {{ job.updated_at|time_ago }}</p>
- <a class="apply-online" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">Apply Online</a>
+ <p>{{ t('Teletalk Job does not charge any fee at any stage of the recruitment process. Please note that Teletalk Job is an equal employment organization. Any form of persuasion will disqualify the candidature.') }}</p>
+ <p class="deadline">{{ t('Application Deadline:') }} {{ job.updated_at|time_ago }}</p>
+ <a class="apply-online" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">{{ t('Apply Online') }}</a>
  </div>
  <div class="organization-info">
- <h2>Organization Information</h2>
+ <h2>{{ t('Organization Information') }}</h2>
  <p>{{ job.organization }}</p>
  </div>
  </div>
@@ -173,12 +173,12 @@
  <!-- Related Jobs -->
  <div class="rounded-xl border border-slate-200 bg-white shadow-sm mt-4">
  <div class="border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
- <h5 class=" mb-0">Related Jobs</h5>
+ <h5 class=" mb-0">{{ t('Related Jobs') }}</h5>
  </div>
  <div class="p-4">
- <p class="text-slate-500">More jobs from {{ job.organization }}</p>
+ <p class="text-slate-500">{{ t('More jobs from') }} {{ job.organization }}</p>
  <a href="/api/teletalk/jobs?organization={{ job.organization|url_encode }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-900 border border-slate-300 hover:bg-slate-200 px-3 py-1.5 text-xs">
- View All Jobs
+ {{ t('View All Jobs') }}
  </a>
  </div>
  </div>
@@ -186,13 +186,13 @@
  <!-- Quick Links -->
  <div class="rounded-xl border border-slate-200 bg-white shadow-sm mt-4">
  <div class="border-b border-slate-200 px-4 py-3 bg-slate-600 text-white">
- <h5 class=" mb-0">Quick Links</h5>
+ <h5 class=" mb-0">{{ t('Quick Links') }}</h5>
  </div>
  <div class="p-4">
  <ul class="list-none pl-0">
  <li class="mb-2">
  <a href="/jobs" class="no-underline">
- <i class="lucide lucide-list mr-2"></i>All Jobs
+ <i class="lucide lucide-list mr-2"></i>{{ t('All Jobs') }}
  </a>
  </li>
  <li class="mb-2">

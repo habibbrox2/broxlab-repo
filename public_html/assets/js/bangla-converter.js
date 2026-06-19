@@ -171,7 +171,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ES module exports + window compat (backward compatibility)
 export { convertBijoyToUnicode, convertUnicodeToBijoy };
-window.convertBijoyToUnicode = convertBijoyToUnicode;
-window.convertUnicodeToBijoy = convertUnicodeToBijoy;

@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang() }}">
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <meta name="robots" content="noindex, follow">
- <title>Maintenance Mode - {{ app_settings.site_name ?? 'BroxBhai' }}</title>
+ <title>{{ t('Maintenance Mode') }} - {{ app_settings.site_name ?? 'BroxBhai' }}</title>
  <link rel="stylesheet" href="/assets/css/tailwind.css">
  <link rel="stylesheet" href="/cdn/css/lucide/lucide.css">
-
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 flex items-center justify-center p-4">
  <div class="relative w-full max-w-lg">
@@ -20,19 +19,17 @@
     <div class="mx-auto mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 text-4xl shadow-lg shadow-orange-500/20">
      <i class="lucide lucide-wrench" style="width:2rem;height:2rem;"></i>
     </div>
-    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">Maintenance in Progress</h1>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">{{ t('Maintenance in Progress') }}</h1>
     <div class="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-800">
      <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-500"></span>
-     System Under Maintenance
+     {{ t('System Under Maintenance') }}
     </div>
     <div class="mt-6 space-y-3 text-sm leading-relaxed text-slate-600">
-     <p>আমরা সাইটটি আরও ভালো করার জন্য রক্ষণাবেক্ষণ করছি।</p>
-     <p>We're making improvements to serve you better. We'll be back soon!</p>
+     <p>{{ t('We are making improvements to serve you better. We will be back soon!') }}</p>
     </div>
     <hr class="my-6 border-slate-200">
     <div class="space-y-1 text-xs text-slate-500">
-     <p>অনুগ্রহ করে কিছু সময়ের জন্য পরে আবার চেষ্টা করুন।</p>
-     <p>Please check back in a few moments.</p>
+     <p>{{ t('Please check back in a few moments.') }}</p>
      <p class="mt-4 text-slate-400">{{ app_settings.site_name ?? 'BroxBhai' }} &copy; {{ "now"|date("Y") }}</p>
     </div>
    </div>

@@ -39,7 +39,7 @@ export function checkPasswordRequirements(password) {
   }
 
   const valid = Object.values(results).every(Boolean);
-  return { valid, requirements: results };
+  return { valid, requirements: results, };
 }
 
 /**
@@ -58,9 +58,9 @@ export function getPasswordStrength(password) {
   if (/[0-9]/.test(p)) score++;
   if (/[^A-Za-z0-9]/.test(p)) score++;
 
-  if (score <= 2) return { level: 'weak', score };
-  if (score <= 4) return { level: 'medium', score };
-  return { level: 'strong', score };
+  if (score <= 2) return { level: 'weak', score, };
+  if (score <= 4) return { level: 'medium', score, };
+  return { level: 'strong', score, };
 }
 
 /**
@@ -79,13 +79,13 @@ export function validateConfirmation(password, confirmation) {
  * Default allowed MIME types grouped by category.
  */
 const FILE_TYPE_GROUPS = {
-  image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif'],
-  document: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-  spreadsheet: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-  text: ['text/plain', 'text/csv', 'text/html', 'text/css', 'text/javascript'],
-  video: ['video/mp4', 'video/webm', 'video/ogg'],
-  audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm'],
-  archive: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/gzip'],
+  image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif',],
+  document: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',],
+  spreadsheet: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',],
+  text: ['text/plain', 'text/csv', 'text/html', 'text/css', 'text/javascript',],
+  video: ['video/mp4', 'video/webm', 'video/ogg',],
+  audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm',],
+  archive: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/gzip',],
 };
 
 /**
@@ -119,7 +119,7 @@ const EXTENSION_MIME_MAP = {
 const DEFAULT_FILE_OPTIONS = {
   maxSize: 10 * 1024 * 1024,
   allowedTypes: null,
-  allowedGroups: ['image', 'document'],
+  allowedGroups: ['image', 'document',],
   allowedExtensions: null,
   checkExtensionMatch: true,
   minSize: 0,
@@ -139,7 +139,7 @@ function resolveAllowedTypes(opts) {
   for (const g of groups) {
     if (FILE_TYPE_GROUPS[g]) types.push(...FILE_TYPE_GROUPS[g]);
   }
-  return [...new Set(types)];
+  return [...new Set(types),];
 }
 
 /**
@@ -160,33 +160,33 @@ function getExtension(filename) {
  * @returns {{ valid: boolean, error?: string, code?: string }}
  */
 export function validateFile(file, options = {}) {
-  const opts = { ...DEFAULT_FILE_OPTIONS, ...options };
+  const opts = { ...DEFAULT_FILE_OPTIONS, ...options, };
 
   if (!file) {
-    return { valid: false, error: `${opts.label} is required`, code: 'NO_FILE' };
+    return { valid: false, error: `${opts.label} is required`, code: 'NO_FILE', };
   }
 
   // Size checks
   if (opts.minSize > 0 && file.size < opts.minSize) {
     const minMB = (opts.minSize / (1024 * 1024)).toFixed(1);
-    return { valid: false, error: `${opts.label} must be at least ${minMB}MB`, code: 'TOO_SMALL' };
+    return { valid: false, error: `${opts.label} must be at least ${minMB}MB`, code: 'TOO_SMALL', };
   }
   if (opts.maxSize > 0 && file.size > opts.maxSize) {
     const maxMB = (opts.maxSize / (1024 * 1024)).toFixed(1);
-    return { valid: false, error: `${opts.label} must be under ${maxMB}MB`, code: 'TOO_LARGE' };
+    return { valid: false, error: `${opts.label} must be under ${maxMB}MB`, code: 'TOO_LARGE', };
   }
 
   // MIME type check
   const allowed = resolveAllowedTypes(opts);
   if (allowed.length > 0 && !allowed.includes(file.type)) {
-    return { valid: false, error: `${opts.label} type "${file.type || 'unknown'}" is not allowed`, code: 'INVALID_TYPE' };
+    return { valid: false, error: `${opts.label} type "${file.type || 'unknown'}" is not allowed`, code: 'INVALID_TYPE', };
   }
 
   // Extension check
   const ext = getExtension(file.name);
   if (opts.allowedExtensions && opts.allowedExtensions.length) {
     if (!opts.allowedExtensions.includes(ext)) {
-      return { valid: false, error: `${opts.label} extension "${ext}" is not allowed`, code: 'INVALID_EXTENSION' };
+      return { valid: false, error: `${opts.label} extension "${ext}" is not allowed`, code: 'INVALID_EXTENSION', };
     }
   }
 
@@ -202,7 +202,7 @@ export function validateFile(file, options = {}) {
     }
   }
 
-  return { valid: true };
+  return { valid: true, };
 }
 
 /**
@@ -218,11 +218,11 @@ export function validateFiles(files, options = {}) {
   for (let i = 0; i < list.length; i++) {
     const result = validateFile(list[i], options);
     if (!result.valid) {
-      errors.push({ index: i, file: list[i].name, error: result.error, code: result.code });
+      errors.push({ index: i, file: list[i].name, error: result.error, code: result.code, });
     }
   }
 
-  return { valid: errors.length === 0, errors };
+  return { valid: errors.length === 0, errors, };
 }
 
 /**
@@ -232,7 +232,7 @@ export function validateFiles(files, options = {}) {
  */
 export function formatFileSize(bytes) {
   if (bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const units = ['B', 'KB', 'MB', 'GB', 'TB',];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }

@@ -56,8 +56,9 @@ class CvModel
 
     /**
      * Create a new CV for a user.
+     * Pass null for guest (unauthenticated) users.
      */
-    public function create(int $userId, string $title = 'My CV', string $template = 'modern', ?string $professionalStatus = null): ?int
+    public function create(?int $userId, string $title = 'My CV', string $template = 'modern', ?string $professionalStatus = null): ?int
     {
         $stmt = $this->mysqli->prepare(
             "INSERT INTO cvs (user_id, title, template, is_active, professional_status) VALUES (?, ?, ?, TRUE, ?)"
@@ -65,10 +66,49 @@ class CvModel
         $stmt->bind_param('isss', $userId, $title, $template, $professionalStatus);
 
         if ($stmt->execute()) {
-            return (int)$stmt->insert_id;
+            $cvId = (int)$stmt->insert_id;
+            // Track guest CV IDs in session
+            if ($userId === null) {
+                $this->trackGuestCvId($cvId);
+            }
+            return $cvId;
         }
 
         return null;
+    }
+
+    /**
+     * Track a guest CV ID in the user's session so we can verify ownership.
+     */
+    private function trackGuestCvId(int $cvId): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $guestIds = $_SESSION['guest_cv_ids'] ?? [];
+        if (!in_array($cvId, $guestIds, true)) {
+            $guestIds[] = $cvId;
+            $_SESSION['guest_cv_ids'] = $guestIds;
+        }
+    }
+
+    /**
+     * Get guest CV IDs from session.
+     */
+    public function getGuestCvIds(): array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return $_SESSION['guest_cv_ids'] ?? [];
+    }
+
+    /**
+     * Check if a CV ID belongs to a guest session.
+     */
+    public function isGuestCv(int $cvId): bool
+    {
+        return in_array($cvId, $this->getGuestCvIds(), true);
     }
 
     /**
@@ -431,10 +471,53 @@ class CvModel
     }
 
     /**
-     * Check if a CV belongs to a user.
+     * Claim guest CVs for a newly logged-in user.
+     * Transfers ownership of all session-tracked guest CVs to the given user.
+     * Returns the number of CVs claimed.
      */
-    public function belongsToUser(int $cvId, int $userId): bool
+    public function claimGuestCvsForUser(int $userId): int
     {
+        $guestIds = $this->getGuestCvIds();
+        if (empty($guestIds)) {
+            return 0;
+        }
+
+        $claimed = 0;
+        foreach ($guestIds as $cvId) {
+            // Only claim CVs that still have null user_id
+            $cv = $this->getById($cvId);
+            if ($cv && $cv['user_id'] === null) {
+                $stmt = $this->mysqli->prepare(
+                    "UPDATE cvs SET user_id = ? WHERE id = ? AND user_id IS NULL"
+                );
+                $stmt->bind_param('ii', $userId, $cvId);
+                if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    $claimed++;
+                }
+                $stmt->close();
+            }
+        }
+
+        // Clear the session tracking so they aren't re-claimed
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        unset($_SESSION['guest_cv_ids']);
+
+        return $claimed;
+    }
+
+    /**
+     * Check if a CV belongs to a user.
+     * For guests (null userId), checks the CV exists and has null user_id.
+     */
+    public function belongsToUser(int $cvId, ?int $userId = null): bool
+    {
+        if ($userId === null) {
+            // For guests, check session tracking
+            return $this->isGuestCv($cvId);
+        }
+
         $stmt = $this->mysqli->prepare(
             "SELECT id FROM cvs c WHERE id = ? AND user_id = ? AND {$this->getDeletedAtCondition()} LIMIT 1"
         );

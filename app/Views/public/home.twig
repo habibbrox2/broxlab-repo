@@ -119,27 +119,27 @@
                 <span class="dp-dot yellow"></span>
                 <span class="dp-dot green"></span>
               </div>
-              <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-left:0.5rem;">Platform Overview</span>
+              <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-left:0.5rem;">{{ t('Platform Overview') }}</span>
             </div>
           </div>
           <div class="dp-grid">
             <div class="dp-item">
-              <div class="dp-item-label">Active Users</div>
+              <div class="dp-item-label">{{ t('Active Users') }}</div>
               <div class="dp-item-value">2,847</div>
               <div class="dp-item-change">+12.5%</div>
             </div>
             <div class="dp-item">
-              <div class="dp-item-label">Page Views</div>
+              <div class="dp-item-label">{{ t('Page Views') }}</div>
               <div class="dp-item-value">18.2K</div>
               <div class="dp-item-change">+8.3%</div>
             </div>
             <div class="dp-item">
-              <div class="dp-item-label">Avg. Session</div>
+              <div class="dp-item-label">{{ t('Avg. Session') }}</div>
               <div class="dp-item-value">4m 32s</div>
               <div class="dp-item-change">+5.1%</div>
             </div>
             <div class="dp-item">
-              <div class="dp-item-label">Bounce Rate</div>
+              <div class="dp-item-label">{{ t('Bounce Rate') }}</div>
               <div class="dp-item-value">24.8%</div>
               <div class="dp-item-change" style="color:#ef4444;">-2.1%</div>
             </div>
@@ -151,9 +151,9 @@
           <div class="fc-icon" style="background:rgba(99,102,241,0.12);color:var(--brand-indigo);">
             <i class="lucide lucide-smartphone" style="width:20px;height:20px;"></i>
           </div>
-          <div class="fc-title">New Devices Added</div>
-          <div class="fc-desc">Latest smartphone models this week</div>
-          <div class="fc-value">+24 this week</div>
+          <div class="fc-title">{{ t('New Devices Added') }}</div>
+          <div class="fc-desc">{{ t('Latest smartphone models this week') }}</div>
+          <div class="fc-value">{{ t('+24 this week') }}</div>
         </div>
 
         {# Floating Card 2 — Trending #}
@@ -161,9 +161,9 @@
           <div class="fc-icon" style="background:rgba(245,158,11,0.12);color:#d97706;">
             <i class="lucide lucide-trending-up" style="width:20px;height:20px;"></i>
           </div>
-          <div class="fc-title">Trending Articles</div>
-          <div class="fc-desc">Most read tech news today</div>
-          <div class="fc-value" style="color:#d97706;">Top 5 picks</div>
+          <div class="fc-title">{{ t('Trending Articles') }}</div>
+          <div class="fc-desc">{{ t('Most read tech news today') }}</div>
+          <div class="fc-value" style="color:#d97706;">{{ t('Top 5 picks') }}</div>
         </div>
 
         {# Floating Card 3 — Live Updates #}
@@ -171,9 +171,9 @@
           <div class="fc-icon" style="background:rgba(34,197,94,0.12);color:#16a34a;">
             <i class="lucide lucide-bell-ring" style="width:20px;height:20px;"></i>
           </div>
-          <div class="fc-title">Live Updates</div>
-          <div class="fc-desc">Real-time notifications enabled</div>
-          <div class="fc-value" style="color:#16a34a;">Active</div>
+          <div class="fc-title">{{ t('Live Updates') }}</div>
+          <div class="fc-desc">{{ t('Real-time notifications enabled') }}</div>
+          <div class="fc-value" style="color:#16a34a;">{{ t('Active') }}</div>
         </div>
       </div>
 
@@ -524,7 +524,7 @@
         {# Scroll hint #}
         <div class="top-carousel-scroll-hint">
 <i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
-          Scroll for more
+          {{ t('Scroll for more') }}
 <i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
         </div>
       {% else %}
@@ -575,7 +575,7 @@
                   <div class="top-carousel-card__footer">
                     <span class="top-carousel-card__meta">
 <i class="lucide lucide-star" style="width:12px;height:12px" aria-hidden="true"></i>
-                      {{ svc.rating_total|default(0) }} reviews
+                      {{ svc.rating_total|default(0) }} {{ t('reviews') }}
                     </span>
                     <a href="/services/view/{{ svc.slug }}" class="top-carousel-card__cta" aria-label="View {{ svc.title|striptags }}">
                       View
@@ -589,7 +589,7 @@
         </div>
         <div class="top-carousel-scroll-hint">
 <i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
-          Scroll for more
+          {{ t('Scroll for more') }}
 <i class="lucide lucide-chevron-right" style="width:14px;height:14px" aria-hidden="true"></i>
         </div>
       {% else %}
@@ -1024,7 +1024,7 @@
       </div>
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Published articles">{{ stats.articles|default('850') }}+</p>
-        <p class="mb-0 opacity-75">Articles</p>
+        <p class="mb-0 opacity-75">{{ t('Articles') }}</p>
       </div>
       <div class="stat-item">
         <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Job postings">{{ stats.job_posts|default('320') }}+</p>
@@ -1084,7 +1084,7 @@
                   id="copyLinkBtnHome"
                   aria-label="Copy link to clipboard"
                   data-action="copy-page-url">
-            <i class="lucide lucide-link mr-2" aria-hidden="true"></i>Copy Link
+            <i class="lucide lucide-link mr-2" aria-hidden="true"></i>{{ t('Copy Link') }}
           </button>
         </div>
 
@@ -1158,7 +1158,7 @@
             <a href="{{ item.link|default('#') }}"
                class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 mt-4 w-fit"
                aria-label="Read more about {{ item.title|striptags }}">
-              Read More
+              {{ t('Read More') }}
             </a>
           </div>
         </article>
@@ -1301,7 +1301,7 @@
       showCopySuccess(btn);
     } catch (err) {
       console.error('Failed to copy:', err);
-      alert('Failed to copy link. Please try again.');
+      alert('{{ t("Failed to copy link. Please try again.")|e("js") }}');
     }
     document.body.removeChild(textarea);
   }
@@ -1312,7 +1312,7 @@
     const originalBg = btn.style.backgroundColor;
     const originalBorder = btn.style.borderColor;
     
-    btn.innerHTML = '<i class="lucide lucide-check mr-2" aria-hidden="true"></i>Copied!';
+    btn.innerHTML = '<i class="lucide lucide-check mr-2" aria-hidden="true"></i>' + '{{ t("Copied!") }}';
     btn.style.backgroundColor = '#28a745';
     btn.style.borderColor = '#28a745';
     btn.style.color = '#fff';

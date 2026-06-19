@@ -80,6 +80,50 @@ class CvPurchaseController {
         jsonResponse(['success'=>true,'message'=>'Transaction ID submitted. Admin will confirm.']);
     }
 
+    /**
+     * GET /cv-builder/purchased-templates — Page showing user's purchased templates.
+     */
+    public static function purchasedTemplates(): void
+    {
+        global $twig, $mysqli;
+        $userId = requireAuth();
+
+        $stmt = $mysqli->prepare(
+            "SELECT id, template_slug, amount, currency, payment_method, transaction_id, status, created_at, confirmed_at 
+             FROM cv_template_purchases WHERE user_id = ? AND deleted_at IS NULL 
+             ORDER BY created_at DESC"
+        );
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $purchases = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        // Look up how many CVs the user has with each template to show usage
+        $cvModel = new CvModel($mysqli);
+        $cvs = $cvModel->getByUserId($userId);
+        $templateUsage = [];
+        foreach ($cvs as $cv) {
+            $t = $cv['template'] ?? 'modern';
+            $templateUsage[$t] = ($templateUsage[$t] ?? 0) + 1;
+        }
+
+        // Template display data
+        $templates = [
+            'executive' => ['name' => 'Executive Elite', 'gradient' => 'linear-gradient(135deg, #1A1A2E, #16213E)', 'icon' => 'crown'],
+        ];
+
+        echo $twig->render('cv/purchased-templates.twig', [
+            'purchases' => $purchases,
+            'template_usage' => $templateUsage,
+            'templates' => $templates,
+            'page_title' => 'My Purchased Templates',
+            'breadcrumbs' => [
+                ['label' => 'CV Builder', 'url' => '/cv-builder', 'icon' => 'file-earmark-text'],
+                ['label' => 'Purchased Templates', 'icon' => 'crown']
+            ]
+        ]);
+    }
+
     public static function bkashCheckout(): void
     {
         global $mysqli;
@@ -106,7 +150,17 @@ class CvPurchaseController {
             if ($result['success']) {
                 $purchaseId = $result['purchase_id'] ?? 0;
                 $trxId = $result['transaction_id'] ?? '';
-                header('Location: /cv-builder/templates?payment=success&purchase_id=' . $purchaseId . '&trxid=' . urlencode($trxId));
+                // Look up the template slug from the purchase
+                $slug = '';
+                $slugStmt = $mysqli->prepare("SELECT template_slug FROM cv_template_purchases WHERE id = ?");
+                if ($slugStmt) {
+                    $slugStmt->bind_param('i', $purchaseId);
+                    $slugStmt->execute();
+                    $slugRow = $slugStmt->get_result()->fetch_assoc();
+                    $slug = $slugRow['template_slug'] ?? '';
+                    $slugStmt->close();
+                }
+                header('Location: /cv-builder/templates?payment=success&purchase_id=' . $purchaseId . '&trxid=' . urlencode($trxId) . '&template_slug=' . urlencode($slug));
                 exit;
             }
             $status = $result['status'] ?? 'failed';

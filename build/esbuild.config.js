@@ -51,6 +51,8 @@ const ENTRY_POINTS = {
   'assistant-runtime': join(ROOT_DIR, 'public_html', 'assets', 'js', 'assistant-runtime.js'),
   'feed-discovery': join(ROOT_DIR, 'public_html', 'assets', 'js', 'feed-discovery.js'),
   'photo-studio/editor': join(ROOT_DIR, 'public_html', 'assets', 'js', 'photo-studio', 'editor.js'),
+  'cv-dashboard': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-dashboard.js'),
+  'form-enhancements': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin', 'form-enhancements.js'),
 };
 
 const buildOptions = {

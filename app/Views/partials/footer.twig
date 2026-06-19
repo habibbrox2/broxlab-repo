@@ -157,13 +157,47 @@
  {# ── Footer Language Switcher ── #}
  {% if available_languages is defined and available_languages|length > 1 %}
  <div class="flex items-center gap-2">
-  <i class="lucide lucide-globe h-4 w-4 text-slate-500" aria-hidden="true"></i>
+  {% if current_lang == 'bn' %}
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="h-4 w-4 rounded-sm shadow-sm" aria-hidden="true">
+      <rect width="60" height="40" fill="#006a4e"/>
+      <circle cx="23" cy="20" r="12" fill="#f42a41"/>
+    </svg>
+  {% else %}
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="h-4 w-4 rounded-sm shadow-sm" aria-hidden="true">
+      <rect width="60" height="40" fill="#fff"/>
+      <g fill="#b22234">
+        <rect y="0" width="60" height="3.08"/><rect y="6.15" width="60" height="3.08"/>
+        <rect y="12.31" width="60" height="3.08"/><rect y="18.46" width="60" height="3.08"/>
+        <rect y="24.62" width="60" height="3.08"/><rect y="30.77" width="60" height="3.08"/>
+        <rect y="36.92" width="60" height="3.08"/>
+      </g>
+      <rect width="24" height="21.54" fill="#3c3b6e"/>
+    </svg>
+  {% endif %}
   <span class="text-xs text-slate-500" data-i18n="Language">{{ t('Language') }}</span>
   <button type="button"
           data-lang-btn="{{ current_lang == 'bn' ? 'en' : 'bn' }}"
           aria-label="{{ current_lang == 'bn' ? 'Switch to English' : 'Switch to Bangla' }}"
           class="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all duration-200 hover:border-indigo-500/50 hover:bg-slate-800 hover:text-white hover:shadow-lg hover:shadow-indigo-500/10">
-   <span data-i18n="{{ current_lang == 'bn' ? 'English' : 'বাংলা' }}">{{ current_lang == 'bn' ? t('English') : t('বাংলা') }}</span>
+   {% if current_lang == 'bn' %}
+     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="h-3.5 w-5 rounded-sm shadow-sm" aria-hidden="true">
+       <rect width="60" height="40" fill="#006a4e"/>
+       <circle cx="23" cy="20" r="12" fill="#f42a41"/>
+     </svg>
+     <span data-i18n="বাংলা">{{ t('বাংলা') }}</span>
+   {% else %}
+     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="h-3.5 w-5 rounded-sm shadow-sm" aria-hidden="true">
+       <rect width="60" height="40" fill="#fff"/>
+       <g fill="#b22234">
+         <rect y="0" width="60" height="3.08"/><rect y="6.15" width="60" height="3.08"/>
+         <rect y="12.31" width="60" height="3.08"/><rect y="18.46" width="60" height="3.08"/>
+         <rect y="24.62" width="60" height="3.08"/><rect y="30.77" width="60" height="3.08"/>
+         <rect y="36.92" width="60" height="3.08"/>
+       </g>
+       <rect width="24" height="21.54" fill="#3c3b6e"/>
+     </svg>
+     <span data-i18n="English">{{ t('English') }}</span>
+   {% endif %}
   </button>
  </div>
  {% endif %}

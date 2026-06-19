@@ -294,44 +294,44 @@ if (form) {
 
   function renderResult(type, r) {
     switch (type) {
-    case 'simple-interest':
-    case 'compound-interest':
-    case 'loan-amortization':
-    case 'mortgage':
-      return renderFinancial(type, r);
-    case 'percentage':
-      return renderPercentage(r);
-    case 'percentage-change':
-      return renderPercentageChange(r);
-    case 'gpa':
-      return renderGpa(r);
-    case 'bmi':
-      return renderBMI(r);
-    case 'standard':
-    case 'scientific':
-      return renderStandardScientific(r);
-    case 'graphing':
-      return renderGraphing(r);
-    case 'programmer':
-      return renderProgrammer(r);
-    case 'date-calculation':
-      return renderDateCalculation(r);
-    case 'currency-converter':
-    case 'volume-converter':
-    case 'length-converter':
-    case 'weight-converter':
-    case 'temperature-converter':
-    case 'energy-converter':
-    case 'area-converter':
-    case 'speed-converter':
-    case 'time-converter':
-    case 'power-converter':
-    case 'data-converter':
-    case 'pressure-converter':
-    case 'angle-converter':
-      return renderConverter(r);
-    default:
-      return `<pre>${ JSON.stringify(r, null, 2) }</pre>`;
+      case 'simple-interest':
+      case 'compound-interest':
+      case 'loan-amortization':
+      case 'mortgage':
+        return renderFinancial(type, r);
+      case 'percentage':
+        return renderPercentage(r);
+      case 'percentage-change':
+        return renderPercentageChange(r);
+      case 'gpa':
+        return renderGpa(r);
+      case 'bmi':
+        return renderBMI(r);
+      case 'standard':
+      case 'scientific':
+        return renderStandardScientific(r);
+      case 'graphing':
+        return renderGraphing(r);
+      case 'programmer':
+        return renderProgrammer(r);
+      case 'date-calculation':
+        return renderDateCalculation(r);
+      case 'currency-converter':
+      case 'volume-converter':
+      case 'length-converter':
+      case 'weight-converter':
+      case 'temperature-converter':
+      case 'energy-converter':
+      case 'area-converter':
+      case 'speed-converter':
+      case 'time-converter':
+      case 'power-converter':
+      case 'data-converter':
+      case 'pressure-converter':
+      case 'angle-converter':
+        return renderConverter(r);
+      default:
+        return `<pre>${ JSON.stringify(r, null, 2) }</pre>`;
     }
   }
 

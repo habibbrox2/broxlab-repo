@@ -152,46 +152,46 @@ const writer = {
 
   processEvent(data) {
     switch (data.type) {
-    case 'start':
-      this.setStatus('generating', data.message || 'Generating...');
-      break;
+      case 'start':
+        this.setStatus('generating', data.message || 'Generating...');
+        break;
 
-    case 'title':
-      this.articleTitle = data.title || '';
-      this.el.liveTitle.textContent = this.articleTitle || 'Live Preview';
-      this.el.progressFill.style.width = '20%';
-      break;
+      case 'title':
+        this.articleTitle = data.title || '';
+        this.el.liveTitle.textContent = this.articleTitle || 'Live Preview';
+        this.el.progressFill.style.width = '20%';
+        break;
 
-    case 'meta':
+      case 'meta':
       // Server emits: { type: 'meta', meta: { ... } }
-      if (data && data.meta) {
-        if (data.meta.slug) this.articleSlug = data.meta.slug;
-        if (Array.isArray(data.meta.tags)) this.articleTags = data.meta.tags;
-        if (data.meta.seo_title) this.articleSeoTitle = data.meta.seo_title;
-        if (data.meta.seo_description) this.articleSeoDescription = data.meta.seo_description;
-        if (Array.isArray(data.meta.key_points)) this.articleKeyPoints = data.meta.key_points;
-        if (data.meta.reading_time_minutes) this.articleReadingTime = data.meta.reading_time_minutes;
-      }
-      break;
+        if (data && data.meta) {
+          if (data.meta.slug) this.articleSlug = data.meta.slug;
+          if (Array.isArray(data.meta.tags)) this.articleTags = data.meta.tags;
+          if (data.meta.seo_title) this.articleSeoTitle = data.meta.seo_title;
+          if (data.meta.seo_description) this.articleSeoDescription = data.meta.seo_description;
+          if (Array.isArray(data.meta.key_points)) this.articleKeyPoints = data.meta.key_points;
+          if (data.meta.reading_time_minutes) this.articleReadingTime = data.meta.reading_time_minutes;
+        }
+        break;
 
-    case 'content':
-      this.articleContent += data.chunk || '';
-      this.renderContent();
-      this.updateProgress();
-      break;
+      case 'content':
+        this.articleContent += data.chunk || '';
+        this.renderContent();
+        this.updateProgress();
+        break;
 
-    case 'complete':
-      this.articleContent = data.content || this.articleContent;
-      this.articleTitle = data.title || this.articleTitle;
-      this.postId = data.post_id || null;
-      this.articleSlug = data.slug || null;
-      this.renderContent();
-      this.onComplete();
-      break;
+      case 'complete':
+        this.articleContent = data.content || this.articleContent;
+        this.articleTitle = data.title || this.articleTitle;
+        this.postId = data.post_id || null;
+        this.articleSlug = data.slug || null;
+        this.renderContent();
+        this.onComplete();
+        break;
 
-    case 'error':
-      this.handleError(data.error || 'Generation failed');
-      break;
+      case 'error':
+        this.handleError(data.error || 'Generation failed');
+        break;
     }
   },
 
@@ -410,4 +410,3 @@ if (document.readyState === 'loading') {
 }
 
 export { writer };
-window.writer = writer;

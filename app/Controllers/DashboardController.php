@@ -122,6 +122,13 @@ $router->get('/admin/dashboard', ['middleware' => ['auth', 'admin_or_super_only'
         $userRoles = $userModel->getRoles($currentUser['id']);
         $userPermissions = $userModel->getPermissions($currentUser['id']);
 
+        // ── Check for guest CV auto-claim flash notification ──
+        $guestCvsClaimed = 0;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_cvs_just_claimed'])) {
+            $guestCvsClaimed = (int)$_SESSION['guest_cvs_just_claimed'];
+            unset($_SESSION['guest_cvs_just_claimed']);
+        }
+
         echo $twig->render('admin/dashboard/index.twig', [
             'title'        => 'Admin Dashboard',
             'header_title' => 'Welcome back, ' . htmlspecialchars($currentUser['full_name'] ?? $currentUser['username'] ?? 'Admin'),
@@ -133,6 +140,7 @@ $router->get('/admin/dashboard', ['middleware' => ['auth', 'admin_or_super_only'
             'recent_comments' => $recentComments,
             'trend' => $trendData,
             'last_sync_at' => new DateTime(),
+            'guest_cvs_claimed' => $guestCvsClaimed,
         ]);
     } catch (Throwable $e) {
         logError(
@@ -630,6 +638,13 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
             $recent_activity = [];
         }
 
+        // ── Check for guest CV auto-claim flash notification ──
+        $guestCvsClaimed = 0;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_cvs_just_claimed'])) {
+            $guestCvsClaimed = (int)$_SESSION['guest_cvs_just_claimed'];
+            unset($_SESSION['guest_cvs_just_claimed']);
+        }
+
         echo $twig->render('user/dashboard_user.twig', [
             'title'        => 'My Dashboard',
             'header_title' => 'Welcome, ' . htmlspecialchars(($userProfile['first_name'] ?? '') . ' ' . ($userProfile['last_name'] ?? '') ?: $currentUser['username'] ?? 'User'),
@@ -641,6 +656,7 @@ $router->get('/user/dashboard', ['middleware' => ['auth', 'user_dashboard_only']
             'user_profile' => $userProfile,
             'notices'      => $notices,
             'recent_activity' => $recent_activity,
+            'guest_cvs_claimed' => $guestCvsClaimed,
         ]);
     } catch (Throwable $e) {
         logError(

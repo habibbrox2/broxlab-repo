@@ -53,6 +53,28 @@ Modern, clean design with gradient accents, hover effects, and animations
   </div>
 </div>
 
+{# ── Guest CV Auto-Claimed Notification ── #}
+{% if guest_cvs_claimed is defined and guest_cvs_claimed > 0 %}
+<div id="guest-claimed-notification" class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 p-4 flex items-start gap-3 animate-fade-in">
+  <div id="claimed-timer-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-400/60 rounded-b-2xl" style="width:100%;transition:width 8s linear;"></div>
+  <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+    <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2">
+      <h3 class="font-bold text-emerald-800 text-sm">Your Guest CVs Have Been Claimed!</h3>
+      <span id="claimed-countdown" class="text-[10px] font-semibold text-emerald-500/70 tabular-nums flex-shrink-0">8s</span>
+    </div>
+    <p class="text-xs text-emerald-700 mt-0.5">
+      {{ guest_cvs_claimed }} guest CV(s) have been transferred to your account. You can now edit, export, and manage them in <a href="/cv-builder" class="font-semibold text-emerald-800 underline hover:text-emerald-900">CV Builder</a>.
+    </p>
+  </div>
+  <button type="button" id="dismiss-claimed-notification" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors">
+    <i data-lucide="x" class="w-4 h-4"></i>
+  </button>
+</div>
+{% endif %}
+
 {# ── User Roles Alert ── #}
 {% if user_roles and user_roles|length > 0 %}
 <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-sky-50/80 p-4 shadow-sm" role="alert">
@@ -449,6 +471,122 @@ Modern, clean design with gradient accents, hover effects, and animations
   </div>
 </div>
 {% endblock %}
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease;
+}
+</style>
+
 {% block scripts %}
 {{ parent() }}
+
+{# ─── Guest CV Claimed Notification Auto-Dismiss Timer ─── #}
+<script>
+(function() {
+  var notif = document.getElementById('guest-claimed-notification');
+  if (!notif) return;
+
+  var timerBar = document.getElementById('claimed-timer-bar');
+  var countdownEl = document.getElementById('claimed-countdown');
+  var dismissBtn = document.getElementById('dismiss-claimed-notification');
+  var dismissTimer = null;
+  var countdownInterval = null;
+  var remainingSeconds = 8;
+  var isDismissing = false;
+
+  function dismissNotif() {
+    if (isDismissing) return;
+    isDismissing = true;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    notif.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    notif.style.opacity = '0';
+    notif.style.transform = 'translateY(-10px)';
+    setTimeout(function() { notif.style.display = 'none'; }, 300);
+  }
+
+  function updateCountdown() {
+    if (remainingSeconds <= 0) return;
+    countdownEl.textContent = remainingSeconds + 's';
+  }
+
+  // Start timer bar shrink
+  if (timerBar) {
+    requestAnimationFrame(function() {
+      timerBar.style.width = '0%';
+    });
+  }
+
+  countdownInterval = setInterval(function() {
+    remainingSeconds--;
+    if (remainingSeconds <= 0) {
+      clearInterval(countdownInterval);
+      countdownEl.textContent = '0s';
+    } else {
+      updateCountdown();
+    }
+  }, 1000);
+
+  dismissTimer = setTimeout(dismissNotif, 8000);
+
+  // Pause on hover
+  notif.addEventListener('mouseenter', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    if (timerBar) {
+      timerBar.style.transition = 'none';
+      timerBar.style.width = timerBar.offsetWidth + 'px';
+    }
+    countdownEl.textContent = '\u2714';
+  });
+
+  // Resume on mouse leave
+  notif.addEventListener('mouseleave', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+
+    if (timerBar) {
+      var currentWidth = parseFloat(timerBar.style.width) || 0;
+      var parentWidth = timerBar.parentElement ? timerBar.parentElement.offsetWidth : 1;
+      var fraction = Math.max(0, Math.min(1, currentWidth / parentWidth));
+      var remainingMs = Math.round(fraction * 8000);
+      remainingSeconds = Math.round(remainingMs / 1000);
+
+      timerBar.style.transition = 'width ' + remainingMs + 'ms linear';
+      requestAnimationFrame(function() {
+        timerBar.style.width = '0%';
+      });
+    } else {
+      remainingSeconds = 8;
+    }
+
+    updateCountdown();
+    countdownInterval = setInterval(function() {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) {
+        clearInterval(countdownInterval);
+        countdownEl.textContent = '0s';
+      } else {
+        updateCountdown();
+      }
+    }, 1000);
+
+    dismissTimer = setTimeout(dismissNotif, remainingMs > 0 ? remainingMs : 8000);
+  });
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissNotif();
+    });
+  }
+})();
+</script>
 {% endblock %}

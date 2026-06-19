@@ -13,6 +13,7 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
   let totalRecords = 0;
   let totalPages = 1;
   let activityEnabled = tbody.dataset.activityEnabled === 'true';
+  let _currentLogJson;
 
   function parseBrowserInfo(userAgent) {
     if (!userAgent) return 'Unknown';
@@ -99,7 +100,7 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
     byId('modalLogRole').textContent = log.role;
     byId('modalLogAction').textContent = log.action;
     byId('modalLogResource').textContent =
-        `${log.resource_type || 'N/A'} #${log.resource_id || 'N/A'}`;
+      `${log.resource_type || 'N/A'} #${log.resource_id || 'N/A'}`;
     byId('modalLogStatus').innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${escapeHtml(log.status)}</span>`;
     byId('modalLogIp').textContent = log.ip_address || 'N/A';
     byId('modalLogAgent').textContent = log.user_agent || 'N/A';
@@ -108,13 +109,13 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
     if (log.details && log.details._browser) browserInfo = log.details._browser;
     else if (log.user_agent) browserInfo = parseBrowserInfo(log.user_agent);
     byId('modalLogBrowser').innerHTML =
-        `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${escapeHtml(browserInfo)}</span>`;
+      `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">${escapeHtml(browserInfo)}</span>`;
 
     const detailsJson = log.details
       ? JSON.stringify(log.details, null, 2)
       : 'No additional details';
     byId('modalLogDetails').textContent = detailsJson;
-    window.currentLogJson = JSON.stringify(log, null, 2);
+    _currentLogJson = JSON.stringify(log, null, 2);
     const modal = new broxUI.Modal(byId('logDetailsModal'));
     modal.show();
   }
@@ -145,7 +146,7 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
         data.logs.forEach((log) => tbody.appendChild(renderLog(log)));
       } else {
         tbody.innerHTML =
-            '<tr><td colspan="6" class="empty-state"><div><i class="lucide lucide-inbox mx-auto mb-2"></i><p>No logs found</p></div></td></tr>';
+          '<tr><td colspan="6" class="empty-state"><div><i class="lucide lucide-inbox mx-auto mb-2"></i><p>No logs found</p></div></td></tr>';
       }
 
       currentPage = data.page;
@@ -164,7 +165,7 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
     } catch {
       console.error('Error fetching logs');
       tbody.innerHTML =
-          '<tr><td colspan="6" class="empty-state"><i class="lucide lucide-alert-circle mx-auto mb-2"></i> Error loading logs</td></tr>';
+        '<tr><td colspan="6" class="empty-state"><i class="lucide lucide-alert-circle mx-auto mb-2"></i> Error loading logs</td></tr>';
     }
   }
 
@@ -239,9 +240,9 @@ export function initActivityLog({ byId, escapeHtml, getCsrfToken, }) {
   }
 
   byId('modalCopyJson')?.addEventListener('click', () => {
-    if (!window.currentLogJson) return;
+    if (!_currentLogJson) return;
     navigator.clipboard
-      .writeText(window.currentLogJson)
+      .writeText(_currentLogJson)
       .then(() => {
         const btn = byId('modalCopyJson');
         if (!btn) return;

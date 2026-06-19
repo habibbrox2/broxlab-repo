@@ -382,6 +382,16 @@ class OfflineDraftManager {
   }
 }
 
+/** @type {OfflineDraftManager|null} */
+let _draftManager = null;
+
+function _destroyDraftManager() {
+  if (_draftManager && typeof _draftManager.destroy === 'function') {
+    _draftManager.destroy();
+  }
+  _draftManager = null;
+}
+
 export function initOfflineDraftForContentForms() {
   if (!window.indexedDB) return null;
 
@@ -396,9 +406,8 @@ export function initOfflineDraftForContentForms() {
 
   const recordId = getRecordIdFromForm(form) || 'new';
 
-  if (window.draftMgr && typeof window.draftMgr.destroy === 'function') {
-    window.draftMgr.destroy();
-  }
+  // Destroy previous draft manager if exists
+  _destroyDraftManager();
 
   const manager = new OfflineDraftManager({
     id: recordId,
@@ -409,12 +418,13 @@ export function initOfflineDraftForContentForms() {
     maxRetries: 8,
   });
 
+  _draftManager = manager;
   window.draftMgr = manager;
   manager.init().catch(() => { });
 
   form.addEventListener('submit', () => {
-    if (window.draftMgr && typeof window.draftMgr.clearLocal === 'function') {
-      window.draftMgr.clearLocal().catch(() => { });
+    if (_draftManager && typeof _draftManager.clearLocal === 'function') {
+      _draftManager.clearLocal().catch(() => { });
     }
     byId('offline-draft-recover-placeholder')?.classList.add('hidden');
     document.querySelector('.offline-draft-banner')?.remove();

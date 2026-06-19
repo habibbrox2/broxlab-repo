@@ -9,26 +9,24 @@
  * use in other module-based scripts. Both implementations are kept in sync.
  */
 
-(function () {
-  'use strict';
+'use strict';
 
-  window.debounce = function debounce(fn, ms) {
-    let t;
-    return function () {
-      const a = arguments;
-      clearTimeout(t);
-      t = setTimeout(function () { fn.apply(this, a); }, ms);
-    };
+window.debounce = function debounce(fn, ms) {
+  let t;
+  return function () {
+    const a = arguments;
+    clearTimeout(t);
+    t = setTimeout(function () { fn.apply(this, a); }, ms);
   };
+};
 
-  window.throttle = function throttle(fn, ms) {
-    let last = 0;
-    return function () {
-      const now = Date.now();
-      if (now - last >= ms) {
-        last = now;
-        fn.apply(this, arguments);
-      }
-    };
+window.throttle = function throttle(fn, ms) {
+  let last = 0;
+  return function () {
+    const now = Date.now();
+    if (now - last >= ms) {
+      last = now;
+      fn.apply(this, arguments);
+    }
   };
-})();
+};

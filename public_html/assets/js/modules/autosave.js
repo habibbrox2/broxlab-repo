@@ -251,15 +251,23 @@ class FormAutosave {
   }
 }
 
+/** @type {FormAutosave|null} */
+let _autosaveInstance = null;
+
+function _destroyAutosave() {
+  if (_autosaveInstance && typeof _autosaveInstance.destroy === 'function') {
+    _autosaveInstance.destroy();
+  }
+  _autosaveInstance = null;
+}
+
 export function initAutosaveForContentForms() {
   const form = document.querySelector('form[data-autosave="true"]');
   if (!form) return null;
 
-  if (window.formAutosave && typeof window.formAutosave.destroy === 'function') {
-    window.formAutosave.destroy();
-  }
+  _destroyAutosave();
 
-  window.formAutosave = new FormAutosave({
+  _autosaveInstance = new FormAutosave({
     formSelector: 'form[data-autosave="true"]',
     titleSelector: '#title',
     contentSelector: '#content',
@@ -268,8 +276,9 @@ export function initAutosaveForContentForms() {
     previewSelector: '#preview',
     debug: false,
   });
+  window.formAutosave = _autosaveInstance;
 
-  return window.formAutosave;
+  return _autosaveInstance;
 }
 
 export { FormAutosave };

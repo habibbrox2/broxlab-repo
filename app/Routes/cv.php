@@ -24,8 +24,23 @@ $cvRateLimitModel = new CvRateLimitModel($mysqli);
 // USER-FACING CV ROUTES — handlers in CvController
 // ============================================================================
 
-// ── Template Marketplace ──
+// ── Template Marketplace (public, no auth) ──
 $router->get('/cv-builder/templates', ['CvController', 'marketplace']);
+
+// ── Guest CV Builder (no auth required, minimal template only) ──
+$router->get('/cv-builder/guest', ['CvController', 'guestDashboard']);
+$router->get('/cv-builder/guest/builder/{id}', ['CvController', 'guestBuilder']);
+$router->post('/cv-builder/guest', ['middleware' => ['csrf']], ['CvController', 'guestStore']);
+$router->post('/api/cv/guest/builder/{id}/step', ['middleware' => ['csrf']], ['CvController', 'guestSaveStep']);
+$router->get('/api/cv/guest/builder/{id}/progress', ['CvController', 'guestBuilderProgress']);
+$router->post('/api/cv/guest/builder/{id}/complete', ['middleware' => ['csrf']], ['CvController', 'guestCompleteBuilder']);
+$router->get('/api/cv/guest/{id}/preview', ['CvController', 'guestPreview']);
+$router->get('/cv-builder/guest/{id}/export/pdf', ['CvController', 'guestExportPdf']);
+
+// ── Guest CV Claiming & Upgrade (authenticated, for claiming guest CVs after login) ──    $router->post('/api/cv/claim-guest-cvs', ['middleware' => ['auth', 'csrf']], ['CvController', 'claimGuestCvs']);
+    $router->get('/api/cv/has-guest-cvs', ['middleware' => ['auth']], ['CvController', 'hasGuestCvs']);
+    $router->get('/api/cv/my-cvs', ['middleware' => ['auth']], ['CvController', 'myCvs']);
+    $router->post('/api/cv/{id}/upgrade-template', ['middleware' => ['auth', 'csrf']], ['CvController', 'upgradeTemplate']);
 
 // ── CV Dashboard ──
 $router->get('/cv-builder', ['middleware' => ['auth']], ['CvController', 'dashboard']);
@@ -120,6 +135,7 @@ $router->delete('/api/cv/{id}/photo', ['middleware'=>['auth']], ['CvPurchaseCont
 $router->get('/api/cv/templates/{slug}/preview', ['CvController', 'templatePreview']);
 
 // ── Premium Template Purchases (User-facing) ──
+$router->get('/cv-builder/purchased-templates', ['middleware' => ['auth']], ['CvPurchaseController', 'purchasedTemplates']);
 $router->get('/api/cv/templates/purchased/{slug}', ['middleware' => ['auth']], ['CvPurchaseController', 'checkPurchased']);
 $router->get('/api/cv/templates/my-purchases', ['middleware' => ['auth']], ['CvPurchaseController', 'myPurchases']);
 $router->post('/api/cv/templates/initiate-purchase', ['middleware' => ['auth', 'csrf']], ['CvPurchaseController', 'initiatePurchase']);

@@ -138,21 +138,21 @@ export async function initNotificationsSend() {
     const infoEl = byId('recipientInfo');
     let info = '';
     switch (type) {
-    case 'all':
-      info = 'This will send to all users and guest devices';
-      break;
-    case 'guest':
-      info = 'Only guest users (not logged in)';
-      break;
-    case 'specific':
-      info = 'Only the specific users you select will receive notifications';
-      break;
-    case 'role':
-      info = 'All users with the selected role will receive notifications';
-      break;
-    case 'permission':
-      info = 'All users with the selected permission will receive notifications';
-      break;
+      case 'all':
+        info = 'This will send to all users and guest devices';
+        break;
+      case 'guest':
+        info = 'Only guest users (not logged in)';
+        break;
+      case 'specific':
+        info = 'Only the specific users you select will receive notifications';
+        break;
+      case 'role':
+        info = 'All users with the selected role will receive notifications';
+        break;
+      case 'permission':
+        info = 'All users with the selected permission will receive notifications';
+        break;
     }
     if (info && infoEl) {
       infoEl.innerHTML = `<small class="text-emerald-600 block mt-2"><i class="lucide lucide-check-circle" style="width:0.875rem;height:0.875rem;"></i> ${info}</small>`;

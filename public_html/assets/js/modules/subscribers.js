@@ -33,7 +33,7 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
     if (!tableBody) return;
     if (!Array.isArray(rows) || rows.length === 0) {
       tableBody.innerHTML =
-          '<tr><td colspan="9" class="text-center text-slate-500 py-4">No subscribers found</td></tr>';
+        '<tr><td colspan="9" class="text-center text-slate-500 py-4">No subscribers found</td></tr>';
       return;
     }
 
@@ -46,11 +46,11 @@ export function initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, }
         const tokenShort = escapeHtml(token.length > 40 ? `${token.slice(0, 40)}...` : token);
         const permission = escapeHtml(s.permission ?? 'granted');
         const permClass =
-            permission === 'granted'
-              ? 'bg-emerald-100 text-emerald-800'
-              : permission === 'default'
-                ? 'bg-slate-200'
-                : 'bg-red-100 text-red-800';
+          permission === 'granted'
+            ? 'bg-emerald-100 text-emerald-800'
+            : permission === 'default'
+              ? 'bg-slate-200'
+              : 'bg-red-100 text-red-800';
         const type = escapeHtml(s.device_type ?? '-');
         const created = escapeHtml(s.created_at ?? '-');
         const userLabel = s.user_id

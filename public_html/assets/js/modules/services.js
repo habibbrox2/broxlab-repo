@@ -234,9 +234,9 @@ export function initServicesForms({ byId, parseJson, }) {
         : contentEl.innerHTML || ''
       : '';
     const descriptionHtml =
-        editor && typeof editor.getContent === 'function'
-          ? editor.getContent() || ''
-          : hiddenDescriptionInput?.value || fallbackContent || '';
+      editor && typeof editor.getContent === 'function'
+        ? editor.getContent() || ''
+        : hiddenDescriptionInput?.value || fallbackContent || '';
     const descriptionText = String(descriptionHtml || '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/gi, ' ')
@@ -255,7 +255,7 @@ export function initServicesForms({ byId, parseJson, }) {
     document.querySelectorAll('#metadataFields [data-metadata-key]').forEach((keyInput) => {
       const key = keyInput.value;
       const value =
-          keyInput.parentElement.parentElement.querySelector('[data-metadata-value]')?.value;
+        keyInput.parentElement.parentElement.querySelector('[data-metadata-value]')?.value;
       if (key) metadata[key] = value;
     });
 
@@ -397,7 +397,7 @@ export function initServicesApplications({ byId, escapeHtml, }) {
     } catch (error) {
       console.error('Error loading applications:', error);
       byId('applicationsTable').innerHTML =
-          '<tr><td colspan="8" class="text-center text-red-600 py-4">Failed to load applications</td></tr>';
+        '<tr><td colspan="8" class="text-center text-red-600 py-4">Failed to load applications</td></tr>';
     }
   }
 
@@ -530,14 +530,14 @@ export function initServicesApplications({ byId, escapeHtml, }) {
                 </div>
 
                 ${app.status === 'rejected' && app.rejection_reason
-    ? `
+                    ? `
                 <div class="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200 rounded-lg">
                     <strong>Rejection Reason:</strong>
                     <p class="mb-0">${app.rejection_reason}</p>
                 </div>
             `
-    : ''
-}
+                    : ''
+                }
 
                 <div class="mb-3">
                     <label class="text-sm text-slate-500 uppercase font-medium">Admin Notes</label>
@@ -545,27 +545,27 @@ export function initServicesApplications({ byId, escapeHtml, }) {
                 </div>
 
                 ${app.status === 'rejected'
-    ? `
+                    ? `
                 <div class="mb-3">
                     <label class="text-sm text-slate-500 uppercase font-medium">Rejection Reason</label>
                     <input type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" id="appRejectionReason" value="${app.rejection_reason || ''}">
                 </div>
             `
-    : ''
-}
+                    : ''
+                }
 
                 <div class="mt-4">
                     <h6 class="font-bold text-slate-900 mb-2">Audit Log</h6>
                     <div class="timeline small">
                         ${app.audit_log
-    .map((log) => `
+                          .map((log) => `
                             <div class="mb-2">
                                 <div class="text-slate-500"><small>${new Date(log.created_at).toLocaleString()}</small></div>
                                 <div><strong>${log.action_type}</strong>: ${log.description}</div>
                             </div>
                         `
-    )
-    .join('')}
+                          )
+                          .join('')}
                     </div>
                 </div>
             `;

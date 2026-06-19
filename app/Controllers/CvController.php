@@ -116,9 +116,17 @@ class CvController
             if ($ps === null && !empty($cvs[0]['professional_status'])) $ps = $cvs[0]['professional_status'];
         }
 
+        // Check for guest CV auto-claim flash message
+        $guestCvsClaimed = 0;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['guest_cvs_just_claimed'])) {
+            $guestCvsClaimed = (int)$_SESSION['guest_cvs_just_claimed'];
+            unset($_SESSION['guest_cvs_just_claimed']);
+        }
+
         echo $twig->render('cv/dashboard.twig', [
             'user' => $user, 'cvs' => $cvs, 'stats' => $stats, 'features' => $features,
             'active_cv_professional_status' => $ps, 'page_title' => 'My CVs',
+            'guest_cvs_claimed' => $guestCvsClaimed,
             'breadcrumbs' => [['label' => 'CV Builder', 'icon' => 'file-earmark-text']]
         ]);
     }
@@ -504,6 +512,362 @@ class CvController
         $cvRateLimitModel=new CvRateLimitModel($mysqli);
         jsonResponse(['success'=>true,'rate_limits'=>$cvRateLimitModel->getUserRateLimits($userId)]);
     }
+
+    // ════════════════════════════════════════════════════════════
+    // GUEST CV BUILDER (no auth required, minimal template only)
+    // ════════════════════════════════════════════════════════════
+
+    // ════════════════════════════════════════════════════════════
+    // GUEST CV CLAIMING & UPGRADE
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * POST /api/cv/claim-guest-cvs — Claim guest CVs for the authenticated user.
+     * Returns the number of CVs claimed.
+     */
+    public static function claimGuestCvs(): void
+    {
+        global $mysqli;
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+        $cvModel = new CvModel($mysqli);
+        $claimed = $cvModel->claimGuestCvsForUser($userId);
+        if ($claimed > 0) {
+            logActivity("Guest CVs Claimed", "cv", null, ['user_id' => $userId, 'count' => $claimed], 'success');
+            // Set session flash so the notification shows on page reload
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $_SESSION['guest_cvs_just_claimed'] = $claimed;
+        }
+        jsonResponse([
+            'success' => true,
+            'claimed' => $claimed,
+            'message' => $claimed > 0
+                ? "{$claimed} CV(s) claimed successfully!"
+                : 'No guest CVs found to claim.'
+        ]);
+    }
+
+    /**
+     * GET /api/cv/has-guest-cvs — Check if the current user has guest CVs to claim.
+     */
+    public static function hasGuestCvs(): void
+    {
+        global $mysqli;
+        $cvModel = new CvModel($mysqli);
+        $guestIds = $cvModel->getGuestCvIds();
+        $hasCvs = false;
+        foreach ($guestIds as $cvId) {
+            $cv = $cvModel->getById($cvId);
+            if ($cv && $cv['user_id'] === null) {
+                $hasCvs = true;
+                break;
+            }
+        }
+        jsonResponse(['success' => true, 'has_guest_cvs' => $hasCvs, 'count' => count($guestIds)]);
+    }
+
+    /**
+     * GET /api/cv/my-cvs — Get user's CVs list (id, title, template).
+     */
+    public static function myCvs(): void
+    {
+        global $mysqli;
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+        $cvModel = new CvModel($mysqli);
+        $cvs = $cvModel->getByUserId($userId);
+        $result = [];
+        foreach ($cvs as $cv) {
+            $result[] = [
+                'id' => (int)$cv['id'],
+                'title' => $cv['title'] ?? 'My CV',
+                'template' => $cv['template'] ?? 'modern',
+            ];
+        }
+        jsonResponse(['success' => true, 'cvs' => $result]);
+    }
+
+    /**
+     * POST /api/cv/{id}/upgrade-template — Upgrade a CV to a purchased premium template.
+     * Verifies the user has purchased the target template before upgrading.
+     */
+    public static function upgradeTemplate(string $id): void
+    {
+        global $mysqli;
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            jsonResponse(['error' => 'Unauthorized'], 401);
+            return;
+        }
+        $id = (int)$id;
+        $cvModel = new CvModel($mysqli);
+        
+        // Check ownership (works for both regular and claimed guest CVs)
+        if (!$cvModel->belongsToUser($id, $userId)) {
+            jsonResponse(['error' => 'Forbidden'], 403);
+            return;
+        }
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        $targetTemplate = sanitize_input($input['template'] ?? '');
+        if (empty($targetTemplate)) {
+            jsonResponse(['error' => 'Template slug is required'], 400);
+            return;
+        }
+        
+        // Validate the template slug is valid
+        $allowlist = function_exists('cvGetTemplateAllowlist') ? cvGetTemplateAllowlist() : ['modern', 'minimal', 'ats', 'professional', 'executive'];
+        if (!in_array($targetTemplate, $allowlist, true)) {
+            jsonResponse(['error' => 'Invalid template slug'], 400);
+            return;
+        }
+        
+        // Verify the user has purchased this template
+        $stmt = $mysqli->prepare(
+            "SELECT id FROM cv_template_purchases 
+             WHERE user_id = ? AND template_slug = ? AND status = 'completed' AND deleted_at IS NULL 
+             LIMIT 1"
+        );
+        $stmt->bind_param('is', $userId, $targetTemplate);
+        $stmt->execute();
+        $purchased = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        if (!$purchased) {
+            jsonResponse(['error' => 'You have not purchased this template'], 403);
+            return;
+        }
+        
+        // Update the CV's template
+        $updated = $cvModel->update($id, ['template' => $targetTemplate]);
+        
+        if ($updated) {
+            logActivity("CV Template Upgraded", "cv", $id, [
+                'user_id' => $userId,
+                'new_template' => $targetTemplate,
+            ], 'success');
+            jsonResponse([
+                'success' => true,
+                'message' => 'CV template upgraded successfully!',
+                'new_template' => $targetTemplate,
+            ]);
+        } else {
+            jsonResponse(['error' => 'Failed to upgrade template'], 500);
+        }
+    }
+
+    /** GET /cv-builder/guest — Guest CV dashboard */
+    public static function guestDashboard(): void
+    {
+        global $twig, $mysqli;
+        $cvModel = new CvModel($mysqli);
+        $guestIds = $cvModel->getGuestCvIds();
+        $cvs = [];
+        foreach ($guestIds as $cvId) {
+            $cv = $cvModel->getById($cvId);
+            if ($cv && $cv['user_id'] === null) {
+                $cvs[] = $cv;
+            }
+        }
+        echo $twig->render('cv/guest-dashboard.twig', [
+            'cvs' => $cvs,
+            'page_title' => 'CV Builder - Guest',
+            'breadcrumbs' => [['label' => 'CV Builder', 'icon' => 'file-earmark-text'], ['label' => 'Guest Mode', 'icon' => 'person-badge']]
+        ]);
+    }
+
+    /** GET /cv-builder/guest/builder/{id} — Guest builder wizard (minimal template only) */
+    public static function guestBuilder(string $id): void
+    {
+        global $twig, $mysqli;
+        $id = (int)$id;
+        $cvModel = new CvModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) {
+            http_response_code(403);
+            echo $twig->render('error.twig', ['code' => 403, 'message' => 'Forbidden or CV not found']);
+            exit;
+        }
+        $cv = $cvModel->getById($id);
+        $bd = $cvModel->getBuilderData($id);
+        $jobPositions = [];
+        try {
+            $jobPositionModel = new JobPositionModel($mysqli);
+            $jobPositions = $jobPositionModel->getActivePositions();
+        } catch (Throwable $e) {}
+        echo $twig->render('cv/guest-form.twig', [
+            'cv' => $cv, 'cv_id' => $id, 'builder_data' => $bd, 'job_positions' => $jobPositions,
+            'selected_template' => 'minimal',
+            'page_title' => 'Build Your CV (Guest Mode)',
+            'breadcrumbs' => [['label' => 'CV Builder', 'url' => '/cv-builder/guest', 'icon' => 'file-earmark-text'], ['label' => 'Build CV', 'icon' => 'pencil-square']]
+        ]);
+    }
+
+    /** POST /cv-builder/guest — Create a new guest CV */
+    public static function guestStore(): void
+    {
+        global $mysqli;
+        $cvModel = new CvModel($mysqli);
+        $cvSectionModel = new CvSectionModel($mysqli);
+        $title = sanitize_input($_POST['title'] ?? 'My CV');
+        $cvId = $cvModel->create(null, $title, 'minimal');
+        if ($cvId) {
+            foreach (cvDefaultSectionTypes() as $t => $st) $cvSectionModel->create($cvId, $t, $st);
+            showMessage("CV created successfully", "success");
+            header('Location: /cv-builder/guest/builder/'.$cvId);
+        } else {
+            showMessage("Failed to create CV", "danger");
+            header('Location: /cv-builder/guest');
+        }
+        exit;
+    }
+
+    /** POST /api/cv/guest/builder/{id}/step — Save builder step for guest CV */
+    public static function guestSaveStep(string $id): void
+    {
+        $id = (int)$id;
+        global $mysqli;
+        $cvModel = new CvModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input) || empty($input['step'])) { jsonResponse(['error' => 'Step name is required'], 400); return; }
+        $step = sanitize_input($input['step']);
+        $sd = $input['data'] ?? [];
+        array_walk_recursive($sd, function (&$v) { if (is_string($v)) $v = sanitize_input($v); });
+        jsonResponse($cvModel->saveBuilderStep($id, $step, $sd) ? ['success' => true, 'message' => 'Step saved'] : ['error' => 'Failed to save step']);
+    }
+
+    /** GET /api/cv/guest/builder/{id}/progress — Get builder progress */
+    public static function guestBuilderProgress(string $id): void
+    {
+        $id = (int)$id;
+        global $mysqli;
+        $cvModel = new CvModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
+        $d = $cvModel->getBuilderData($id);
+        $steps = ['personal','summary','experience','education','skills','languages','social_links','custom_sections','references'];
+        $p = [];
+        foreach ($steps as $s) {
+            $v = $d[$s] ?? [];
+            $p[$s] = $s === 'skills' ? (!empty($v['technical'])||!empty($v['soft'])) : (in_array($s,['languages','social_links','custom_sections','references']) ? is_array($v)&&count($v)>0 : !empty($v));
+        }
+        jsonResponse(['success' => true, 'progress' => $p, 'total_steps' => count($steps), 'completed_steps' => count(array_filter($p))]);
+    }
+
+    /** POST /api/cv/guest/builder/{id}/complete — Complete guest builder */
+    public static function guestCompleteBuilder(string $id): void
+    {
+        global $mysqli;
+        $id = (int)$id;
+        $cvModel = new CvModel($mysqli);
+        $cvSectionModel = new CvSectionModel($mysqli);
+        $cvItemModel = new CvItemModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
+        $data = $cvModel->getBuilderData($id);
+        if (empty($data)) { jsonResponse(['error' => 'No builder data found'], 400); return; }
+        if (!empty($data['personal']['full_name'])) $cvModel->update($id, ['title' => sanitize_input($data['personal']['full_name']) . "'s CV"]);
+        try { foreach ($cvSectionModel->getByCvId($id) as $s) $cvSectionModel->delete($s['id']); } catch (Throwable $e) {}
+        $map = ['summary'=>['title'=>'Summary','steps'=>['personal','summary']],'experience'=>['title'=>'Work Experience','steps'=>['experience']],'education'=>['title'=>'Education','steps'=>['education']],'skills'=>['title'=>'Skills','steps'=>['skills']],'languages'=>['title'=>'Languages','steps'=>['languages']],'social_links'=>['title'=>'Social Links','steps'=>['social_links']],'custom_sections'=>['title'=>'Custom Sections','steps'=>['custom_sections']],'references'=>['title'=>'References','steps'=>['references']]];
+        foreach ($map as $st => $cfg) {
+            $hd = false; foreach ($cfg['steps'] as $sp) { if (!empty($data[$sp])) { $hd = true; break; } } if (!$hd) continue;
+            $sid = $cvSectionModel->create($id, $st, $cfg['title']); if (!$sid) continue;
+            switch ($st) {
+                case 'summary':
+                    $c = array_merge($data['personal']??[], ['summary'=>($data['summary']['professional_summary']??''),'objective'=>($data['summary']['career_objective']??''),'job_title'=>($data['summary']['job_title']??'')]);
+                    if (!empty(array_filter($c))) $cvItemModel->create($sid, 'summary', $c); break;
+                case 'experience':
+                    foreach (($data['experience']??[]) as $e) { if (!empty($e['company'])) $cvItemModel->create($sid, 'experience', ['company'=>sanitize_input($e['company']??''),'position'=>sanitize_input($e['position']??''),'location'=>sanitize_input($e['location']??''),'start_date'=>sanitize_input($e['start_date']??''),'end_date'=>sanitize_input($e['end_date']??''),'is_current'=>!empty($e['is_current'])?1:0,'description'=>sanitize_input($e['responsibilities']??$e['description']??'')]); } break;
+                case 'education':
+                    foreach (($data['education']??[]) as $e) { if (!empty($e['institution'])) $cvItemModel->create($sid, 'education', ['institution'=>sanitize_input($e['institution']??''),'degree'=>sanitize_input($e['degree']??''),'field'=>sanitize_input($e['field']??''),'start_date'=>sanitize_input($e['start_year']??$e['start_date']??''),'end_date'=>sanitize_input($e['end_year']??$e['end_date']??''),'gpa'=>sanitize_input($e['gpa']??'')]); } break;
+                case 'skills':
+                    $tech = ($data['skills']['technical']??[]); $soft = ($data['skills']['soft']??[]);
+                    if (!empty($tech)||!empty($soft)) {
+                        $all = []; foreach ((array)$tech as $s) { if (!empty(trim($s))) $all[] = sanitize_input(trim($s)); } foreach ((array)$soft as $s) { if (!empty(trim($s))) $all[] = sanitize_input(trim($s)); }
+                        $cvItemModel->create($sid, 'skills', ['skills'=>$all,'technical'=>$tech,'soft'=>$soft]);
+                    } break;
+                case 'languages':
+                    foreach (($data['languages']??[]) as $l) { if (!empty($l['name'])) $cvItemModel->create($sid, 'language', ['name'=>sanitize_input($l['name']??''),'proficiency'=>sanitize_input($l['proficiency']??'intermediate')]); } break;
+                case 'social_links':
+                    foreach (($data['social_links']??[]) as $l) { if (!empty($l['url'])) $cvItemModel->create($sid, 'social_link', ['platform'=>sanitize_input($l['platform']??''),'url'=>sanitize_input($l['url']??'')]); } break;
+                case 'custom_sections':
+                    foreach (($data['custom_sections']??[]) as $s) { if (!empty($s['title'])) $cvItemModel->create($sid, 'custom_section', ['title'=>sanitize_input($s['title']??''),'content'=>sanitize_input($s['content']??'')]); } break;
+                case 'references':
+                    foreach (($data['references']??[]) as $r) { if (!empty($r['name'])) $cvItemModel->create($sid, 'reference', ['name'=>sanitize_input($r['name']??''),'title'=>sanitize_input($r['title']??''),'email'=>sanitize_input($r['email']??''),'phone'=>sanitize_input($r['phone']??''),'company'=>sanitize_input($r['company']??'')]); } break;
+            }
+        }
+        $cvModel->update($id, ['is_active'=>1, 'builder_data'=>null]);
+        jsonResponse(['success'=>true,'message'=>'CV completed successfully!','redirect'=>'/cv-builder/guest/builder/'.$id]);
+    }
+
+    /** GET /api/cv/guest/{id}/preview — Preview guest CV */
+    public static function guestPreview(string $id): void
+    {
+        global $twig, $mysqli;
+        $id = (int)$id;
+        $cvModel = new CvModel($mysqli);
+        $cvSectionModel = new CvSectionModel($mysqli);
+        $cvItemModel = new CvItemModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
+        $cv = $cvModel->getById($id);
+        $sections = $cvSectionModel->getByCvId($id);
+        foreach ($sections as &$s) $s['items'] = $cvItemModel->getBySectionId($s['id']);
+        $visible = array_values(array_filter($sections, fn($s) => $s['is_visible']));
+        $slug = 'minimal';
+        try {
+            $html = $twig->render('cv/templates/'.$slug.'.twig', ['cv' => $cv, 'sections' => $visible]);
+        } catch (Throwable $e) {
+            jsonResponse(['success' => false, 'error' => 'Render failed: ' . $e->getMessage()], 500);
+            return;
+        }
+        header('Content-Type: text/html; charset=utf-8');
+        echo $html;
+        exit;
+    }
+
+    /** GET /cv-builder/guest/{id}/export/pdf — Export guest CV as PDF */
+    public static function guestExportPdf(string $id): void
+    {
+        global $twig, $mysqli;
+        $id = (int)$id;
+        $cvModel = new CvModel($mysqli);
+        $cvSectionModel = new CvSectionModel($mysqli);
+        $cvItemModel = new CvItemModel($mysqli);
+        if (!$cvModel->belongsToUser($id, null)) { http_response_code(403); echo 'Forbidden'; exit; }
+        $cv = $cvModel->getById($id);
+        $sections = $cvSectionModel->getByCvId($id);
+        foreach ($sections as &$s) $s['items'] = $cvItemModel->getBySectionId($s['id']);
+        $visible = array_filter($sections, fn($s) => $s['is_visible']);
+        $slug = 'minimal';
+        $html = $twig->render('cv/templates/'.$slug.'.twig', ['cv' => $cv, 'sections' => $visible]);
+        require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
+        $pdfTitle = $cv['title'] ?? 'CV';
+        $pdfFilename = preg_replace('/[^a-zA-Z0-9_\\-\\x{0980}-\\x{09FF}]/u', '_', $pdfTitle) . '.pdf';
+        if (ob_get_level() > 0) ob_clean();
+        $mpdfConfig = ['format' => [210, 297], 'margin_left' => 15, 'margin_right' => 15, 'margin_top' => 20, 'margin_bottom' => 25, 'margin_header' => 5, 'margin_footer' => 10, 'orientation' => 'P', 'dpi' => 300, 'img_dpi' => 300, 'use_kwt' => true, 'use_substitutions' => true, 'compress' => true];
+        $mpdf = mpdf_create_instance($mpdfConfig);
+        if (!$mpdf) { http_response_code(500); echo 'Failed to initialize PDF engine'; exit; }
+        try {
+            mpdf_apply_runtime_optimizations($mpdf);
+            $mpdf->SetTitle($pdfTitle); $mpdf->SetAuthor('BroxLab CV Builder'); $mpdf->SetSubject('Curriculum Vitae'); $mpdf->SetKeywords('CV, resume, curriculum vitae');
+            $mpdf->SetHTMLHeader('<div style="text-align:right;font-size:8pt;color:#888;border-bottom:1px solid #ddd;padding-bottom:3px;">' . htmlspecialchars($pdfTitle) . '</div>');
+            $mpdf->SetHTMLFooter('<div style="text-align:center;font-size:8pt;color:#888;border-top:1px solid #ddd;padding-top:3px;">Page {PAGENO} of {nbpg}</div>');
+            $html = mpdf_optimize_html($html); $mpdf->WriteHTML($html);
+            $dest = \Mpdf\Output\Destination::DOWNLOAD;
+            $mpdf->Output($pdfFilename, $dest); exit;
+        } catch (\Throwable $e) {
+            logError('Guest PDF Export failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo 'Failed to generate PDF: ' . $e->getMessage();
+            exit;
+        }
+    }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -528,9 +892,65 @@ if (!function_exists('jsonResponse')) {
     }
 }
 
+if (!function_exists('getCurrentUserId')) {
+    function getCurrentUserId(): ?int
+    {
+        return AuthManager::getCurrentUserId();
+    }
+}
+
+if (!function_exists('isAdminUser')) {
+    function isAdminUser(): bool
+    {
+        global $userModel;
+        $userId = getCurrentUserId();
+        if (!$userId) return false;
+        try {
+            return $userModel && ($userModel->isSuperAdmin($userId) || $userModel->hasRole($userId, 'admin'));
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+}
+
 if (!function_exists('cvGetTemplateAllowlist')) {
     function cvGetTemplateAllowlist(): array
     {
+        $userId = getCurrentUserId();
+        
+        // Admin sees all templates (including disabled)
+        if ($userId && function_exists('isAdminUser') && isAdminUser()) {
+            $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
+            $files = glob($dir . '/*.twig') ?: [];
+            $templates = [];
+            foreach ($files as $file) {
+                $name = basename($file, '.twig');
+                if ($name === '' || $name[0] === '_') continue;
+                $templates[] = $name;
+            }
+            $templates = array_values(array_unique($templates));
+            sort($templates);
+            return $templates;
+        }
+        
+        // Guest (unauthenticated) sees only 'minimal'
+        if (!$userId) {
+            $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
+            $files = glob($dir . '/*.twig') ?: [];
+            $allTemplates = [];
+            foreach ($files as $file) {
+                $name = basename($file, '.twig');
+                if ($name === '' || $name[0] === '_') continue;
+                $allTemplates[] = $name;
+            }
+            // Only allow 'minimal' for guests, if it exists
+            if (in_array('minimal', $allTemplates, true)) {
+                return ['minimal'];
+            }
+            return [];
+        }
+        
+        // Authenticated regular users: normal behavior
         $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
         $files = glob($dir . '/*.twig') ?: [];
         $templates = [];

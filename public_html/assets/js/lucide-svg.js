@@ -49,7 +49,4 @@ if (document.readyState === 'loading') {
   init();
 }
 
-window.prepare = prepare;
-window.runCreate = runCreate;
-window.loadAndRun = loadAndRun;
-window.init = init;
+export { prepare, runCreate, loadAndRun, init };

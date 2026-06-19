@@ -20,12 +20,60 @@
         <i data-lucide="chevron-left" class="w-5 h-5 transition-transform group-hover:-translate-x-0.5"></i>
       </a>
       <h1 class="text-lg font-bold text-slate-800 tracking-tight">সিভি বিল্ডার</h1>
-      <div class="w-10"></div>
+      <a href="/cv-builder/purchased-templates" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all duration-200 shadow-sm">
+        <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+        My Templates
+      </a>
     </div>
   </div>
 
   {# Main Content #}
   <div class="relative z-10 max-w-2xl mx-auto px-4 pb-10">
+
+    {# ── Guest CV Auto-Claimed Notification (auto-dismisses after 8s) ── #}
+    {% if guest_cvs_claimed is defined and guest_cvs_claimed > 0 %}
+    <div id="guest-claimed-notification" class="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-4 mb-6 flex items-start gap-3 animate-fade-in relative overflow-hidden">
+      {# Auto-dismiss timer bar #}
+      <div id="claimed-timer-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-400/60 rounded-b-2xl" style="width:100%;transition:width 8s linear;"></div>
+      <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <h3 class="font-bold text-emerald-800 text-sm">Your Guest CVs Have Been Claimed!</h3>
+          <span id="claimed-countdown" class="text-[10px] font-semibold text-emerald-500/70 tabular-nums flex-shrink-0">8s</span>
+        </div>
+        <p class="text-xs text-emerald-700 mt-0.5">
+          {{ guest_cvs_claimed }} guest CV(s) have been transferred to your account. You can now edit, export, and manage them like any other CV.
+        </p>
+      </div>
+      <button type="button" id="dismiss-claimed-notification" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    {% endif %}
+
+    {# ── Guest CV Claim Banner ── #}
+    <div id="guest-claim-banner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+      <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <i data-lucide="download" class="w-4 h-4 text-amber-600"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-bold text-amber-800 text-sm">Guest CVs Found</h3>
+        <p class="text-xs text-amber-700 mt-0.5">You have CVs created while browsing as a guest. Claim them to access all features.</p>
+        <button type="button" id="claim-guest-cvs-btn"
+                class="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-all duration-200 shadow-sm">
+          <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
+          Claim My Guest CVs
+        </button>
+      </div>
+      <button type="button" id="dismiss-claim-banner" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    {# ── CSRF Token for claim/upgrade AJAX ── #}
+    <meta name="csrf-token" content="{{ csrf_token|default('') }}">
     {# Profile Card - Enhanced Glassmorphism #}
     <div class="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 mb-8 shadow-lg shadow-slate-200/60 border border-white/60 overflow-hidden" id="dashboard-view">
       <div class="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-transparent pointer-events-none"></div>
@@ -175,7 +223,7 @@
         Your CVs
       </h3>
       {% for cv in cvs %}
-      <div class="group bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200/70 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50/80 transition-all duration-300" data-cv-id="{{ cv.id }}">
+      <div class="group bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200/70 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50/80 transition-all duration-300" data-cv-id="{{ cv.id }}" data-cv-template="{{ cv.template|default('modern') }}">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center text-indigo-600 flex-shrink-0">
             <i data-lucide="file-text" class="w-5 h-5"></i>
@@ -187,6 +235,11 @@
                 <i data-lucide="calendar" class="w-3 h-3"></i>
                 {{ cv.updated_at|date('M j, Y') }}
               </span>
+              {% if cv.template is defined %}
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                Template: {{ cv.template|capitalize }}
+              </span>
+              {% endif %}
               {% if cv.view_count is defined %}
               <span class="inline-flex items-center gap-1">
                 <i data-lucide="eye" class="w-3 h-3"></i>
@@ -207,6 +260,19 @@
             </button>
           </div>
         </div>
+        {# ── Template Upgrade Action (shown for CVs using 'minimal' or older template) ── #}
+        {% if cv.template is defined and cv.template == 'minimal' %}
+        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between upgrade-section" data-cv-id="{{ cv.id }}" data-cv-title="{{ cv.title|e('js') }}">
+          <p class="text-[11px] text-slate-400 flex items-center gap-1">
+            <i data-lucide="info" class="w-3 h-3"></i>
+            Using Minimal template. Upgrade to a premium design after purchase.
+          </p>
+          <button type="button" class="upgrade-template-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 text-[11px] font-semibold border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all duration-200">
+            <i data-lucide="crown" class="w-3 h-3"></i>
+            Upgrade Template
+          </button>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -214,5 +280,352 @@
   </div>
 </div>
 
-<script src="{{ asset('/assets/js/cv-dashboard.js') }}" defer></script>
+<script>
+// ─── Guest CV Auto-Claimed Notification — Auto-Dismiss after 8s ───
+(function() {
+  var notif = document.getElementById('guest-claimed-notification');
+  if (!notif) return;
+
+  var timerBar = document.getElementById('claimed-timer-bar');
+  var countdownEl = document.getElementById('claimed-countdown');
+  var dismissBtn = document.getElementById('dismiss-claimed-notification');
+  var dismissTimer = null;
+  var countdownInterval = null;
+  var remainingSeconds = 8;
+  var isDismissing = false;
+
+  function dismissNotif() {
+    if (isDismissing) return;
+    isDismissing = true;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    notif.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    notif.style.opacity = '0';
+    notif.style.transform = 'translateY(-10px)';
+    setTimeout(function() { notif.style.display = 'none'; }, 300);
+  }
+
+  function updateCountdown() {
+    if (remainingSeconds <= 0) return;
+    countdownEl.textContent = remainingSeconds + 's';
+  }
+
+  // Start countdown and timer bar
+  if (timerBar) {
+    // Trigger the CSS transition on next frame
+    requestAnimationFrame(function() {
+      timerBar.style.width = '0%';
+    });
+  }
+
+  // Update countdown every second
+  countdownInterval = setInterval(function() {
+    remainingSeconds--;
+    if (remainingSeconds <= 0) {
+      clearInterval(countdownInterval);
+      countdownEl.textContent = '0s';
+    } else {
+      updateCountdown();
+    }
+  }, 1000);
+
+  // Auto-dismiss after 8 seconds
+  dismissTimer = setTimeout(dismissNotif, 8000);
+
+  // Pause auto-dismiss on hover
+  notif.addEventListener('mouseenter', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    if (timerBar) {
+      timerBar.style.transition = 'none';
+      timerBar.style.width = timerBar.offsetWidth + 'px'; // freeze at current width
+    }
+    countdownEl.textContent = '\u2714'; // checkmark symbol
+  });
+
+  // Resume auto-dismiss on mouse leave
+  notif.addEventListener('mouseleave', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+
+    // Calculate remaining time from current bar width
+    if (timerBar) {
+      var currentWidth = parseFloat(timerBar.style.width) || 0;
+      var parentWidth = timerBar.parentElement ? timerBar.parentElement.offsetWidth : 1;
+      var fraction = Math.max(0, Math.min(1, currentWidth / parentWidth));
+      var remainingMs = Math.round(fraction * 8000);
+      remainingSeconds = Math.round(remainingMs / 1000);
+
+      timerBar.style.transition = 'width ' + remainingMs + 'ms linear';
+      requestAnimationFrame(function() {
+        timerBar.style.width = '0%';
+      });
+    } else {
+      remainingSeconds = 8;
+    }
+
+    updateCountdown();
+    // Sync countdown with the actual setTimeout — fire countdown updates inline
+    // so they match the timer bar
+    countdownInterval = setInterval(function() {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) {
+        clearInterval(countdownInterval);
+        countdownEl.textContent = '0s';
+      } else {
+        updateCountdown();
+      }
+    }, 1000);
+
+    dismissTimer = setTimeout(dismissNotif, remainingMs > 0 ? remainingMs : 8000);
+  });
+
+  // Manual dismiss button
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissNotif();
+    });
+  }
+})();
+
+// ─── Guest CV Claim Banner ───
+document.addEventListener('DOMContentLoaded', function() {
+  var claimBanner = document.getElementById('guest-claim-banner');
+  var claimBtn = document.getElementById('claim-guest-cvs-btn');
+  var dismissBtn = document.getElementById('dismiss-claim-banner');
+
+  // Check if there are guest CVs to claim
+  function checkGuestCvs() {
+    fetch('/api/cv/has-guest-cvs')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success && data.has_guest_cvs && claimBanner) {
+          claimBanner.classList.remove('hidden');
+        }
+      })
+      .catch(function(err) {
+        console.warn('[CV Dashboard] Failed to check guest CVs:', err);
+      });
+  }
+
+  // Claim guest CVs
+  if (claimBtn) {
+    claimBtn.addEventListener('click', function() {
+      claimBtn.disabled = true;
+      claimBtn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Claiming...';
+      // Re-run lucide icons
+      if (window.lucide) lucide.createIcons();
+
+      fetch('/api/cv/claim-guest-cvs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken()
+        }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success && data.claimed > 0) {
+          claimBtn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Claimed ' + data.claimed + ' CV(s)!';
+          claimBtn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          claimBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+          if (window.lucide) lucide.createIcons();
+          // Reload the page after a brief delay to show the newly claimed CVs
+          setTimeout(function() { window.location.reload(); }, 1500);
+        } else {
+          claimBtn.disabled = false;
+          claimBtn.innerHTML = '<i data-lucide="arrow-right-to-line" class="w-3.5 h-3.5"></i> No guest CVs found';
+          if (window.lucide) lucide.createIcons();
+          setTimeout(function() {
+            if (claimBanner) claimBanner.classList.add('hidden');
+          }, 2000);
+        }
+      })
+      .catch(function(err) {
+        claimBtn.disabled = false;
+        claimBtn.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Failed. Try again.';
+        if (window.lucide) lucide.createIcons();
+        console.warn('[CV Dashboard] Claim failed:', err);
+      });
+    });
+  }
+
+  // Dismiss banner
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function() {
+      if (claimBanner) claimBanner.classList.add('hidden');
+    });
+  }
+
+  // Run check on page load
+  checkGuestCvs();
+
+  // ─── Template Upgrade Flow ───
+  function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  document.querySelectorAll('.upgrade-template-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var section = this.closest('.upgrade-section');
+      var cvId = section ? section.getAttribute('data-cv-id') : '';
+      if (!cvId) return;
+
+      // Check purchased templates
+      this.disabled = true;
+      this.innerHTML = '<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Checking purchases...';
+      if (window.lucide) lucide.createIcons();
+
+      fetch('/api/cv/templates/my-purchases')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          if (data.success && data.purchases && data.purchases.length > 0) {
+            var completed = data.purchases.filter(function(p) { return p.status === 'completed'; });
+            if (completed.length === 0) {
+              btn.innerHTML = '<i data-lucide="crown" class="w-3 h-3"></i> Buy Premium First';
+              if (window.lucide) lucide.createIcons();
+              // Redirect to marketplace after brief delay
+              setTimeout(function() {
+                window.location.href = '/cv-builder/templates';
+              }, 1500);
+              return;
+            }
+            // Show choice modal
+            showUpgradeModal(cvId, completed);
+          } else {
+            btn.innerHTML = '<i data-lucide="crown" class="w-3 h-3"></i> Buy Premium First';
+            if (window.lucide) lucide.createIcons();
+            setTimeout(function() {
+              window.location.href = '/cv-builder/templates';
+            }, 1500);
+          }
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="crown" class="w-3 h-3"></i> Upgrade Template';
+          if (window.lucide) lucide.createIcons();
+          console.warn('[CV] Failed to check purchases:', err);
+          window.location.href = '/cv-builder/templates';
+        });
+    });
+  });
+
+  function showUpgradeModal(cvId, purchases) {
+    // Remove existing modal if any
+    var existing = document.getElementById('upgrade-modal-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'upgrade-modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn 0.2s ease;';
+
+    var optionsHtml = purchases.map(function(p) {
+      var slug = p.template_slug || '';
+      var name = slug.charAt(0).toUpperCase() + slug.slice(1);
+      return '<button type="button" class="upgrade-option w-full text-left px-4 py-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 flex items-center gap-3" data-cv-id="' + cvId + '" data-template="' + slug + '">' +
+        '<i data-lucide="crown" class="w-5 h-5 text-amber-500 flex-shrink-0"></i>' +
+        '<div><div class="font-semibold text-sm text-slate-800">' + name + '</div><div class="text-xs text-slate-500">' + (p.amount ? '\u09F3' + p.amount + ' BDT' : 'Premium') + '</div></div>' +
+        '<i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 ml-auto flex-shrink-0"></i>' +
+        '</button>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-up" style="animation:slideUp 0.3s ease;">' +
+        '<div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">' +
+          '<h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i data-lucide="crown" class="w-4 h-4 text-amber-500"></i> Upgrade Template</h3>' +
+          '<button type="button" id="close-upgrade-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>' +
+        '</div>' +
+        '<div class="px-5 py-4 space-y-2.5">' +
+          '<p class="text-xs text-slate-500 mb-3">Choose a purchased premium template to apply to this CV:</p>' +
+          optionsHtml +
+        '</div>' +
+        '<div class="px-5 py-3 border-t border-slate-100 bg-slate-50 rounded-b-2xl text-center">' +
+          '<a href="/cv-builder/templates" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Browse more templates</a>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+    if (window.lucide) lucide.createIcons();
+
+    // Close handlers
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+    document.getElementById('close-upgrade-modal').addEventListener('click', function() {
+      overlay.remove();
+    });
+
+    // Upgrade option click
+    overlay.querySelectorAll('.upgrade-option').forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        var cvId = this.getAttribute('data-cv-id');
+        var template = this.getAttribute('data-template');
+
+        // Show loading state
+        overlay.querySelectorAll('.upgrade-option').forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; });
+        this.style.opacity = '1';
+        this.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 text-amber-500 animate-spin"></i> <span>Applying...</span>';
+        if (window.lucide) lucide.createIcons();
+
+        fetch('/api/cv/' + cvId + '/upgrade-template', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken()
+          },
+          body: JSON.stringify({ template: template })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success) {
+            overlay.innerHTML =
+              '<div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden text-center p-8 animate-up" style="animation:slideUp 0.3s ease;">' +
+                '<i data-lucide="check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-3"></i>' +
+                '<h3 class="font-bold text-slate-800 text-base mb-1">Template Upgraded!</h3>' +
+                '<p class="text-sm text-slate-500">Your CV has been upgraded to the ' + template.charAt(0).toUpperCase() + template.slice(1) + ' template.</p>' +
+                '<button type="button" class="mt-4 px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors" onclick="location.reload()">Done</button>' +
+              '</div>';
+            if (window.lucide) lucide.createIcons();
+          } else {
+            alert('Error: ' + (data.error || 'Failed to upgrade'));
+            overlay.remove();
+          }
+        })
+        .catch(function(err) {
+          alert('Error: ' + err.message);
+          overlay.remove();
+        });
+      });
+    });
+  }
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease;
+}
+</style>
+
+<script type="module" src="{{ asset('/assets/js/dist/cv-dashboard.js') }}"></script>
 {% endblock %}

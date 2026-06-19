@@ -48,7 +48,7 @@
         { 'label': 'CV Builder',  'label_bn': 'সিভি বিল্ডার',   'url': '/cv-builder/templates', 'icon': 'file-text', 'match': '/cv-builder',
           'submenu': [
             { 'label': 'Templates',    'label_bn': 'টেমপ্লেট',      'url': '/cv-builder/templates',    'icon': 'layout' },
-            { 'label': 'My CVs',       'label_bn': 'আমার সিভি',    'url': '/cv-builder',              'icon': 'file' }
+            { 'label': 'My CVs',       'label_bn': 'আমার সিভি',    'url': auth_user.is_authenticated ? '/cv-builder' : '/cv-builder/guest', 'icon': 'file' }
           ]
         },
         { 'label': 'Jobs',       'label_bn': 'চাকরি',          'url': '/category/chakribd', 'icon': 'briefcase',  'match': '/category/chakribd' },
@@ -509,7 +509,25 @@
                   title="{{ current_lang == 'bn' ? 'English' : 'বাংলা' }}"
                   class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
 
-            <i class="lucide lucide-globe w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>
+            {% if current_lang == 'bn' %}
+              {# Current: Bengali → Show Bangladesh flag #}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="w-5 h-5 rounded-sm shadow-sm group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
+                <rect width="60" height="40" fill="#006a4e"/>
+                <circle cx="23" cy="20" r="12" fill="#f42a41"/>
+              </svg>
+            {% else %}
+              {# Current: English → Show USA flag #}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" class="w-5 h-5 rounded-sm shadow-sm group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
+                <rect width="60" height="40" fill="#fff"/>
+                <g fill="#b22234">
+                  <rect y="0" width="60" height="3.08"/><rect y="6.15" width="60" height="3.08"/>
+                  <rect y="12.31" width="60" height="3.08"/><rect y="18.46" width="60" height="3.08"/>
+                  <rect y="24.62" width="60" height="3.08"/><rect y="30.77" width="60" height="3.08"/>
+                  <rect y="36.92" width="60" height="3.08"/>
+                </g>
+                <rect width="24" height="21.54" fill="#3c3b6e"/>
+              </svg>
+            {% endif %}
           </button>
         {% endif %}
 

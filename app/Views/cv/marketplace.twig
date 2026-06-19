@@ -928,6 +928,32 @@
           activate the <strong id="mkt-pay-success-template">Executive Elite</strong> template shortly.
         </p>
         <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.75rem;">This usually takes less than 24 hours.</p>
+
+        <!-- ─── UPGRADE YOUR CV ─── -->
+        <div id="mkt-pay-upgrade-section" style="display:none;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--mkt-gray-200);text-align:left;">
+          <h5 style="font-size:0.95rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+            <i class="lucide lucide-arrow-up-circle" style="width:1.1em;height:1.1em;color:var(--mkt-primary);"></i>
+            Apply to an Existing CV
+          </h5>
+          <p style="font-size:0.85rem;color:var(--mkt-gray-500);margin-bottom:1rem;">
+            Your <strong id="mkt-upgrade-template-name">Executive Elite</strong> template is ready!
+            Choose a CV to upgrade:
+          </p>
+          <div id="mkt-upgrade-cv-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;"></div>
+          <div id="mkt-upgrade-no-cvs" style="display:none;">
+            <p style="font-size:0.85rem;color:var(--mkt-gray-400);text-align:center;padding:1rem 0;">
+              No existing CVs available to upgrade.
+            </p>
+            <a href="javascript:void(0)" id="mkt-upgrade-new-link" class="mkt-modal-btn mkt-modal-btn-primary" style="max-width:280px;margin:0 auto;padding:0.7rem 1rem;font-size:0.9rem;text-decoration:none;">
+              <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create New CV
+            </a>
+          </div>
+          <div id="mkt-upgrade-loading" style="display:none;text-align:center;padding:1rem;">
+            <div class="mkt-spinner" style="width:1.5rem;height:1.5rem;border:3px solid var(--mkt-gray-200);border-top-color:var(--mkt-primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+            <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.5rem;">Checking your CVs...</p>
+          </div>
+        </div>
+
         <button data-action="mkt-close-payment" class="mkt-modal-btn mkt-modal-btn-primary" style="margin-top:1.25rem;max-width:200px;margin-left:auto;margin-right:auto;">
           Done
         </button>
@@ -1483,6 +1509,48 @@ document.addEventListener('click', function(e) {
   case 'mkt-close-comparison':
     document.body.removeChild(target.closest('div').parentNode);
     break;
+  case 'mkt-upgrade-cv':
+    var cvId = target.getAttribute('data-cv-id');
+    var templateSlug = target.getAttribute('data-template');
+    target.disabled = true;
+    target.textContent = 'Applying...';
+    var csrfToken = '{{ csrf_token }}';
+    fetch('/api/cv/' + cvId + '/upgrade-template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+      body: JSON.stringify({ template: templateSlug })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        target.textContent = '\u2713 Applied!';
+        target.style.background = '#10b981';
+        // Dim the item after a moment
+        setTimeout(function() {
+          var item = target.closest('[style*="display:flex"]');
+          if (item) { item.style.opacity = '0.5'; item.style.pointerEvents = 'none'; }
+          // Check if all CVs upgraded
+          var remaining = document.querySelectorAll('.mkt-upgrade-btn:not([disabled])');
+          if (remaining.length === 0) {
+            var noCvs = document.getElementById('mkt-upgrade-no-cvs');
+            if (noCvs) {
+              noCvs.querySelector('p').textContent = 'All CVs have been upgraded!';
+              noCvs.style.display = '';
+            }
+          }
+        }, 1200);
+      } else {
+        alert('Upgrade failed: ' + (data.error || 'Unknown error'));
+        target.disabled = false;
+        target.textContent = 'Apply';
+      }
+    })
+    .catch(function() {
+      alert('Connection error. Please try again.');
+      target.disabled = false;
+      target.textContent = 'Apply';
+    });
+    break;
   }
 });
 
@@ -1657,6 +1725,13 @@ function mktSubmitPayment() {
     if (data.success) {
       document.getElementById('mkt-pay-step-success').style.display = '';
       if (typeof gtag !== 'undefined') { gtag('event', 'purchase', { currency: 'BDT', value: 50 }); }
+      // Show upgrade offer for purchased template
+      if (window.__mktPaySlug) {
+        var tmpl = window.__mktTemplates[window.__mktPaySlug];
+        setTimeout(function() {
+          mktShowUpgradeOffer(window.__mktPaySlug, tmpl ? tmpl.name : '');
+        }, 300);
+      }
     } else {
       alert('Error: ' + (data.error || 'Verification failed'));
       mktBackToMethods();
@@ -1738,6 +1813,64 @@ function mktPayWithBkashCheckout(phone) {
   });
 }
 
+// ─── CV UPGRADE AFTER PURCHASE ───
+/**
+ * Fetches user's CVs and shows upgrade options in the success step.
+ * @param {string} templateSlug - e.g. 'executive'
+ * @param {string} templateName - e.g. 'Executive Elite'
+ */
+function mktShowUpgradeOffer(templateSlug, templateName) {
+  var section = document.getElementById('mkt-pay-upgrade-section');
+  var list = document.getElementById('mkt-upgrade-cv-list');
+  var noCvs = document.getElementById('mkt-upgrade-no-cvs');
+  var loading = document.getElementById('mkt-upgrade-loading');
+  var nameEl = document.getElementById('mkt-upgrade-template-name');
+  var linkEl = document.getElementById('mkt-upgrade-new-link');
+
+  if (!section) return;
+
+  nameEl.textContent = templateName || (templateSlug.charAt(0).toUpperCase() + templateSlug.slice(1));
+  linkEl.href = '/cv-builder/new?template=' + encodeURIComponent(templateSlug);
+  linkEl.innerHTML = '<i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create New CV with ' + escHtml(templateName || templateSlug);
+
+  section.style.display = '';
+  list.innerHTML = '';
+  noCvs.style.display = 'none';
+  loading.style.display = '';
+
+  fetch('/api/cv/my-cvs')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      if (!data.success || !data.cvs || data.cvs.length === 0) {
+        noCvs.style.display = '';
+        return;
+      }
+      var upgradable = data.cvs.filter(function(cv) {
+        return cv.template === 'minimal';
+      });
+      if (upgradable.length === 0) {
+        noCvs.style.display = '';
+        return;
+      }
+      list.innerHTML = '';
+      upgradable.forEach(function(cv) {
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.85rem;border:1px solid var(--mkt-gray-200);border-radius:10px;background:white;transition:all 0.2s;';
+        item.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;min-width:0;">' +
+          '<i class="lucide lucide-file-text" style="width:1em;height:1em;flex-shrink:0;color:var(--mkt-primary);"></i>' +
+          '<span style="font-size:0.85rem;font-weight:500;color:var(--mkt-gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(cv.title) + '</span>' +
+          '</div>' +
+          '<button class="mkt-upgrade-btn" data-action="mkt-upgrade-cv" data-cv-id="' + cv.id + '" data-template="' + templateSlug + '" style="flex-shrink:0;padding:0.35rem 0.85rem;border-radius:8px;font-size:0.8rem;font-weight:600;border:none;cursor:pointer;background:linear-gradient(135deg,var(--mkt-primary),var(--mkt-secondary));color:white;transition:all 0.2s;">Apply</button>';
+        list.appendChild(item);
+      });
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      noCvs.style.display = '';
+    });
+}
+
 // Close payment modal on overlay click
 document.addEventListener('click', function(e) {
   var modal = document.getElementById('mkt-payment-modal');
@@ -1778,6 +1911,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (paymentStatus === 'success') {
     var purchaseId = urlParams.get('purchase_id') || '';
     var trxId = urlParams.get('trxid') || '';
+    var templateSlug = urlParams.get('template_slug') || '';
     // Show success notification
     var msg = 'Payment successful! Your premium template is now available. Transaction ID: ' + trxId;
     if (typeof window.showMessage !== 'undefined') {
@@ -1785,11 +1919,29 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       alert(msg);
     }
+    // Auto-open the payment modal in success mode with upgrade offer
+    if (templateSlug && window.__mktTemplates[templateSlug]) {
+      var tmpl = window.__mktTemplates[templateSlug];
+      window.__mktPaySlug = templateSlug;
+      document.getElementById('mkt-pay-name').textContent = tmpl.name || 'Premium Template';
+      document.getElementById('mkt-pay-amount').textContent = tmpl.price || 50;
+      document.getElementById('mkt-pay-success-template').textContent = tmpl.name || 'Premium Template';
+      document.getElementById('mkt-pay-step-method').style.display = 'none';
+      document.getElementById('mkt-pay-step-details').style.display = 'none';
+      document.getElementById('mkt-pay-step-success').style.display = '';
+      document.getElementById('mkt-payment-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // Show upgrade offer
+      setTimeout(function() {
+        mktShowUpgradeOffer(templateSlug, tmpl.name);
+      }, 500);
+    }
     // Clean URL without reload
     if (window.history.replaceState) {
       urlParams.delete('payment');
       urlParams.delete('purchase_id');
       urlParams.delete('trxid');
+      urlParams.delete('template_slug');
       var newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
       window.history.replaceState({}, document.title, newUrl);
     }

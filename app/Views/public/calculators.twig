@@ -3,11 +3,11 @@
 {% extends 'layout.twig' %}
 
 {% block title %}{{ t('Online Calculators') }} | {{ app_settings.site_name|default('BroxLab') }}{% endblock %}
-{% block meta_description %}{{ current_lang == 'bn' ? 'ফাইন্যান্স, গণিত, স্বাস্থ্য এবং ফিটনেসের জন্য বিনামূল্যে অনলাইন ক্যালকুলেটর। সঠিক, দ্রুত ফলাফল - কোন সাইন-আপের প্রয়োজন নেই।' : 'Free online calculators for finance, math, health & fitness. Accurate, instant results — no sign-up required.' }}{% endblock %}
+{% block meta_description %}{{ t('Free online calculators for finance, math, health & fitness. Accurate, instant results — no sign-up required.') }}{% endblock %}
 {% block meta_keywords %}calculator, online calculator, finance calculator, BMI calculator, loan calculator, mortgage calculator, GPA calculator{% endblock %}
 
 {% set breadcrumbs = [
- { label: current_lang == 'bn' ? 'ক্যালকুলেটর' : 'Calculators' }
+ { label: t('Calculators') }
 ] %}
 
 {% block extra_styles %}

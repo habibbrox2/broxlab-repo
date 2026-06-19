@@ -595,7 +595,7 @@ function setupEventListeners() {
   const refreshDashboardData = async () => {
     const icons = refreshButtons.map((btn) => btn.querySelector('i')).filter(Boolean);
     refreshButtons.forEach((btn) => { btn.disabled = true; });
-    icons.forEach((icon) => icon.classList.add('fa-spin'));
+    icons.forEach((icon) => icon.classList.add('animate-spin'));
     console.info('Refreshing dashboard data...');
     try {
       await Promise.all([
@@ -611,7 +611,7 @@ function setupEventListeners() {
       console.error('Error refreshing dashboard:', error);
     } finally {
       refreshButtons.forEach((btn) => { btn.disabled = false; });
-      icons.forEach((icon) => icon.classList.remove('fa-spin'));
+      icons.forEach((icon) => icon.classList.remove('animate-spin'));
     }
   };
 

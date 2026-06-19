@@ -156,19 +156,23 @@ class ThemeManager {
 /**
  * Initialize Theme Manager on DOM Ready
  */
+/** @type {ThemeManager|null} */
+let _themeManagerInstance = null;
+
 function initThemeManager() {
   const globalThemeConfig = window.__APP_JS_CONFIG?.ui?.theme || window.__APP_CONFIG?.ui?.theme || {};
 
-  window.themeManager = new ThemeManager({
+  _themeManagerInstance = new ThemeManager({
     storageKey: globalThemeConfig.storageKey || 'broxbhai-theme',
     defaultTheme: globalThemeConfig.defaultTheme || 'light',
     transitionDuration: Number(globalThemeConfig.transitionDuration || 300),
   });
+  window.themeManager = _themeManagerInstance;
 
   const themeToggleBtn = document.getElementById('broxThemeToggle') || document.getElementById('themeToggle');
   if (themeToggleBtn) {
     const updateButtonState = () => {
-      const currentTheme = window.themeManager.getCurrentTheme();
+      const currentTheme = _themeManagerInstance.getCurrentTheme();
       const isDark = currentTheme === 'dark';
       const themeToggleText = isDark
         ? window.broxI18n?.translate('Switch to light mode') || 'Switch to light mode'
@@ -183,7 +187,7 @@ function initThemeManager() {
     };
 
     themeToggleBtn.addEventListener('click', () => {
-      window.themeManager.toggleTheme(true);
+      _themeManagerInstance.toggleTheme(true);
       updateButtonState();
     });
 

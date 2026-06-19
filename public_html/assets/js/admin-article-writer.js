@@ -173,15 +173,15 @@ function renderArticle(article) {
   const wc = wordCount(article.content);
   const readTime = article.reading_time_minutes || Math.max(1, Math.round(wc / 200));
   articleMetaBar.innerHTML =
-      `<div class="article-meta-item"><div class="label">Words</div><div class="value">${wc.toLocaleString()}</div></div>` +
+    `<div class="article-meta-item"><div class="label">Words</div><div class="value">${wc.toLocaleString()}</div></div>` +
       `<div class="article-meta-item"><div class="label">Reading Time</div><div class="value">${readTime} min</div></div>` +
       `<div class="article-meta-item"><div class="label">Tone</div><div class="value">${esc(toneSelect.options[toneSelect.selectedIndex].text.split('(')[0].trim())}</div></div>`;
 
   const seoTitle = article.seo_title || article.title || '';
   const seoDesc = article.seo_description || '';
   articleSEOInfo.innerHTML =
-      `<div class="mb-2"><strong>SEO Title:</strong> ${esc(truncate(seoTitle, 60))
-      } <span class="seo-char-count">(${seoTitle.length}/60)</span></div>` +
+    `<div class="mb-2"><strong>SEO Title:</strong> ${esc(truncate(seoTitle, 60))
+    } <span class="seo-char-count">(${seoTitle.length}/60)</span></div>` +
       `<div><strong>Meta Description:</strong> ${esc(truncate(seoDesc, 160))
       } <span class="seo-char-count">(${seoDesc.length}/160)</span></div>`;
 
