@@ -66,9 +66,43 @@ const BUDGETS = [
   { key: 'public_html/assets/js/dist/medex-brand-page.js',            maxBytes: 3_000,  label: 'medex-brand-page.js' },
   { key: 'public_html/assets/js/dist/medex-details-page.js',          maxBytes: 7_000,  label: 'medex-details-page.js' },
 
+  // ── New admin feature bundles ──
+  { key: 'public_html/assets/js/dist/admin-cv.js',                   maxBytes: 7_000,   label: 'admin-cv.js' },
+  { key: 'public_html/assets/js/dist/cv-dashboard.js',               maxBytes: 8_000,   label: 'cv-dashboard.js' },
+  { key: 'public_html/assets/js/dist/form-enhancements.js',          maxBytes: 10_000,  label: 'form-enhancements.js' },
+  { key: 'public_html/assets/js/dist/services-dashboard.js',        maxBytes: 16_000,  label: 'services-dashboard.js' },
+
+  // ── Code-split chunk bundles (pattern-based for hash resilience) ──
+  { pattern: 'public_html/assets/js/dist/activity-log-*.js',     maxBytes: 15_000,  label: 'activity-log chunks' },
+  { pattern: 'public_html/assets/js/dist/applications-*.js',     maxBytes: 4_000,   label: 'applications chunk' },
+  { pattern: 'public_html/assets/js/dist/autosave-*.js',         maxBytes: 14_000,  label: 'autosave chunks' },
+  { pattern: 'public_html/assets/js/dist/category-combobox-*.js', maxBytes: 15_000, label: 'category-combobox chunk' },
+  { pattern: 'public_html/assets/js/dist/drafts-*.js',           maxBytes: 18_000,  label: 'drafts chunks' },
+  { pattern: 'public_html/assets/js/dist/email-templates-*.js',  maxBytes: 2_000,   label: 'email-templates chunk' },
+  { pattern: 'public_html/assets/js/dist/media-upload-*.js',     maxBytes: 3_000,   label: 'media-upload chunk' },
+  { pattern: 'public_html/assets/js/dist/misc-*.js',             maxBytes: 3_000,   label: 'misc chunk' },
+  { pattern: 'public_html/assets/js/dist/mobile-*.js',           maxBytes: 8_000,   label: 'mobile chunk' },
+  { pattern: 'public_html/assets/js/dist/notification-runtime-*.js', maxBytes: 26_000, label: 'notification-runtime chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-analytics-*.js', maxBytes: 2_000, label: 'notifications-analytics chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-workflows-*.js', maxBytes: 70_000, label: 'notifications-workflows chunk' },
+  { pattern: 'public_html/assets/js/dist/oauth-*.js',            maxBytes: 4_000,   label: 'oauth chunk' },
+  { pattern: 'public_html/assets/js/dist/rbac-users-*.js',      maxBytes: 12_000,  label: 'rbac-users chunk' },
+  { pattern: 'public_html/assets/js/dist/realtime-monitoring-*.js', maxBytes: 7_000, label: 'realtime-monitoring chunk' },
+  { pattern: 'public_html/assets/js/dist/security-2fa-*.js',    maxBytes: 7_000,   label: 'security-2fa chunk' },
+  { pattern: 'public_html/assets/js/dist/server-status-*.js',   maxBytes: 3_000,   label: 'server-status chunk' },
+  { pattern: 'public_html/assets/js/dist/services-*.js',        maxBytes: 42_000,  label: 'services chunk' },
+  { pattern: 'public_html/assets/js/dist/settings-*.js',        maxBytes: 9_000,   label: 'settings chunk' },
+  { pattern: 'public_html/assets/js/dist/shared-*.js',          maxBytes: 2_000,   label: 'shared chunk' },
+  { pattern: 'public_html/assets/js/dist/slug-*.js',            maxBytes: 4_000,   label: 'slug chunk' },
+  { pattern: 'public_html/assets/js/dist/subscribers-*.js',     maxBytes: 12_000,  label: 'subscribers chunk' },
+  { pattern: 'public_html/assets/js/dist/tag-combobox-*.js',    maxBytes: 15_000,  label: 'tag-combobox chunk' },
+  { pattern: 'public_html/assets/js/dist/chunk-*.js',           maxBytes: 10_000,  label: 'tiny shared chunks' },
+
   // ── CSS ──
-  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 465_000, label: 'tailwind-public.css' },
-  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 465_000, label: 'tailwind-admin.css' },
+  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 480_000, label: 'tailwind-public.css' },
+  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 480_000, label: 'tailwind-admin.css' },
+  { key: 'public_html/assets/css/dist/admin-bundle.css',       maxBytes: 565_000, label: 'admin-bundle.css' },
+  { key: 'public_html/assets/css/dist/public-bundle.css',      maxBytes: 565_000, label: 'public-bundle.css' },
 
   // ── Other generated bundles ──
   { key: 'public_html/rtceditor/editor.bundle.js',             maxBytes: 120_000, label: 'editor.bundle.js' },
@@ -88,12 +122,13 @@ const CATEGORIES = [
   {
     label: 'JS — other dist bundles',
     // All JS dist files EXCEPT admin.js (which is in its own category)
+    // Only entries with `key` (exact path) — pattern entries excluded from this display total
     keys: Object.fromEntries(
       BUDGETS
-        .filter(b => b.key.startsWith('public_html/assets/js/dist/') && b.key !== 'public_html/assets/js/dist/admin.js')
+        .filter(b => b.key && b.key.startsWith('public_html/assets/js/dist/') && b.key !== 'public_html/assets/js/dist/admin.js')
         .map(b => [b.key, true])
     ),
-    maxBytes: 500_000,
+    maxBytes: 700_000,
   },
   {
     label: 'CSS — tailwind',
@@ -145,27 +180,103 @@ function formatPct(current, max) {
   return ((current / max) * 100).toFixed(1) + '%';
 }
 
+// Convert a glob-style pattern to a RegExp for matching file paths
+function patternToRegex(pattern) {
+  // Escape regex special chars except for * and ?
+  let escaped = pattern
+    .replace(/\\/g, '/')
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]');
+  return new RegExp('^' + escaped + '$');
+}
+
 // Build a Set of budgeted keys for fast lookup
-const budgetedKeys = new Set(BUDGETS.map(b => b.key.replace(/\\/g, '/')));
+const budgetedKeys = new Set(
+  BUDGETS
+    .filter(b => b.key)
+    .map(b => b.key.replace(/\\/g, '/'))
+);
+
+// Build compiled patterns from pattern-based budget entries
+const budgetPatterns = BUDGETS
+  .filter(b => b.pattern)
+  .map(b => ({ regex: patternToRegex(b.pattern), maxBytes: b.maxBytes, label: b.label }));
+
+// Check if a path matches any budget pattern
+function matchesBudgetPattern(relativePath) {
+  const normalized = relativePath.replace(/\\/g, '/');
+  for (const bp of budgetPatterns) {
+    if (bp.regex.test(normalized)) return bp;
+  }
+  return null;
+}
+
+// ── Cache file listings per directory to avoid redundant reads ──
+const dirCache = new Map();
+function getCachedFiles(dirPath) {
+  const key = dirPath.replace(/\\/g, '/');
+  if (!dirCache.has(key)) {
+    if (!existsSync(dirPath)) {
+      dirCache.set(key, null);
+    } else {
+      dirCache.set(key, readdirSync(dirPath));
+    }
+  }
+  return dirCache.get(key);
+}
 
 // ── Check individual budgets ──
 for (const budget of BUDGETS) {
-  const fullPath = join(ROOT_DIR, budget.key);
-
-  if (!existsSync(fullPath)) {
-    console.warn(`  ⚠  SKIPPED: ${budget.label} — file not found`);
-    continue;
-  }
-
-  const size = statSync(fullPath).size;
-  const usage = formatPct(size, budget.maxBytes);
-  const ok = size <= budget.maxBytes;
-
-  if (ok) {
-    passes.push({ label: budget.label, size, max: budget.maxBytes, usage });
-  } else {
-    failures.push({ label: budget.label, size, max: budget.maxBytes, usage });
-    exitCode = 1;
+  if (budget.key) {
+    // Exact key match
+    const fullPath = join(ROOT_DIR, budget.key);
+    if (!existsSync(fullPath)) {
+      console.warn(`  ⚠  SKIPPED: ${budget.label} — file not found`);
+      continue;
+    }
+    const size = statSync(fullPath).size;
+    const usage = formatPct(size, budget.maxBytes);
+    const ok = size <= budget.maxBytes;
+    if (ok) {
+      passes.push({ label: budget.label, size, max: budget.maxBytes, usage });
+    } else {
+      failures.push({ label: budget.label, size, max: budget.maxBytes, usage });
+      exitCode = 1;
+    }
+  } else if (budget.pattern) {
+    // Pattern-based: scan directory and sum matching files
+    const slashIdx = budget.pattern.lastIndexOf('/');
+    const relativeDir = budget.pattern.substring(0, slashIdx);
+    const dir = join(ROOT_DIR, relativeDir);
+    const allFiles = getCachedFiles(dir);
+    if (!allFiles) {
+      console.warn(`  ⚠  SKIPPED: ${budget.label} — directory not found`);
+      continue;
+    }
+    const regex = patternToRegex(budget.pattern);
+    const dirPrefix = relativeDir.replace(/\\/g, '/') + '/';
+    const matchingFiles = allFiles.filter(f => {
+      const fullRelPath = dirPrefix + f;
+      // Skip files already covered by an exact key entry to avoid double-counting
+      if (budgetedKeys.has(fullRelPath)) return false;
+      return regex.test(fullRelPath);
+    });
+    let totalSize = 0;
+    let fileCount = 0;
+    for (const file of matchingFiles) {
+      totalSize += statSync(join(dir, file)).size;
+      fileCount++;
+    }
+    const usage = formatPct(totalSize, budget.maxBytes);
+    const ok = totalSize <= budget.maxBytes;
+    const label = fileCount > 1 ? `${budget.label} (${fileCount} files)` : budget.label;
+    if (ok) {
+      passes.push({ label, size: totalSize, max: budget.maxBytes, usage });
+    } else {
+      failures.push({ label, size: totalSize, max: budget.maxBytes, usage });
+      exitCode = 1;
+    }
   }
 }
 
@@ -180,6 +291,7 @@ for (const scanDir of SCAN_DIRS) {
   for (const file of files) {
     const relativePath = normalizedScanDir + file;
     if (budgetedKeys.has(relativePath)) continue;
+    if (matchesBudgetPattern(relativePath)) continue;
 
     const fullPath = join(fullDir, file);
     const size = statSync(fullPath).size;

@@ -688,3 +688,36 @@ $router->post('/admin/cv-purchases/{id}/confirm', ['middleware' => ['auth', 'adm
  * POST /admin/cv-purchases/{id}/cancel
  */
 $router->post('/admin/cv-purchases/{id}/cancel', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvPurchaseCancel']);
+
+// ════════════════════════════════════════════════════════════
+// ADMIN: CV PERSONAL INFO MANAGEMENT (full CRUD)
+// ════════════════════════════════════════════════════════════
+
+$router->get('/admin/cv-personal-info', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoList']);
+$router->get('/admin/cv-personal-info/create', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoCreateForm']);
+$router->post('/admin/cv-personal-info', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoStore']);
+$router->get('/admin/cv-personal-info/view/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoView']);
+$router->get('/admin/cv-personal-info/edit/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoEditForm']);
+$router->post('/admin/cv-personal-info/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoUpdate']);
+$router->post('/admin/cv-personal-info/{id}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoDelete']);
+
+// ════════════════════════════════════════════════════════════
+// ADMIN: CV TEMPLATE VIEW (by slug)
+// ════════════════════════════════════════════════════════════
+
+$router->get('/admin/cv-templates/view/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) {
+    global $twig;
+    $slug = sanitize_input(basename($slug));
+    $template = function_exists('cvTemplateGet') ? cvTemplateGet($slug) : null;
+    if (!$template) {
+        http_response_code(404);
+        echo $twig->render('admin/error.twig', ['error' => 'Template not found', 'page_title' => 'Error', 'current_page' => 'cv-templates']);
+        exit;
+    }
+    echo $twig->render('admin/cv-templates/view.twig', [
+        'template' => $template, 'template_slug' => $slug,
+        'page_title' => 'Template: ' . ($template['name'] ?? ucfirst($slug)),
+        'current_page' => 'cv-templates',
+        'csrf_token' => $_SESSION['csrf_token'] ?? '',
+    ]);
+});

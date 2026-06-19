@@ -495,9 +495,10 @@
               ]},
               {'name': 'CV Management', 'icon': 'lucide-user', 'key': 'cv-management', 'children': [
                 {'name': 'CVs',           'url': '/admin/cvs',              'key': 'cvs'},
-                {'name': 'Personal Info', 'url': '/admin/cv-personal-info', 'key': 'cv-personal-info'},
-                {'name': 'Templates',     'url': '/admin/cv-templates',     'key': 'cv-templates'},
-                {'name': 'Job Positions', 'url': '/admin/job-positions',    'key': 'job-positions'}
+                {'name': 'Personal Info',   'url': '/admin/cv-personal-info', 'key': 'cv-personal-info'},
+                {'name': 'Templates',       'url': '/admin/cv-templates',     'key': 'cv-templates'},
+                {'name': 'Purchases',       'url': '/admin/cv-purchases',     'key': 'cv-purchases'},
+                {'name': 'Job Positions',   'url': '/admin/job-positions',    'key': 'job-positions'}
               ]},
               {'name': 'Notifications', 'icon': 'lucide-bell', 'key': 'notifications', 'children': [
                 {'name': 'My Notifications', 'url': '/admin/my/notifications',        'key': 'my-notifications'},
@@ -622,6 +623,7 @@
 <script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
 <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
 <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/admin-cv.js') }}"></script>
 <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
 <script type="module" src="{{ asset('/assets/js/modules/admin-sidebar-polish.js') }}"></script>
 <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>

@@ -35,6 +35,7 @@ const ENTRY_POINTS = {
   calculator: join(ROOT_DIR, 'public_html', 'assets', 'js', 'calculator.js'),
   'bangla-converter': join(ROOT_DIR, 'public_html', 'assets', 'js', 'bangla-converter.js'),
   'cv-admin': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-admin.js'),
+  'admin-cv': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin-cv.js'),
   'cv-builder': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-builder-app.js'),
   'cv-marketplace': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-marketplace.js'),
   'cv-template-upload': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-template-upload.js'),
@@ -53,6 +54,7 @@ const ENTRY_POINTS = {
   'photo-studio/editor': join(ROOT_DIR, 'public_html', 'assets', 'js', 'photo-studio', 'editor.js'),
   'cv-dashboard': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-dashboard.js'),
   'form-enhancements': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin', 'form-enhancements.js'),
+  'services-dashboard': join(ROOT_DIR, 'public_html', 'assets', 'js', 'modules', 'services-dashboard.js'),
 };
 
 const buildOptions = {
