@@ -140,6 +140,42 @@
     </div>
    </section>
 
+   {# ── Images Card ── #}
+   {% if service.images is defined and service.images is not empty %}
+   <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 to-pink-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-purple-100 text-purple-600">
+      <i class="lucide lucide-images w-3.5 h-3.5"></i>
+     </div>
+     <div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Images</h2>
+      <p class="text-xs text-slate-500">Service images ({{ service.images|length }})</p>
+     </div>
+    </div>
+    <div class="p-5">
+     <div class="grid grid-cols-2 gap-3">
+      {% for image in service.images %}
+       <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+        <img src="{{ (image.thumbnail_path ?? image.image_path)|absolute_url }}"
+             alt="{{ image.alt_text|default(service.name ~ ' image')|e('html_attr') }}"
+             class="w-full h-32 object-cover transition-transform duration-200 group-hover:scale-105"
+             loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="absolute inset-0 flex items-center justify-center bg-slate-100" style="display:none;">
+         <i class="lucide lucide-image w-8 h-8 text-slate-400"></i>
+        </div>
+        {% if image.is_featured %}
+         <span class="absolute top-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-400/90 text-[10px] font-bold text-white shadow-sm backdrop-blur-sm">
+          <i class="lucide lucide-star w-2.5 h-2.5"></i> Featured
+         </span>
+        {% endif %}
+       </div>
+      {% endfor %}
+     </div>
+    </div>
+   </section>
+   {% endif %}
+
    {# ── Metadata Card ── #}
    <section class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
     <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-100/50 to-slate-200/50 px-5 py-4">

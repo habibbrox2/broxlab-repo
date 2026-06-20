@@ -939,3 +939,233 @@
     transition: none;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   8. SERVICES GRID — Utility Portal Style Cards
+   ═══════════════════════════════════════════════ */
+
+.services-dashboard-section {
+  background: #10253A;
+  padding: 48px 0;
+}
+
+.services-section-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.services-section-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.services-section-heading {
+  color: #FFFFFF;
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ── Grid ── */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 180px);
+  gap: 40px;
+  justify-content: center;
+  align-content: start;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* ── Card ── */
+.service-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 180px;
+  height: 220px;
+  padding: 22px 10px 0;
+  background: #3A4757;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.18);
+  text-decoration: none;
+  transition: transform 0.15s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+}
+
+.service-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
+/* ── Icon ── */
+.service-card-icon {
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.service-card-icon svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.service-card-img {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.service-card:hover .service-card-img {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Title ── */
+.service-card-title {
+  color: #FFFFFF;
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  margin-top: 10px;
+  padding: 0 6px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.3em;
+}
+
+/* ── Skeleton ── */
+.services-skeleton-wrap {
+  /* placeholder */
+}
+
+.services-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 180px;
+  height: 220px;
+  padding-top: 25px;
+  background: #3A4757;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+}
+
+.skeleton-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.skeleton-title {
+  width: 100px;
+  height: 28px;
+  margin-top: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.services-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 24px;
+  text-align: center;
+  color: #e5e7eb;
+  background: #3A4757;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+}
+
+.services-empty-state-title {
+  margin-bottom: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.services-empty-state-text {
+  max-width: 420px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(229, 231, 235, 0.82);
+}
+
+/* ── Responsive Grid Columns ── */
+@media (max-width: 1199px) {
+  .services-grid {
+    grid-template-columns: repeat(4, 180px);
+  }
+}
+
+@media (max-width: 991px) {
+  .services-grid {
+    grid-template-columns: repeat(3, 180px);
+  }
+}
+
+@media (max-width: 1023px) {
+  .services-dashboard-section {
+    padding: 32px 0;
+  }
+
+  .services-section-header {
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 767px) {
+  .services-grid {
+    grid-template-columns: repeat(2, 180px);
+  }
+
+  .services-dashboard-section {
+    padding: 24px 0;
+  }
+
+  .services-section-header {
+    margin-bottom: 24px;
+  }
+
+  .services-section-inner {
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 479px) {
+  .services-grid {
+    grid-template-columns: 180px;
+    justify-content: center;
+  }
+}

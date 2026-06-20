@@ -52,19 +52,25 @@
    <span class="rte-selection-debug" id="{{ editorId }}-selection-debug">Selection: none</span>
   </div>
 
+  <!-- Responsive Toggle (shown on narrow screens) -->
+  <button type="button" class="rte-btn rte-toolbar-responsive-toggle" title="Toggle toolbar" aria-label="Toggle toolbar" data-editor="{{ editorId }}">
+   <i class="rte-icon material-icons">menu</i>
+   <span class="rte-tooltip">Toggle toolbar</span>
+  </button>
+
   <!-- View Toggle -->
-  <div class="rte-toolbar-section rte-view-toggle">
+  <div class="rte-toolbar-section rte-view-toggle rte-toolbar-essential">
    <button type="button" class="rte-btn rte-view-compose" title="Compose view (Ctrl+Shift+C)" data-view="compose" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">edit</i>
-    <span class="rte-tooltip">Compose</span>
+    <span class="rte-tooltip">Compose <kbd>Ctrl+Shift+C</kbd></span>
    </button>
    <button type="button" class="rte-btn rte-view-html" title="HTML source view (Ctrl+Shift+S)" data-view="source" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">code</i>
-    <span class="rte-tooltip">HTML</span>
+    <span class="rte-tooltip">HTML <kbd>Ctrl+Shift+S</kbd></span>
    </button>
    <button type="button" class="rte-btn rte-view-history" title="View history (Ctrl+Shift+H)" data-view="history" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">history</i>
-    <span class="rte-tooltip">History</span>
+    <span class="rte-tooltip">History <kbd>Ctrl+Shift+H</kbd></span>
    </button>
   </div>
 
@@ -81,14 +87,14 @@
   <div class="rte-toolbar-divider"></div>
 
   <!-- Undo/Redo -->
-  <div class="rte-toolbar-section rte-undo-redo">
+  <div class="rte-toolbar-section rte-undo-redo rte-toolbar-essential">
    <button type="button" class="rte-btn" title="Undo (Ctrl+Z)" data-command="undo" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">undo</i>
-    <span class="rte-tooltip">Undo</span>
+    <span class="rte-tooltip">Undo <kbd>Ctrl+Z</kbd></span>
    </button>
    <button type="button" class="rte-btn" title="Redo (Ctrl+Y)" data-command="redo" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">redo</i>
-    <span class="rte-tooltip">Redo</span>
+    <span class="rte-tooltip">Redo <kbd>Ctrl+Y</kbd></span>
    </button>
   </div>
 
@@ -96,11 +102,11 @@
   <div class="rte-toolbar-section rte-clipboard">
    <button type="button" class="rte-btn" title="Copy (Ctrl+C)" data-action="copyClipboard" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">content_copy</i>
-    <span class="rte-tooltip">Copy</span>
+    <span class="rte-tooltip">Copy <kbd>Ctrl+C</kbd></span>
    </button>
    <button type="button" class="rte-btn" title="Paste (Ctrl+V)" data-action="pasteClipboard" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">content_paste</i>
-    <span class="rte-tooltip">Paste</span>
+    <span class="rte-tooltip">Paste <kbd>Ctrl+V</kbd></span>
    </button>
   </div>
 
@@ -130,16 +136,21 @@
           data-editor="{{ editorId }}"
           type="text"
           inputmode="numeric"
-          pattern="[0-9]+"
           value="12">
    <datalist id="{{ editorId }}-font-sizes">
     <option value="8">8px</option>
     <option value="10">10px</option>
     <option value="12">12px</option>
     <option value="14">14px</option>
+    <option value="16">16px</option>
     <option value="18">18px</option>
+    <option value="20">20px</option>
     <option value="24">24px</option>
+    <option value="28">28px</option>
     <option value="32">32px</option>
+    <option value="36">36px</option>
+    <option value="48">48px</option>
+    <option value="72">72px</option>
    </datalist>
 
    <select id="{{ editorId }}-heading-select" class="rte-select rte-heading-select" title="Block format" aria-label="Block format" data-editor="{{ editorId }}">
@@ -161,18 +172,18 @@
   <div class="rte-toolbar-divider"></div>
 
   <!-- Formatting -->
-  <div class="rte-toolbar-section rte-formatting">
+  <div class="rte-toolbar-section rte-formatting rte-toolbar-essential">
    <button type="button" class="rte-btn" title="Bold (Ctrl+B)" data-command="bold" {{ 'bold' in disabledButtons ? 'disabled aria-disabled="true"' : '' }} data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">format_bold</i>
-    <span class="rte-tooltip">Bold</span>
+    <span class="rte-tooltip">Bold <kbd>Ctrl+B</kbd></span>
    </button>
    <button type="button" class="rte-btn" title="Italic (Ctrl+I)" data-command="italic" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">format_italic</i>
-    <span class="rte-tooltip">Italic</span>
+    <span class="rte-tooltip">Italic <kbd>Ctrl+I</kbd></span>
    </button>
    <button type="button" class="rte-btn" title="Underline (Ctrl+U)" data-command="underline" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">format_underlined</i>
-    <span class="rte-tooltip">Underline</span>
+    <span class="rte-tooltip">Underline <kbd>Ctrl+U</kbd></span>
    </button>
    <button type="button" class="rte-btn" title="Strikethrough" data-command="strikeThrough" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">strikethrough_s</i>
@@ -215,7 +226,7 @@
   <div class="rte-toolbar-divider"></div>
 
   <!-- Insert -->
-  <div class="rte-toolbar-section rte-insert">
+  <div class="rte-toolbar-section rte-insert rte-toolbar-essential">
    <button type="button" class="rte-btn" title="Insert/Edit Link" data-action="insertLink" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ editorId }}-link-modal" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons">link</i>
     <span class="rte-tooltip">Link</span>
@@ -310,7 +321,7 @@
    </button>
    <button type="button" class="rte-btn" title="Toggle fullscreen (Ctrl+Shift+F)" data-action="toggleFullscreen" data-editor="{{ editorId }}">
     <i class="rte-icon material-icons rte-fullscreen-icon">fullscreen</i>
-    <span class="rte-tooltip">Fullscreen</span>
+    <span class="rte-tooltip">Fullscreen <kbd>Ctrl+Shift+F</kbd></span>
    </button>
    <div class="rte-more-dropdown">
     <button type="button" class="rte-btn" title="More options" data-action="toggleMore" data-editor="{{ editorId }}">
@@ -439,3 +450,49 @@
   </div>
  </div>
 </div>
+
+<!-- Responsive toolbar collapse toggle -->
+<script>
+(function() {
+ 'use strict';
+
+ function initToolbarState() {
+  document.querySelectorAll('.rte-toolbar').forEach(function(toolbar) {
+   var btn = toolbar.querySelector('.rte-toolbar-responsive-toggle');
+   if (!btn) return;
+   if (window.innerWidth <= 480 && !toolbar.classList.contains('rte-toolbar-expanded')) {
+    toolbar.classList.add('rte-toolbar-collapsed');
+    btn.setAttribute('aria-expanded', 'false');
+   } else {
+    toolbar.classList.remove('rte-toolbar-collapsed');
+    btn.setAttribute('aria-expanded', 'true');
+   }
+  });
+ }
+
+ document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.rte-toolbar-responsive-toggle');
+  if (!btn) return;
+  var toolbar = btn.closest('.rte-toolbar');
+  if (!toolbar) return;
+
+  var isExpanded = toolbar.classList.contains('rte-toolbar-expanded');
+  var icon = btn.querySelector('.rte-icon.material-icons');
+
+  if (isExpanded) {
+   toolbar.classList.remove('rte-toolbar-expanded');
+   toolbar.classList.add('rte-toolbar-collapsed');
+   if (icon) icon.textContent = 'menu';
+   btn.setAttribute('aria-expanded', 'false');
+  } else {
+   toolbar.classList.remove('rte-toolbar-collapsed');
+   toolbar.classList.add('rte-toolbar-expanded');
+   if (icon) icon.textContent = 'close';
+   btn.setAttribute('aria-expanded', 'true');
+  }
+ });
+
+ initToolbarState();
+ window.addEventListener('resize', initToolbarState);
+})();
+</script>

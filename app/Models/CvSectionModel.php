@@ -20,7 +20,7 @@ class CvSectionModel
         $order = $this->getNextOrder($cvId);
 
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cv_sections (cv_id, section_type, title, `order`, is_visible) VALUES (?, ?, ?, ?, TRUE)"
+            "INSERT INTO cv_sections (cv_id, section_type, title, `sort_order`, is_visible) VALUES (?, ?, ?, ?, TRUE)"
         );
         $stmt->bind_param('issi', $cvId, $sectionType, $title, $order);
 
@@ -37,7 +37,7 @@ class CvSectionModel
     private function getNextOrder(int $cvId): int
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT MAX(`order`) as max_order FROM cv_sections WHERE cv_id = ? AND deleted_at IS NULL"
+            "SELECT MAX(`sort_order`) as max_order FROM cv_sections WHERE cv_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -54,10 +54,10 @@ class CvSectionModel
     public function getByCvId(int $cvId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
+            "SELECT id, cv_id, section_type, title, `sort_order`, is_visible, created_at, updated_at
              FROM cv_sections
              WHERE cv_id = ? AND deleted_at IS NULL
-             ORDER BY `order` ASC"
+             ORDER BY `sort_order` ASC"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -77,7 +77,7 @@ class CvSectionModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT id, cv_id, section_type, title, `order`, is_visible, created_at, updated_at
+            "SELECT id, cv_id, section_type, title, `sort_order`, is_visible, created_at, updated_at
              FROM cv_sections
              WHERE id = ? AND deleted_at IS NULL
              LIMIT 1"
@@ -110,8 +110,12 @@ class CvSectionModel
             $types .= 's';
         }
 
-        if (isset($data['order'])) {
-            $fields[] = '`order` = ?';
+        if (isset($data['sort_order'])) {
+            $fields[] = '`sort_order` = ?';
+            $params[] = $data['sort_order'];
+            $types .= 'i';
+        } elseif (isset($data['order'])) {
+            $fields[] = '`sort_order` = ?';
             $params[] = $data['order'];
             $types .= 'i';
         }
@@ -159,7 +163,7 @@ class CvSectionModel
 
         try {
             $stmt = $this->mysqli->prepare(
-                "UPDATE cv_sections SET `order` = ? WHERE id = ? AND cv_id = ?"
+                "UPDATE cv_sections SET `sort_order` = ? WHERE id = ? AND cv_id = ?"
             );
 
             foreach ($sectionIds as $order => $sectionId) {

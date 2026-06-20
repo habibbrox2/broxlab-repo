@@ -57,7 +57,7 @@
   <meta property="og:site_name"    content="{{ app_settings.site_name }}">
   <meta property="og:title"        content="{{ block('title')|striptags|default(app_settings.site_name) }}">
   <meta property="og:description"  content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
-  <meta property="og:image"        content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}{% endblock %}">
+  <meta property="og:image"        content="{% block og_image %}{{ app_settings.site_logo|default('/assets/images/default-image.png')|absolute_url }}{% endblock %}">
   <meta property="og:image:width"  content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type"   content="image/png">
@@ -83,7 +83,7 @@
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="{{ block('title')|striptags|default(app_settings.site_name) }}">
   <meta name="twitter:description" content="{{ app_settings.meta_description|default('Welcome to ' ~ app_settings.site_name) }}">
-  <meta name="twitter:image"       content="{{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url }}">
+  <meta name="twitter:image"       content="{{ app_settings.site_logo|default('/assets/images/default-image.png')|absolute_url }}">
   {% if app_settings.twitter_handle %}<meta name="twitter:creator" content="@{{ app_settings.twitter_handle }}">{% endif %}
   {% if app_settings.twitter_site  %}<meta name="twitter:site"    content="@{{ app_settings.twitter_site }}">{% endif %}
 
@@ -184,7 +184,7 @@
     "description": {{ app_settings.meta_description|json_encode|raw }},
     "image": {
       "@type": "ImageObject",
-      "url": {{ app_settings.site_logo|default('/assets/images/default-og-image.png')|absolute_url|json_encode|raw }},
+      "url": {{ app_settings.site_logo|default('/assets/images/default-image.png')|absolute_url|json_encode|raw }},
       "width": 1200,
       "height": 630
     },
@@ -225,7 +225,7 @@
     "url": {{ url|json_encode|raw }},
     "logo": {{ app_settings.site_logo|absolute_url|json_encode|raw }},
     "description": {{ app_settings.meta_description|default('Mobile reviews, tech news, and gadget insights')|json_encode|raw }},
-    "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url|json_encode|raw }},
+    "image": {{ app_settings.site_logo|default(url ~ 'assets/images/default-image.png')|absolute_url|json_encode|raw }},
     {% if app_settings.business_address %}
     "address": {
       "@type": "PostalAddress",

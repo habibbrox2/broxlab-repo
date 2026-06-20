@@ -37,7 +37,8 @@ $router->post('/api/cv/guest/builder/{id}/complete', ['middleware' => ['csrf']],
 $router->get('/api/cv/guest/{id}/preview', ['CvController', 'guestPreview']);
 $router->get('/cv-builder/guest/{id}/export/pdf', ['CvController', 'guestExportPdf']);
 
-// ── Guest CV Claiming & Upgrade (authenticated, for claiming guest CVs after login) ──    $router->post('/api/cv/claim-guest-cvs', ['middleware' => ['auth', 'csrf']], ['CvController', 'claimGuestCvs']);
+// ── Guest CV Claiming & Upgrade (authenticated, for claiming guest CVs after login) ──
+$router->post('/api/cv/claim-guest-cvs', ['middleware' => ['auth', 'csrf']], ['CvController', 'claimGuestCvs']);
     $router->get('/api/cv/has-guest-cvs', ['middleware' => ['auth']], ['CvController', 'hasGuestCvs']);
     $router->get('/api/cv/my-cvs', ['middleware' => ['auth']], ['CvController', 'myCvs']);
     $router->post('/api/cv/{id}/upgrade-template', ['middleware' => ['auth', 'csrf']], ['CvController', 'upgradeTemplate']);
@@ -72,6 +73,7 @@ $router->put('/cv-builder/{id}', ['middleware' => ['auth', 'csrf']], ['CvControl
 $router->post('/cv-builder/{id}/update', ['middleware' => ['auth', 'csrf']], ['CvController', 'updateForm']);
 $router->post('/cv-builder/{id}/duplicate', ['middleware' => ['auth', 'csrf']], ['CvController', 'duplicate']);
 $router->delete('/cv-builder/{id}', ['middleware' => ['auth', 'csrf']], ['CvController', 'delete']);
+$router->delete('/api/cv/{id}', ['middleware' => ['auth', 'csrf']], ['CvController', 'delete']);
 
 // ── Personal Info API ──
 $router->get('/api/cv/{id}/personal-info', ['middleware'=>['auth']], ['CvBuilderController', 'apiGetPersonalInfo']);

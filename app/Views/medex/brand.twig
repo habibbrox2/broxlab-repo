@@ -50,10 +50,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 space-y-6">
 
 {# Brand Header Card #}
-<div class="medex-brand-header">
+<div class="medex-hero">
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
  <div class="md:col-span-8">
  <div class="flex items-center mb-2">
@@ -96,7 +96,7 @@
  {% endif %}
 
  <div class="mt-3">
- <button id="medex-refresh-button" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 rounded-lg hover:bg-indigo-600-light transition-colors">
+ <button id="medex-refresh-button" type="button" class="medex-action medex-action-soft">
  <i class="lucide lucide-refresh-ccw"></i> <span data-i18n-en="Refresh MedEx" data-i18n-bn="রিফ্রেশ মেডএক্স">{{ current_lang == 'bn' ? 'রিফ্রেশ মেডএক্স' : 'Refresh MedEx' }}</span>
  </button>
  <div id="medex-refresh-feedback" class="text-slate-500 small mt-2"></div>
@@ -108,7 +108,7 @@
 {# Section Navigation (optional pills) #}
 {% set sectionKeys = sections|keys %}
 {% if sectionKeys|length > 1 %}
-<div class="medex-section-nav inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
+<div class="medex-panel inline-flex items-center justify-center gap-2 px-4 py-2">
  <span class="text-slate-500 small font-bold mr-2" data-i18n-en="Quick jump:" data-i18n-bn="দ্রুত যান:">{{ current_lang == 'bn' ? 'দ্রুত যান:' : 'Quick jump:' }}</span>
  {% for key, section in sections %}
  <a href="#section-{{ key }}" class="medex-section-nav inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition" data-action="scroll-to-section" data-section="section-{{ key }}">
@@ -122,15 +122,15 @@
 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="col-span-12">
  {% for key, section in sections %}
- <div class="medex-section{% if loop.first %} active{% endif" id="section-{{ key }}">
- <div class="medex-section-header" data-action="toggleSection"{{ key }}')" tabindex="0" role="button" aria-expanded="{{ loop.first ? 'true' : 'false' }}">
+ <div class="medex-section-card{% if loop.first %} active{% endif %}" id="section-{{ key }}">
+ <div class="medex-section-toggle" data-action="toggleSection('{{ key }}')" tabindex="0" role="button" aria-expanded="{{ loop.first ? 'true' : 'false' }}">
  <div class="flex items-center">
  <i class="lucide lucide-chevron-down section-toggle" id="toggle-{{ key }}"></i>
  <h6>{{ section.title_en }}</h6>
  <span class="medex-section-chip inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold">{{ section.title_bn }}</span>
  </div>
  </div>
- <div class="medex-section-content{% if loop.first %} active{% endif" id="content-{{ key }}">
+ <div class="medex-section-content{% if loop.first %} active{% endif %}" id="content-{{ key }}">
  {% if section.content is not empty and section.content != '' %}
  {{ section.content|nl2br }}
  {% else %}
@@ -181,40 +181,8 @@
 
 {% block extra_scripts %}
 <script type="module" src="{{ asset('/assets/js/dist/medex-brand-page.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}">
-
-<script>
-document.addEventListener("click", function(e) {
-  var t = e.target.closest("[data-action]");
-  if (!t) return;
-  var a = t.getAttribute("data-action");
-  var id = t.dataset.id;
-  if (a && window[a]) window[a](id, t);
-});
-</script>
-
-<script>
-document.addEventListener("click", function(e) {
-  var t = e.target.closest("[data-action]");
-  if (!t) return;
-  var a = t.getAttribute("data-action");
-  var id = t.dataset.id;
-  if (a && window[a]) window[a](id, t);
-});
-</script>
-
-<script>
-document.addEventListener("click", function(e) {
-  var t = e.target.closest("[data-action]");
-  if (!t) return;
-  var a = t.getAttribute("data-action");
-  var id = t.dataset.id;
-  if (a && window[a]) window[a](id, t);
-});
-</script>
-</script>
+<script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}"></script>
 {% endblock %}
-
 
 
 

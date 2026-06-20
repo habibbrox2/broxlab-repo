@@ -6,8 +6,6 @@
 
 {% block extra_styles %}
   {# Non-critical page-specific styles (deferred) #}
-  <link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="{{ url }}assets/css/mobiles-grid.css"></noscript>
   <link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="{{ asset('assets/css/weather.css') }}"></noscript>
   <link rel="stylesheet" href="{{ asset('assets/css/home.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
@@ -16,7 +14,7 @@
   <noscript><link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}"></noscript>
 {% endblock %}
 
-{% set page_image = app_settings.site_logo|default(url ~ 'assets/images/default-og-image.png')|absolute_url %}
+{% set page_image = app_settings.site_logo|default(url ~ 'assets/images/default-image.png')|absolute_url %}
 {% set page_schema = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
@@ -181,121 +179,80 @@
   </div>
 </section>
 
-<section class="mx-auto mb-5 max-w-7xl px-4 sm:px-6 lg:px-8 home-calculator-section">
-   <div class="grid items-center gap-4 lg:grid-cols-2">
-     <div>
-       <div class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-         <span data-i18n="Calculator categories" >{{ t('Calculator categories') }}</span>
-         <h2 data-i18n="Quick access to calculators and converters" >{{ t('Quick access to calculators and converters') }}</h2>
-         <p data-i18n="Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub." >{{ t('Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.') }}</p>
-         <a href="/calculators" class="inline-flex w-fit items-center justify-center rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
-           <i class="lucide lucide-calculator mr-2"></i>{{ t('Browse all calculators') }}
-         </a>
-       </div>
-     </div>
-     <div>
-       <div class="grid grid-cols-2 gap-3">
-         <div>
-           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-             <div class="p-4">
-               <div class="mb-3">
-                 <span class="inline-flex rounded-full bg-primary/10 p-2 text-primary">
-                   <i class="lucide lucide-calculator"></i>
-                 </span>
-               </div>
-<h3 data-i18n="Math Calculators" >{{ t('Math Calculators') }}</h3>
-                <p data-i18n="Standard, scientific, graphing, and programmer tools." >{{ t('Standard, scientific, graphing, and programmer tools.') }}</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div class="p-4">
-                <div class="mb-3">
-                  <span class="inline-flex rounded-full bg-emerald-500/10 p-2 text-emerald-600">
-                    <i class="lucide lucide-dollar-sign"></i>
-                  </span>
-                </div>
-                <h3 data-i18n="Finance Tools" >{{ t('Finance Tools') }}</h3>
-                <p data-i18n="Loans, interest, mortgage, percentage, and GPA calculators." >{{ t('Loans, interest, mortgage, percentage, and GPA calculators.') }}</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div class="p-4">
-                <div class="mb-3">
-                  <span class="inline-flex rounded-full bg-amber-500/10 p-2 text-amber-500">
-                    <i class="lucide lucide-heart-pulse"></i>
-                  </span>
-                </div>
-                <h3 data-i18n="Health & Lifestyle" >{{ t('Health & Lifestyle') }}</h3>
-                <p data-i18n="BMI, date calculations, and personal planning tools." >{{ t('BMI, date calculations, and personal planning tools.') }}</p>
-             </div>
-           </div>
-         </div>
-         <div>
-           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-             <div class="p-4">
-               <div class="mb-3">
-                 <span class="inline-flex rounded-full bg-sky-500/10 p-2 text-sky-600">
-                   <i class="lucide lucide-expand mr-2 opacity-75"></i>
-                 </span>
-               </div>
-<h3 data-i18n="Converters" >{{ t('Converters') }}</h3>
-                <p data-i18n="Currency, length, weight, temperature and more unit conversions." >{{ t('Currency, length, weight, temperature and more unit conversions.') }}</p>
-             </div>
-           </div>
-         </div>
-       </div>
-     </div>
-   </div>
-</section>
-
-{# ==================== SERVICES DASHBOARD — Modern SaaS Grid ==================== #}
-<section class="services-dashboard-section py-8 sm:py-12"
+{# ==================== SERVICES GRID — Utility Portal Style ==================== #}
+<section class="services-dashboard-section py-8"
          aria-labelledby="services-dashboard-title"
          data-services-dashboard>
-  <div class="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+  <div class="services-section-inner">
     {# Section Header #}
-    <div class="mb-6 text-center sm:mb-10">
-      <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-400">
-        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        <span data-i18n="Quick Access">{{ t('Quick Access') }}</span>
-      </div>
-      <h2 id="services-dashboard-title" class="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-        <span data-i18n="Our Services" data-i18n-en="Our <span class=&quot;text-emerald-400&quot;>Services</span>" data-i18n-bn="আমাদের <span class=&quot;text-emerald-400&quot;>সেবাসমূহ</span>">{{ t('Our <span class="text-emerald-400">Services</span>')|raw }}</span>
+    <div class="services-section-header">
+      <h2 id="services-dashboard-title" class="services-section-heading">
+        <span data-i18n="Our Services" data-i18n-en="Our Services" data-i18n-bn="আমাদের সেবাসমূহ">{{ t('Our Services') }}</span>
       </h2>
-      <p class="mt-2 text-sm text-slate-400 sm:text-base" data-i18n="All the tools you need, in one place">{{ t('All the tools you need, in one place') }}</p>
     </div>
 
-    {# Skeleton Loading (shown by JS, hidden after render) #}
-    <div data-services-skeleton class="services-skeleton-grid">
-      <div class="grid max-[480px]:grid-cols-1 grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    {# Skeleton Loading #}
+    <div data-services-skeleton class="services-skeleton-wrap{% if homepage_services|default([])|length > 0 %} hidden{% endif %}">
+      <div class="services-grid">
         {% for i in 1..15 %}
-          <div class="services-skeleton-card animate-pulse" aria-hidden="true" style="animation-delay: {{ i * 60 }}ms">
-            <div class="flex flex-col items-center justify-center rounded-[20px] border border-white/5 bg-slate-800/40 p-5">
-              <div class="mb-3 h-14 w-14 animate-pulse rounded-xl bg-slate-700/60 sm:h-16 sm:w-16"></div>
-              <div class="mb-1 h-3 w-20 animate-pulse rounded-full bg-slate-700/60"></div>
-              <div class="mb-2 h-2.5 w-14 animate-pulse rounded-full bg-slate-700/40"></div>
-              <div class="h-5 w-14 animate-pulse rounded-full bg-slate-700/30"></div>
-            </div>
+          <div class="services-skeleton-card" aria-hidden="true">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-title"></div>
           </div>
         {% endfor %}
       </div>
     </div>
 
-    {# Actual Grid (hidden initially, rendered by JS) #}
-    <div data-services-grid class="hidden">
-      <div class="services-grid grid max-[480px]:grid-cols-1 grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {# Cards rendered by JavaScript module #}
+    {# Actual Grid #}
+    <div data-services-grid class="{% if homepage_services|default([])|length == 0 %}hidden{% endif %}">
+      <div class="services-grid">
+        {% for service in homepage_services|default([]) %}
+          {% set service_title = service.name|default(service.title|default('Service')) %}
+          {% set service_slug = service.slug|default('') %}
+          {% set service_link = service.url|default(service_slug ? '/services/view/' ~ service_slug : '/services') %}
+          {% set service_icon = service.icon|default('sparkles') %}
+          <a href="{{ service_link }}"
+             class="service-card"
+             aria-label="{{ service_title|e('html_attr') }}"
+             tabindex="0">
+            <div class="service-card-icon">
+              {% set service_img_url = service.featured_thumbnail_url|default(service.featured_image_url) %}
+              {% if service_img_url is defined and service_img_url %}
+                <img src="{{ service_img_url|absolute_url }}"
+                     alt="{{ service_title|e('html_attr') }}"
+                     class="service-card-img"
+                     loading="lazy"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="service-card-icon-fallback" style="display:none;">
+                  <i class="lucide lucide-{{ service_icon|replace({'_':'-'}) }}"></i>
+                </div>
+              {% elseif service_icon %}
+                <i class="lucide lucide-{{ service_icon|replace({'_':'-'}) }}"></i>
+              {% else %}
+                <i class="lucide lucide-sparkles"></i>
+              {% endif %}
+            </div>
+            <div class="service-card-title">{{ service_title }}</div>
+          </a>
+        {% endfor %}
       </div>
     </div>
   </div>
 </section>
 
+{# Smooth scroll transition bridge from services to calculator #}
+<div class="section-transition-bridge" aria-hidden="true">
+  <div class="bridge-line"></div>
+  <div class="bridge-icon">
+    <i class="lucide lucide-arrow-down"></i>
+  </div>
+  <div class="bridge-line"></div>
+</div>
+
+
+
 {# ==================== DATE & TIME WIDGET ==================== #}
-<section class="mx-auto mb-5 max-w-7xl px-4 sm:px-6 lg:px-8 home-datetime-wrap">
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-datetime-wrap py-8">
    <div class="home-datetime-card relative overflow-hidden rounded-2xl border border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.9)_100%)] shadow-[0_20px_40px_rgba(0,0,0,0.1),0_0_0_1px_rgba(255,255,255,0.1)] backdrop-blur-[20px]">
 
     {# Animated Background Elements #}
@@ -396,27 +353,65 @@
 
 
 <style>
-@keyframes services-icon-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
+/* ==================== SECTION TRANSITION: Services → Calculator ==================== */
+.section-transition-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
 }
 
-.services-icon-float {
-  animation: services-icon-float 5s ease-in-out infinite;
+.section-transition-bridge .bridge-line {
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand-indigo, #6366f1), transparent);
 }
 
-.services-card-inner-shadow {
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06);
+.section-transition-bridge .bridge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-indigo, #6366f1);
+  color: white;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  animation: bridge-bounce 2s ease-in-out infinite;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-.group:hover .services-card-inner-shadow {
-  opacity: 1 !important;
+.section-transition-bridge:hover {
+  opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .services-icon-float {
-    animation: none;
-  }
+.section-transition-bridge:hover .bridge-icon {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+@keyframes bridge-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+/* ==================== SCROLL-TRIGGERED FADE-IN ==================== */
+.scroll-fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @keyframes home-pulse {
@@ -506,7 +501,7 @@
 </script>
 
 {# ==================== TOP POSTS & SERVICES CAROUSEL ==================== #}
-<section class="top-carousel-section py-5 scroll-fade-in" aria-labelledby="top-carousel-title">
+<section class="top-carousel-section py-8 scroll-fade-in" aria-labelledby="top-carousel-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {# Section Header #}
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -670,9 +665,8 @@
   </div>
 </section>
 
-
 {# ==================== LATEST UPDATES — MODERN DISCOVERY DASHBOARD ==================== #}
-<section class="discovery-feed-section py-5" id="latest-updates" aria-labelledby="discovery-feed-title">
+<section class="discovery-feed-section py-8" id="latest-updates" aria-labelledby="discovery-feed-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     {# Section Header #}
     <div class="mb-5">
@@ -827,7 +821,7 @@
 
 
 
-<section class="py-12 home-featured-section" aria-labelledby="featured-title">
+<section class="py-8 home-featured-section" aria-labelledby="featured-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
       <h2 >
@@ -886,7 +880,7 @@
 </section>
 
 {# ==================== LATEST MOBILES SECTION ==================== #}
-<section class="py-12 home-latest-mobiles-section" aria-labelledby="latest-mobiles-title">
+<section class="py-8 home-latest-mobiles-section" aria-labelledby="latest-mobiles-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -911,7 +905,7 @@
 </section>
 
 {# ==================== SERVICES SECTION ==================== #}
-<section class="py-12 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
+<section class="py-8 home-services-section tw-bg-slate-50/50 dark:tw-bg-slate-900/20" aria-labelledby="services-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
       <h2 >
@@ -996,7 +990,7 @@
 </section>
 
 {# ==================== CATEGORIES SECTION ==================== #}
-<section class="py-12 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-bg-slate-900/20" id="categories" aria-labelledby="categories-title">
+<section class="py-8 home-categories-section tw-bg-gradient-to-b tw-from-slate-50/70 tw-to-transparent dark:tw-bg-slate-900/20" id="categories" aria-labelledby="categories-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-feed-surface">
     <div class="mb-12 text-center">
       <h2 >
@@ -1070,7 +1064,7 @@
 </section>
 
 {# ==================== STATS SECTION ==================== #}
-<section class="py-12 bg-primary text-white relative overflow-hidden" aria-labelledby="stats-title">
+<section class="py-8 bg-primary text-white relative overflow-hidden" aria-labelledby="stats-title">
   <div class="absolute inset-0 opacity-10" aria-hidden="true">
     <div class="absolute -top-16 -right-16 h-96 w-96 rounded-full bg-white/10"></div>
     <div class="absolute -bottom-8 -left-8 h-72 w-72 rounded-full bg-white/10"></div>
@@ -1099,8 +1093,82 @@
   </div>
 </section>
 
+
+{# ==================== CALCULATOR SECTION ==================== #}
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-calculator-section scroll-fade-up py-8" data-scroll-animate>
+  <div class="grid items-center gap-4 lg:grid-cols-2">
+   <div class="grid items-center gap-4 lg:grid-cols-2">
+     <div>
+       <div class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+         <span data-i18n="Calculator categories" >{{ t('Calculator categories') }}</span>
+         <h2 data-i18n="Quick access to calculators and converters" >{{ t('Quick access to calculators and converters') }}</h2>
+         <p data-i18n="Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub." >{{ t('Solve finance, math, health, and unit conversion tasks instantly with our curated calculator hub.') }}</p>
+         <a href="/calculators" class="inline-flex w-fit items-center justify-center rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+           <i class="lucide lucide-calculator mr-2"></i>{{ t('Browse all calculators') }}
+         </a>
+       </div>
+     </div>
+     <div>
+       <div class="grid grid-cols-2 gap-3">
+         <div>
+           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+             <div class="p-4">
+               <div class="mb-3">
+                 <span class="inline-flex rounded-full bg-primary/10 p-2 text-primary">
+                   <i class="lucide lucide-calculator"></i>
+                 </span>
+               </div>
+<h3 data-i18n="Math Calculators" >{{ t('Math Calculators') }}</h3>
+                <p data-i18n="Standard, scientific, graphing, and programmer tools." >{{ t('Standard, scientific, graphing, and programmer tools.') }}</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="p-4">
+                <div class="mb-3">
+                  <span class="inline-flex rounded-full bg-emerald-500/10 p-2 text-emerald-600">
+                    <i class="lucide lucide-dollar-sign"></i>
+                  </span>
+                </div>
+                <h3 data-i18n="Finance Tools" >{{ t('Finance Tools') }}</h3>
+                <p data-i18n="Loans, interest, mortgage, percentage, and GPA calculators." >{{ t('Loans, interest, mortgage, percentage, and GPA calculators.') }}</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="p-4">
+                <div class="mb-3">
+                  <span class="inline-flex rounded-full bg-amber-500/10 p-2 text-amber-500">
+                    <i class="lucide lucide-heart-pulse"></i>
+                  </span>
+                </div>
+                <h3 data-i18n="Health & Lifestyle" >{{ t('Health & Lifestyle') }}</h3>
+                <p data-i18n="BMI, date calculations, and personal planning tools." >{{ t('BMI, date calculations, and personal planning tools.') }}</p>
+             </div>
+           </div>
+         </div>
+         <div>
+           <div class="card h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+             <div class="p-4">
+               <div class="mb-3">
+                 <span class="inline-flex rounded-full bg-sky-500/10 p-2 text-sky-600">
+                   <i class="lucide lucide-expand mr-2 opacity-75"></i>
+                 </span>
+               </div>
+<h3 data-i18n="Converters" >{{ t('Converters') }}</h3>
+                <p data-i18n="Currency, length, weight, temperature and more unit conversions." >{{ t('Currency, length, weight, temperature and more unit conversions.') }}</p>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+</section>
+
 {# ==================== SHARE SECTION ==================== #}
-<section class="py-12" aria-labelledby="share-title">
+<section class="py-8" aria-labelledby="share-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="flex justify-center">
       <div class="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl home-share-card">
@@ -1162,7 +1230,7 @@
 </section>
 
 {# ==================== NEWSLETTER SECTION ==================== #}
-<section class="py-12 bg-slate-50" aria-labelledby="newsletter-title">
+<section class="py-8 bg-slate-50" aria-labelledby="newsletter-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="flex justify-center">
       <div class="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl newsletter-card home-newsletter-card text-center">
@@ -1192,7 +1260,7 @@
 </section>
 
 {# ==================== RECOMMENDED SECTION ==================== #}
-<section class="py-12 home-recommended-section" aria-labelledby="recommended-title">
+<section class="py-8 home-recommended-section" aria-labelledby="recommended-title">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="mb-12 text-center">
       <h2 id="recommended-title" class="mb-3 text-4xl font-bold md:text-5xl">
@@ -1287,6 +1355,36 @@
     document.addEventListener('DOMContentLoaded', initTopPicksAutoSwitch);
   } else {
     initTopPicksAutoSwitch();
+  }
+
+  // ==================== SCROLL ANIMATION OBSERVER ====================
+  function initScrollAnimations() {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            // Optionally unobserve after animation to save resources
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px -40px 0px',
+      }
+    );
+
+    document.querySelectorAll('[data-scroll-animate]').forEach((el) => {
+      observer.observe(el);
+    });
+  }
+
+  // Initialize scroll animations
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollAnimations);
+  } else {
+    initScrollAnimations();
   }
 
   // Event delegation — replaces inline onclick handlers
@@ -1397,6 +1495,4 @@
 
 {% block extra_scripts %}
   <script type="module" src="{{ asset('assets/js/dist/feed-discovery.js') }}?v={{ assets_version }}"></script>
-  <script type="module" src="{{ asset('assets/js/dist/services-dashboard.js') }}?v={{ assets_version }}"></script>
 {% endblock %}
-

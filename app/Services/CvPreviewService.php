@@ -211,8 +211,20 @@ HTML;
 
         $templateService = new CvTemplateService($this->mysqli);
         $template = $templateService->getBySlug($templateSlug);
+        $templateFile = 'cv/templates/' . $templateSlug . '.twig';
+        $filesystemTemplate = function_exists('cvTemplateGet') ? cvTemplateGet($templateSlug) : null;
 
-        if (!$template || $template['status'] !== 'active') {
+        if (!$template) {
+            if (!$filesystemTemplate || !empty($filesystemTemplate['deleted_at']) || (!empty($filesystemTemplate['status']) && $filesystemTemplate['status'] === 'disabled')) {
+                return ['success' => false, 'error' => "Template '{$templateSlug}' not found"];
+            }
+            $template = [
+                'slug' => $templateSlug,
+                'name' => $filesystemTemplate['name'] ?? $templateSlug,
+                'version' => $filesystemTemplate['version'] ?? '1.0.0',
+                'status' => $filesystemTemplate['status'] ?? 'active',
+            ];
+        } elseif ($template['status'] !== 'active') {
             return ['success' => false, 'error' => "Template '{$templateSlug}' not found"];
         }
 
@@ -229,8 +241,6 @@ HTML;
         ];
 
         $renderData = array_merge($sampleData, ['meta' => $meta]);
-
-        $templateFile = 'cv/templates/' . $templateSlug . '.twig';
 
         try {
             $twig = $this->getTwig();

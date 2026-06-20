@@ -2,12 +2,63 @@
 
 import { escapeHtml } from './shared/utils.js';
 
+function initMedexMotion() {
+  if (!('IntersectionObserver' in window)) return;
+  const targets = document.querySelectorAll('.medex-hero, .medex-stat, .medex-panel, .medex-table-shell, .medex-section-card');
+  if (!targets.length) return;
+
+  const observer = new IntersectionObserver((entries, io) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      io.unobserve(entry.target);
+    });
+  }, { threshold: 0.12 });
+
+  targets.forEach((target) => {
+    target.classList.add('scroll-fade-in');
+    observer.observe(target);
+  });
+}
+
+function initMedexLocalFilter() {
+  const input = document.getElementById('medexSearchInput');
+  const rows = document.querySelectorAll('#medexCompaniesTableBody tr');
+  if (!input || !rows.length) return;
+
+  const applyFilter = () => {
+    const query = input.value.trim().toLowerCase();
+    rows.forEach((row) => {
+      const text = row.textContent.toLowerCase();
+      row.hidden = query !== '' && !text.includes(query);
+    });
+  };
+
+  input.addEventListener('input', applyFilter);
+  document.getElementById('medexFilterBtn')?.addEventListener('click', applyFilter);
+}
+
+function initMedexAccordionKeys() {
+  document.querySelectorAll('.medex-section-header').forEach((header) => {
+    header.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const action = header.getAttribute('data-action') || '';
+      const match = action.match(/toggleSection\('([^']+)'\)/);
+      if (match && typeof window.toggleSection === 'function') {
+        window.toggleSection(match[1]);
+      }
+    });
+  });
+}
+
 const path = window.location.pathname.replace(/\/+$/, '');
 const isCompaniesPage = path === '/medex' || path === '/medex/companies';
 const companyMatch = path.match(/^\/medex\/company\/(\d+)$/);
 const brandMatch = path.match(/^\/medex\/brand\/(\d+)$/);
 const companyId = companyMatch ? companyMatch[1] : null;
 const brandId = brandMatch ? brandMatch[1] : null;
+const LANG_CHANGE_EVENT = 'brox:langchange';
 
 const PAGE_SIZE = 20;
 
@@ -657,6 +708,23 @@ function initBrandLangToggle() {
   medexSyncLangUI(lang);
 }
 
+function syncMedexLangFromEvent(event) {
+  const lang = event && event.detail && event.detail.newLang
+    ? event.detail.newLang
+    : (document.documentElement.getAttribute('lang') || state.lang || 'en');
+
+  if (lang !== 'en' && lang !== 'bn') {
+    return;
+  }
+
+  state.lang = lang;
+  medexSyncLangUI(lang);
+
+  if (typeof toggleBrandLang === 'function') {
+    toggleBrandLang(lang);
+  }
+}
+
 function initBrandSpecificCollection() {
   if (!brandId) return;
   showRouteToast('Brand detail collection is disabled. Use the browser scraper workflow instead.', 'error');
@@ -699,7 +767,11 @@ function initBrandPage() {
 
 // Guarded execution - only initialize on MedEx pages
 if (isCompaniesPage || companyId || brandId) {
+  window.addEventListener(LANG_CHANGE_EVENT, syncMedexLangFromEvent);
   initPageLang();
+  initMedexMotion();
+  initMedexLocalFilter();
+  initMedexAccordionKeys();
 
   if (isCompaniesPage) {
     initCompaniesPage();
@@ -711,4 +783,3 @@ if (isCompaniesPage || companyId || brandId) {
 }
 
 export { toggleBrandLang, medexTogglePageLang, triggerRouteRefresh, setPage };
-

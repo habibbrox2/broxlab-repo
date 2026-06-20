@@ -31,7 +31,8 @@ class CvTemplateService
     public function getActiveTemplates(): array
     {
         $result = $this->mysqli->query(
-            "SELECT * FROM cv_templates WHERE status = 'active' ORDER BY is_premium ASC, name ASC"
+            "SELECT id, slug, name, description, category, status, version, is_free, price, is_premium, supported_sections, features, tags, preview_images, best_for, author, installed_via, thumbnail, created_at, updated_at
+             FROM cv_templates WHERE status = 'active' ORDER BY is_premium ASC, name ASC"
         );
         $templates = [];
         while ($row = $result->fetch_assoc()) {
@@ -46,7 +47,7 @@ class CvTemplateService
      */
     public function getById(int $id): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM cv_templates WHERE id = ? LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, slug, name, description, category, status, version, is_free, price, is_premium, supported_sections, features, tags, preview_images, best_for, author, installed_via, thumbnail, created_at, updated_at FROM cv_templates WHERE id = ? LIMIT 1");
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -59,7 +60,7 @@ class CvTemplateService
      */
     public function getBySlug(string $slug): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM cv_templates WHERE slug = ? LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, slug, name, description, category, status, version, is_free, price, is_premium, supported_sections, features, tags, preview_images, best_for, author, installed_via, thumbnail, created_at, updated_at FROM cv_templates WHERE slug = ? LIMIT 1");
         $stmt->bind_param('s', $slug);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -226,7 +227,8 @@ class CvTemplateService
     {
         $like = '%' . $query . '%';
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_templates 
+            "SELECT id, slug, name, description, category, status, version, is_free, price, is_premium, supported_sections, features, tags, preview_images, best_for, author, installed_via, thumbnail, created_at, updated_at
+             FROM cv_templates 
              WHERE status = 'active' 
              AND (name LIKE ? OR description LIKE ? OR category LIKE ? OR tags LIKE ?)
              ORDER BY is_premium ASC, name ASC"
@@ -321,7 +323,8 @@ class CvTemplateService
     public function getAllTemplates(): array
     {
         $result = $this->mysqli->query(
-            "SELECT * FROM cv_templates ORDER BY is_premium ASC, name ASC"
+            "SELECT id, slug, name, description, category, status, version, is_free, price, is_premium, supported_sections, features, tags, preview_images, best_for, author, installed_via, thumbnail, created_at, updated_at
+             FROM cv_templates ORDER BY is_premium ASC, name ASC"
         );
         $templates = [];
         while ($row = $result->fetch_assoc()) {

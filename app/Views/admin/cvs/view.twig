@@ -108,7 +108,7 @@
                 <div class="p-5 space-y-4 text-sm">
                     <div>
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Template</span>
-                        <span class="text-slate-900 dark:text-slate-100 font-medium">{{ cv.template ?? 'modern'|capitalize }}</span>
+                        <span class="text-slate-900 dark:text-slate-100 font-medium">{{ (cv.template ?? 'modern')|capitalize }}</span>
                     </div>
                     <div>
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Professional Status</span>
@@ -153,14 +153,5 @@ document.addEventListener("submit", function(e) {
     if (!confirm("Delete this CV?")) e.preventDefault();
   }
 });
-
-<script>
-document.addEventListener("submit", function(e) {
-  var t = e.target.closest("[data-action]");
-  if (t && t.getAttribute("data-action") === "confirm-delete-cv") {
-    if (!confirm("Delete this CV?")) e.preventDefault();
-  }
-});
-</script>
 </script>
 {% endblock %}

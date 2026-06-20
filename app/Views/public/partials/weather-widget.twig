@@ -1,5 +1,5 @@
 {# ==================== WEATHER WIDGET SECTION ==================== #}
-<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-weather-section py-5" id="weather-section">
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-weather-section py-8" id="weather-section">
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="col-span-12">
  <div class="text-center mb-5">
@@ -150,6 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
  url.searchParams.set('location', location);
  url.searchParams.set('units', 'metric');
  url.searchParams.set('forecast_days', '1');
+ url.searchParams.set('format', 'json');
 
  const response = await fetch(url.toString(), {
  headers: {
@@ -394,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
  }
 });
 </script>
-
 
 
 

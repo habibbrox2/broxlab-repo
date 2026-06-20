@@ -53,39 +53,23 @@ class CvBuilderController
         $cvItemModel = new CvItemModel($mysqli);
         $cvVersionModel = new CvVersionModel($mysqli);
         if (!$cvModel->belongsToUser($id, $userId)) { jsonResponse(['error' => 'Forbidden'], 403); return; }
+        $input = json_decode(file_get_contents('php://input'), true);
+        $requestedTemplate = is_array($input) ? ($input['template'] ?? null) : null;
         $data = $cvModel->getBuilderData($id);
         if (empty($data)) { jsonResponse(['error' => 'No builder data found'], 400); return; }
         try { $cvVersionModel->createVersion($id, $userId); } catch (Throwable $e) {}
-        if (!empty($data['personal']['full_name'])) $cvModel->update($id, ['title' => sanitize_input($data['personal']['full_name']) . "'s CV"]);
-        try { foreach ($cvSectionModel->getByCvId($id) as $s) $cvSectionModel->delete($s['id']); } catch (Throwable $e) {}
-        $map = ['summary'=>['title'=>'Summary','steps'=>['personal','summary']],'experience'=>['title'=>'Work Experience','steps'=>['experience']],'education'=>['title'=>'Education','steps'=>['education']],'skills'=>['title'=>'Skills','steps'=>['skills']],'languages'=>['title'=>'Languages','steps'=>['languages']],'social_links'=>['title'=>'Social Links','steps'=>['social_links']],'custom_sections'=>['title'=>'Custom Sections','steps'=>['custom_sections']],'references'=>['title'=>'References','steps'=>['references']]];
-        foreach ($map as $st => $cfg) {
-            $hd = false; foreach ($cfg['steps'] as $sp) { if (!empty($data[$sp])) { $hd = true; break; } } if (!$hd) continue;
-            $sid = $cvSectionModel->create($id, $st, $cfg['title']); if (!$sid) continue;
-            switch ($st) {
-                case 'summary':
-                    $c = array_merge($data['personal']??[], ['summary'=>($data['summary']['professional_summary']??''),'objective'=>($data['summary']['career_objective']??''),'job_title'=>($data['summary']['job_title']??'')]);
-                    if (!empty(array_filter($c))) $cvItemModel->create($sid, 'summary', $c); break;
-                case 'experience':
-                    foreach (($data['experience']??[]) as $e) { if (!empty($e['company'])) $cvItemModel->create($sid, 'experience', ['company'=>sanitize_input($e['company']??''),'position'=>sanitize_input($e['position']??''),'location'=>sanitize_input($e['location']??''),'start_date'=>sanitize_input($e['start_date']??''),'end_date'=>sanitize_input($e['end_date']??''),'is_current'=>!empty($e['is_current'])?1:0,'description'=>sanitize_input($e['responsibilities']??$e['description']??'')]); } break;
-                case 'education':
-                    foreach (($data['education']??[]) as $e) { if (!empty($e['institution'])) $cvItemModel->create($sid, 'education', ['institution'=>sanitize_input($e['institution']??''),'degree'=>sanitize_input($e['degree']??''),'field'=>sanitize_input($e['field']??''),'start_date'=>sanitize_input($e['start_year']??$e['start_date']??''),'end_date'=>sanitize_input($e['end_year']??$e['end_date']??''),'gpa'=>sanitize_input($e['gpa']??'')]); } break;
-                case 'skills':
-                    $tech = ($data['skills']['technical']??[]); $soft = ($data['skills']['soft']??[]);
-                    if (!empty($tech)||!empty($soft)) {
-                        $all = []; foreach ((array)$tech as $s) { if (!empty(trim($s))) $all[] = sanitize_input(trim($s)); } foreach ((array)$soft as $s) { if (!empty(trim($s))) $all[] = sanitize_input(trim($s)); }
-                        $cvItemModel->create($sid, 'skills', ['skills'=>$all,'technical'=>$tech,'soft'=>$soft]);
-                    } break;
-                case 'languages':
-                    foreach (($data['languages']??[]) as $l) { if (!empty($l['name'])) $cvItemModel->create($sid, 'language', ['name'=>sanitize_input($l['name']??''),'proficiency'=>sanitize_input($l['proficiency']??'intermediate')]); } break;
-                case 'social_links':
-                    foreach (($data['social_links']??[]) as $l) { if (!empty($l['url'])) $cvItemModel->create($sid, 'social_link', ['platform'=>sanitize_input($l['platform']??''),'url'=>sanitize_input($l['url']??'')]); } break;
-                case 'custom_sections':
-                    foreach (($data['custom_sections']??[]) as $s) { if (!empty($s['title'])) $cvItemModel->create($sid, 'custom_section', ['title'=>sanitize_input($s['title']??''),'content'=>sanitize_input($s['content']??'')]); } break;
-                case 'references':
-                    foreach (($data['references']??[]) as $r) { if (!empty($r['name'])) $cvItemModel->create($sid, 'reference', ['name'=>sanitize_input($r['name']??''),'title'=>sanitize_input($r['title']??''),'email'=>sanitize_input($r['email']??''),'phone'=>sanitize_input($r['phone']??''),'company'=>sanitize_input($r['company']??'')]); } break;
-            }
+        if ($requestedTemplate !== null) {
+            $resolvedTemplate = cvResolveTemplate(
+                is_string($requestedTemplate) ? $requestedTemplate : null,
+                $data['_template'] ?? null,
+                cvGetTemplateAllowlist(),
+                'modern'
+            );
+            $cvModel->update($id, ['template' => $resolvedTemplate]);
+            $data['_template'] = $resolvedTemplate;
         }
+        if (!empty($data['personal']['full_name'])) $cvModel->update($id, ['title' => sanitize_input($data['personal']['full_name']) . "'s CV"]);
+        cvMaterializeBuilderData($cvSectionModel, $cvItemModel, $id, $data);
         $cvModel->update($id, ['is_active'=>1, 'builder_data'=>null]);
         logActivity("CV Builder Completed", "cv", $id, [], 'success');
         jsonResponse(['success'=>true,'message'=>'CV completed successfully!','redirect'=>'/cv-builder/'.$id]);

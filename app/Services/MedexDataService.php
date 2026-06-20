@@ -431,6 +431,15 @@ class MedexDataService
         if (!isset($brand['details_en']) && isset($brand['sections']) && is_array($brand['sections'])) {
             $brand['details_en'] = $brand['sections'];
         }
+        if (!isset($brand['details_bn']) && isset($brand['details_en']) && is_array($brand['details_en'])) {
+            $brand['details_bn'] = $brand['details_en'];
+        }
+        if (!isset($brand['details_en']) && isset($brand['details_bn']) && is_array($brand['details_bn'])) {
+            $brand['details_en'] = $brand['details_bn'];
+        }
+        if (!isset($brand['details']) && isset($brand['details_en']) && is_array($brand['details_en'])) {
+            $brand['details'] = $brand['details_en'];
+        }
         return $brand;
     }
 

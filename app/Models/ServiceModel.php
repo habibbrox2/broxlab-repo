@@ -603,6 +603,24 @@ class ServiceModel {
     }
 
     /**
+     * Get featured thumbnail URL (prefers thumbnail_path over image_path for faster loading).
+     * @param int $serviceId
+     * @return string|null
+     */
+    public function getFeaturedThumbnailUrl(int $serviceId): ?string {
+        $featured = $this->getFeaturedImage($serviceId);
+        if (!empty($featured)) {
+            // prefer thumbnail_path first, then image_path
+            $src = $featured['thumbnail_path'] ?? $featured['image_path'] ?? null;
+            if (!empty($src)) return $this->resolveMaybeMediaReference($src);
+        }
+
+        // Fallback to first DB/extracted URL
+        $urls = $this->getServiceImageUrls($serviceId, 1);
+        return $urls[0] ?? null;
+    }
+
+    /**
      * Extract multiple image URLs from HTML content (description)
      * @param string $html
      * @param int $limit
@@ -925,6 +943,47 @@ class ServiceModel {
             $service['image_urls'] = $this->getServiceImageUrls($service['id']);
             $service['featured_image'] = $this->getFeaturedImage($service['id']);
             $service['featured_image_url'] = $this->getFeaturedImageUrl($service['id']);
+            return $service;
+        }, $services);
+    }
+
+    /**
+     * Get homepage-safe services with enriched image/meta data.
+     * This intentionally includes every non-deleted service so the home page
+     * can show the full catalog instead of hiding rows behind status filters.
+     * @param int $limit
+     * @return array
+     */
+    public function getHomepageServices(int $limit = 15): array {
+        $limit = max(1, (int)$limit);
+
+        $stmt = $this->mysqli->prepare("
+            SELECT s.*, " . $this->buildEngagementSelect('s.id') . "
+            FROM services s
+            WHERE s.deleted_at IS NULL
+            ORDER BY s.created_at DESC
+            LIMIT ?
+        ");
+
+        if (!$stmt) {
+            error_log('[ServiceModel] getHomepageServices prepare failed: ' . $this->mysqli->error);
+            return [];
+        }
+
+        $stmt->bind_param('i', $limit);
+        $stmt->execute();
+        $services = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
+        $stmt->close();
+
+        return array_map(function (array $service): array {
+            $service['metadata'] = $service['metadata'] ? json_decode($service['metadata'], true) : [];
+            $service['form_fields'] = $service['form_fields'] ? json_decode($service['form_fields'], true) : [];
+            $service = $this->applyLegacyDerivedFields($service);
+            $service['images'] = $this->getServiceImages((int)$service['id']);
+            $service['image_urls'] = $this->getServiceImageUrls((int)$service['id']);
+            $service['featured_image'] = $this->getFeaturedImage((int)$service['id']);
+            $service['featured_image_url'] = $this->getFeaturedImageUrl((int)$service['id']);
+            $service['featured_thumbnail_url'] = $this->getFeaturedThumbnailUrl((int)$service['id']);
             return $service;
         }, $services);
     }

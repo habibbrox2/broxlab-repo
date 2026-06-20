@@ -39,7 +39,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 space-y-6">
 
 {% set labelTotalCompanies = current_lang == 'bn' ? 'মোট কোম্পানি' : 'Total Companies' %}
 {% set labelTotalBrands = current_lang == 'bn' ? 'মোট ব্র্যান্ড' : 'Total Brands' %}
@@ -57,12 +57,12 @@
 {% set labelUpload = current_lang == 'bn' ? 'ডেটা আপলোড করুন' : 'Upload Collected Data to Server' %}
 <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
  <div class="col-span-12">
- <div class="medex-card border border-slate-200 bg-white shadow-sm">
- <div class="medex-border-b border-slate-200 px-4 py-3">
+ <div class="medex-panel">
+ <div class="medex-panel-header">
  <i class="lucide lucide-info"></i>
  <span data-i18n-en="MedEx Dataset Details" data-i18n-bn="MedEx ডেটাসেট বিস্তারিত">{{ current_lang == 'bn' ? 'MedEx ডেটাসেট বিস্তারিত' : 'MedEx Dataset Details' }}</span>
  </div>
- <div class="medex-p-4">
+ <div class="medex-panel-body">
  <div class="grid grid-cols-1 gap-4 md:grid-cols-12 gy-3">
  <div class="md:col-span-4">
  <div class="medex-detail-summary">
@@ -136,8 +136,8 @@
 {# ==================== JS-POWERED NON-BLOCKING COLLECTION UI ==================== #}
 <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
  <div class="col-span-12">
- <div class="medex-card border-primary">
- <div class="medex-border-b border-slate-200 px-4 py-3 bg-indigo-600 text-white">
+ <div class="medex-panel">
+ <div class="medex-panel-header bg-indigo-600 text-white border-b-0">
  <i class="lucide lucide-globe"></i>
  <span data-i18n-en="Browser-powered Collection (Recommended)" data-i18n-bn="ব্রাউজার চালিত সংগ্রহ (প্রস্তাবিত)">{{ labelBrowserCollection }}</span>
  </div>
@@ -214,7 +214,6 @@
 {% block extra_scripts %}
 <script type="module" src="{{ asset('/assets/js/dist/medex-details-page.js') }}"></script>
 {% endblock %}
-
 
 
 

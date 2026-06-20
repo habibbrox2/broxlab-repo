@@ -13,6 +13,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 1) . '/Services/CvSchemaBootstrapService.php';
+
 class CvProfileService
 {
     private mysqli $mysqli;
@@ -49,6 +51,9 @@ class CvProfileService
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+        if (class_exists('CvSchemaBootstrapService')) {
+            (new CvSchemaBootstrapService($this->mysqli))->ensureAll();
+        }
         $this->auth = $this->getAuth();
     }
 
@@ -114,7 +119,7 @@ class CvProfileService
      */
     public function getById(int $profileId, ?int $userId = null): ?array
     {
-        $stmt = $this->mysqli->prepare("SELECT * FROM cv_profiles WHERE id = ? LIMIT 1");
+        $stmt = $this->mysqli->prepare("SELECT id, user_id, cv_id, title, slug, is_active, professional_summary, active_template_id, completion_score, created_at, updated_at FROM cv_profiles WHERE id = ? LIMIT 1");
         $stmt->bind_param('i', $profileId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -138,7 +143,7 @@ class CvProfileService
     public function getByUserId(int $userId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_profiles WHERE user_id = ? ORDER BY updated_at DESC"
+            "SELECT id, user_id, cv_id, title, slug, is_active, professional_summary, active_template_id, completion_score, created_at, updated_at FROM cv_profiles WHERE user_id = ? ORDER BY updated_at DESC"
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();

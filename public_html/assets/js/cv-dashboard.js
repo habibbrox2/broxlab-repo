@@ -39,7 +39,16 @@ function setupDeleteButtons() {
 }
 
 function deleteCv(cvId) {
-  fetch(`/api/cv/${cvId}`, {
+  const deleteUrl = `/cv-builder/${encodeURIComponent(cvId)}`;
+  const deleteBtn = document.querySelector(`[data-action="delete-cv"][data-cv-id="${cvId}"]`);
+
+  if (deleteBtn) {
+    deleteBtn.disabled = true;
+    deleteBtn.dataset.originalLabel = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = 'Deleting...';
+  }
+
+  fetch(deleteUrl, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -54,7 +63,9 @@ function deleteCv(cvId) {
           setTimeout(() => cvCard.remove(), 300);
           showNotification('CV deleted successfully', 'success');
           setTimeout(() => location.reload(), 1000);
+          return;
         }
+        showNotification('CV deleted successfully', 'success');
       } else {
         showNotification('Failed to delete CV', 'error');
       }
@@ -62,6 +73,15 @@ function deleteCv(cvId) {
     .catch((error) => {
       console.error('Error deleting CV:', error);
       showNotification('Error deleting CV', 'error');
+    })
+    .finally(() => {
+      if (deleteBtn) {
+        deleteBtn.disabled = false;
+        if (deleteBtn.dataset.originalLabel) {
+          deleteBtn.innerHTML = deleteBtn.dataset.originalLabel;
+          deleteBtn.removeAttribute('data-original-label');
+        }
+      }
     });
 }
 
@@ -188,6 +208,17 @@ window.shareOnPlatform = function (platform, url, title) {
 window.copyToClipboard = function (selector) {
   const element = document.querySelector(selector);
   if (element) {
+    const value = element.value || element.textContent || '';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(value).then(() => {
+        showNotification('Link copied to clipboard!', 'success');
+      }).catch(() => {
+        element.select();
+        document.execCommand('copy');
+        showNotification('Link copied to clipboard!', 'success');
+      });
+      return;
+    }
     element.select();
     document.execCommand('copy');
     showNotification('Link copied to clipboard!', 'success');

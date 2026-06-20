@@ -28,29 +28,34 @@ class AdminCvController
             $offset = ($page - 1) * $limit;
             $search = sanitize_input($_GET['search'] ?? '');
             $status = $_GET['status'] ?? 'all';
+            $templateFilter = $_GET['template'] ?? 'all';
             $sort = $_GET['sort'] ?? 'updated';
             $order = strtoupper($_GET['order'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
             $status = in_array($status, ['all', 'active', 'inactive'], true) ? $status : 'all';
+            $templateFilter = is_string($templateFilter) && $templateFilter !== '' ? $templateFilter : 'all';
             $sort = in_array($sort, ['updated', 'created', 'title', 'owner'], true) ? $sort : 'updated';
             $templates = function_exists('cvGetTemplateAllowlist') ? cvGetTemplateAllowlist() : ['modern', 'minimal', 'ats', 'professional'];
-            $selectedTemplate = $_GET['template'] ?? null;
-            if (function_exists('cvResolveTemplate')) {
-                $selectedTemplate = cvResolveTemplate($selectedTemplate, null, $templates, 'modern');
-            } else {
-                $selectedTemplate = in_array($selectedTemplate, $templates, true) ? $selectedTemplate : 'modern';
+            if ($templateFilter !== 'all') {
+                $templateFilter = in_array($templateFilter, $templates, true) ? $templateFilter : 'all';
             }
-            $cvs = $cvModel->getAll($limit, $offset, $search, $status, $sort, $order);
-            $total = $cvModel->countAll($search, $status);
+            $cvs = $cvModel->getAll($limit, $offset, $search, $status, $templateFilter, $sort, $order);
+            $total = $cvModel->countAll($search, $status, $templateFilter);
             $totalPages = $limit > 0 ? (int)ceil($total / $limit) : 0;
             $stats = $cvModel->getStatistics();
             $stats['active'] = $cvModel->countAll('', 'active');
             $stats['inactive'] = $cvModel->countAll('', 'inactive');
+            foreach ($cvs as &$cv) {
+                $cv['template_label'] = !empty($cv['template'])
+                    ? ucfirst(str_replace(['-', '_'], ' ', $cv['template']))
+                    : 'N/A';
+            }
             echo $twig->render('admin/cvs/list.twig', [
                 'cvs' => $cvs, 'stats' => $stats, 'page' => $page, 'limit' => $limit,
                 'page_title' => 'CV Management', 'current_page' => 'cvs',
-                'filters' => ['search' => $search, 'status' => $status, 'sort' => $sort, 'order' => strtolower($order), 'limit' => $limit, 'template' => $selectedTemplate],
-                'pagination' => ['current_page' => $page, 'total_pages' => $totalPages, 'per_page' => $limit, 'limit' => $limit, 'total' => $total, 'from' => $total > 0 ? ($offset + 1) : 0, 'to' => $total > 0 ? min($offset + $limit, $total) : 0, 'search' => $search, 'sort' => $sort, 'order' => strtolower($order), 'status' => $status, 'extra_query' => ['template' => $selectedTemplate]],
-                'templates' => $templates
+                'filters' => ['search' => $search, 'status' => $status, 'sort' => $sort, 'order' => strtolower($order), 'limit' => $limit, 'template' => $templateFilter],
+                'pagination' => ['current_page' => $page, 'total_pages' => $totalPages, 'per_page' => $limit, 'limit' => $limit, 'total' => $total, 'from' => $total > 0 ? ($offset + 1) : 0, 'to' => $total > 0 ? min($offset + $limit, $total) : 0, 'search' => $search, 'sort' => $sort, 'order' => strtolower($order), 'status' => $status, 'extra_query' => ['template' => $templateFilter]],
+                'templates' => $templates,
+                'csrf_token' => $_SESSION['csrf_token'] ?? ''
             ]);
         } catch (Throwable $e) {
             logError("Admin CV List Error: " . $e->getMessage(), "ERROR", ['file' => $e->getFile(), 'line' => $e->getLine()]);
@@ -360,10 +365,61 @@ class AdminCvController
     public static function adminCvTemplateList(): void
     {
         global $twig;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = max(5, min(100, (int)($_GET['limit'] ?? 20)));
+        $search = sanitize_input($_GET['search'] ?? '');
+        $status = strtolower(trim((string)($_GET['status'] ?? 'all')));
+        $status = in_array($status, ['all', 'active', 'inactive', 'deleted'], true) ? $status : 'all';
+        $includeDeleted = $status === 'deleted';
+        $templates = cvTemplateGetAll($includeDeleted);
+        $templates = array_filter($templates, function (array $template) use ($search, $status, $includeDeleted) {
+            $isDeleted = !empty($template['deleted_at']);
+            if (!$includeDeleted && $isDeleted) {
+                return false;
+            }
+            if ($status === 'active' && (($template['status'] ?? 'active') !== 'active' || $isDeleted)) {
+                return false;
+            }
+            if ($status === 'inactive' && (($template['status'] ?? '') !== 'disabled' || $isDeleted)) {
+                return false;
+            }
+            if ($status === 'deleted' && !$isDeleted) {
+                return false;
+            }
+            if ($search !== '') {
+                $needle = mb_strtolower($search);
+                $haystack = mb_strtolower(($template['name'] ?? '') . ' ' . ($template['description'] ?? '') . ' ' . ($template['category'] ?? '') . ' ' . ($template['slug'] ?? ''));
+                if (mb_strpos($haystack, $needle) === false) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        $total = count($templates);
+        $totalPages = $limit > 0 ? (int)ceil($total / $limit) : 0;
+        $page = $totalPages > 0 ? min($page, $totalPages) : 1;
+        $offset = ($page - 1) * $limit;
+        $templates = array_slice($templates, $offset, $limit, true);
         echo $twig->render('admin/cv-templates/list.twig', [
-            'templates' => cvTemplateGetAll(),
+            'templates' => $templates,
             'page_title' => 'CV Template Management',
-            'current_page' => 'cv-templates'
+            'current_page' => 'cv-templates',
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'limit' => $limit,
+            ],
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'per_page' => $limit,
+                'total' => $total,
+                'from' => $total > 0 ? ($offset + 1) : 0,
+                'to' => $total > 0 ? min($offset + $limit, $total) : 0,
+                'search' => $search,
+                'status' => $status,
+            ],
+            'include_deleted' => $includeDeleted
         ]);
     }
 
@@ -543,6 +599,21 @@ class AdminCvController
         $result = cvTemplateDelete($slug);
         if ($result['success']) { logActivity("CV Template Deleted", "cv-templates", 0, ['slug' => $slug], 'success'); json_response($result); }
         else { json_response($result, 400); }
+    }
+
+    /**
+     * Restore CV Template
+     * POST /admin/cv-templates/{slug}/restore
+     */
+    public static function adminCvTemplateRestore(string $slug): void
+    {
+        $result = cvTemplateRestore($slug);
+        if ($result['success']) {
+            logActivity("CV Template Restored", "cv-templates", 0, ['slug' => $slug], 'success');
+            json_response($result);
+            return;
+        }
+        json_response($result, 400);
     }
 
     /**

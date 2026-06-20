@@ -1118,25 +1118,75 @@
  <script src="/rtceditor/editor.bundle.js?v={{ rte_version }}" defer></script>
  <script>
  (function () {
-  const premiumToggle = document.getElementById('isPremium');
-  const premiumPriceGroup = document.getElementById('premiumPriceGroup');
-  const premiumPriceInput = document.getElementById('premiumPriceInput');
+  'use strict';
 
-  if (!premiumToggle || !premiumPriceGroup || !premiumPriceInput) {
-   return;
+  // ── Toggle Switches (data-ui-switch) ──
+  // Initialize all role="switch" buttons in the service form
+  // to properly toggle their associated hidden checkbox inputs
+  // and update visual state via aria-checked and thumb position.
+  document.querySelectorAll('#serviceForm [data-ui-switch][role="switch"]').forEach(function (btn) {
+    var checkbox = btn.nextElementSibling;
+    if (!checkbox || checkbox.type !== 'checkbox') return;
+
+    // Keep thumb position in sync with initial state
+    function syncThumb(checked) {
+      var thumb = btn.querySelector('span');
+      if (thumb) {
+        thumb.classList.toggle('translate-x-5', checked);
+        thumb.classList.toggle('translate-x-0', !checked);
+      }
+    }
+
+    // Initialize from checkbox state (on page load)
+    var initialChecked = checkbox.checked;
+    btn.setAttribute('aria-checked', initialChecked ? 'true' : 'false');
+    syncThumb(initialChecked);
+
+    // Click handler: toggle checkbox and update visual state
+    btn.addEventListener('click', function () {
+      var cb = btn.nextElementSibling;
+      if (!cb || cb.type !== 'checkbox') return;
+
+      var newState = !cb.checked;
+      cb.checked = newState;
+      btn.setAttribute('aria-checked', newState ? 'true' : 'false');
+      syncThumb(newState);
+      cb.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // Keep button in sync when checkbox changes via label click or programmatic change
+    checkbox.addEventListener('change', function () {
+      var checked = this.checked;
+      btn.setAttribute('aria-checked', checked ? 'true' : 'false');
+      syncThumb(checked);
+    });
+
+    // Keyboard support (Space / Enter)
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        btn.click();
+      }
+    });
+  });
+
+  // ── Premium Price Visibility ──
+  var premiumToggle = document.getElementById('isPremium');
+  var premiumPriceGroup = document.getElementById('premiumPriceGroup');
+  var premiumPriceInput = document.getElementById('premiumPriceInput');
+
+  if (premiumToggle && premiumPriceGroup && premiumPriceInput) {
+    var syncPremiumPriceVisibility = function () {
+      var enabled = premiumToggle.checked;
+      premiumPriceGroup.style.display = enabled ? '' : 'none';
+      premiumPriceInput.required = enabled;
+      if (!enabled) {
+        premiumPriceInput.value = '';
+      }
+    };
+    premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
+    syncPremiumPriceVisibility();
   }
-
-  const syncPremiumPriceVisibility = () => {
-   const enabled = premiumToggle.checked;
-   premiumPriceGroup.style.display = enabled ? '' : 'none';
-   premiumPriceInput.required = enabled;
-   if (!enabled) {
-    premiumPriceInput.value = '';
-   }
-  };
-
-  premiumToggle.addEventListener('change', syncPremiumPriceVisibility);
-  syncPremiumPriceVisibility();
  })();
  </script>
 

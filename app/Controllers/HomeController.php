@@ -6,6 +6,7 @@
 /** @var Router $router */
 
 $homeModel = new HomeModel($mysqli);
+$serviceModel = new ServiceModel($mysqli);
 $statisticsModel = new StatisticsModel($mysqli);
 $advertisementModel = new AdvertisementModel($mysqli);
 
@@ -24,29 +25,53 @@ $normalizeLatestMobileItems = static function (array $mobiles): array {
 };
 
 // ---------------- HOME PAGE ----------------
-$router->get('/', function () use ($twig, $homeModel, $normalizeLatestMobileItems) {
+$router->get('/', function () use ($twig, $homeModel, $serviceModel, $normalizeLatestMobileItems) {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$sort = 'latest';
+    $sort = 'latest';
     $limit = HOMEPAGE_FEED_LIMIT;
 
     $data = $homeModel->getUnifiedContent($page, $limit, $sort);
     $stats = $homeModel->getHomepageStats();
     $topPosts = $homeModel->getTopPosts(8);
     $topServices = $homeModel->getTopServices(8);
+    $homepageServices = $serviceModel->getHomepageServices(15);
     $latestMobiles = $normalizeLatestMobileItems($homeModel->getLatestMobiles(8));
 
-echo $twig->render('public/home.twig', [
-         'contents' => $data['contents'],
-         'top_posts' => $topPosts,
-         'top_services' => $topServices,
-         'latest_mobiles' => $latestMobiles,
-         'total_pages' => $data['total_pages'],
-         'current_page' => $page,
-         'homepage_feed_limit' => $limit,
-         'sort' => $sort,
-         'stats' => $stats,
-         'title' => 'Home'
-     ]);
+    echo $twig->render('public/home.twig', [
+        'contents' => $data['contents'],
+        'top_posts' => $topPosts,
+        'top_services' => $topServices,
+        'homepage_services' => $homepageServices,
+        'latest_mobiles' => $latestMobiles,
+        'total_pages' => $data['total_pages'],
+        'current_page' => $page,
+        'homepage_feed_limit' => $limit,
+        'sort' => $sort,
+        'stats' => $stats,
+        'title' => 'Home'
+    ]);
+});
+
+$router->get('/api/home/services', function () use ($serviceModel) {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+
+    try {
+        $services = $serviceModel->getHomepageServices(15);
+
+        echo json_encode([
+            'success' => true,
+            'services' => $services,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to load services',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    exit;
 });
 
 // ============ API ENDPOINTS FOR INFINITE SCROLL ============

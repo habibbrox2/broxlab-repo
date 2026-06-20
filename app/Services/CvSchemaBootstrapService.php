@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS `cv_sections` (
   `cv_id` int(11) NOT NULL,
   `section_type` varchar(50) NOT NULL,
   `title` varchar(255) NOT NULL,
-  `order` int(11) NOT NULL DEFAULT 0,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
   `is_visible` tinyint(1) NOT NULL DEFAULT 1,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_cv_id` (`cv_id`),
-  KEY `idx_order` (`cv_id`,`order`),
+  KEY `idx_sort_order` (`cv_id`,`sort_order`),
   KEY `idx_section_type` (`section_type`),
   KEY `idx_deleted_at` (`deleted_at`),
   CONSTRAINT `cv_sections_ibfk_1` FOREIGN KEY (`cv_id`) REFERENCES `cvs` (`id`) ON DELETE CASCADE
@@ -84,13 +84,13 @@ CREATE TABLE IF NOT EXISTS `cv_items` (
   `section_id` int(11) NOT NULL,
   `item_type` varchar(50) NOT NULL,
   `content_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`content_json`)),
-  `order` int(11) NOT NULL DEFAULT 0,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_section_id` (`section_id`),
-  KEY `idx_order` (`section_id`,`order`),
+  KEY `idx_sort_order` (`section_id`,`sort_order`),
   KEY `idx_deleted_at` (`deleted_at`),
   CONSTRAINT `cv_items_ibfk_1` FOREIGN KEY (`section_id`) REFERENCES `cv_sections` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
@@ -170,6 +170,9 @@ SQL);
 
     private function ensureLegacyColumns(): void
     {
+        // Migration: rename `order` to `sort_order` to avoid MariaDB reserved word conflicts
+        $this->migrateOrderColumn();
+
         $this->ensureColumn('cvs', 'professional_status', "VARCHAR(100) DEFAULT NULL AFTER is_active");
         $this->ensureColumn('cvs', 'builder_data', "LONGTEXT DEFAULT NULL AFTER professional_status");
         $this->ensureColumn('cvs', 'profile_photo', "VARCHAR(500) DEFAULT NULL AFTER builder_data");
@@ -179,9 +182,48 @@ SQL);
         $this->ensureColumn('cvs', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER last_viewed_at");
 
         $this->ensureColumn('cv_sections', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER is_visible");
-        $this->ensureColumn('cv_items', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER `order`");
+        $this->ensureColumn('cv_items', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER `sort_order`");
         $this->ensureColumn('cv_shares', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER expires_at");
         $this->ensureColumn('cv_personal_info', 'deleted_at', "TIMESTAMP NULL DEFAULT NULL AFTER birth_certificate_no");
+    }
+
+    /**
+     * Migrate existing `order` columns to `sort_order` to avoid MariaDB reserved word conflicts.
+     */
+    private function migrateOrderColumn(): void
+    {
+        $tables = ['cv_sections', 'cv_items'];
+
+        foreach ($tables as $table) {
+            $safeTable = str_replace('`', '``', $table);
+
+            // Check if the old `order` column still exists
+            $result = $this->mysqli->query("SHOW COLUMNS FROM `{$safeTable}` LIKE 'order'");
+            if (!$result || $result->num_rows === 0) {
+                continue;
+            }
+
+            // Check if sort_order already exists (e.g., partial migration)
+            $checkResult = $this->mysqli->query("SHOW COLUMNS FROM `{$safeTable}` LIKE 'sort_order'");
+            if ($checkResult && $checkResult->num_rows > 0) {
+                continue;
+            }
+
+            $indexSuffix = $table === 'cv_sections' ? 'cv_id' : 'section_id';
+
+            // Check if the old index exists before attempting to drop it
+            $indexCheck = $this->mysqli->query("SHOW INDEX FROM `{$safeTable}` WHERE Key_name = 'idx_order'");
+            $hasOldIndex = $indexCheck && $indexCheck->num_rows > 0;
+
+            // Rename the column — MariaDB auto-updates indexes to reference the new name
+            $this->runSql("ALTER TABLE `{$safeTable}` CHANGE COLUMN `order` `sort_order` INT(11) NOT NULL DEFAULT 0");
+
+            if ($hasOldIndex) {
+                // Drop old index and recreate with new name to keep naming consistent
+                $this->runSql("ALTER TABLE `{$safeTable}` DROP INDEX `idx_order`");
+                $this->runSql("ALTER TABLE `{$safeTable}` ADD INDEX `idx_sort_order` (`{$indexSuffix}`, `sort_order`)");
+            }
+        }
     }
 
     private function ensureV3Tables(): void

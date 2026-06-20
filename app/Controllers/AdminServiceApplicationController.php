@@ -33,7 +33,7 @@ $notificationModel = new NotificationModel($mysqli);
  * Admin applications dashboard
  * GET /admin/applications
  */
-$router->get('/admin/applications', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $appModel) {
+$router->get('/admin/applications', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $appModel, $serviceModel) {
     $page = max(1, (int)($_GET['page'] ?? 1));
     $limit = 20;
     $offset = ($page - 1) * $limit;
@@ -56,6 +56,23 @@ $router->get('/admin/applications', ['middleware' => ['auth', 'admin_only']], fu
     // Get applications
     $result = $appModel->getAllApplications($filters, $limit, $offset);
     $stats = $appModel->getStatistics();
+
+    // Enrich applications with service image
+    foreach ($result['data'] as &$app) {
+        $serviceId = (int)($app['service_id'] ?? 0);
+        if ($serviceId > 0) {
+            $featuredImage = $serviceModel->getFeaturedImage($serviceId);
+            if ($featuredImage) {
+                $app['service_thumbnail_url'] = $featuredImage['thumbnail_path'] ?? $featuredImage['image_path'] ?? null;
+            } else {
+                $urls = $serviceModel->getServiceImageUrls($serviceId, 1);
+                $app['service_thumbnail_url'] = $urls[0] ?? null;
+            }
+        } else {
+            $app['service_thumbnail_url'] = null;
+        }
+    }
+    unset($app);
 
     echo $twig->render('admin/applications/index.twig', [
         'title' => 'Service Applications',
@@ -94,6 +111,20 @@ $router->get('/admin/applications/{id}', ['middleware' => ['auth', 'admin_only']
     $approver = $app['approved_by'] ? $userModel->findById($app['approved_by']) : null;
     $auditLog = $appModel->getAuditLog($app['id']);
     $serviceFormFields = $serviceModel->getFormFields((int)($app['service_id'] ?? 0));
+
+    // Enrich application with service thumbnail
+    $serviceId = (int)($app['service_id'] ?? 0);
+    if ($serviceId > 0) {
+        $featuredImage = $serviceModel->getFeaturedImage($serviceId);
+        if ($featuredImage) {
+            $app['service_thumbnail_url'] = $featuredImage['thumbnail_path'] ?? $featuredImage['image_path'] ?? null;
+        } else {
+            $urls = $serviceModel->getServiceImageUrls($serviceId, 1);
+            $app['service_thumbnail_url'] = $urls[0] ?? null;
+        }
+    } else {
+        $app['service_thumbnail_url'] = null;
+    }
     $formFieldLabels = [];
     foreach ($serviceFormFields as $field) {
         $fieldName = trim((string)($field['form_field_name'] ?? ''));

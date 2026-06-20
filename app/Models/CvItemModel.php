@@ -21,7 +21,7 @@ class CvItemModel
         $contentJson = json_encode($content);
 
         $stmt = $this->mysqli->prepare(
-            "INSERT INTO cv_items (section_id, item_type, content_json, `order`) VALUES (?, ?, ?, ?)"
+            "INSERT INTO cv_items (section_id, item_type, content_json, `sort_order`) VALUES (?, ?, ?, ?)"
         );
         $stmt->bind_param('issi', $sectionId, $itemType, $contentJson, $order);
 
@@ -38,7 +38,7 @@ class CvItemModel
     private function getNextOrder(int $sectionId): int
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT MAX(`order`) as max_order FROM cv_items WHERE section_id = ? AND deleted_at IS NULL"
+            "SELECT MAX(`sort_order`) as max_order FROM cv_items WHERE section_id = ? AND deleted_at IS NULL"
         );
         $stmt->bind_param('i', $sectionId);
         $stmt->execute();
@@ -55,7 +55,7 @@ class CvItemModel
     public function getBySectionId(int $sectionId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_items WHERE section_id = ? AND deleted_at IS NULL ORDER BY `order` ASC"
+            "SELECT * FROM cv_items WHERE section_id = ? AND deleted_at IS NULL ORDER BY `sort_order` ASC"
         );
         $stmt->bind_param('i', $sectionId);
         $stmt->execute();
@@ -113,8 +113,12 @@ class CvItemModel
             $types .= 's';
         }
 
-        if (isset($data['order'])) {
-            $fields[] = '`order` = ?';
+        if (isset($data['sort_order'])) {
+            $fields[] = '`sort_order` = ?';
+            $params[] = $data['sort_order'];
+            $types .= 'i';
+        } elseif (isset($data['order'])) {
+            $fields[] = '`sort_order` = ?';
             $params[] = $data['order'];
             $types .= 'i';
         }
@@ -156,7 +160,7 @@ class CvItemModel
 
         try {
             $stmt = $this->mysqli->prepare(
-                "UPDATE cv_items SET `order` = ? WHERE id = ? AND section_id = ?"
+                "UPDATE cv_items SET `sort_order` = ? WHERE id = ? AND section_id = ?"
             );
 
             foreach ($itemIds as $order => $itemId) {

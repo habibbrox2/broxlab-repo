@@ -335,28 +335,17 @@ $router->post('/admin/cv-templates/upload-zip', ['middleware' => ['auth', 'admin
 });
 
 // ========== PREVIEW ==========
-$router->get('/admin/cv-templates/preview/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig) {
+$router->get('/admin/cv-templates/preview/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig, $mysqli) {
     $slug = sanitize_input(basename($slug));
-    $f = dirname(__DIR__, 1) . '/Views/cv/templates/' . $slug . '.twig';
-    if (!file_exists($f)) { http_response_code(404); echo 'Template not found.'; exit; }
     try {
-        echo $twig->render('cv/templates/' . $slug . '.twig', [
-            'cv' => ['title' => 'Sample CV', 'full_name' => 'John Doe', 'email' => 'john@example.com',
-                     'phone' => '+1 (555) 123-4567', 'location' => 'San Francisco, CA',
-                     'professional_summary' => 'Experienced professional with a track record of delivering results.'],
-            'sections' => [
-                ['title' => 'Summary', 'section_type' => 'summary', 'items' => [
-                    ['content' => ['text' => 'Results-driven software engineer with 8+ years building scalable web applications.']]]],
-                ['title' => 'Experience', 'section_type' => 'experience', 'items' => [
-                    ['content' => ['position' => 'Senior Software Engineer', 'company' => 'Tech Corp', 'start_date' => '2020', 'end_date' => 'Present', 'description' => 'Led microservices architecture.']],
-                    ['content' => ['position' => 'Software Engineer', 'company' => 'Startup Inc', 'start_date' => '2016', 'end_date' => '2020', 'description' => 'Built full-stack features.']]]],
-                ['title' => 'Education', 'section_type' => 'education', 'items' => [
-                    ['content' => ['degree' => 'B.S. Computer Science', 'institution' => 'University of Technology', 'start_date' => '2012', 'end_date' => '2016']]]],
-                ['title' => 'Skills', 'section_type' => 'skills', 'items' => [
-                    ['content' => ['technical' => ['JavaScript', 'Python', 'React', 'Node.js', 'AWS'], 'soft' => ['Leadership']]]]]
-            ],
-            'is_preview' => true, 'is_public' => false
-        ]);
+        $previewService = new CvPreviewService($mysqli, $twig);
+        $result = $previewService->renderTemplatePreview($slug, ['zoom' => 1.0]);
+        if (!$result['success']) {
+            http_response_code(404);
+            echo 'Template not found.';
+            exit;
+        }
+        echo $result['html'];
     } catch (Throwable $e) {
         echo '<div style="padding:2rem;color:#dc2626;"><h2>Template Error</h2><p>' . htmlspecialchars($e->getMessage()) . '</p></div>';
     }

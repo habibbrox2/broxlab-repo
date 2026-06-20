@@ -476,7 +476,7 @@ window.__bldCvId = {{ cv_id|raw }};
 window.__bldCsrf = '{{ csrf_token|default('') }}';
 window.__bldJobPositions = {{ job_positions|json_encode|raw }};
 window.__bldTemplates = {{ templates|json_encode|raw }};
-window.__bldSelectedTemplate = '{{ selected_template }}';
+window.__bldSelectedTemplate = '{{ selected_template|default('modern') }}';
 window.__bldProfilePhoto = '{{ cv.profile_photo|default('') }}';
 </script>
 {% endblock %}

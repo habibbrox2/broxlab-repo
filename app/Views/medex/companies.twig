@@ -51,9 +51,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 space-y-6">
 
-<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+<div class="medex-hero">
  <div class="col-span-12">
  {% set medexHeading = current_lang == 'bn' ? 'মেডএক্স ডেটাবেস' : 'MedEx Database' %}
  {% set medexSubheader = current_lang == 'bn' ? 'বাংলাদেশের হার্বাল ফার্মাসিউটিক্যাল কোম্পানির ডেটাবেস' : 'Herbal Pharmaceutical Companies in Bangladesh' %}
@@ -77,21 +77,21 @@
 {% set labelDetailsPage = current_lang == 'bn' ? 'বিস্তারিত' : 'Details' %}
 
 {# Stats Summary #}
-<div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+<div class="grid grid-cols-1 gap-4 md:grid-cols-12">
  <div class="md:col-span-4">
- <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stat">
  <div class="medex-stats-number">{{ total_companies }}</div>
  <div class="medex-stats-label" data-i18n-en="Total Companies" data-i18n-bn="মোট কোম্পানি">{{ labelTotalCompanies }}</div>
  </div>
  </div>
  <div class="md:col-span-4">
- <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stat">
  <div class="medex-stats-number" id="medexTotalBrands">{{ total_brands|number_format }}</div>
  <div class="medex-stats-label" data-i18n-en="Total Brands" data-i18n-bn="মোট ব্র্যান্ড">{{ labelTotalBrands }}</div>
  </div>
  </div>
  <div class="md:col-span-4">
- <div class="medex-stats-card border border-slate-200 bg-white shadow-sm">
+ <div class="medex-stat">
  <div class="medex-stats-number">{{ last_updated ? last_updated|date('M d, Y') : 'N/A' }}</div>
  <div class="medex-stats-label" data-i18n-en="Last Updated" data-i18n-bn="শেষ আপডেট">{{ labelLastUpdated }}</div>
  </div>
@@ -99,7 +99,7 @@
 </div>
 
 {# Info Banner #}
-<div class="medex-info-banner" role="alert">
+<div class="medex-panel" role="alert">
  <div class="flex items-center">
  <i class="lucide lucide-info-circle mr-3 text-xl"></i>
  <div>
@@ -135,14 +135,14 @@
 </div>
 
 {# Companies Card with Table #}
-<div class="medex-card border border-slate-200 bg-white shadow-sm">
- <div class="medex-border-b border-slate-200 px-4 py-3">
+<div class="medex-table-shell">
+ <div class="medex-panel-header">
  <i class="lucide lucide-building-2"></i>
  <span data-i18n-en="Herbal Pharmaceutical Companies" data-i18n-bn="হার্বাল ফার্মাসিউটিক্যাল কোম্পানি">{{ current_lang == 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Companies' }}</span>
  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-600 text-white ml-auto">{{ total_companies }}</span>
  </div>
- <div class="medex-p-4 p-0">
- <div class="medex-table-wrapper">
+ <div class="p-0">
+ <div class="overflow-x-auto">
  <table class="medex-table">
  <thead>
  <tr>
@@ -218,7 +218,6 @@
 {% block extra_scripts %}
 <script type="module" src="{{ asset('/assets/js/dist/medex-route-fetch.js') }}"></script>
 {% endblock %}
-
 
 
 

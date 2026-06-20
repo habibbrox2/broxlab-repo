@@ -474,14 +474,14 @@
 .rte-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    padding: 6px 10px;
+    gap: 3px;
+    padding: 7px 12px;
     background: var(--rte-bg-toolbar);
     border-top: 1px solid var(--rte-border-color);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     align-items: center;
-    min-height: 46px;
+    min-height: 48px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
@@ -512,9 +512,9 @@
 
 .rte-toolbar-divider {
     width: 1px;
-    height: 24px;
+    height: 26px;
     background: linear-gradient(to bottom, transparent 10%, var(--rte-border-color) 40%, var(--rte-border-color) 60%, transparent 90%);
-    margin: 0 6px;
+    margin: 0 8px;
     flex-shrink: 0;
     opacity: 0.7;
 }
@@ -529,21 +529,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    height: 34px;
-    padding: 4px 8px;
+    min-width: 36px;
+    height: 36px;
+    padding: 4px 10px;
     background: var(--rte-toolbar-btn-bg);
     border: 1px solid transparent;
     border-radius: var(--rte-radius-sm);
     color: var(--rte-text-muted);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     transition: var(--rte-transition);
     position: relative;
     outline: none;
     user-select: none;
-    gap: 5px;
+    gap: 6px;
     white-space: nowrap;
     line-height: 1;
     letter-spacing: 0.01em;
@@ -597,16 +597,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
     flex-shrink: 0;
 }
 
 /* Material icons overrides for better alignment */
 .rte-btn .rte-icon.material-icons,
 .rte-btn .rte-icon.material-symbols-outlined {
-    font-size: 18px;
+    font-size: 20px;
     line-height: 1;
 }
 
@@ -630,6 +630,17 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     font-family: var(--rte-font-sans);
+}
+
+.rte-btn .rte-tooltip kbd {
+    font-family: var(--rte-font-mono);
+    background: rgba(255, 255, 255, 0.12);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-left: 3px;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .rte-btn .rte-tooltip::after {
@@ -662,14 +673,14 @@
 
 /* ===== Select Elements ===== */
 .rte-select {
-    padding: 4px 10px;
-    height: 34px;
+    padding: 4px 12px;
+    height: 36px;
     border: 1px solid var(--rte-border-color);
     border-radius: var(--rte-radius-sm);
     background: var(--rte-bg-editor);
     color: var(--rte-text-muted);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     outline: none;
     transition: var(--rte-transition);
@@ -678,7 +689,7 @@
 }
 
 .rte-heading-select {
-    min-width: 120px;
+    min-width: 130px;
 }
 
 .rte-select:hover {
@@ -695,9 +706,9 @@
 
 /* Font size input (text input with datalist) */
 .rte-font-size-select {
-    width: 58px;
-    max-width: 74px;
-    padding: 4px 6px;
+    width: 64px;
+    max-width: 80px;
+    padding: 4px 8px;
     appearance: textfield;
     -moz-appearance: textfield;
     text-align: center;
@@ -720,19 +731,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    height: 34px;
-    padding: 4px 7px;
+    min-width: 36px;
+    height: 36px;
+    padding: 4px 8px;
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--rte-radius-sm);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     transition: var(--rte-transition);
     outline: none;
     position: relative;
-    gap: 4px;
+    gap: 5px;
 }
 
 .rte-color-label:hover {
@@ -1363,11 +1374,43 @@ body.rte-fullscreen-active {
     padding-right: 1.75em;
 }
 
+/* ===== Responsive Toolbar Collapse Toggle ===== */
+.rte-toolbar-responsive-toggle {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .rte-toolbar-responsive-toggle {
+        display: inline-flex;
+        margin-right: 2px;
+    }
+
+    /* Collapsed: hide all non-essential sections */
+    .rte-toolbar.rte-toolbar-collapsed .rte-toolbar-section:not(.rte-toolbar-essential) {
+        display: none !important;
+    }
+
+    /* Also hide dividers in collapsed mode (orphan dividers between essential groups) */
+    .rte-toolbar.rte-toolbar-collapsed .rte-toolbar-divider {
+        display: none !important;
+    }
+
+    /* Expanded: show everything normally */
+    .rte-toolbar.rte-toolbar-expanded .rte-toolbar-section,
+    .rte-toolbar.rte-toolbar-expanded .rte-toolbar-divider {
+        display: flex;
+    }
+
+    .rte-toolbar.rte-toolbar-expanded {
+        flex-wrap: wrap;
+    }
+}
+
 /* ===== Responsive Design ===== */
 @media (max-width: 768px) {
     .rte-toolbar {
         gap: 3px;
-        padding: 6px;
+        padding: 6px 8px;
         min-height: 42px;
     }
 
@@ -1377,9 +1420,10 @@ body.rte-fullscreen-active {
     }
 
     .rte-btn {
-        min-width: 32px;
-        height: 32px;
-        padding: 3px 6px;
+        min-width: 34px;
+        height: 34px;
+        padding: 3px 7px;
+        font-size: 13px;
     }
 
     .rte-btn:hover {
@@ -1387,23 +1431,23 @@ body.rte-fullscreen-active {
     }
 
     .rte-btn .rte-icon {
-        font-size: 15px;
+        font-size: 16px;
         width: 16px;
         height: 16px;
     }
 
     .rte-select {
-        height: 32px;
-        padding: 3px 7px;
-        font-size: 11px;
+        height: 34px;
+        padding: 3px 8px;
+        font-size: 12px;
     }
 
     .rte-heading-select {
-        min-width: 95px;
+        min-width: 100px;
     }
 
     .rte-font-size-select {
-        width: 50px;
+        width: 52px;
     }
 
     .rte-editor {
@@ -1437,9 +1481,9 @@ body.rte-fullscreen-active {
     }
 
     .rte-btn {
-        min-width: 30px;
-        height: 30px;
-        padding: 3px 5px;
+        min-width: 32px;
+        height: 32px;
+        padding: 3px 6px;
         font-size: 12px;
     }
 
@@ -1452,23 +1496,23 @@ body.rte-fullscreen-active {
     }
 
     .rte-btn .rte-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
+        font-size: 15px;
+        width: 15px;
+        height: 15px;
     }
 
     .rte-select {
-        height: 30px;
-        padding: 2px 5px;
+        height: 32px;
+        padding: 2px 6px;
         font-size: 11px;
     }
 
     .rte-heading-select {
-        min-width: 75px;
+        min-width: 80px;
     }
 
     .rte-font-size-select {
-        width: 46px;
+        width: 50px;
     }
 
     .rte-editor {

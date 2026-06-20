@@ -480,6 +480,12 @@ $router->post('/admin/cv-templates/upload-zip', ['middleware' => ['auth', 'admin
 $router->post('/admin/cv-templates/{slug}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateDelete']);
 
 /**
+ * Restore CV Template
+ * POST /admin/cv-templates/{slug}/restore
+ */
+$router->post('/admin/cv-templates/{slug}/restore', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplateRestore']);
+
+/**
  * Bulk Delete CV Templates
  * POST /admin/cv-templates/bulk-delete
  */

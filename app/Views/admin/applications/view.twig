@@ -67,8 +67,26 @@
      <div>
       <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">Service Information</h4>
       <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 p-3.5">
-       <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Service Name</p>
-       <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ application.service_name }}</p>
+       <div class="flex items-center gap-3">
+        <div class="relative w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+         {% if application.service_thumbnail_url is defined and application.service_thumbnail_url %}
+          <img src="{{ application.service_thumbnail_url|absolute_url }}"
+               alt="{{ application.service_name|e('html_attr') }}"
+               class="w-full h-full object-cover"
+               loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="absolute inset-0 flex items-center justify-center" style="display:none;">
+           <i class="lucide lucide-image w-5 h-5 text-slate-400"></i>
+          </div>
+         {% else %}
+          <i class="lucide lucide-image w-5 h-5 text-slate-400"></i>
+         {% endif %}
+        </div>
+        <div>
+         <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Service Name</p>
+         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ application.service_name }}</p>
+        </div>
+       </div>
       </div>
      </div>
 

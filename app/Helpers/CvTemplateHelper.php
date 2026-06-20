@@ -112,7 +112,8 @@ if (!function_exists('cvTemplateIsDisabled')) {
     {
         $metadata = cvTemplateReadMetadata();
         $template = $metadata['templates'][$slug] ?? null;
-        return isset($template['status']) && $template['status'] === 'disabled';
+        return !empty($template['deleted_at'])
+            || (isset($template['status']) && $template['status'] === 'disabled');
     }
 }
 
@@ -121,7 +122,7 @@ if (!function_exists('cvTemplateGetAll')) {
      * Get all templates with metadata merged from filesystem and JSON.
      * Returns array of slug => metadata array.
      */
-    function cvTemplateGetAll(): array
+    function cvTemplateGetAll(bool $includeDeleted = false): array
     {
         $dir = cvTemplateGetDirectory();
         $metadata = cvTemplateReadMetadata();
@@ -136,7 +137,7 @@ if (!function_exists('cvTemplateGetAll')) {
                         continue;
                     }
 
-                    $templates[$slug] = $metadata['templates'][$slug] ?? [
+                    $template = $metadata['templates'][$slug] ?? [
                         'name' => ucfirst($slug),
                         'description' => '',
                         'status' => 'active',
@@ -144,11 +145,45 @@ if (!function_exists('cvTemplateGetAll')) {
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
+
+                    if (!$includeDeleted && !empty($template['deleted_at'])) {
+                        continue;
+                    }
+
+                    $templates[$slug] = $template;
                 }
             }
         }
 
         return $templates;
+    }
+}
+
+if (!function_exists('cvTemplateRestore')) {
+    /**
+     * Restore a soft-deleted template.
+     */
+    function cvTemplateRestore(string $slug): array
+    {
+        $template = cvTemplateGet($slug);
+        if (!$template) {
+            return ['success' => false, 'message' => 'Template not found.'];
+        }
+
+        if (empty($template['deleted_at']) && (empty($template['status']) || $template['status'] !== 'disabled')) {
+            return ['success' => false, 'message' => 'Template is not deleted.'];
+        }
+
+        $metadata = cvTemplateReadMetadata();
+        $metadata['templates'][$slug]['status'] = 'active';
+        unset($metadata['templates'][$slug]['deleted_at']);
+        $metadata['templates'][$slug]['updated_at'] = date('Y-m-d H:i:s');
+
+        if (!cvTemplateWriteMetadata($metadata)) {
+            return ['success' => false, 'message' => 'Failed to restore template metadata.'];
+        }
+
+        return ['success' => true, 'message' => 'Template "' . ($template['name'] ?? $slug) . '" restored.'];
     }
 }
 
@@ -333,13 +368,14 @@ if (!function_exists('cvTemplateValidateZipPackage')) {
             return $result;
         }
 
-        // Check for required files
+        // Check for required files and reject nested paths.
         $hasConfig = false;
         $hasTemplate = false;
         $hasPreview = false;
         $hasThumbnail = false;
         $configContent = '';
         $templateContent = '';
+        $allowedRoots = ['config.json', 'template.twig', 'preview.png', 'preview.jpg', 'preview.jpeg', 'preview.webp', 'thumbnail.png', 'thumbnail.jpg', 'thumbnail.jpeg'];
 
         for ($i = 0; $i < $zip->numEntries; $i++) {
             $stat = $zip->statIndex($i);
@@ -351,6 +387,15 @@ if (!function_exists('cvTemplateValidateZipPackage')) {
             }
 
             $basename = basename($name);
+            $normalized = trim(str_replace('\\', '/', $name), '/');
+            if ($normalized === '' || strpos($normalized, '../') !== false || strpos($normalized, '/..') !== false) {
+                $result['errors'][] = 'ZIP contains unsafe file paths.';
+                continue;
+            }
+            if ($normalized !== $basename || !in_array($basename, $allowedRoots, true)) {
+                $result['errors'][] = 'ZIP must contain only root-level template files.';
+                continue;
+            }
 
             switch ($basename) {
                 case 'config.json':
@@ -498,6 +543,9 @@ if (!function_exists('cvTemplateExtractZipPackage')) {
 
         // Write template.twig
         $tplPath = $tplDir . '/' . $slug . '.twig';
+        if (file_exists($tplPath)) {
+            return ['success' => false, 'message' => 'Template already exists on disk.'];
+        }
         if (file_put_contents($tplPath, $templateContent) === false) {
             return ['success' => false, 'message' => 'Failed to write template file.'];
         }
@@ -526,15 +574,17 @@ if (!function_exists('cvTemplateExtractZipPackage')) {
                     $targetPath = $mediaDir . '/' . $slug . '-preview.' . $ext;
                     $content = $zip->getFromIndex($i);
                     if ($content !== false) {
-                        file_put_contents($targetPath, $content);
-                        $previewWritten = true;
+                        if (file_put_contents($targetPath, $content) !== false) {
+                            $previewWritten = true;
+                        }
                     }
                 } elseif (strpos($basename, 'thumbnail') === 0 && !$thumbnailWritten) {
                     $targetPath = $mediaDir . '/' . $slug . '-thumbnail.' . $ext;
                     $content = $zip->getFromIndex($i);
                     if ($content !== false) {
-                        file_put_contents($targetPath, $content);
-                        $thumbnailWritten = true;
+                        if (file_put_contents($targetPath, $content) !== false) {
+                            $thumbnailWritten = true;
+                        }
                     }
                 }
             }
@@ -573,7 +623,7 @@ if (!function_exists('cvTemplateExtractZipPackage')) {
 
 if (!function_exists('cvTemplateDelete')) {
     /**
-     * Delete a custom template (file + metadata + media).
+     * Soft-delete a custom template.
      * Built-in templates cannot be deleted (non-custom).
      *
      * @param string $slug Template slug to delete
@@ -590,28 +640,13 @@ if (!function_exists('cvTemplateDelete')) {
             return ['success' => false, 'message' => 'Built-in templates cannot be deleted. Use Disable instead.'];
         }
 
-        $tplPath = cvTemplateGetDirectory() . '/' . $slug . '.twig';
-        if (file_exists($tplPath)) {
-            @unlink($tplPath);
-        }
-
-        $mediaDir = dirname(cvTemplateGetMetadataPath()) . '/media';
-        $patterns = [
-            $mediaDir . '/' . $slug . '-preview.*',
-            $mediaDir . '/' . $slug . '-thumbnail.*'
-        ];
-        foreach ($patterns as $pattern) {
-            $files = glob($pattern);
-            if ($files) {
-                foreach ($files as $f) {
-                    @unlink($f);
-                }
-            }
-        }
-
         $metadata = cvTemplateReadMetadata();
-        unset($metadata['templates'][$slug]);
-        cvTemplateWriteMetadata($metadata);
+        $metadata['templates'][$slug]['status'] = 'disabled';
+        $metadata['templates'][$slug]['deleted_at'] = date('Y-m-d H:i:s');
+        $metadata['templates'][$slug]['updated_at'] = date('Y-m-d H:i:s');
+        if (!cvTemplateWriteMetadata($metadata)) {
+            return ['success' => false, 'message' => 'Failed to update template metadata.'];
+        }
 
         return ['success' => true, 'message' => 'Template "' . $template['name'] . '" deleted.'];
     }

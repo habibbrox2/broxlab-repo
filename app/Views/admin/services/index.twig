@@ -70,10 +70,18 @@
       </td>
       <td class="px-4 py-3">
        <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div class="relative w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
          {% if service.images is defined and service.images is not empty %}
           {% set firstImage = service.images|first %}
-          <img src="{{ firstImage.thumbnail_path|default(firstImage.image_path)|default('/assets/img/no-image.png') }}" class="w-full h-full object-cover" alt="{{ service.name }}">
+          {% set imgSrc = (firstImage.thumbnail_path ?? firstImage.image_path)|absolute_url %}
+          <img src="{{ imgSrc }}"
+               alt="{{ service.name }}"
+               class="w-full h-full object-cover"
+               loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="absolute inset-0 flex items-center justify-center" style="display:none;">
+           <i class="lucide lucide-image text-lg text-slate-400"></i>
+          </div>
          {% elseif service.icon %}
           <i class="{{ service.icon }} text-lg text-slate-500 dark:text-slate-400"></i>
          {% else %}
@@ -140,10 +148,18 @@
    {% for service in services %}
    <div class="p-4 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
     <div class="flex items-start gap-3 mb-3">
-     <div class="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+     <div class="relative w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
       {% if service.images is defined and service.images is not empty %}
        {% set firstImage = service.images|first %}
-       <img src="{{ firstImage.thumbnail_path|default(firstImage.image_path)|default('/assets/img/no-image.png') }}" class="w-full h-full object-cover" alt="{{ service.name }}">
+       {% set imgSrc = (firstImage.thumbnail_path ?? firstImage.image_path)|absolute_url %}
+       <img src="{{ imgSrc }}"
+            alt="{{ service.name }}"
+            class="w-full h-full object-cover"
+            loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="absolute inset-0 flex items-center justify-center" style="display:none;">
+        <i class="lucide lucide-image text-xl text-slate-400"></i>
+       </div>
       {% elseif service.icon %}
        <i class="{{ service.icon }} text-xl text-slate-500 dark:text-slate-400"></i>
       {% else %}

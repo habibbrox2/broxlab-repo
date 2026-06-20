@@ -2,6 +2,8 @@
 
 // app/Models/CvModel.php
 
+require_once dirname(__DIR__, 1) . '/Services/CvSchemaBootstrapService.php';
+
 class CvModel
 {
     private $mysqli;
@@ -10,6 +12,9 @@ class CvModel
     public function __construct(mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
+        if (class_exists('CvSchemaBootstrapService')) {
+            (new CvSchemaBootstrapService($this->mysqli))->ensureAll();
+        }
     }
 
     /**
@@ -31,14 +36,6 @@ class CvModel
         $result = $stmt->get_result();
         $hasColumn = $result && $result->num_rows > 0;
         $stmt->close();
-
-        if (!$hasColumn) {
-            $this->mysqli->query(
-                "ALTER TABLE cvs ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER last_viewed_at"
-            );
-            $hasColumn = $this->mysqli->errno === 0
-                || stripos($this->mysqli->error ?? '', 'duplicate column name') !== false;
-        }
 
         $this->hasDeletedAtColumn = $hasColumn;
         return $hasColumn;
@@ -117,7 +114,9 @@ class CvModel
     public function getByUserId(int $userId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs c WHERE user_id = ? AND {$this->getDeletedAtCondition()} ORDER BY c.updated_at DESC"
+            "SELECT c.id, c.user_id, c.title, c.template, c.is_active, c.professional_status, c.builder_data, c.profile_photo, c.download_count, c.view_count, c.last_viewed_at, c.created_at, c.updated_at, c.deleted_at
+             FROM cvs c
+             WHERE user_id = ? AND {$this->getDeletedAtCondition()} ORDER BY c.updated_at DESC"
         );
         $stmt->bind_param('i', $userId);
         $stmt->execute();
@@ -139,6 +138,7 @@ class CvModel
         int $offset = 0,
         string $search = '',
         string $status = 'all',
+        ?string $template = null,
         string $sort = 'updated',
         string $order = 'DESC'
     ): array {
@@ -170,6 +170,12 @@ class CvModel
             $where[] = 'c.is_active = 0';
         }
 
+        if ($template !== null && $template !== '' && $template !== 'all') {
+            $where[] = 'c.template = ?';
+            $params[] = $template;
+            $types .= 's';
+        }
+
         $where[] = $this->getDeletedAtCondition('c');
         $sql = "SELECT c.id, c.user_id, c.title, c.is_active, c.created_at, c.updated_at,
                        u.username, u.email, u.first_name, u.last_name
@@ -198,7 +204,7 @@ class CvModel
     /**
      * Count all CVs (for admin pagination).
      */
-    public function countAll(string $search = '', string $status = 'all'): int
+    public function countAll(string $search = '', string $status = 'all', ?string $template = null): int
     {
         $where = [];
         $params = [];
@@ -217,6 +223,12 @@ class CvModel
             $where[] = 'c.is_active = 1';
         } elseif ($status === 'inactive') {
             $where[] = 'c.is_active = 0';
+        }
+
+        if ($template !== null && $template !== '' && $template !== 'all') {
+            $where[] = 'c.template = ?';
+            $params[] = $template;
+            $types .= 's';
         }
 
         $where[] = $this->getDeletedAtCondition('c');
@@ -312,7 +324,8 @@ class CvModel
     public function getById(int $id): ?array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cvs c WHERE id = ? AND {$this->getDeletedAtCondition()} LIMIT 1"
+            "SELECT c.id, c.user_id, c.title, c.template, c.is_active, c.professional_status, c.builder_data, c.profile_photo, c.download_count, c.view_count, c.last_viewed_at, c.created_at, c.updated_at, c.deleted_at
+             FROM cvs c WHERE id = ? AND {$this->getDeletedAtCondition()} LIMIT 1"
         );
         $stmt->bind_param('i', $id);
         $stmt->execute();
