@@ -1212,7 +1212,7 @@ export function initNotificationsDeviceSync() {
   }
 }
 
-
+/* eslint-disable no-inner-declarations */
 export async function initNotificationsOfflineHandler() {
   if (!byId('offlineHandlerRoot')) return;
   try {

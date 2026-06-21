@@ -1,4 +1,4 @@
-// Editor Sanitize Helpers - move heavy sanitization logic out of core
+﻿// Editor Sanitize Helpers - move heavy sanitization logic out of core
 (function () {
     function installSanitizeHelpers(RichTextEditor) {
         function isSafeUrl(value, tagName, attrName) {

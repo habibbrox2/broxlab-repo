@@ -1,85 +1,102 @@
 /**
- * Preset auto-selector module (ES Module)
- * Replaces previous IIFE + window.Brox pattern.
+ * Auto preset selector
+ * Watches the source form URL/content type and auto-selects a matching preset.
  */
+
 import { debounce } from '../shared/utils.js';
 
-/**
- * Initialize preset auto-selectors on the page.
- * Scans container elements with [data-preset-selector] attribute and
- * dynamically loads matching options in an autocomplete fashion.
- */
+const DEFAULT_HINT = 'Select a preset configuration for this source';
+const DEBOUNCE_MS = 450;
+
+const createHintUpdater = (hintEl) => {
+  if (!hintEl) return () => {};
+  const defaultMessage = hintEl.dataset.defaultHint || DEFAULT_HINT;
+  hintEl.textContent = defaultMessage;
+  return (text) => {
+    if (!text) {
+      hintEl.textContent = defaultMessage;
+      return;
+    }
+    hintEl.textContent = text;
+  };
+};
+
 export function initPresetAutoSelector() {
-  const containers = document.querySelectorAll('[data-preset-selector]');
-  if (!containers.length) return;
+  const urlInput = document.getElementById('url');
+  const contentTypeSelect = document.getElementById('content_type');
+  const presetSelect = document.getElementById('presets');
+  const hintEl = document.getElementById('presetAutoHint');
 
-  containers.forEach((container) => {
-    const input = container.querySelector('input[type="text"]');
-    const list = container.querySelector('[data-preset-list]');
-    const hidden = container.querySelector('input[type="hidden"]');
-    if (!input || !list) return;
+  if (!presetSelect || !urlInput) {
+    return;
+  }
 
-    const fetchUrl = container.getAttribute('data-preset-url') || '';
-    if (!fetchUrl) return;
+  const updateHint = createHintUpdater(hintEl);
+  let manualOverride = false;
 
-    const debouncedGuess = debounce(async (query) => {
-      if (query.length < 2) {
-        list.innerHTML = '';
-        list.classList.add('hidden');
+  const resetOverride = () => {
+    manualOverride = false;
+  };
+
+  presetSelect.addEventListener('change', () => {
+    manualOverride = true;
+  });
+
+  const applyPreset = ({ key, name, reason, }) => {
+    if (manualOverride || !key) {
+      return;
+    }
+    presetSelect.value = key;
+    updateHint(`Matched preset "${name}" (${reason || 'auto'})`);
+  };
+
+  const guessPreset = async () => {
+    const url = urlInput.value.trim();
+    const contentType = contentTypeSelect?.value.trim() || '';
+    if (url === '' && contentType === '') {
+      updateHint('');
+      return;
+    }
+    try {
+      const params = new URLSearchParams();
+      if (url) params.set('url', url);
+      if (contentType) params.set('content_type', contentType);
+      const response = await fetch(`/api/admin/scraper/presets/guess?${params.toString()}`, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      if (!response.ok) {
+        updateHint('');
         return;
       }
-
-      try {
-        const res = await fetch(`${fetchUrl}?q=${encodeURIComponent(query)}`, {
-          headers: { 'Accept': 'application/json', },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data.results || data.data || []);
-
-        if (!items.length) {
-          list.innerHTML = '<div class="px-3 py-2 text-xs text-slate-500">No results</div>';
-          list.classList.remove('hidden');
-          return;
-        }
-
-        list.innerHTML = items
-          .map(
-            (item) =>
-              `<button type="button" class="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors preset-option" data-value="${encodeURIComponent(item.value ?? item.id ?? '')}">${item.label ?? item.name ?? item.value ?? ''}</button>`
-          )
-          .join('');
-        list.classList.remove('hidden');
-
-        list.querySelectorAll('.preset-option').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            const val = decodeURIComponent(btn.getAttribute('data-value') || '');
-            const label = btn.textContent?.trim() || val;
-            input.value = label;
-            if (hidden) hidden.value = val;
-            list.classList.add('hidden');
-            input.dispatchEvent(new CustomEvent('preset-select', { detail: { value: val, label, }, }));
-          });
-        });
-      } catch {
-        // Silently fail
+      const payload = await response.json();
+      if (!payload.success) {
+        updateHint('');
+        return;
       }
-    }, 300);
-
-    input.addEventListener('input', () => debouncedGuess(input.value));
-    input.addEventListener('blur', () => {
-      // Delay hiding to allow click on dropdown items
-      setTimeout(() => list.classList.add('hidden'), 200);
-    });
-    input.addEventListener('focus', () => {
-      if (input.value.length >= 2) {
-        list.classList.remove('hidden');
+      if (payload.preset?.key) {
+        applyPreset(payload.preset);
+      } else if (!manualOverride) {
+        updateHint('');
       }
-    });
+    } catch (error) {
+      console.error('Preset auto-select failed:', error);
+      updateHint('');
+    }
+  };
 
-    // Close on Escape
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') list.classList.add('hidden');
-    });
-  });
+  const debouncedGuess = debounce(() => {
+    resetOverride();
+    guessPreset();
+  }, DEBOUNCE_MS);
+
+  urlInput.addEventListener('input', debouncedGuess);
+
+  if (contentTypeSelect) {
+    contentTypeSelect.addEventListener('change', debouncedGuess);
+  }
+
+  // Run on init if URL already provided
+  guessPreset();
 }

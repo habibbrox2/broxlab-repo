@@ -1,368 +1,223 @@
-{# Admin panel layout — UI v3 #}
+{# Admin panel layout #}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 
+{# ===== Imports ===== #}
 {% import '_macros/flash.twig' as flash_macros %}
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="csrf-token" content="{{ csrf_token }}">
-  {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}{{ title|default('Admin') }}{% endblock %}</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    {% if auth_user.id %}<meta name="user-id" content="{{ auth_user.id }}">{% endif %}
+    {% if auth_user.id %}
+    <script>
+      // expose the list of permissions the current admin has for client-side checks
+      window.ADMIN_PERMISSIONS = {{ getUserPermissions(auth_user.id)|json_encode|raw }};
+      // super-admins bypass every permission check
+      window.IS_SUPER_ADMIN = {{ auth_user.is_super_admin ? 'true' : 'false' }};
+      // expose current user id for RBAC API lookups
+      window.AUTH_USER_ID = {{ auth_user.id|default('null') }};
+    </script>
+    {% endif %}
 
-  <script>
-    (function () {
-      try {
-        var root = document.documentElement;
-        var saved = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
-        var valid = saved === 'dark' || saved === 'light';
-        var theme = valid ? saved : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        root.setAttribute('data-theme', theme);
-        root.style.colorScheme = theme;
-      } catch (e) {}
-    })();
-  </script>
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var savedTheme = localStorage.getItem('broxbhai-theme') || localStorage.getItem('app-theme');
+          var isValidSavedTheme = savedTheme === 'dark' || savedTheme === 'light';
+          var resolvedTheme = isValidSavedTheme
+            ? savedTheme
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
-  <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="preload" as="style"
-        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap"
-        onload="this.onload=null;this.rel='stylesheet'">
-  <noscript>
+          root.setAttribute('data-theme', resolvedTheme);
+          root.style.colorScheme = resolvedTheme;
+        } catch (error) {
+          // Ignore storage/media-query failures and keep default light theme.
+        }
+      })();
+    </script>
+
+    <link rel="icon" type="image/x-icon" href="{{ app_settings.favicon|default('/assets/logo/favicon.ico') }}">
+
+    {# Fonts #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap" rel="stylesheet">
-  </noscript>
 
-  <link rel="stylesheet" href="{{ asset('/assets/css/dist/tailwind-admin.css') }}">
-  <link rel="stylesheet" href="{{ asset('/assets/css/admin/modules/admin-sidebar-polish.css') }}">
-  <link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="{{ asset('/cdn/css/lucide/lucide.css') }}"></noscript>
-  <link rel="stylesheet" href="{{ asset('/assets/ai/css/assistant.css') }}">
-  <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
+    {# Core styles - Bundled for Performance - CDN Subdomain #}
+    <link rel="stylesheet" href="{{ asset('/cdn/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/dist/admin-bundle.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/tailwind.css') }}">
+    <link rel="stylesheet" href="{{ asset('/ai/dist/ai-style.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/ai-assistant/styles/thinking-indicator.css') }}">
 
-  <style>
-    /* ── Sidebar group label ── */
-    .sidebar-group-label {
-      @apply px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 select-none;
-    }
-    /* ── Modern sidebar link ── */
-    .sidebar-link-modern {
-      @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400
-             hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300
-             transition-all duration-150 ease-out cursor-pointer w-full;
-    }
-    .sidebar-link-modern.active {
-      @apply bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700 hover:text-white;
-    }
-    .sidebar-link-modern.active .sidebar-icon {
-      @apply text-white/90;
-    }
-    .sidebar-icon { @apply w-4 h-4 flex-shrink-0 text-slate-400; }
-    .sidebar-link-modern:hover .sidebar-icon { @apply text-indigo-500; }
+    {# Icons - CDN #}
+    <link href="{{ asset('/cdn/css/bootstrap-icons.min.css') }}" rel="stylesheet">
 
-    /* ── Submenu ── */
-    .sidebar-submenu {
-      @apply hidden ml-7 mt-1 space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-3;
-    }
-    .sidebar-submenu.open { @apply block; }
-    .sidebar-sublink {
-      @apply block rounded-lg px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-500
-             hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-700 dark:hover:text-indigo-400
-             transition-all duration-150;
-    }
-    .sidebar-sublink.active {
-      @apply text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 font-semibold;
-    }
-    .sidebar-chevron {
-      @apply w-3.5 h-3.5 text-slate-400 ml-auto transition-transform duration-200 flex-shrink-0;
-    }
-    [aria-expanded="true"] .sidebar-chevron { @apply rotate-180; }
+    {# Third-party styles - CDN #}
+    <link href="{{ asset('/cdn/css/sweetalert2.min.css') }}" rel="stylesheet">
+    
+    {# Page-specific styles #}
+    {% block stylesheets %}{% endblock %}
 
-    /* ── Badge count pill ── */
-    .sidebar-badge {
-      @apply ml-auto inline-flex items-center justify-center min-w-[1.125rem] h-[1.125rem]
-             rounded-full bg-rose-500 text-[9px] font-bold text-white px-1 leading-none;
-    }
-
-    /* ── Topbar button ── */
-    .topbar-btn {
-      @apply inline-flex items-center justify-center rounded-xl transition-all duration-150 active:scale-95 focus-visible:outline-none;
-    }
-
-    /* ── Notification badge pulse ── */
-    @keyframes badge-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-    .badge-pulse { animation: badge-pulse 2s ease-in-out infinite; }
-
-    /* ── Scroll fade animations ── */
-    .scroll-fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; }
-    .scroll-fade-in.visible { opacity: 1; transform: none; }
-    .scroll-slide-up { opacity: 0; transform: translateY(20px); transition: opacity 0.45s ease, transform 0.45s ease; }
-    .scroll-slide-up.visible { opacity: 1; transform: none; }
-    .scroll-scale-in { opacity: 0; transform: scale(0.97); transition: opacity 0.35s ease, transform 0.35s ease; }
-    .scroll-scale-in.visible { opacity: 1; transform: none; }
-
-    /* ── User dropdown animation ── */
-    [data-admin-user-dropdown] {
-      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-      transform: translateY(-6px) scale(0.97);
-    }
-    [data-admin-user-dropdown].open {
-      opacity: 1 !important; visibility: visible !important;
-      transform: translateY(0) scale(1) !important;
-      pointer-events: auto !important;
-    }
-
-    /* ── Kbd hint ── */
-    .kbd-hint { pointer-events: none; }
-
-    /* ── Admin search focus glow ── */
-    .search-input:focus { box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
-
-    /* ── Sidebar compact mode ── */
-    #adminSidebar.compact { @apply w-[60px]; }
-    #adminSidebar.compact .sidebar-group-label,
-    #adminSidebar.compact .sidebar-sublink,
-    #adminSidebar.compact span.truncate,
-    #adminSidebar.compact .sidebar-badge,
-    #adminSidebar.compact .sidebar-chevron { @apply hidden; }
-    #adminSidebar.compact .sidebar-link-modern { @apply justify-center px-0; }
-    #adminSidebar.compact .sidebar-icon { @apply w-5 h-5; }
-    #adminSidebar.compact nav { @apply px-1; }
-  </style>
-
-  {% block stylesheets %}{% endblock %}
 </head>
+<body data-admin-dir="{{ admin_dir|default('/admin') }}">
 
-<body data-admin-dir="{{ admin_dir|default('/admin') }}"
-      class="bg-slate-50 dark:bg-slate-950 antialiased text-slate-900 dark:text-slate-100">
-<div class="min-h-screen flex flex-col">
-
-  {# ══════════════════════════════════════════
-     TOP HEADER
-  ══════════════════════════════════════════ #}
-  <header class="sticky top-0 z-40 h-14 flex items-center
-                 border-b border-slate-200/70 dark:border-slate-800/70
-                 bg-white/95 dark:bg-slate-950/95
-                 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
-    <div class="flex items-center w-full px-4 sm:px-5 gap-3">
-
-      {# Mobile toggle #}
-      <button id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="adminSidebar"
-              class="topbar-btn lg:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
-                     bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
-                     hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
-                     focus-visible:ring-2 focus-visible:ring-indigo-500/30">
-        <i class="lucide lucide-menu w-4 h-4"></i>
+  <!-- Header -->
+  <header class="navbar navbar-dark bg-dark shadow-sm sticky-top">
+    <div class="container-fluid">
+      <button class="sidebar-toggle btn btn-dark d-lg-none me-2" type="button" aria-label="Toggle sidebar">
+        <i class="bi bi-list"></i>
       </button>
-
-      {# Brand #}
-      <a href="/admin/dashboard" aria-label="Dashboard"
-         class="group flex items-center gap-2.5 flex-shrink-0 mr-1">
-        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center
-                    shadow-md shadow-indigo-500/25
-                    group-hover:bg-indigo-700 group-hover:scale-105 transition-all duration-200">
-          <i class="lucide lucide-gauge w-4 h-4 text-white"></i>
-        </div>
-        <div class="hidden sm:block leading-none">
-          <div class="text-[13px] font-bold text-slate-900 dark:text-white
-                      group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">BroxLab</div>
-          <div class="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">Admin Panel</div>
-        </div>
+      <a class="navbar-brand d-flex align-items-center" href="/admin/dashboard">
+        <i class="bi bi-speedometer2 me-2"></i> Admin Panel
       </a>
-
-      {# Divider #}
-      <div class="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-800 flex-shrink-0"></div>
-
-      {# Search #}
-      <div class="hidden lg:flex flex-1 max-w-sm relative">
-        <i class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
-        <input id="adminGlobalSearch" type="search"
-               class="search-input w-full h-9 rounded-xl border border-slate-200 dark:border-slate-700
-                      bg-slate-50 dark:bg-slate-900
-                      pl-9 pr-16 text-sm text-slate-900 dark:text-slate-100
-                      placeholder:text-slate-400 dark:placeholder:text-slate-600
-                      focus:border-indigo-400 dark:focus:border-indigo-600
-                      focus:bg-white dark:focus:bg-slate-900
-                      focus:outline-none transition-all duration-200
-                      hover:border-slate-300 dark:hover:border-slate-600"
-               placeholder="Search records…"
-               value="{{ search|default(pagination.search|default('')) }}">
-        <span class="kbd-hint absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5
-                     px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700
-                     bg-white dark:bg-slate-800 text-[9px] font-semibold text-slate-400 dark:text-slate-600"
-              aria-hidden="true">⌘K</span>
-      </div>
-
-      {# Right actions #}
-      <div class="ml-auto flex items-center gap-1">
-        {% set admin_unread_count = unread_count|default(0) %}
-
-        {# Notifications #}
-        <div class="relative">
-          <button id="adminNotificationBell" type="button" aria-expanded="false" aria-label="Notifications"
-                  title="Notifications"
-                  class="topbar-btn relative w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
-                         bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
-                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
-                         focus-visible:ring-2 focus-visible:ring-indigo-500/30">
-            <i class="lucide lucide-bell w-4 h-4"></i>
-            {% if admin_unread_count > 0 %}
-              <span class="badge-pulse absolute -top-1 -right-1 flex items-center justify-center
-                           min-w-[1.125rem] h-[1.125rem] text-[9px] font-bold text-white
-                           bg-rose-500 rounded-full px-1 shadow-sm">
-                <span id="adminNotificationCount">{{ admin_unread_count }}</span>
-              </span>
-            {% endif %}
-          </button>
-        </div>
-
-        {# Theme toggle #}
-        <button id="broxThemeToggle" type="button" title="Toggle theme" aria-label="Toggle dark mode" aria-pressed="false"
-                class="topbar-btn w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
-                       bg-white dark:bg-slate-900
-                       text-amber-500 dark:text-amber-400
-                       hover:bg-amber-50 dark:hover:bg-amber-950/30
-                       focus-visible:ring-2 focus-visible:ring-amber-500/30">
-          <i class="lucide lucide-sun dark:hidden block w-4 h-4"></i>
-          <i class="lucide lucide-moon hidden dark:block w-4 h-4"></i>
-        </button>
-
-        {# Server status #}
-        <div class="relative">
-          <button id="serverStatusIndicator" type="button" aria-expanded="false"
-                  title="Server status" aria-label="Server status"
-                  class="topbar-btn inline-flex items-center gap-1.5 h-9 px-2.5 rounded-xl
-                         border border-slate-200 dark:border-slate-700
-                         bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400
-                         hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400
-                         focus-visible:ring-2 focus-visible:ring-indigo-500/30">
-            <i class="lucide lucide-server w-3.5 h-3.5" id="serverStatusIcon"></i>
-            <span class="hidden md:inline text-xs font-medium" id="serverStatusText">Checking</span>
-            <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400/70"></i>
-          </button>
-        </div>
-
-        {# Mobile sidebar close #}
-        <button id="sidebarClose" type="button" aria-label="Close navigation"
-                class="topbar-btn lg:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700
-                       bg-white dark:bg-slate-900 text-slate-500
-                       hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 dark:hover:text-red-400
-                       focus-visible:ring-2 focus-visible:ring-red-500/30">
-          <i class="lucide lucide-x w-4 h-4"></i>
-        </button>
-
-        {# User menu #}
-        {% if auth_user.is_authenticated %}
-          <div class="relative" data-admin-user-menu>
-            <div class="hidden lg:block h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1" aria-hidden="true"></div>
-            <button id="adminUserMenu" type="button"
-                    aria-expanded="false" aria-haspopup="true"
-                    class="inline-flex items-center gap-2 h-9 px-2 rounded-xl
-                           hover:bg-slate-100 dark:hover:bg-slate-800/80
-                           transition-all duration-150 group
-                           focus-visible:ring-2 focus-visible:ring-indigo-500/30 focus-visible:outline-none">
-              <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}"
-                   alt="Profile" width="28" height="28"
-                   class="w-7 h-7 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-700
-                          group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700 transition-all">
-              <div class="hidden sm:block text-left min-w-0 max-w-[100px]">
-                <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight
-                            group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  {{ auth_user.username }}
-                </div>
-                {% if auth_user.roles is not empty %}
-                  <div class="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 truncate leading-tight">
-                    {{ auth_user.roles|first|upper }}
-                  </div>
-                {% endif %}
-              </div>
-              <i class="lucide lucide-chevron-down w-3 h-3 text-slate-400 transition-transform duration-200 group-aria-expanded:rotate-180"></i>
-            </button>
-
-            {# Dropdown #}
-            <div data-admin-user-dropdown
-                 class="absolute right-0 top-full mt-2 w-60
-                        bg-white dark:bg-slate-900
-                        rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40
-                        border border-slate-200/80 dark:border-slate-700/60
-                        divide-y divide-slate-100 dark:divide-slate-800
-                        opacity-0 invisible pointer-events-none z-50 overflow-hidden">
-
-              {# Profile header #}
-              <div class="px-4 py-4 bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900/30">
-                <div class="flex items-center gap-3">
-                  <div class="relative flex-shrink-0">
-                    <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}"
-                         alt="Profile" width="40" height="40"
-                         class="w-10 h-10 rounded-xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-sm"
-                         loading="lazy">
-                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500
-                                 border-2 border-white dark:border-slate-900"></span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ auth_user.username }}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ auth_user.email|default('') }}</div>
-                    {% if auth_user.roles is not empty %}
-                      <span class="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                                   text-[10px] font-semibold
-                                   bg-indigo-100 dark:bg-indigo-900/30
-                                   text-indigo-700 dark:text-indigo-300">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        {{ auth_user.roles|first|title }}
-                      </span>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-
-              {# Menu items #}
-              <div class="p-1.5 space-y-0.5">
-                <a href="/admin/account-settings"
-                   class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
-                          rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
-                          hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
-                  <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                    <i class="lucide lucide-settings w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
-                  </div>
-                  <span class="font-medium">Account Settings</span>
-                </a>
-                <a href="/admin/profile"
-                   class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
-                          rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
-                          hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
-                  <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                    <i class="lucide lucide-user-circle w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
-                  </div>
-                  <span class="font-medium">View Profile</span>
-                </a>
-              </div>
-
-              {# Logout #}
-              <div class="p-1.5">
-                <form method="POST" action="/logout">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button type="submit"
-                          class="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium
-                                 text-red-600 dark:text-red-400 rounded-xl
-                                 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-150 group">
-                    <div class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0
-                                group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
-                      <i class="lucide lucide-log-out w-3.5 h-3.5 text-red-500 dark:text-red-400"></i>
-                    </div>
-                    <span>Sign out</span>
-                  </button>
-                </form>
-              </div>
+      <div class="d-flex align-items-center ms-auto gap-3 admin-topbar-actions">
+        <!-- Admin Notification Bell -->
+        <div class="admin-notification-dropdown-wrap brox-notification-wrapper" data-notification-menu>
+          {% set admin_unread_count = unread_count|default(0) %}
+          <a class="admin-notification-bell"
+             href="#"
+             id="adminNotificationBell"
+             data-notification-bell
+             aria-expanded="false"
+             title="Notifications">
+            <i class="bi bi-bell-fill admin-notification-bell-icon"></i>
+            <span id="adminNotificationBadge"
+                  data-notification-badge
+                  class="admin-notification-badge {% if admin_unread_count <= 0 %}d-none{% endif %}">
+              <span id="adminNotificationCount" data-notification-count>{{ admin_unread_count }}</span>
+            </span>
+          </a>
+          <div class="admin-notification-dropdown" data-notification-dropdown aria-labelledby="adminNotificationBell">
+            <div class="admin-notification-dropdown-header">
+              <h6 class="admin-notification-dropdown-title">
+                <i class="bi bi-bell-fill me-2"></i>Notifications
+              </h6>
             </div>
+            <div id="adminNotificationsList"
+                 data-notification-list
+                 class="admin-notification-list"
+                 data-user-id="{{ auth_user.id|default('') }}">
+              {% if notifications is defined and notifications is iterable and notifications|length > 0 %}
+                {% for notif in notifications|slice(0, 10) %}
+                  <div class="notification-entry admin-notification-entry {% if notif.is_read is defined and notif.is_read == 0 %}bg-light border-start border-primary border-2{% endif %}"
+                       data-notification-id="{{ notif.id }}"
+                       {% if notif.action_url is defined and notif.action_url %}data-action-url="{{ notif.action_url }}"{% endif %}>
+                    <div class="d-flex align-items-start gap-2">
+                      <div class="flex-grow-1">
+                        <div class="fw-semibold small mb-1 admin-notification-entry-title">{{ notif.title }}</div>
+                        <div class="small text-muted mb-1 admin-notification-entry-message">{{ notif.message }}</div>
+                        <div class="small text-secondary">{{ notif.created_at|date("n/j/Y, g:i:s A") }}</div>
+                      </div>
+                      {% if notif.is_read is defined and notif.is_read == 0 %}
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary admin-notification-read-btn"
+                                data-action="mark-read"
+                                data-notification-id="{{ notif.id }}">Read</button>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="admin-notification-empty text-muted">
+                  <i class="bi bi-inbox admin-notification-empty-icon"></i>
+                  <p class="admin-notification-empty-text">No notifications yet</p>
+                </div>
+              {% endif %}
+            </div>
+            <div class="dropdown-divider admin-notification-divider"></div>
+            <a href="/admin/my/notifications" class="dropdown-item admin-notification-view-all">
+              <i class="bi bi-arrow-right me-1"></i>View all notifications
+            </a>
           </div>
+        </div>
+
+        <button
+          class="btn btn-dark btn-sm"
+          id="broxThemeToggle"
+          type="button"
+          title="Toggle theme"
+          aria-label="Toggle dark mode"
+          aria-pressed="false">
+          <i class="bi bi-circle-half"></i>
+        </button>
+
+        <!-- Server Status Indicator -->
+        <div class="server-status-indicator dropdown" id="serverStatusIndicator" data-bs-toggle="dropdown" aria-expanded="false" title="Checking server status..." aria-label="Server status">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-server" id="serverStatusIcon"></i>
+            <span class="server-status-text d-none d-md-inline ms-1" id="serverStatusText">Checking</span>
+            <i class="bi bi-chevron-down ms-1" style="font-size: 0.7rem;"></i>
+          </div>
+          <ul class="dropdown-menu server-status-dropdown" aria-labelledby="serverStatusIndicator">
+            <li class="dropdown-header">Server Status</li>
+            <li><div class="server-status-item" data-service="database">
+                <i class="bi bi-database"></i>
+                <span>Database</span>
+                <span class="status-badge" data-status="checking">Checking</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="cache">
+                <i class="bi bi-hdd-stack"></i>
+                <span>Cache</span>
+                <span class="status-badge" data-status="checking">Checking</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="api">
+                <i class="bi bi-gear"></i>
+                <span>API</span>
+                <span class="status-badge" data-status="checking">Checking</span>
+              </div></li>
+            <li><div class="server-status-item" data-service="nodejs">
+                <i class="bi bi-code-slash"></i>
+                <span>Node.js</span>
+                <span class="status-badge" data-status="checking">Checking</span>
+              </div></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><div class="server-status-item">
+                <small class="text-muted" id="serverStatusLastCheck">Last checked: Never</small>
+              </div></li>
+          </ul>
+        </div>
+        {% if auth_user.is_authenticated %}
+        <div class="dropdown admin-user-menu" data-admin-user-menu>
+          <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle admin-user-toggle"
+            href="#"
+            id="adminUserMenu"
+            data-bs-toggle="dropdown"
+            data-admin-user-toggle
+            aria-expanded="false"
+            aria-haspopup="true">
+            <img src="{{ auth_user.profile_pic|default('/assets/images/default-avatar.png') }}" alt="Profile"
+                class="rounded-circle me-2 admin-user-avatar" style="width:32px; height:32px; object-fit:cover;">
+            <div class="d-none d-sm-block text-start admin-user-meta">
+              <div class="small">{{ auth_user.username }}</div>
+              {% if auth_user.roles is not empty %}
+                <div class="small text-info">{{ auth_user.roles|join(', ')|upper }}</div>
+              {% endif %}
+            </div>
+          </a>
+          <ul class="dropdown-menu text-small admin-user-dropdown" data-admin-user-dropdown aria-labelledby="adminUserMenu">
+            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/profile"><i class="bi bi-person-circle me-1"></i> Profile</a></li>
+            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/dashboard"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
+            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/my/notifications"><i class="bi bi-bell me-1"></i> My Notifications</a></li>
+            <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/account-settings"><i class="bi bi-gear me-1"></i> Account Settings</a></li>
+
+            {% if auth_user.is_super_admin %}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/roles"><i class="bi bi-shield-lock me-1"></i> Manage Roles</a></li>
+              <li><a class="dropdown-item admin-user-dropdown-item" href="/admin/permissions"><i class="bi bi-key me-1"></i> Manage Permissions</a></li>
+            {% endif %}
+
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item admin-user-dropdown-item text-danger" href="/logout" data-unified-logout><i class="bi bi-box-arrow-right me-1"></i> Logout</a></li>
+          </ul>
+        </div>
         {% endif %}
+
       </div>
     </div>
   </header>
@@ -516,264 +371,240 @@
           }
         ] %}
 
-        {% for group in sidebar_groups %}
-          <div class="sidebar-group-label">{{ group.label }}</div>
-          {% for item in group.items %}
-            {% if item.children is defined %}
-              {% set is_child_active = false %}
+          <a class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-toggle {{ is_child_active ? 'active' }}"
+            data-bs-toggle="collapse"
+            href="#{{ prefix }}-submenu-{{ item.key }}"
+            role="button"
+            aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
+            aria-controls="{{ prefix }}-submenu-{{ item.key }}"
+            title="{{ item.name }}">
+            <i class="bi {{ item.icon }} me-2"></i>
+            <span class="sidebar-label">{{ item.name }}</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+          <div class="sidebar-submenu collapse {{ is_child_active ? 'show' }}" id="{{ prefix }}-submenu-{{ item.key }}">
+            <div class="list-group list-group-flush sidebar-submenu-list ms-3">
               {% for child in item.children %}
-                {% if current_page == child.key %}{% set is_child_active = true %}{% endif %}
+                <a href="{{ child.url }}"
+                  class="list-group-item list-group-item-action sidebar-submenu-item {{ current_page == child.key ? 'active' }}"
+                  aria-current="{{ current_page == child.key ? 'page' }}"
+                  title="{{ child.name }}">
+                  <span class="sidebar-label">{{ child.name }}</span>
+                </a>
               {% endfor %}
-              <div>
-                <button type="button"
-                        data-menu-toggle="submenu-{{ item.key }}"
-                        aria-expanded="{{ is_child_active ? 'true' : 'false' }}"
-                        aria-controls="submenu-{{ item.key }}"
-                        class="sidebar-link-modern {{ is_child_active ? 'active' : '' }}">
-                  <i class="lucide {{ item.icon }} sidebar-icon"></i>
-                  <span class="truncate">{{ item.name }}</span>
-                  <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
-                  <i class="lucide lucide-chevron-down sidebar-chevron"></i>
-                </button>
-                <div id="submenu-{{ item.key }}"
-                     class="sidebar-submenu {{ is_child_active ? 'open' : '' }}">
-                  {% for child in item.children %}
-                    <a href="{{ child.url }}"
-                       class="sidebar-sublink {{ current_page == child.key ? 'active' : '' }}"
-                       {{ current_page == child.key ? 'aria-current="page"' : '' }}>
-                      {{ child.name }}
-                    </a>
-                  {% endfor %}
-                </div>
-              </div>
-            {% else %}
-              <a href="{{ item.url }}"
-                 class="sidebar-link-modern {{ current_page == item.key ? 'active' : '' }}"
-                 {{ current_page == item.key ? 'aria-current="page"' : '' }}>
-                <i class="lucide {{ item.icon }} sidebar-icon"></i>
-                <span class="truncate">{{ item.name }}</span>
-                <span class="sidebar-badge" data-badge-key="{{ item.key }}" style="display:none"></span>
-              </a>
-            {% endif %}
-          {% endfor %}
-        {% endfor %}
-      </nav>
-    </aside>
-
-    {# Sidebar resize handle #}
-    <div id="adminColumnResizer" role="separator" aria-label="Resize sidebar"
-         aria-orientation="vertical" tabindex="0"
-         class="hidden lg:block w-px bg-slate-200 dark:bg-slate-800
-                hover:bg-indigo-500 dark:hover:bg-indigo-500
-                cursor-col-resize transition-colors duration-150 flex-shrink-0">
+            </div>
+          </div>
+        {% else %}
+          <a href="{{ item.url }}"
+            class="list-group-item list-group-item-action d-flex align-items-center sidebar-menu-link {{ current_page == item.key ? 'active' }}"
+            aria-current="{{ current_page == item.key ? 'page' }}"
+            title="{{ item.name }}">
+            <i class="bi {{ item.icon }} me-2"></i>
+            <span class="sidebar-label">{{ item.name }}</span>
+          </a>
+        {% endif %}
+      {% endfor %}
     </div>
+  {% endmacro %}
 
-    {# ══════════════════════════════════════════
-       MAIN CONTENT
-    ══════════════════════════════════════════ #}
-    <main class="flex-1 overflow-auto
-                 bg-slate-50 dark:bg-slate-950
-                 min-h-0"
-          role="main">
-      <div class="admin-content-inner px-4 sm:px-6 lg:px-8 py-5 mx-auto max-w-[1520px]">
+  {% import _self as menus %}
+
+  {# Unified Responsive Sidebar #}
+  <div class="sidebar col-lg-3 col-xl-2 bg-white shadow-sm">
+    <div class="sidebar-header d-lg-none p-3 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="m-0 fw-bold">Menu</h5>
+      <button type="button" class="modern-btn-close sidebar-close"></button>
+    </div>
+    <div class="p-3">
+      <div class="d-none d-lg-flex align-items-center justify-content-end mb-2">
+        <button
+          type="button"
+          class="sidebar-mini-toggle btn btn-sm btn-outline-secondary"
+          aria-label="Toggle compact sidebar"
+          title="Toggle compact sidebar"
+          aria-pressed="false"
+          aria-expanded="false">
+          <i class="bi bi-layout-sidebar-inset-reverse"></i>
+        </button>
+      </div>
+      {{ menus.render_menu(menu_items, current_page, 'main') }}
+    </div>
+  </div>
+  
+  {# Sidebar overlay for mobile - toggles with sidebar #}
+  <div class="sidebar-overlay"></div>
+  
+  <div class="admin-column-resizer d-none d-lg-flex"
+       id="adminColumnResizer"
+       role="separator"
+       aria-label="Resize sidebar"
+       title="↔ Drag to resize • ⟲ Double-click to reset"
+       data-tooltip="↔ Drag to resize • ⟲ Double-click to reset"
+       aria-orientation="vertical"
+       tabindex="0"></div>
+
+      <!-- Main content -->
+      <main class="col-12 col-lg-9 col-xl-10 py-4 admin-main">
         {% if skip_auto_breadcrumb is not defined or skip_auto_breadcrumb == false %}
-          {% if breadcrumbs is not defined %}
-            {% set breadcrumbs = auto_admin_breadcrumbs() %}
-          {% endif %}
-          {% include 'admin/partials/breadcrumb.twig' %}
+            {% if breadcrumbs is not defined %}
+                {% set breadcrumbs = auto_admin_breadcrumbs() %}
+            {% endif %}
+            {% include 'admin/partials/breadcrumb.twig' %}
         {% endif %}
 
         {% set flash_data = flash_message|default(flash|default(null)) %}
         {{ flash_macros.render_flash(flash_data) }}
         {% include 'admin/partials/_offline_draft_recover.twig' %}
+        
+        {% block content %}
+        {% endblock %}
+      </main>
 
-        {% block content %}{% endblock %}
-      </div>
-    </main>
+    </div>
   </div>
 
-  {# ══════════════════════════════════════════
-     FOOTER
-  ══════════════════════════════════════════ #}
-  <footer class="border-t border-slate-200/60 dark:border-slate-800/60
-                 bg-white dark:bg-slate-950
-                 px-4 sm:px-6 lg:px-8 py-3">
-    <div class="mx-auto max-w-[1520px] flex flex-col sm:flex-row items-center justify-between gap-2">
-      <span class="text-xs text-slate-400 dark:text-slate-600">
-        &copy; {{ "now"|date("Y") }} BroxLab Admin. All rights reserved.
-      </span>
-      <span class="text-xs text-slate-300 dark:text-slate-700">
-        v{{ app_settings.version|default('2.0') }}
-      </span>
-    </div>
+  <!-- Footer -->
+  <footer class="bg-dark text-white text-center py-3 mt-auto">
+    &copy; {{ "now"|date("Y") }} Admin Panel. All rights reserved.
   </footer>
-</div>
 
-<script>
-  window.__APP_JS_CONFIG_OVERRIDES = {
-    notifications: {
-      websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
-    }
-  };
-</script>
-<script type="module" src="{{ asset('/assets/js/dist/app-config.js') }}"></script>
-<script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
-<script type="module" src="{{ asset('/assets/js/dist/brox-ui.js') }}"></script>
-<script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
-<script type="module" src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/admin.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/admin-cv.js') }}"></script>
-<script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
-<script type="module" src="{{ asset('/assets/js/modules/admin-sidebar-polish.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/activity.js') }}"></script>
+  {# Footer scripts #}
+  {# jQuery for legacy code compatibility - load before other scripts #}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  'use strict';
-
-  /* ── Scroll animations (handled by admin-sidebar-polish.js for sidebar) ── */
-  (function () {
-    var els = document.querySelectorAll('.scroll-fade-in, .scroll-slide-up, .scroll-scale-in');
-    if (!els.length) return;
-    if (!('IntersectionObserver' in window)) {
-      els.forEach(function (el) { el.classList.add('visible'); });
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          io.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: '0px 0px -60px 0px', threshold: 0.08 });
-    els.forEach(function (el) { io.observe(el); });
-  })();
-
-  /* ── User dropdown (NOT handled by admin-sidebar-polish.js) ── */
-  (function () {
-    var trigger = document.getElementById('adminUserMenu');
-    var dropdown = document.querySelector('[data-admin-user-dropdown]');
-    if (!trigger || !dropdown) return;
-    function toggleDropdown(force) {
-      var open = typeof force === 'boolean' ? force : !dropdown.classList.contains('open');
-      dropdown.classList.toggle('open', open);
-      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    trigger.addEventListener('click', function (e) { e.stopPropagation(); toggleDropdown(); });
-    document.addEventListener('click', function (e) {
-      if (!trigger.contains(e.target) && !dropdown.contains(e.target)) toggleDropdown(false);
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') toggleDropdown(false);
-    });
-  })();
-
-  /* ── Theme toggle aria-pressed sync ── */
-  (function () {
-    var themeBtn = document.getElementById('broxThemeToggle');
-    if (!themeBtn) return;
-    function syncThemeState() {
-      var theme = document.documentElement.getAttribute('data-theme');
-      var isDark = theme === 'dark';
-      themeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-    }
-    syncThemeState();
-    // Watch data-theme attribute mutations — covers all theme change sources
-    var observer = new MutationObserver(function () { syncThemeState(); });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  })();
-
-  /* ── Notification bell ARIA state ── */
-  (function () {
-    var notifBtn = document.getElementById('adminNotificationBell');
-    if (!notifBtn) return;
-    // Listen for notification panel open/close events
-    document.addEventListener('notif-panel-toggle', function (e) {
-      notifBtn.setAttribute('aria-expanded', e.detail && e.detail.open ? 'true' : 'false');
-    });
-  })();
-
-  /* ── Server status indicator ARIA state ── */
-  (function () {
-    var statusBtn = document.getElementById('serverStatusIndicator');
-    if (!statusBtn) return;
-    document.addEventListener('server-status-toggle', function (e) {
-      statusBtn.setAttribute('aria-expanded', e.detail && e.detail.open ? 'true' : 'false');
-    });
-  })();
-
-  /* ── Sidebar toggle button initial aria state ── */
-  (function () {
-    var toggleBtn = document.getElementById('sidebarToggle');
-    if (toggleBtn) {
-      // Ensure initial state reflects sidebar visibility
-      var sidebar = document.getElementById('adminSidebar');
-      var isVisible = sidebar && !sidebar.classList.contains('-translate-x-full');
-      toggleBtn.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
-    }
-    // Close button — aria state only; actual sidebar close handled by admin-sidebar-polish.js
-    var closeBtn = document.getElementById('sidebarClose');
-    if (closeBtn && toggleBtn) {
-      closeBtn.addEventListener('click', function () {
-        toggleBtn.setAttribute('aria-expanded', 'false');
-      });
-    }
-  })();
-
-  /* ── Table select-all (for admin tables) ── */
-  (function () {
-    var adminMain = document.querySelector('main[role="main"]');
-    if (!adminMain) return;
-    adminMain.querySelectorAll('table').forEach(function (table) {
-      var selectAll = table.querySelector('thead [data-select-all-checkbox]');
-      var items = Array.from(table.querySelectorAll('tbody input[type="checkbox"].item-checkbox'));
-      if (!selectAll || !items.length) return;
-      if (selectAll.dataset.selectAllWired === '1') return;
-      selectAll.dataset.selectAllWired = '1';
-      function updateHeader() {
-        var enabled = items.filter(function (cb) { return !cb.disabled; });
-        var checked = enabled.filter(function (cb) { return cb.checked; });
-        selectAll.indeterminate = enabled.length > 0 && checked.length > 0 && checked.length < enabled.length;
-        selectAll.checked = enabled.length > 0 && checked.length === enabled.length;
+  <script>
+    window.__APP_JS_CONFIG_OVERRIDES = {
+      notifications: {
+        websocketUrl: {{ env('WEBSOCKET_SERVER_URL', '') | json_encode | raw }}
       }
-      selectAll.addEventListener('change', function () {
-        items.forEach(function (cb) { if (!cb.disabled) cb.checked = !!selectAll.checked; });
-        updateHeader();
-      });
-      items.forEach(function (cb) { cb.addEventListener('change', updateHeader); });
-      updateHeader();
-    });
-  })();
+    };
+  </script>
+  <script src="{{ asset('/assets/js/dist/app-config.js') }}" defer></script>
+  <script src="{{ asset('/assets/firebase/v2/dist/firebase-config.js') }}" defer></script>
 
-  /* ── Sidebar badge counts (handled separately from admin-sidebar-polish.js) ── */
-  (function () {
-    fetch('/api/admin/sidebar-counts')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success || !data.counts) return;
-        document.querySelectorAll('.sidebar-badge[data-badge-key]').forEach(function (badge) {
-          var count = data.counts[badge.getAttribute('data-badge-key')];
-          if (typeof count === 'number' && count > 0) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = 'inline-flex';
+  <script src="{{ asset('/assets/js/dist/bootstrap-lite.js') }}" defer></script>
+
+  {# SweetAlert2 + global flash handler #}
+  <script src="{{ asset('/cdn/js/sweetalert2.all.min.js') }}" defer></script>
+  <script src="{{ asset('/assets/js/dist/sweetalert2-handler.js') }}" defer></script>
+
+  {# Feature scripts #}
+  {# Datepicker Library #}
+  <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
+  <script src="{{ asset('/assets/datepicker/datepicker.js') }}" defer></script>
+  <script src="{{ asset('/assets/js/dist/datepicker.js') }}" defer></script>
+
+  <script type="module" src="{{ asset('/assets/js/dist/theme-manager.js') }}" defer></script>
+
+   {# Admin scripts #}
+   <script type="module" src="{{ asset('/assets/js/dist/admin.js') }}" defer></script>
+   <script src="{{ asset('/assets/js/dist/activity.js') }}" defer></script>
+
+  {# Listing tables: select-all checkbox + row selection wiring #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const adminMain = document.querySelector('main.admin-main');
+      if (!adminMain) return;
+
+      const ensureSelectAllHeader = function (table) {
+        if (!table || !(table instanceof HTMLElement)) return null;
+
+        const hasRowCheckbox = table.querySelector('tbody input[type="checkbox"].item-checkbox');
+        const existingSelectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+
+        // If table already has selection column, keep as-is.
+        if (existingSelectAll || hasRowCheckbox) {
+          return existingSelectAll || table.querySelector('thead input.table-select-checkbox');
+        }
+
+        const theadRow = table.querySelector('thead tr');
+        if (!theadRow) return null;
+
+        // Only auto-inject for "listing-like" tables.
+        const thTexts = Array.from(theadRow.querySelectorAll('th')).map(th => (th.textContent || '').trim().toLowerCase());
+        const isListing = thTexts.includes('actions') || thTexts.includes('action') || table.classList.contains('table-hover');
+        if (!isListing) return null;
+
+        const th = document.createElement('th');
+        th.style.width = '40px';
+        th.className = 'text-center';
+        th.innerHTML = '<input type="checkbox" id="select-all-checkbox" class="form-check-input table-select-checkbox">';
+        theadRow.insertBefore(th, theadRow.firstChild);
+
+        // Add disabled row checkboxes (no reliable id/value on generic tables).
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+          const cells = tr.querySelectorAll('td');
+          if (cells.length === 1 && cells[0] && cells[0].hasAttribute('colspan')) {
+            return;
           }
+
+          let rowId = (tr.getAttribute('data-id') || tr.getAttribute('data-row-id') || '').trim();
+          if (!rowId) {
+            const firstCell = tr.querySelector('td');
+            const txt = firstCell ? (firstCell.textContent || '').trim() : '';
+            const m = txt.match(/(\d{1,12})/);
+            rowId = m ? m[1] : '';
+          }
+
+          const td = document.createElement('td');
+          td.className = 'text-center';
+          if (rowId) {
+            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" value="' + rowId.replace(/\"/g, '"') + '">';
+          } else {
+            td.innerHTML = '<input type="checkbox" class="form-check-input table-select-checkbox item-checkbox" disabled>';
+          }
+          tr.insertBefore(td, tr.firstChild);
         });
-      })
-      .catch(function () {});
-  })();
 
-});
-</script>
+        return th.querySelector('input#select-all-checkbox');
+      };
 
-{% block scripts %}{% endblock %}
+      const wireTableSelection = function (table) {
+        const selectAll = table.querySelector('thead input#select-all-checkbox.table-select-checkbox');
+        const items = Array.from(table.querySelectorAll('tbody input[type=\"checkbox\"].item-checkbox'));
+        if (!selectAll || items.length === 0) return;
 
-<script type="module" src="{{ asset('/assets/js/dist/assistant-shell.js') }}"></script>
-<script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
+        if (selectAll.dataset.skipGlobalSelectAll === '1') return;
+        if (selectAll.dataset.selectAllWired === '1') return;
+        selectAll.dataset.selectAllWired = '1';
 
-{% set assistant_variant = 'admin' %}
-{% include 'partials/ai-assistant/assistant.twig' %}
+        const updateHeader = function () {
+          const enabledItems = items.filter(cb => !cb.disabled);
+          const total = enabledItems.length;
+          const checked = enabledItems.filter(cb => cb.checked).length;
+
+          selectAll.indeterminate = total > 0 && checked > 0 && checked < total;
+          selectAll.checked = total > 0 && checked === total;
+        };
+
+        selectAll.addEventListener('change', function () {
+          const enabledItems = items.filter(cb => !cb.disabled);
+          enabledItems.forEach(function (cb) {
+            cb.checked = !!selectAll.checked;
+          });
+          updateHeader();
+        });
+
+        items.forEach(function (cb) {
+          cb.addEventListener('change', updateHeader);
+        });
+
+        updateHeader();
+      };
+
+      adminMain.querySelectorAll('table').forEach(function (table) {
+        ensureSelectAllHeader(table);
+        wireTableSelection(table);
+      });
+    });
+  </script>
+
+  {% block scripts %}{% endblock %}
+
+  {# Admin Assistant UI #}
+  {% set assistant_variant = 'admin' %}
+{% include 'partials/ai-assistant/admin.twig' %}
+{% include 'partials/ai-assistant/script.twig' %}
+{% include 'partials/ai-assistant/admin-button.twig' %}
 </body>
 </html>

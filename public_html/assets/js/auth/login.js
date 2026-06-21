@@ -9,370 +9,374 @@
  */
 
 import AuthUIHandler from '/assets/firebase/v2/dist/auth-ui-handler.js';
-import { runWhenReady } from '../modules/utils.js';
 
-// ============ REDIRECT URL HANDLING ============
-// Check for stored redirect URL from session timeout
-const REDIRECT_STORAGE_KEY = 'login_redirect_url';
-
-function getSafeRedirectUrl(rawUrl) {
-  const urlValue = String(rawUrl || '').trim();
-  if (!urlValue) return null;
-
-  try {
-    const parsed = new URL(urlValue, window.location.origin);
-    if (parsed.origin !== window.location.origin) return null;
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return null;
+const runWhenReady = (fn) => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fn, { once: true });
+  } else {
+    fn();
   }
-}
-
-function handleStoredRedirectUrl() {
-  const form = document.querySelector('#loginForm');
-  if (!form) return;
-
-  // Check if there's a stored URL from previous session
-  const storedUrl = getSafeRedirectUrl(sessionStorage.getItem(REDIRECT_STORAGE_KEY));
-  const currentRedirect = form.dataset.redirectUrl;
-
-  // If no redirect set in template, use stored URL
-  if (!currentRedirect && storedUrl) {
-    form.dataset.redirectUrl = storedUrl;
-  }
-
-  // Also check URL query param
-  const urlParams = new URLSearchParams(window.location.search);
-  const returnUrl = getSafeRedirectUrl(urlParams.get('return_url') || urlParams.get('redirect'));
-  if (returnUrl && !currentRedirect) {
-    form.dataset.redirectUrl = returnUrl;
-  }
-
-  // Clear stored URL after use
-  sessionStorage.removeItem(REDIRECT_STORAGE_KEY);
-}
-
-// Store current URL for redirect after login (for session timeout scenarios)
-window.storeLoginRedirectUrl = function (url) {
-  sessionStorage.setItem(REDIRECT_STORAGE_KEY, getSafeRedirectUrl(url) || window.location.href);
 };
 
-// ============ SELECTORS ============
-const SELECTORS = {
-  // Form elements
-  form: '#loginForm',
-  usernameInput: '#username',
-  passwordInput: '#password',
-  passwordToggle: '#passwordToggle',
-  rememberMe: '#remember_me',
+(function () {
+  'use strict';
 
-  // OAuth buttons
-  googleAuthBtn: '#auth-google-btn',
-  facebookAuthBtn: '#auth-facebook-btn',
-  guestAuthBtn: '#auth-guest-btn',
-  authButtons: '#auth-buttons',
-  authCard: '.auth-card',
+  // ============ REDIRECT URL HANDLING ============
+  // Check for stored redirect URL from session timeout
+  const REDIRECT_STORAGE_KEY = 'login_redirect_url';
 
-  // Status display
-  statusDisplay: '#oauth-status',
+  function getSafeRedirectUrl(rawUrl) {
+    const urlValue = String(rawUrl || '').trim();
+    if (!urlValue) return null;
 
-  // Container
-  loginContainer: '.login-container',
-};
-
-// ============ UI STATE ============
-const elements = {
-  form: null,
-  usernameInput: null,
-  passwordInput: null,
-  passwordToggle: null,
-  rememberMe: null,
-  googleAuthBtn: null,
-  facebookAuthBtn: null,
-  guestAuthBtn: null,
-  authButtons: null,
-  authCard: null,
-  statusDisplay: null,
-};
-
-// ============ CACHE DOM ============
-function cacheElements() {
-  elements.form = document.querySelector(SELECTORS.form);
-  elements.usernameInput = document.querySelector(SELECTORS.usernameInput);
-  elements.passwordInput = document.querySelector(SELECTORS.passwordInput);
-  elements.passwordToggle = document.querySelector(SELECTORS.passwordToggle);
-  elements.rememberMe = document.querySelector(SELECTORS.rememberMe);
-  elements.googleAuthBtn = document.querySelector(SELECTORS.googleAuthBtn);
-  elements.facebookAuthBtn = document.querySelector(SELECTORS.facebookAuthBtn);
-  elements.guestAuthBtn = document.querySelector(SELECTORS.guestAuthBtn);
-  elements.authButtons = document.querySelector(SELECTORS.authButtons);
-  elements.authCard = document.querySelector(SELECTORS.authCard);
-  elements.statusDisplay = document.querySelector(SELECTORS.statusDisplay);
-}
-
-// ============ STATUS DISPLAY ============
-function showStatus(message, type = 'info') {
-  if (!elements.statusDisplay) return;
-
-  elements.statusDisplay.textContent = message;
-  elements.statusDisplay.className = `auth-response auth-response--${type}`;
-  elements.statusDisplay.setAttribute('role', 'status');
-  elements.statusDisplay.setAttribute('aria-live', 'polite');
-  elements.statusDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest', });
-}
-
-function clearStatus() {
-  if (!elements.statusDisplay) return;
-  elements.statusDisplay.textContent = '';
-  elements.statusDisplay.className = 'auth-response auth-response-hidden';
-}
-
-function getOAuthButtons() {
-  return [
-    elements.googleAuthBtn,
-    elements.facebookAuthBtn,
-    elements.guestAuthBtn,
-  ].filter(Boolean);
-}
-
-function setOAuthLoadingState(activeButton) {
-  if (!activeButton) return;
-
-  const buttons = getOAuthButtons();
-  if (elements.authCard) {
-    elements.authCard.classList.add('auth-card--oauth-loading');
-  }
-  if (elements.authButtons) {
-    elements.authButtons.classList.add('auth-buttons--busy');
+    try {
+      const parsed = new URL(urlValue, window.location.origin);
+      if (parsed.origin !== window.location.origin) return null;
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return null;
+    }
   }
 
-  buttons.forEach((btn) => {
-    if (!btn.dataset.originalHtml) {
-      btn.dataset.originalHtml = btn.innerHTML;
+  function handleStoredRedirectUrl() {
+    const form = document.querySelector('#loginForm');
+    if (!form) return;
+
+    // Check if there's a stored URL from previous session
+    const storedUrl = getSafeRedirectUrl(sessionStorage.getItem(REDIRECT_STORAGE_KEY));
+    const currentRedirect = form.dataset.redirectUrl;
+
+    // If no redirect set in template, use stored URL
+    if (!currentRedirect && storedUrl) {
+      form.dataset.redirectUrl = storedUrl;
     }
 
-    const isActive = btn === activeButton;
-    btn.disabled = true;
-    btn.classList.toggle('auth-btn--loading', isActive);
-    btn.setAttribute('aria-busy', isActive ? 'true' : 'false');
-
-    if (isActive) {
-      btn.innerHTML = '<span class="inline-spinner inline-spinner-sm" role="status" aria-hidden="true"></span>';
+    // Also check URL query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnUrl = getSafeRedirectUrl(urlParams.get('return_url') || urlParams.get('redirect'));
+    if (returnUrl && !currentRedirect) {
+      form.dataset.redirectUrl = returnUrl;
     }
-  });
-}
 
-function clearOAuthLoadingState() {
-  const buttons = getOAuthButtons();
-
-  if (elements.authCard) {
-    elements.authCard.classList.remove('auth-card--oauth-loading');
-  }
-  if (elements.authButtons) {
-    elements.authButtons.classList.remove('auth-buttons--busy');
+    // Clear stored URL after use
+    sessionStorage.removeItem(REDIRECT_STORAGE_KEY);
   }
 
-  buttons.forEach((btn) => {
-    btn.disabled = false;
-    btn.classList.remove('auth-btn--loading');
-    btn.removeAttribute('aria-busy');
-
-    if (btn.dataset.originalHtml) {
-      btn.innerHTML = btn.dataset.originalHtml;
-    }
-  });
-}
-
-function showInitialStatusFromServer() {
-  if (!elements.statusDisplay) return;
-
-  const message = (elements.statusDisplay.dataset.initialMessage || '').trim();
-  if (!message) return;
-
-  const rawType = (elements.statusDisplay.dataset.initialType || 'danger').trim().toLowerCase();
-  const safeType = ['success', 'danger', 'warning', 'info',].includes(rawType) ? rawType : 'danger';
-  showStatus(message, safeType);
-}
-
-// ============ PASSWORD TOGGLE ============
-function initPasswordToggle() {
-  if (!elements.passwordToggle || !elements.passwordInput) return;
-
-  const updateIcon = (isPassword) => {
-    // Remove all lucide icons and replace with correct one
-    const iconName = isPassword ? 'eye' : 'eye-off';
-    elements.passwordToggle.innerHTML = `<i class="lucide lucide-${iconName} w-5 h-5"></i>`;
-    elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Show password' : 'Hide password');
-    elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'false' : 'true');
+  // Store current URL for redirect after login (for session timeout scenarios)
+  window.storeLoginRedirectUrl = function (url) {
+    sessionStorage.setItem(REDIRECT_STORAGE_KEY, getSafeRedirectUrl(url) || window.location.href);
   };
 
-  const toggle = () => {
-    const isPassword = elements.passwordInput.type === 'password';
-    elements.passwordInput.type = isPassword ? 'text' : 'password';
-    updateIcon(isPassword);
-    elements.passwordInput.focus();
+  // ============ SELECTORS ============
+  const SELECTORS = {
+    // Form elements
+    form: '#loginForm',
+    usernameInput: '#username',
+    passwordInput: '#password',
+    passwordToggle: '#passwordToggle',
+    rememberMe: '#remember_me',
+
+    // OAuth buttons
+    googleAuthBtn: '#auth-google-btn',
+    facebookAuthBtn: '#auth-facebook-btn',
+    guestAuthBtn: '#auth-guest-btn',
+    authButtons: '#auth-buttons',
+    authCard: '.auth-card',
+
+    // Status display
+    statusDisplay: '#oauth-status',
+
+    // Container
+    loginContainer: '.login-container',
   };
 
-  // Initialize icon
-  updateIcon(true);
+  // ============ UI STATE ============
+  const elements = {
+    form: null,
+    usernameInput: null,
+    passwordInput: null,
+    passwordToggle: null,
+    rememberMe: null,
+    googleAuthBtn: null,
+    facebookAuthBtn: null,
+    guestAuthBtn: null,
+    authButtons: null,
+    authCard: null,
+    statusDisplay: null,
+  };
 
-  elements.passwordToggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggle();
-  });
+  // ============ CACHE DOM ============
+  function cacheElements() {
+    elements.form = document.querySelector(SELECTORS.form);
+    elements.usernameInput = document.querySelector(SELECTORS.usernameInput);
+    elements.passwordInput = document.querySelector(SELECTORS.passwordInput);
+    elements.passwordToggle = document.querySelector(SELECTORS.passwordToggle);
+    elements.rememberMe = document.querySelector(SELECTORS.rememberMe);
+    elements.googleAuthBtn = document.querySelector(SELECTORS.googleAuthBtn);
+    elements.facebookAuthBtn = document.querySelector(SELECTORS.facebookAuthBtn);
+    elements.guestAuthBtn = document.querySelector(SELECTORS.guestAuthBtn);
+    elements.authButtons = document.querySelector(SELECTORS.authButtons);
+    elements.authCard = document.querySelector(SELECTORS.authCard);
+    elements.statusDisplay = document.querySelector(SELECTORS.statusDisplay);
+  }
 
-  elements.passwordToggle.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+  // ============ STATUS DISPLAY ============
+  function showStatus(message, type = 'info') {
+    if (!elements.statusDisplay) return;
+
+    elements.statusDisplay.textContent = message;
+    elements.statusDisplay.className = `auth-response auth-response--${type}`;
+    elements.statusDisplay.setAttribute('role', 'status');
+    elements.statusDisplay.setAttribute('aria-live', 'polite');
+    elements.statusDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest', });
+  }
+
+  function clearStatus() {
+    if (!elements.statusDisplay) return;
+    elements.statusDisplay.textContent = '';
+    elements.statusDisplay.className = 'auth-response auth-response-hidden';
+  }
+
+  function getOAuthButtons() {
+    return [
+      elements.googleAuthBtn,
+      elements.facebookAuthBtn,
+      elements.guestAuthBtn,
+    ].filter(Boolean);
+  }
+
+  function setOAuthLoadingState(activeButton) {
+    if (!activeButton) return;
+
+    const buttons = getOAuthButtons();
+    if (elements.authCard) {
+      elements.authCard.classList.add('auth-card--oauth-loading');
+    }
+    if (elements.authButtons) {
+      elements.authButtons.classList.add('auth-buttons--busy');
+    }
+
+    buttons.forEach((btn) => {
+      if (!btn.dataset.originalHtml) {
+        btn.dataset.originalHtml = btn.innerHTML;
+      }
+
+      const isActive = btn === activeButton;
+      btn.disabled = true;
+      btn.classList.toggle('auth-btn--loading', isActive);
+      btn.setAttribute('aria-busy', isActive ? 'true' : 'false');
+
+      if (isActive) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+      }
+    });
+  }
+
+  function clearOAuthLoadingState() {
+    const buttons = getOAuthButtons();
+
+    if (elements.authCard) {
+      elements.authCard.classList.remove('auth-card--oauth-loading');
+    }
+    if (elements.authButtons) {
+      elements.authButtons.classList.remove('auth-buttons--busy');
+    }
+
+    buttons.forEach((btn) => {
+      btn.disabled = false;
+      btn.classList.remove('auth-btn--loading');
+      btn.removeAttribute('aria-busy');
+
+      if (btn.dataset.originalHtml) {
+        btn.innerHTML = btn.dataset.originalHtml;
+      }
+    });
+  }
+
+  function showInitialStatusFromServer() {
+    if (!elements.statusDisplay) return;
+
+    const message = (elements.statusDisplay.dataset.initialMessage || '').trim();
+    if (!message) return;
+
+    const rawType = (elements.statusDisplay.dataset.initialType || 'danger').trim().toLowerCase();
+    const safeType = ['success', 'danger', 'warning', 'info',].includes(rawType) ? rawType : 'danger';
+    showStatus(message, safeType);
+  }
+
+  // ============ PASSWORD TOGGLE ============
+  function initPasswordToggle() {
+    if (!elements.passwordToggle || !elements.passwordInput) return;
+
+    const toggle = () => {
+      const isPassword = elements.passwordInput.type === 'password';
+      elements.passwordInput.type = isPassword ? 'text' : 'password';
+      elements.passwordToggle.className = isPassword
+        ? 'bi bi-eye-slash password-toggle'
+        : 'bi bi-eye password-toggle';
+      elements.passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      elements.passwordToggle.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+      elements.passwordInput.focus();
+    };
+
+    elements.passwordToggle.addEventListener('click', (e) => {
       e.preventDefault();
       toggle();
-    }
-  });
-}
-
-// ============ LOCAL AUTH (EMAIL/PASSWORD) ============
-function initFormHandler() {
-  if (!elements.form) return;
-
-  elements.form.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const username = elements.usernameInput?.value.trim();
-    const password = elements.passwordInput?.value;
-
-    if (!username || !password) {
-      showStatus('Please enter both email/username and password', 'warning');
-      return;
-    }
-
-    // Form will submit to backend (traditional POST)
-    // Backend handles email/password verification
-    this.submit();
-  });
-}
-
-// ============ OAUTH HANDLERS ============
-async function handleGoogleAuth() {
-  setOAuthLoadingState(elements.googleAuthBtn);
-  try {
-    const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
-    await AuthUIHandler.signInWithGoogle({
-      redirectTo: redirectUrl,
     });
-  } catch (error) {
-    clearOAuthLoadingState();
-    console.error('Google auth error:', error);
-  }
-}
 
-async function handleFacebookAuth() {
-  setOAuthLoadingState(elements.facebookAuthBtn);
-  try {
-    const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
-    await AuthUIHandler.signInWithFacebook({
-      redirectTo: redirectUrl,
-    });
-  } catch (error) {
-    clearOAuthLoadingState();
-    console.error('Facebook auth error:', error);
-  }
-}
-
-async function handleGuestAuth() {
-  setOAuthLoadingState(elements.guestAuthBtn);
-  try {
-    const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
-    await AuthUIHandler.signInAnonymous({
-      redirectTo: redirectUrl,
-    });
-  } catch (error) {
-    clearOAuthLoadingState();
-    console.error('Guest auth error:', error);
-  }
-}
-
-function initOAuthButtons() {
-  if (elements.googleAuthBtn) {
-    elements.googleAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleGoogleAuth();
-    });
-    elements.googleAuthBtn.setAttribute('data-auth-provider', 'google');
-  }
-
-  if (elements.facebookAuthBtn) {
-    elements.facebookAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleFacebookAuth();
-    });
-    elements.facebookAuthBtn.setAttribute('data-auth-provider', 'facebook');
-  }
-
-  if (elements.guestAuthBtn) {
-    elements.guestAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleGuestAuth();
-    });
-    elements.guestAuthBtn.setAttribute('data-auth-provider', 'anonymous');
-  }
-}
-
-// ============ SETUP CALLBACKS ============
-function setupAuthCallbacks() {
-  AuthUIHandler.setAllCallbacks({
-    onStatus: showStatus,
-    onSuccess: (_result) => {
-      clearOAuthLoadingState();
-      clearStatus();
-      showStatus('Login successful! Redirecting...', 'success');
-      // fallback redirect in case handler doesn't perform it
-      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
-      if (redirectUrl) {
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 500);
+    elements.passwordToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
       }
-    },
-    onConflict: (_conflict, _provider, _user) => {
+    });
+  }
+
+  // ============ LOCAL AUTH (EMAIL/PASSWORD) ============
+  function initFormHandler() {
+    if (!elements.form) return;
+
+    elements.form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const username = elements.usernameInput?.value.trim();
+      const password = elements.passwordInput?.value;
+
+      if (!username || !password) {
+        showStatus('Please enter both email/username and password', 'warning');
+        return;
+      }
+
+      // Form will submit to backend (traditional POST)
+      // Backend handles email/password verification
+      this.submit();
+    });
+  }
+
+  // ============ OAUTH HANDLERS ============
+  async function handleGoogleAuth() {
+    setOAuthLoadingState(elements.googleAuthBtn);
+    try {
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
+      await AuthUIHandler.signInWithGoogle({
+        redirectTo: redirectUrl,
+      });
+    } catch (error) {
       clearOAuthLoadingState();
-      showStatus('This email is linked to another account. Please use that provider to sign in.', 'warning');
-      // Could open modal to resolve conflict
-    },
-    onError: (error) => {
+      console.error('Google auth error:', error);
+    }
+  }
+
+  async function handleFacebookAuth() {
+    setOAuthLoadingState(elements.facebookAuthBtn);
+    try {
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
+      await AuthUIHandler.signInWithFacebook({
+        redirectTo: redirectUrl,
+      });
+    } catch (error) {
       clearOAuthLoadingState();
-      // Suppress non-critical Firebase/X-Frame-Options errors
-      const errorMsg = error?.message || '';
-      const isIframeBlocked = errorMsg.includes('X-Frame-Options') ||
+      console.error('Facebook auth error:', error);
+    }
+  }
+
+  async function handleGuestAuth() {
+    setOAuthLoadingState(elements.guestAuthBtn);
+    try {
+      const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
+      await AuthUIHandler.signInAnonymous({
+        redirectTo: redirectUrl,
+      });
+    } catch (error) {
+      clearOAuthLoadingState();
+      console.error('Guest auth error:', error);
+    }
+  }
+
+  function initOAuthButtons() {
+    if (elements.googleAuthBtn) {
+      elements.googleAuthBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleGoogleAuth();
+      });
+      elements.googleAuthBtn.setAttribute('data-auth-provider', 'google');
+    }
+
+    if (elements.facebookAuthBtn) {
+      elements.facebookAuthBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleFacebookAuth();
+      });
+      elements.facebookAuthBtn.setAttribute('data-auth-provider', 'facebook');
+    }
+
+    if (elements.guestAuthBtn) {
+      elements.guestAuthBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleGuestAuth();
+      });
+      elements.guestAuthBtn.setAttribute('data-auth-provider', 'anonymous');
+    }
+  }
+
+  // ============ SETUP CALLBACKS ============
+  function setupAuthCallbacks() {
+    AuthUIHandler.setAllCallbacks({
+      onStatus: showStatus,
+      onSuccess: (_result) => {
+        clearOAuthLoadingState();
+        clearStatus();
+        showStatus('Login successful! Redirecting...', 'success');
+        // fallback redirect in case handler doesn't perform it
+        const redirectUrl = getSafeRedirectUrl(elements.form?.dataset.redirectUrl) || '/user/dashboard';
+        if (redirectUrl) {
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 500);
+        }
+      },
+      onConflict: (_conflict, _provider, _user) => {
+        clearOAuthLoadingState();
+        showStatus('This email is linked to another account. Please use that provider to sign in.', 'warning');
+        // Could open modal to resolve conflict
+      },
+      onError: (error) => {
+        clearOAuthLoadingState();
+        // Suppress non-critical Firebase/X-Frame-Options errors
+        const errorMsg = error?.message || '';
+        const isIframeBlocked = errorMsg.includes('X-Frame-Options') ||
                     errorMsg.includes('auth/iframe');
 
-      if (!isIframeBlocked) {
-        console.error('Auth error:', error);
-      }
-      // Status already shown by handler - popup-closed shows 'Sign-in cancelled'
-    },
-  });
-}
-
-// ============ INITIALIZATION ============
-function init() {
-  try {
-    // Handle stored redirect URL from session timeout
-    handleStoredRedirectUrl();
-    cacheElements();
-
-    if (!elements.form) {
-      console.warn('Login form not found');
-      return;
-    }
-
-    initPasswordToggle();
-    initFormHandler();
-    initOAuthButtons();
-    setupAuthCallbacks();
-    showInitialStatusFromServer();
-  } catch (error) {
-    console.error('[Login] Initialization failed:', error);
+        if (!isIframeBlocked) {
+          console.error('Auth error:', error);
+        }
+        // Status already shown by handler - popup-closed shows 'Sign-in cancelled'
+      },
+    });
   }
-}
 
-// Initialize when DOM is ready
-runWhenReady(init);
+  // ============ INITIALIZATION ============
+  function init() {
+    try {
+      // Handle stored redirect URL from session timeout
+      handleStoredRedirectUrl();
+      cacheElements();
+
+      if (!elements.form) {
+        console.warn('Login form not found');
+        return;
+      }
+
+      initPasswordToggle();
+      initFormHandler();
+      initOAuthButtons();
+      setupAuthCallbacks();
+      showInitialStatusFromServer();
+    } catch (error) {
+      console.error('[Login] Initialization failed:', error);
+    }
+  }
+
+  // Initialize when DOM is ready
+  runWhenReady(init);
+})();
