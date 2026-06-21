@@ -9,13 +9,13 @@
                     <i class="lucide lucide-file-user w-5 h-5 text-white"></i>
                 </div>
                 <div>
-                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Personal Info</p>
-                    <h1 class="text-xl font-bold text-white">{% if mode == 'edit' %}Edit Personal Info{% else %}Create Personal Info{% endif %}</h1>
-                    <p class="text-sm text-white/60 mt-0.5">{% if mode == 'edit' %}Update personal information record{% else %}Create a new personal information record{% endif %}</p>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Infos</p>
+                    <h1 class="text-xl font-bold text-white">{% if mode == 'edit' %}Edit CV Info{% else %}Create CV Info{% endif %}</h1>
+                    <p class="text-sm text-white/60 mt-0.5">{% if mode == 'edit' %}Update CV information record{% else %}Create a new CV information record{% endif %}</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <a href="/admin/cv-personal-info" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List</a>
+                <a href="/admin/cv-infos" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List</a>
             </div>
         </div>
     </div>
@@ -32,7 +32,7 @@
     </div>
     {% endif %}
 
-    <form method="POST" action="{% if mode == 'edit' %}/admin/cv-personal-info/{{ record.id }}{% else %}/admin/cv-personal-info{% endif %}">
+    <form method="POST" action="{% if mode == 'edit' %}/admin/cv-infos/{{ record.id }}{% else %}/admin/cv-infos{% endif %}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
             <div class="space-y-5">
@@ -184,15 +184,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div>
-                            <label for="cv_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">CV</label>
-                            <select id="cv_id" name="cv_id" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
-                                <option value="">Select a CV</option>
-                                {% for cv in cvs %}
-                                <option value="{{ cv.id }}" {% if (mode == 'edit' and record.cv_id == cv.id) or (mode == 'create' and form_data.cv_id == cv.id) %}selected{% endif %}>{{ cv.title }} (#{{ cv.id }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+
                     </div>
                 </div>
 
@@ -206,7 +198,7 @@
                             <i class="lucide lucide-save w-4 h-4"></i>
                             {% if mode == 'edit' %}Update Record{% else %}Create Record{% endif %}
                         </button>
-                        <a href="/admin/cv-personal-info" class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-150">
+                        <a href="/admin/cv-infos" class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-150">
                             <i class="lucide lucide-x w-4 h-4"></i> Cancel
                         </a>
                     </div>

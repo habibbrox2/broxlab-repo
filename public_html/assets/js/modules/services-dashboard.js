@@ -76,7 +76,7 @@ async function fetchServicesFromEndpoint(container) {
     return [];
   }
 
-  debugLog('Fetching services from endpoint.', { endpoint });
+  debugLog('Fetching services from endpoint.', { endpoint, });
 
   try {
     const response = await fetch(endpoint, {
@@ -181,7 +181,7 @@ function animateIn(container, skeleton) {
   if (skeleton) {
     skeleton.style.transition = 'opacity 300ms ease';
     skeleton.style.opacity = '0';
-    setTimeout(function () { skeleton.classList.add('hidden'); }, 350);
+    setTimeout(() => { skeleton.classList.add('hidden'); }, 350);
   }
 
   const gridContainer = container.querySelector('.services-grid') || container;
@@ -192,13 +192,13 @@ function animateIn(container, skeleton) {
 async function resolveServices(container) {
   const embeddedServices = getServicesFromContainer(container);
   if (embeddedServices.length > 0) {
-    debugLog('Using embedded services JSON.', { serviceCount: embeddedServices.length });
+    debugLog('Using embedded services JSON.', { serviceCount: embeddedServices.length, });
     return embeddedServices;
   }
 
   const fetchedServices = await fetchServicesFromEndpoint(container);
   if (fetchedServices.length > 0) {
-    debugLog('Using fetched services payload.', { serviceCount: fetchedServices.length });
+    debugLog('Using fetched services payload.', { serviceCount: fetchedServices.length, });
     return fetchedServices;
   }
 
@@ -222,7 +222,7 @@ export async function initServicesDashboard(container) {
       if (skeleton) {
         skeleton.style.transition = 'opacity 300ms ease';
         skeleton.style.opacity = '0';
-        setTimeout(function () { skeleton.classList.add('hidden'); }, 350);
+        setTimeout(() => { skeleton.classList.add('hidden'); }, 350);
       }
       renderEmptyState(grid, 'We could not load the service list right now. Please try again later.');
       debugWarn('Rendered empty state for services dashboard.');
@@ -240,7 +240,7 @@ export async function initServicesDashboard(container) {
     if (skeleton) {
       skeleton.style.transition = 'opacity 300ms ease';
       skeleton.style.opacity = '0';
-      setTimeout(function () { skeleton.classList.add('hidden'); }, 350);
+      setTimeout(() => { skeleton.classList.add('hidden'); }, 350);
     }
     renderEmptyState(newGrid, 'We could not load the service list right now. Please try again later.');
     debugWarn('Rendered empty state for services dashboard.');
@@ -249,9 +249,9 @@ export async function initServicesDashboard(container) {
   _initialized = true;
 }
 
-document.addEventListener('DOMContentLoaded', async function () {
+document.addEventListener('DOMContentLoaded', async () => {
   const el = document.querySelector(SERVICES_DASHBOARD_SELECTOR);
   if (el) await initServicesDashboard(el);
 });
 
-export default { initServicesDashboard };
+export default { initServicesDashboard, };

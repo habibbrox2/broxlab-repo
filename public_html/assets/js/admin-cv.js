@@ -74,12 +74,12 @@ const wireConfirmActions = () => {
         : confirm('Delete this CV permanently?') && submitFormWithLoading(form, 'Deleting...');
     }
 
-    if (action === 'confirm-delete-personal-info') {
+    if (action === 'confirm-delete-cv-info') {
       e.preventDefault();
       window.Swal && typeof window.Swal.fire === 'function'
         ? window.Swal.fire({
           title: 'Delete Record?',
-          text: 'Delete this personal info record? This action cannot be undone.',
+          text: 'Delete this CV info record? This action cannot be undone.',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#dc2626',
@@ -230,36 +230,10 @@ const wireTemplateViewLinks = () => {
   });
 };
 
-/* ── Personal info delete buttons ── */
-const wirePersonalInfoActions = () => {
-  // Wire delete buttons in personal info list
-  document.querySelectorAll('[data-action="delete-personal-info"]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const url = btn.getAttribute('data-url') || btn.getAttribute('href');
-      if (!url) return;
-      window.Swal && typeof window.Swal.fire === 'function'
-        ? window.Swal.fire({
-          title: 'Delete Record?',
-          text: 'Delete this personal info record?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#dc2626',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: 'Yes, delete',
-          cancelButtonText: 'Cancel',
-          reverseButtons: true,
-        }).then((r) => { if (r.isConfirmed) window.location.href = url; })
-        : confirm('Delete this record?') && (window.location.href = url);
-    });
-  });
-};
-
 document.addEventListener('DOMContentLoaded', () => {
   wireConfirmActions();
   wirePurchaseActions();
   wireTemplateViewLinks();
-  wirePersonalInfoActions();
 });
 
 export { notify, getCsrfToken };

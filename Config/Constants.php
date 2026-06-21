@@ -114,6 +114,11 @@ if (!defined('UPLOADS_SERVICES_DIR')) {
     define('UPLOADS_SERVICES_DIR', UPLOADS_DIR . '/services');
 }
 
+// CV photo uploads
+if (!defined('UPLOADS_CV_PHOTOS_DIR')) {
+    define('UPLOADS_CV_PHOTOS_DIR', UPLOADS_DIR . '/cv-photos');
+}
+
 if (!defined('UPLOAD_MAX_SERVICE_IMAGE_SIZE')) {
     define('UPLOAD_MAX_SERVICE_IMAGE_SIZE', 10 * 1024 * 1024); // 10 MB
 }
