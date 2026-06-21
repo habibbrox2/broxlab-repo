@@ -966,3 +966,33 @@ $router->delete('/api/notification/{id}', ['middleware' => ['auth', 'admin_only'
         echo json_encode(['success' => false, 'error' => 'Operation failed']);
     }
 });
+
+// ==================== USER NOTIFICATIONS PAGE ====================
+// GET /user/notifications — in-app notification list for regular logged-in users
+$router->get('/user/notifications', ['middleware' => ['auth']], function () use ($twig, $mysqli) {
+    try {
+        $userId = AuthManager::getCurrentUserId();
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        $notificationModel = new NotificationModel($mysqli);
+        $notifications = $notificationModel->getNotificationsByUser($userId, $perPage, $offset);
+        $total = $notificationModel->getNotificationCountByUser($userId);
+        $totalPages = (int)ceil($total / $perPage);
+        $unreadCount = $notificationModel->getUnreadCount($userId);
+
+        echo $twig->render('user/notifications.twig', [
+            'notifications' => $notifications,
+            'unread_count' => $unreadCount,
+            'current_page' => 'notifications',
+            'page' => $page,
+            'total_pages' => $totalPages,
+            'csrf_token' => generateCsrfToken(),
+        ]);
+    } catch (Throwable $e) {
+        logError('User Notifications Page Error: ' . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig');
+    }
+});

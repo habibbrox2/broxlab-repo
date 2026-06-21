@@ -1,220 +1,194 @@
 {% extends 'admin/layout.twig' %}
 {% block title %}Offline Notification Manager{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4" id="offlineHandlerRoot">
-    <div class="admin-page-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <div class="admin-page-title">
-          <i class="bi bi-wifi-off"></i> Offline Notification Manager
+<div class="w-full px-4 sm:px-6 py-4 space-y-4" id="offlineHandlerRoot">
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <i class="lucide lucide-wifi-off text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white sm:text-3xl">Buffered Delivery Control</h1>
+                    <p class="mt-1 text-sm text-indigo-100">Manage buffered notifications, retry queue, and delivery history.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="refresh-buffer">
+                    <i class="lucide lucide-refresh-cw"></i> Refresh
+                </button>
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="process-queue">
+                    <i class="lucide lucide-zap"></i> Process Queue
+                </button>
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black backdrop-blur-sm transition hover:bg-amber-500" data-action="simulate-offline">
+                    <i class="lucide lucide-plug"></i> Simulate Offline
+                </button>
+            </div>
         </div>
-        <p class="admin-page-subtitle">Manage buffered notifications, retry queue, and delivery history.</p>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="modern-btn modern-btn-outline-secondary btn-sm"
-                data-action="refresh-buffer">
-          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
-        <button class="modern-btn modern-btn-primary btn-sm"
-                data-action="process-queue">
-          <i class="bi bi-lightning-charge me-1"></i>Process Queue
-        </button>
-        <button class="modern-btn modern-btn-warning btn-sm"
-                data-action="simulate-offline">
-          <i class="bi bi-plug me-1"></i>Simulate Offline
-        </button>
-      </div>
     </div>
-    <div class="row mb-4">
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Buffered</small>
-            <h4 class="mb-0" id="bufferCount">0</h4>
-          </div>
+
+    <!-- Stats Cards -->
+    <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Buffered</p>
+            <p class="mt-1 text-3xl font-bold text-slate-900" id="bufferCount">0</p>
         </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Retry Queue</small>
-            <h4 class="mb-0" id="retryCount">0</h4>
-          </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Retry Queue</p>
+            <p class="mt-1 text-3xl font-bold text-slate-900" id="retryCount">0</p>
         </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Success</small>
-            <h4 class="mb-0" id="successCount">0</h4>
-          </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Success</p>
+            <p class="mt-1 text-3xl font-bold text-emerald-600" id="successCount">0</p>
         </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Failure Rate</small>
-            <h4 class="mb-0" id="failureRate">0%</h4>
-          </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Failure Rate</p>
+            <p class="mt-1 text-3xl font-bold text-amber-600" id="failureRate">0%</p>
         </div>
-      </div>
+    </section>
+
+    <!-- Tables Grid -->
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <!-- Buffered Notifications -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden xl:col-span-3">
+            <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="lucide lucide-inbox text-indigo-500" w-[18px] h-[18px]></i>
+                        <h2 class="text-sm font-semibold text-slate-900">Buffered Notifications</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="refresh-buffer">Refresh</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="clear-expired-cache">Clear Expired</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100" data-action="clear-all-buffer">Clear All</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">ID</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Title</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Saved At</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bufferedTable"><tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Retry Queue -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden xl:col-span-3">
+            <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="lucide lucide-rotate-ccw text-amber-500" w-[18px] h-[18px]></i>
+                        <h2 class="text-sm font-semibold text-slate-900">Retry Queue</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-retry-queue" data-filter="all">All</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-retry-queue" data-filter="pending">Pending</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-retry-queue" data-filter="failed">Failed</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">ID</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Notification</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Retry</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Next Retry</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retryQueueTable"><tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Delivery History -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden xl:col-span-3">
+            <div class="border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="lucide lucide-clock text-emerald-500" w-[18px] h-[18px]></i>
+                        <h2 class="text-sm font-semibold text-slate-900">Delivery History</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-history" data-filter="all">All</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-history" data-filter="success">Success</button>
+                        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-history" data-filter="failed">Failed</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Time</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Notification</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Retry</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deliveryHistoryTable"><tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Offline Simulation Modal -->
+    <div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="offlineModal" data-brox-modal="true">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" data-brox-dismiss="modal" aria-hidden="true"></div>
+        <div class="relative w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="lucide lucide-plug text-amber-500" w-[18px] h-[18px]></i>
+                        <h3 class="text-base font-semibold text-slate-900">Offline Mode Simulation</h3>
+                    </div>
+                    <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" data-brox-dismiss="modal" aria-label="Close">
+                        <i class="lucide lucide-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 space-y-3">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input class="mt-0.5 h-4 w-4 rounded-full border-slate-300 text-indigo-600 focus:ring-indigo-500" type="radio" name="offlineMode" id="offlineModeQueue" value="queue" checked>
+                    <div>
+                        <span class="text-sm font-medium text-slate-700">Queue new notifications</span>
+                        <p class="text-xs text-slate-500 mt-0.5">Buffers notifications for later delivery</p>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input class="mt-0.5 h-4 w-4 rounded-full border-slate-300 text-indigo-600 focus:ring-indigo-500" type="radio" name="offlineMode" id="offlineModeRetry" value="retry">
+                    <div>
+                        <span class="text-sm font-medium text-slate-700">Force retry mode</span>
+                        <p class="text-xs text-slate-500 mt-0.5">Attempts to resend failed notifications</p>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input class="mt-0.5 h-4 w-4 rounded-full border-slate-300 text-indigo-600 focus:ring-indigo-500" type="radio" name="offlineMode" id="offlineModeDrop" value="drop">
+                    <div>
+                        <span class="text-sm font-medium text-slate-700">Drop network requests</span>
+                        <p class="text-xs text-slate-500 mt-0.5">Simulates complete network failure</p>
+                    </div>
+                </label>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-50/50 px-6 py-3 flex items-center justify-end gap-2">
+                <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95" data-brox-dismiss="modal">Close</button>
+                <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-95" data-action="apply-offline-mode">Apply</button>
+            </div>
+        </div>
     </div>
-    <div class="row g-4">
-      <div class="col-lg-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Buffered Notifications</h6>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" data-action="refresh-buffer">Refresh</button>
-                <button class="btn btn-outline-secondary" data-action="clear-expired-cache">Clear Expired</button>
-                <button class="btn btn-outline-danger" data-action="clear-all-buffer">Clear All</button>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Saved At</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="bufferedTable">
-                  <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Retry Queue</h6>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-retry-queue"
-                        data-filter="all">All</button>
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-retry-queue"
-                        data-filter="pending">Pending</button>
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-retry-queue"
-                        data-filter="failed">Failed</button>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Notification</th>
-                    <th>Retry</th>
-                    <th>Next Retry</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="retryQueueTable">
-                  <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Delivery History</h6>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-history"
-                        data-filter="all">All</button>
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-history"
-                        data-filter="success">Success</button>
-                <button class="btn btn-outline-secondary"
-                        data-action="filter-history"
-                        data-filter="failed">Failed</button>
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Notification</th>
-                    <th>Retry</th>
-                    <th>Status</th>
-                    <th>Error</th>
-                  </tr>
-                </thead>
-                <tbody id="deliveryHistoryTable">
-                  <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal fade" id="offlineModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Offline Mode Simulation</h5>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="form-check mb-2">
-            <input class="form-check-input"
-                   type="radio"
-                   name="offlineMode"
-                   id="offlineModeQueue"
-                   value="queue"
-                   checked>
-            <label class="form-check-label" for="offlineModeQueue">Queue new notifications</label>
-          </div>
-          <div class="form-check mb-2">
-            <input class="form-check-input"
-                   type="radio"
-                   name="offlineMode"
-                   id="offlineModeRetry"
-                   value="retry">
-            <label class="form-check-label" for="offlineModeRetry">Force retry mode</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="radio"
-                   name="offlineMode"
-                   id="offlineModeDrop"
-                   value="drop">
-            <label class="form-check-label" for="offlineModeDrop">Drop network requests</label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button"
-                  class="btn btn-primary"
-                  data-action="apply-offline-mode">Apply</button>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 {% endblock %}

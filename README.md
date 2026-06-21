@@ -1,79 +1,33 @@
 # BroxLab
 
-BroxLab is a full-stack PHP app with Twig views. This repository has been converted to a PHP-only deployment: the Node.js unified service and build tooling are removed from the default branch. If you need to re-enable Node.js tooling later, restore `package.json` and `src/` and follow the original build steps.
+Full-stack PHP (Twig) application. PHP-only deployment; Node.js tooling retained in repo but optional.
 
 ## Stack
 
-- Backend: PHP 8.2+
-- DB: MySQL / MariaDB
+- Backend: PHP 8.2+, MySQL / MariaDB
 - Frontend: Tailwind CSS, vanilla JS
-- Node: `src/` unified service and `build/` tooling
+- Templating: Twig
+- Optional: Node.js services (`src/`) and build tooling (`build/`)
 
 ## Layout
 
-- `public_html/index.php` entry point
-- `app/Controllers/` route definitions
-- `app/Models/` database access
-- `app/Helpers/` shared utilities
-- `app/Views/` Twig templates
-- `app/Middleware/` request middleware
-- `system/prompts/` AI prompts and prompt config
-- `src/` Node/TS services
-- `build/` bundling, lint, test, and asset scripts
-- `public_html/assets/` frontend source and generated assets
-
-## Install
-
-1. `composer install`
-2. Configure `.env` and `Config/` values
-4. Import the database schema from `Database/`
-5. (Optional) If you restore Node.js and frontend tooling, run `npm install` and `npm run build` to rebuild assets.
+- `public_html/index.php` — bootstrap, static file serving, routing
+- `app/Controllers/` — 50 controllers with embedded routes
+- `app/Models/` — 51 data models
+- `app/Helpers/` — 25 shared helpers
+- `app/Views/` — 244 Twig templates
+- `app/Middleware/` — auth, CSRF, rate limiting
+- `app/Services/` — business logic
+- `app/Modules/` — specialized modules (PdfTools, AISystem)
+- `app/Routes/` — router implementation
+- `Config/` — app configuration (Twig, DB, uploads, constants)
+- `Database/` — 74 SQL schema files
+- `public_html/assets/` — frontend source
+- `public_html/rtceditor/` — Rich Text Editor (esbuild bundle)
+- `system/prompts/` — AI prompts and config
 
 ## Run
 
-- App/API: `php -S localhost:8000 -t public_html`
-- Node service: `npm start`
+- App: `php -S localhost:8000 -t public_html`
 - Frontend watch: `npm run dev`
-
-## Shared Hosting
-
-- Set `NODE_ENV=production`
-- Set `HOST=0.0.0.0`
-- Set `APP_URL` and `NODE_SERVICE_URL` to the public domain or proxy URL
-- Point `DB_HOST` to the actual MySQL host provided by the host, not `localhost` unless MySQL is local
-- Use the same single Node process for AI, OCR, and tool routes
-
-## Remote Deploy
-
-GitHub Actions can deploy directly to the remote server using SSH and the remote `deploy.sh` helper.
-
-Required secrets for remote deploy:
-- `HOST` – remote server host or IP
-- `USER` – SSH username
-- `SSH_KEY_BASE64` – base64-encoded SSH private key
-- `REMOTE_BASE` – remote deployment base path (default `/home/$USER/broxlab`)
-- `SSH_PORT` – SSH port (default `22`)
-- `KEEP_RELEASES` – number of releases to keep on the server
-
-Remote server checklist:
-- `app/releases/` exists for release timestamps
-- `app/current` is a symlink to the active release
-- `app/shared/.env` exists
-- `app/shared/storage/uploads` exists
-- `public_html` symlinks to `app/current/public_html`
-- `logs/` is writable and stores `node-server_<timestamp>.log`
-- `deploy.sh` and `rollback.sh` are present and executable
-
-## Verify
-
-- `npm run lint`
-- `npm run type-check`
-- `npm run test:run`
-- `npm run check:assets`
-- `npm run validate`
-
-## Notes
-
-- Use `public_html/` as the web root.
-- Do not edit generated files in `public_html/assets/**/dist/`.
-- Follow `AGENTS.md` for repo rules and `SECURITY.md` for security reporting.
+- Full verify: `npm run validate`

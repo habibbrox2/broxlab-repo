@@ -1,0 +1,1963 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ page_title|default('CV Template Marketplace') }}{% endblock %}
+{% block extra_styles %}
+<style>
+:root {
+  --mkt-primary: #6366f1;
+  --mkt-secondary: #8b5cf6;
+  --mkt-success: #10b981;
+  --mkt-warning: #f59e0b;
+  --mkt-danger: #ef4444;
+  --mkt-gray-50: #f9fafb;
+  --mkt-gray-100: #f3f4f6;
+  --mkt-gray-200: #e5e7eb;
+  --mkt-gray-300: #d1d5db;
+  --mkt-gray-400: #9ca3af;
+  --mkt-gray-500: #6b7280;
+  --mkt-gray-600: #4b5563;
+  --mkt-gray-700: #374151;
+  --mkt-gray-800: #1f2937;
+  --mkt-gray-900: #111827;
+  --mkt-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --mkt-shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+  --mkt-radius: 16px;
+  --mkt-radius-sm: 10px;
+}
+
+/* ─── HERO ─── */
+.mkt-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #8b5cf6 100%);
+  padding: 4.5rem 1rem 3.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: mktGradientShift 8s ease infinite alternate;
+  background-size: 200% 200%;
+}
+@keyframes mktGradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.mkt-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+.mkt-hero-particles {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mkt-hero-particle {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  animation: mktFloat 6s ease-in-out infinite;
+}
+.mkt-hero-particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
+.mkt-hero-particle:nth-child(2) { left: 25%; top: 60%; animation-delay: 1.2s; width: 8px; height: 8px; }
+.mkt-hero-particle:nth-child(3) { left: 45%; top: 15%; animation-delay: 2.5s; }
+.mkt-hero-particle:nth-child(4) { left: 65%; top: 70%; animation-delay: 0.8s; width: 10px; height: 10px; }
+.mkt-hero-particle:nth-child(5) { left: 80%; top: 30%; animation-delay: 3.2s; }
+.mkt-hero-particle:nth-child(6) { left: 90%; top: 55%; animation-delay: 1.8s; width: 4px; height: 4px; }
+@keyframes mktFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-20px) scale(1.2); opacity: 0.6; }
+}
+.mkt-hero h1 {
+  font-size: 2.75rem; font-weight: 800; color: white;
+  margin-bottom: 0.75rem; position: relative; z-index: 1;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.mkt-hero p {
+  font-size: 1.15rem; color: rgba(255,255,255,0.9);
+  max-width: 600px; margin: 0 auto 2rem; position: relative; z-index: 1;
+  line-height: 1.6;
+}
+.mkt-hero-stats {
+  display: flex; justify-content: center; gap: 2.5rem;
+  position: relative; z-index: 1;
+}
+.mkt-hero-stat { text-align: center; }
+.mkt-hero-stat-num {
+  font-size: 1.75rem; font-weight: 700; color: white; display: block;
+}
+.mkt-hero-stat-label { font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+
+/* ─── MAIN ─── */
+.mkt-main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+/* ─── CONTROLS ─── */
+.mkt-controls {
+  display: flex; gap: 1rem; margin-bottom: 2rem;
+  flex-wrap: wrap; align-items: center;
+}
+.mkt-search { flex: 1; min-width: 220px; position: relative; }
+.mkt-search input {
+  width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border: 2px solid var(--mkt-gray-200); border-radius: 12px;
+  font-size: 0.95rem; transition: all 0.2s; background: white;
+}
+.mkt-search input:focus {
+  outline: none; border-color: var(--mkt-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+.mkt-search .mkt-search-icon {
+  position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+  color: var(--mkt-gray-400); pointer-events: none;
+}
+.mkt-search .mkt-search-clear {
+  position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--mkt-gray-400);
+  cursor: pointer; padding: 0.25rem; display: none;
+  font-size: 1rem; line-height: 1;
+}
+.mkt-search .mkt-search-clear:hover { color: var(--mkt-gray-600); }
+.mkt-search input:not(:placeholder-shown) ~ .mkt-search-clear { display: block; }
+.mkt-sort select {
+  padding: 0.75rem 2.25rem 0.75rem 1rem;
+  border: 2px solid var(--mkt-gray-200); border-radius: 12px;
+  font-size: 0.9rem; background: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.75rem center;
+  cursor: pointer; transition: all 0.2s;
+}
+.mkt-sort select:focus {
+  outline: none; border-color: var(--mkt-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+/* ─── FILTERS ─── */
+.mkt-filters {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 1.5rem; width: 100%;
+}
+.mkt-filter-btn {
+  padding: 0.5rem 1.1rem;
+  border: 2px solid var(--mkt-gray-200); border-radius: 25px;
+  font-size: 0.85rem; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; background: white; color: var(--mkt-gray-600);
+  position: relative;
+}
+.mkt-filter-btn:hover { border-color: var(--mkt-primary); color: var(--mkt-primary); }
+.mkt-filter-btn.active {
+  background: var(--mkt-primary); color: white; border-color: var(--mkt-primary);
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+.mkt-filter-count {
+  display: inline-block; margin-left: 0.35rem;
+  font-size: 0.7rem; font-weight: 600; opacity: 0.7;
+}
+
+/* ─── TOOLBAR ─── */
+.mkt-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem;
+}
+.mkt-result-count { font-size: 0.9rem; color: var(--mkt-gray-500); }
+.mkt-actions { display: flex; gap: 0.5rem; align-items: center; }
+.mkt-action-btn {
+  padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.85rem;
+  font-weight: 500; border: 2px solid var(--mkt-gray-200);
+  background: white; color: var(--mkt-gray-600); cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 0.35rem;
+}
+.mkt-action-btn:hover { border-color: var(--mkt-primary); color: var(--mkt-primary); }
+.mkt-action-btn.active { border-color: var(--mkt-primary); color: var(--mkt-primary); background: rgba(99,102,241,0.05); }
+.mkt-action-btn .badge {
+  font-size: 0.7rem; background: var(--mkt-primary); color: white;
+  border-radius: 10px; padding: 0.1rem 0.4rem; min-width: 1.2rem; text-align: center;
+}
+
+/* ─── AI RECOMMENDATION ─── */
+.mkt-ai-section {
+  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+  border: 1px solid #e0e7ff;
+  border-radius: var(--mkt-radius);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.mkt-ai-section h3 {
+  font-size: 1rem; font-weight: 600; color: var(--mkt-gray-800);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.mkt-ai-section h3 i { color: var(--mkt-primary); }
+.mkt-ai-section p { font-size: 0.9rem; color: var(--mkt-gray-500); }
+.mkt-ai-section .mkt-ai-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.75rem; border-radius: 20px;
+  background: var(--mkt-primary); color: white;
+  font-size: 0.75rem; font-weight: 600;
+}
+
+/* ─── QUICK START ─── */
+.mkt-quick-start {
+  background: white; border-radius: var(--mkt-radius);
+  padding: 1.5rem; margin-bottom: 2rem;
+  border: 1px solid var(--mkt-gray-200);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+.mkt-quick-start h3 {
+  font-size: 1rem; font-weight: 600; color: var(--mkt-gray-700);
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.mkt-quick-start h3 i { color: var(--mkt-primary); }
+.mkt-quick-options { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.mkt-quick-option {
+  padding: 0.5rem 1rem; border: 1px solid var(--mkt-gray-200);
+  border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+  transition: all 0.2s; background: white; color: var(--mkt-gray-600);
+  text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;
+}
+.mkt-quick-option:hover {
+  border-color: var(--mkt-primary); color: var(--mkt-primary);
+  background: rgba(99,102,241,0.05);
+}
+
+/* ─── GRID ─── */
+.mkt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ─── CARD ─── */
+.mkt-card {
+  background: white; border-radius: var(--mkt-radius);
+  overflow: hidden;
+  box-shadow: var(--mkt-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--mkt-gray-200);
+  display: flex; flex-direction: column;
+  opacity: 0; transform: translateY(20px);
+  animation: mktCardIn 0.5s ease forwards;
+  position: relative;
+}
+.mkt-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--mkt-shadow-lg);
+  border-color: var(--mkt-primary);
+}
+@keyframes mktCardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+.mkt-card:nth-child(1) { animation-delay: 0.05s; }
+.mkt-card:nth-child(2) { animation-delay: 0.1s; }
+.mkt-card:nth-child(3) { animation-delay: 0.15s; }
+.mkt-card:nth-child(4) { animation-delay: 0.2s; }
+.mkt-card:nth-child(5) { animation-delay: 0.25s; }
+.mkt-card:nth-child(6) { animation-delay: 0.3s; }
+
+.mkt-card-favorite {
+  position: absolute; top: 0.75rem; left: 0.75rem; z-index: 2;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);
+  border: none; border-radius: 50%; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; color: var(--mkt-gray-400);
+  font-size: 1rem;
+}
+.mkt-card-favorite:hover { transform: scale(1.1); }
+.mkt-card-favorite.is-fav { color: var(--mkt-danger); background: rgba(239,68,68,0.1); }
+.mkt-card-favorite i { transition: transform 0.2s; }
+.mkt-card-favorite.is-fav i { transform: scale(1.1); }
+
+.mkt-card-preview {
+  height: 200px; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.3s;
+}
+.mkt-card:hover .mkt-card-preview { transform: scale(1.02); }
+.mkt-card-preview i { font-size: 5rem; color: rgba(255,255,255,0.35); transition: all 0.3s; }
+.mkt-card:hover .mkt-card-preview i { transform: scale(1.1) rotate(-3deg); }
+.mkt-card-badge {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  padding: 0.2rem 0.75rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); color: white;
+}
+.mkt-card-popularity {
+  position: absolute; bottom: 0.75rem; right: 0.75rem;
+  padding: 0.2rem 0.6rem; border-radius: 12px;
+  font-size: 0.7rem; font-weight: 600;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); color: white;
+  display: flex; align-items: center; gap: 0.25rem;
+}
+.mkt-card-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+.mkt-card-name {
+  font-size: 1.2rem; font-weight: 700; color: var(--mkt-gray-800);
+  margin-bottom: 0.25rem;
+}
+.mkt-card-category {
+  font-size: 0.8rem; color: var(--mkt-primary); font-weight: 600;
+  margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.mkt-card-desc {
+  font-size: 0.9rem; color: var(--mkt-gray-500); line-height: 1.5;
+  margin-bottom: 1rem; flex: 1;
+}
+.mkt-card-features { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+.mkt-card-feature {
+  padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: 500;
+  background: var(--mkt-gray-100); color: var(--mkt-gray-600); border-radius: 4px;
+}
+.mkt-card-version {
+  font-size: 0.7rem; color: var(--mkt-gray-400); margin-bottom: 0.75rem;
+}
+.mkt-card-actions { display: flex; gap: 0.5rem; }
+.mkt-card-btn {
+  flex: 1; padding: 0.625rem; border-radius: var(--mkt-radius-sm);
+  font-size: 0.85rem; font-weight: 600; border: none; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center;
+  justify-content: center; gap: 0.35rem;
+}
+.mkt-btn-preview { background: var(--mkt-gray-100); color: var(--mkt-gray-700); }
+.mkt-btn-preview:hover { background: var(--mkt-gray-200); }
+.mkt-btn-select {
+  background: linear-gradient(135deg, var(--mkt-primary), var(--mkt-secondary));
+  color: white; text-decoration: none;
+}
+.mkt-btn-select:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+}
+
+/* ─── COMPARISON CHECKBOX ─── */
+.mkt-card-compare {
+  position: absolute; bottom: 0.75rem; left: 0.75rem; z-index: 2;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.mkt-card-compare label {
+  font-size: 0.7rem; color: rgba(255,255,255,0.8);
+  cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
+}
+.mkt-card-compare input[type="checkbox"] {
+  width: 14px; height: 14px; cursor: pointer;
+  accent-color: var(--mkt-primary);
+}
+
+/* ─── COMPARISON BAR ─── */
+.mkt-compare-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white; border-top: 2px solid var(--mkt-primary);
+  padding: 1rem 2rem; z-index: 100;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.1);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  flex-wrap: wrap;
+}
+.mkt-compare-bar.open { transform: translateY(0); }
+.mkt-compare-items { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.mkt-compare-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.35rem 0.75rem; background: var(--mkt-gray-100);
+  border-radius: 8px; font-size: 0.85rem; color: var(--mkt-gray-700);
+}
+.mkt-compare-item button {
+  background: none; border: none; color: var(--mkt-gray-400);
+  cursor: pointer; font-size: 1rem; padding: 0; line-height: 1;
+}
+.mkt-compare-item button:hover { color: var(--mkt-danger); }
+.mkt-compare-actions { display: flex; gap: 0.5rem; }
+.mkt-compare-btn {
+  padding: 0.5rem 1.25rem; border-radius: 10px; font-size: 0.85rem;
+  font-weight: 600; border: none; cursor: pointer; transition: all 0.2s;
+}
+.mkt-compare-btn-primary {
+  background: var(--mkt-primary); color: white;
+}
+.mkt-compare-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+}
+.mkt-compare-btn-secondary {
+  background: var(--mkt-gray-100); color: var(--mkt-gray-600);
+}
+.mkt-compare-btn-secondary:hover { background: var(--mkt-gray-200); }
+
+/* ─── MODAL ─── */
+.mkt-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  z-index: 1000; display: none;
+  align-items: center; justify-content: center; padding: 1rem;
+  animation: mktFadeIn 0.2s ease;
+}
+.mkt-modal-overlay.open { display: flex; }
+@keyframes mktFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.mkt-modal {
+  background: white; border-radius: 20px;
+  max-width: 700px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.3); position: relative;
+  animation: mktSlideUp 0.3s ease;
+}
+@keyframes mktSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.mkt-modal-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);
+  border: none; color: white; font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; z-index: 2;
+}
+.mkt-modal-nav:hover { background: rgba(255,255,255,0.3); transform: translateY(-50%) scale(1.1); }
+.mkt-modal-prev { left: 1rem; }
+.mkt-modal-next { right: 1rem; }
+.mkt-modal-close {
+  position: absolute; top: 1rem; right: 1rem;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);
+  border: none; color: white; font-size: 1.25rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; z-index: 2;
+}
+.mkt-modal-close:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+.mkt-modal-body { padding: 2rem; }
+.mkt-modal-best {
+  background: var(--mkt-gray-50); border-radius: 10px;
+  padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+  font-size: 0.9rem; color: var(--mkt-gray-600);
+}
+.mkt-modal-best strong { color: var(--mkt-gray-800); }
+.mkt-modal-actions { display: flex; gap: 0.75rem; }
+.mkt-modal-btn {
+  flex: 1; padding: 0.875rem; border-radius: 12px;
+  font-size: 1rem; font-weight: 600; border: none; cursor: pointer;
+  transition: all 0.2s; text-align: center; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.mkt-modal-btn-primary {
+  background: linear-gradient(135deg, var(--mkt-primary), var(--mkt-secondary));
+  color: white;
+}
+.mkt-modal-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(99,102,241,0.3);
+}
+.mkt-modal-btn-secondary { background: var(--mkt-gray-100); color: var(--mkt-gray-700); }
+.mkt-modal-btn-secondary:hover { background: var(--mkt-gray-200); }
+
+/* ─── EMPTY STATE ─── */
+.mkt-empty {
+  text-align: center; padding: 4rem 2rem;
+  animation: mktFadeIn 0.3s ease;
+}
+.mkt-empty i { font-size: 3rem; color: var(--mkt-gray-300); margin-bottom: 1rem; display: block; }
+.mkt-empty h3 { font-size: 1.25rem; color: var(--mkt-gray-600); margin-bottom: 0.5rem; }
+.mkt-empty p { color: var(--mkt-gray-400); margin-bottom: 1rem; }
+.mkt-empty-btn {
+  padding: 0.5rem 1.5rem; border-radius: 10px; font-size: 0.9rem;
+  font-weight: 600; border: 2px solid var(--mkt-primary);
+  background: white; color: var(--mkt-primary); cursor: pointer;
+  transition: all 0.2s;
+}
+.mkt-empty-btn:hover { background: var(--mkt-primary); color: white; }
+
+/* ─── FEATURED TEMPLATES ─── */
+.mkt-featured {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: var(--mkt-radius);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.mkt-featured::before {
+  content: '';
+  position: absolute;
+  top: -50%; right: -20%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.mkt-featured-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;
+}
+.mkt-featured-header h3 {
+  font-size: 1.1rem; font-weight: 700; color: #92400e;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.mkt-featured-header h3 i { color: #f59e0b; }
+.mkt-featured-header p {
+  font-size: 0.85rem; color: #a16207; margin-top: 0.25rem;
+}
+.mkt-featured-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.85rem; border-radius: 20px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white; font-size: 0.75rem; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+  white-space: nowrap;
+}
+.mkt-featured-scroll {
+  display: flex; gap: 1rem; overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #fcd34d transparent;
+}
+.mkt-featured-scroll::-webkit-scrollbar { height: 6px; }
+.mkt-featured-scroll::-webkit-scrollbar-track { background: transparent; }
+.mkt-featured-scroll::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 3px; }
+.mkt-featured-card {
+  flex: 0 0 320px; scroll-snap-align: start;
+  background: white; border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  border: 2px solid #fde68a;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+.mkt-featured-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(245,158,11,0.15);
+  border-color: #f59e0b;
+}
+.mkt-featured-card-preview {
+  height: 160px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.mkt-featured-card-preview i {
+  color: rgba(255,255,255,0.25);
+  transition: transform 0.3s;
+}
+.mkt-featured-card:hover .mkt-featured-card-preview i {
+  transform: scale(1.1) rotate(-3deg);
+}
+.mkt-featured-top-pick {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.25rem 0.65rem; border-radius: 20px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white; font-size: 0.7rem; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.mkt-featured-card-body {
+  padding: 1rem 1.25rem 1.25rem;
+  flex: 1; display: flex; flex-direction: column;
+}
+.mkt-featured-card-body h4 {
+  font-size: 1.05rem; font-weight: 700; color: #1f2937;
+  margin-bottom: 0.35rem;
+}
+.mkt-featured-card-body p {
+  font-size: 0.8rem; color: #6b7280; line-height: 1.5;
+  flex: 1; margin-bottom: 0.75rem;
+}
+.mkt-featured-card-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem;
+}
+.mkt-featured-pop {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.75rem; font-weight: 600; color: #d97706;
+}
+.mkt-featured-use {
+  font-size: 0.8rem; font-weight: 600; color: #6366f1;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  transition: gap 0.2s;
+}
+.mkt-featured-card:hover .mkt-featured-use { gap: 0.5rem; }
+
+/* ─── INPUT FOCUS CLASS (replaces inline onfocus/onblur) ─── */
+.mkt-input-focus:focus {
+  border-color: var(--mkt-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  outline: none;
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width: 768px) {
+  .mkt-hero { padding: 3rem 1rem 2.5rem; }
+  .mkt-hero h1 { font-size: 2rem; }
+  .mkt-hero-stats { gap: 1.5rem; }
+  .mkt-grid { grid-template-columns: 1fr; }
+  .mkt-modal-feature-list { grid-template-columns: 1fr; }
+  .mkt-ai-section { flex-direction: column; text-align: center; padding: 1.25rem; }
+  .mkt-compare-bar { padding: 0.75rem 1rem; flex-direction: column; }
+}
+@media(max-width: 480px) {
+  .mkt-hero h1 { font-size: 1.6rem; }
+  .mkt-hero p { font-size: 1rem; }
+  .mkt-controls { flex-direction: column; }
+  .mkt-search { min-width: 100%; }
+  .mkt-sort { width: 100%; }
+  .mkt-sort select { width: 100%; }
+  .mkt-card-actions { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  #mkt-preview-iframe { width: 100% !important; min-height: 80vh !important; border-radius: 4px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ─── HERO ─── -->
+<div class="mkt-hero">
+  <div class="mkt-hero-particles">
+    <div class="mkt-hero-particle"></div>
+    <div class="mkt-hero-particle"></div>
+    <div class="mkt-hero-particle"></div>
+    <div class="mkt-hero-particle"></div>
+    <div class="mkt-hero-particle"></div>
+    <div class="mkt-hero-particle"></div>
+  </div>
+  <h1>Choose Your CV Template</h1>
+  <p>Start with a professionally designed template and customize it with our step-by-step builder. All templates are ATS-friendly and print-optimized.</p>
+  <div class="mkt-hero-stats">
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">{{ templates|length }}</span>
+      <span class="mkt-hero-stat-label">Pro Templates</span>
+    </div>
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">100%</span>
+      <span class="mkt-hero-stat-label">ATS Friendly</span>
+    </div>
+    <div class="mkt-hero-stat">
+      <span class="mkt-hero-stat-num">PDF</span>
+      <span class="mkt-hero-stat-label">Export Ready</span>
+    </div>
+  </div>
+</div>
+
+<div class="mkt-main">
+  <!-- ─── AI RECOMMENDATION ─── -->
+  <div class="mkt-ai-section">
+    <div>
+      <h3><i class="lucide lucide-sparkles" style="width:1.1em;height:1.1em;"></i> AI Recommended Templates</h3>
+      <p>Based on current job market trends, these templates score highest for ATS compatibility and recruiter preference.</p>
+    </div>
+    <span class="mkt-ai-badge"><i class="lucide lucide-bot" style="width:1em;height:1em;"></i> Powered by AI</span>
+  </div>
+
+  <!-- ─── QUICK START ─── -->
+  {% if job_positions is defined and job_positions|length > 0 %}
+  <div class="mkt-quick-start">
+    <h3><i class="lucide lucide-zap" style="width:1em;height:1em;"></i> Quick Start — Select Your Profession</h3>
+    <div class="mkt-quick-options">
+      {% for pos in job_positions %}
+      <a href="/cv-builder/new?profession={{ pos.slug }}" class="mkt-quick-option">
+        <i class="lucide lucide-briefcase" style="width:1em;height:1em;"></i> {{ pos.title }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ─── FEATURED TEMPLATES (TOP PICKS) ─── -->
+  {% if featured_templates is defined and featured_templates|length > 0 %}
+  <div class="mkt-featured">
+    <div class="mkt-featured-header">
+      <div>
+        <h3><i class="lucide lucide-star" style="width:1.1em;height:1.1em;"></i> Featured Templates — Top Picks</h3>
+        <p>Our most popular templates, handpicked for their design quality and ATS performance.</p>
+      </div>
+      <span class="mkt-featured-badge"><i class="lucide lucide-trending-up" style="width:1em;height:1em;"></i> Top Rated</span>
+    </div>
+    <div class="mkt-featured-scroll">
+      {% for slug in featured_templates %}
+        {% set tmpl = templates[slug] %}
+        {% if tmpl %}
+        <div class="mkt-featured-card"
+             data-slug="{{ slug }}"
+             data-action="mkt-open-preview" data-slug="{{ slug }}">
+          <div class="mkt-featured-card-preview" style="background:{{ tmpl.gradient }};">
+            <i class="lucide lucide-{{ tmpl.icon }}" style="width:4rem;height:4rem;"></i>
+            <span class="mkt-featured-top-pick"><i class="lucide lucide-crown" style="width:0.8em;height:0.8em;"></i> Top Pick</span>
+          </div>
+          <div class="mkt-featured-card-body">
+            <h4>{{ tmpl.name }}</h4>
+            <p>{{ tmpl.description|slice(0, 100) ~ (tmpl.description|length > 100 ? '...' : '') }}</p>
+            <div class="mkt-featured-card-meta">
+              <span class="mkt-featured-pop">
+                <i class="lucide lucide-activity" style="width:0.8em;height:0.8em;"></i> {{ tmpl.popularity }}% match
+              </span>
+              <span class="mkt-featured-use">Use Template <i class="lucide lucide-arrow-right" style="width:0.8em;height:0.8em;"></i></span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ─── SEARCH & SORT ─── -->
+  <div class="mkt-controls">
+    <div class="mkt-search">
+      <i class="lucide lucide-search mkt-search-icon" style="width:1em;height:1em;"></i>
+      <input type="text" id="mkt-search-input" placeholder="Search templates by name or keyword..." autocomplete="off">
+      <button class="mkt-search-clear" data-action="mkt-clear-search">&times;</button>
+    </div>
+    <div class="mkt-sort">
+      <select id="mkt-sort-select" data-action="mkt-sort-templates">
+        <option value="name">Sort by Name</option>
+        <option value="popularity" selected>Sort by Popularity</option>
+        <option value="category">Sort by Category</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ─── CATEGORY FILTERS ─── -->
+  <div class="mkt-filters" id="mkt-filters">
+    <button class="mkt-filter-btn active" data-filter="all" data-action="mkt-set-filter" data-filter="all">
+      All <span class="mkt-filter-count">({{ templates|length }})</span>
+    </button>
+    {% for cat in categories %}
+    <button class="mkt-filter-btn" data-filter="{{ cat }}" data-action="mkt-set-filter" data-filter="{{ cat }}">
+      {{ cat }} <span class="mkt-filter-count">({{ category_counts[cat]|default(0) }})</span>
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- ─── TOOLBAR ─── -->
+  <div class="mkt-toolbar">
+    <span class="mkt-result-count" id="mkt-result-count">Showing {{ templates|length }} template(s)</span>
+    <div class="mkt-actions">
+      <button class="mkt-action-btn" id="mkt-fav-filter-btn" data-action="mkt-toggle-fav-filter">
+        <i class="lucide lucide-heart" style="width:1em;height:1em;"></i> Favorites
+      </button>
+      <button class="mkt-action-btn" id="mkt-compare-btn" data-action="mkt-toggle-compare-mode">
+        <i class="lucide lucide-bar-chart-2" style="width:1em;height:1em;"></i> Compare
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── GRID ─── -->
+  <div class="mkt-grid" id="mkt-grid">
+    {% for slug, tmpl in templates %}
+    <div class="mkt-card"
+         data-category="{{ tmpl.category }}"
+         data-name="{{ tmpl.name|lower }}"
+         data-popularity="{{ tmpl.popularity|default(0) }}"
+         data-slug="{{ slug }}">
+      <!-- Favorite button -->
+      <button class="mkt-card-favorite" data-slug="{{ slug }}" data-action="mkt-toggle-fav" data-slug="{{ slug }}" title="Add to favorites">
+        <i class="lucide lucide-heart" style="width:1em;height:1em;"></i>
+      </button>
+
+      <!-- Compare checkbox -->
+      <div class="mkt-card-compare" id="compare-{{ slug }}" style="display:none;">
+        <label>
+          <input type="checkbox" data-action="mkt-compare-toggle" data-slug="{{ slug }}">
+          Compare
+        </label>
+      </div>
+
+      <div class="mkt-card-preview" style="background:{{ tmpl.gradient }};">
+        {% if tmpl.thumbnail is defined %}
+        <img src="{{ tmpl.thumbnail }}" alt="{{ tmpl.name }}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" loading="lazy">
+        {% else %}
+        <i class="lucide lucide-{{ tmpl.icon }}" style="width:5rem;height:5rem;"></i>
+        {% endif %}
+        <span class="mkt-card-badge">{{ tmpl.category }}</span>
+        {% if tmpl.is_premium is defined and tmpl.is_premium %}
+        <span style="position:absolute;top:0.75rem;right:0.75rem;z-index:3;display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.65rem;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;box-shadow:0 4px 12px rgba(0,0,0,0.2);background:linear-gradient(135deg,#D4A017,#B8860B);color:white;">
+          <i class="lucide lucide-crown" style="width:0.8em;height:0.8em;"></i>
+          PREMIUM
+        </span>
+        {% endif %}
+        {% if tmpl.popularity is defined and tmpl.popularity >= 90 %}
+        <span class="mkt-card-popularity"><i class="lucide lucide-trending-up" style="width:0.8em;height:0.8em;"></i> {{ tmpl.popularity }}%</span>
+        {% endif %}
+      </div>
+      <div class="mkt-card-body">
+        <h3 class="mkt-card-name">{{ tmpl.name }}</h3>
+        <div class="mkt-card-category">{{ tmpl.category }}</div>
+        <p class="mkt-card-desc">{{ tmpl.description }}</p>
+        <div class="mkt-card-features">
+          {% for feature in tmpl.features %}
+          <span class="mkt-card-feature">{{ feature }}</span>
+          {% endfor %}
+        </div>
+        {% if tmpl.version is defined %}
+        <div class="mkt-card-version">v{{ tmpl.version }}</div>
+        {% endif %}
+        <div class="flex items-center gap-1.5 mb-2.5">
+          {% if tmpl.is_premium is defined and tmpl.is_premium and tmpl.price is defined %}
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
+                style="background:linear-gradient(135deg,#FDF3D0,#FEF9E7);color:#B8860B;border:1px solid rgba(212,160,23,0.3);">
+            <i class="lucide lucide-credit-card" style="width:0.8em;height:0.8em;"></i>
+            ৳{{ tmpl.price }} BDT
+          </span>
+          {% endif %}
+        </div>
+        <div class="mkt-card-actions">
+          <button class="mkt-card-btn mkt-btn-preview" data-action="mkt-open-preview" data-slug="{{ slug }}">
+            <i class="lucide lucide-eye" style="width:1em;height:1em;"></i> Preview
+          </button>
+          {% if tmpl.is_premium is defined and tmpl.is_premium %}
+          <button class="mkt-card-btn mkt-btn-select" data-action="mkt-open-payment" data-slug="{{ slug }}" style="background:linear-gradient(135deg,#D4A017,#B8860B);cursor:pointer;">
+            <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Buy
+          </button>
+          {% else %}
+          <a href="/cv-builder/new?template={{ slug }}" class="mkt-card-btn mkt-btn-select" style="text-decoration:none;">
+            <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Use
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ─── EMPTY STATE ─── -->
+  <div class="mkt-empty" id="mkt-empty" style="display:none;">
+    <i class="lucide lucide-search-x" style="width:3rem;height:3rem;"></i>
+    <h3>No templates found</h3>
+    <p id="mkt-empty-msg">Try adjusting your search or filter to find what you're looking for.</p>
+    <button class="mkt-empty-btn" data-action="mkt-reset-all">Reset Filters</button>
+  </div>
+</div>
+
+<!-- ─── PAYMENT MODAL ─── -->
+<div class="mkt-modal-overlay" id="mkt-payment-modal">
+  <div class="mkt-modal" style="max-width:500px;">
+    <button class="mkt-modal-close" data-action="mkt-close-payment">
+      <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+    <div class="mkt-modal-preview" style="height:auto;padding:2rem 2rem 1rem;background:linear-gradient(135deg,#1A1A2E,#16213E);">
+      <div style="text-align:center;">
+        <i class="lucide lucide-crown" style="width:3rem;height:3rem;color:#D4A017;"></i>
+        <h3 style="color:white;font-size:1.3rem;font-weight:700;margin-top:0.75rem;">Premium Template</h3>
+        <div style="color:#D4A017;font-size:1.1rem;font-weight:600;margin-top:0.25rem;">
+          <span id="mkt-pay-name">Executive Elite</span>
+        </div>
+        <div style="margin-top:1rem;font-size:2rem;font-weight:800;color:white;">
+          ৳<span id="mkt-pay-amount">50</span> BDT
+        </div>
+        <div style="color:rgba(255,255,255,0.6);font-size:0.8rem;margin-top:0.25rem;">One-time payment, lifetime access</div>
+      </div>
+    </div>
+    <div class="mkt-modal-body" style="padding-top:1.25rem;">
+      <!-- Step 1: Select Method -->
+      <div id="mkt-pay-step-method">
+        <h4 style="font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem;">Choose payment method</h4>
+        <div class="flex flex-col gap-2.5">
+          <button class="mkt-pay-method-btn" data-method="bkash" data-action="mkt-select-method" data-method="bkash" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+            <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bkash.svg" alt="bKash" style="width:36px;height:36px;" onerror="this.style.display='none'">
+            <span style="font-weight:600;flex:1;">bKash</span>
+            <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
+            <i class="lucide lucide-chevron-right" style="width:1em;height:1em;color:var(--mkt-gray-400);"></i>
+          </button>
+          <button class="mkt-pay-method-btn" data-method="nagad" data-action="mkt-select-method" data-method="nagad" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.85rem 1rem;border:2px solid var(--mkt-gray-200);border-radius:12px;background:white;cursor:pointer;transition:all 0.2s;text-align:left;font-size:0.95rem;">
+            <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/nagad.svg" alt="Nagad" style="width:36px;height:36px;" onerror="this.style.display='none'">
+            <span style="font-weight:600;flex:1;">Nagad</span>
+            <span style="font-size:0.8rem;color:var(--mkt-gray-400);">Send money to 01XXXXXXXXX</span>
+            <i class="lucide lucide-chevron-right" style="width:1em;height:1em;color:var(--mkt-gray-400);"></i>
+          </button>
+        </div>
+        <div style="margin-top:1.25rem;padding:0.75rem 1rem;background:#FEF3C7;border-radius:10px;font-size:0.8rem;color:#92400e;">
+          <strong>Note:</strong> After sending payment, you'll need to enter your transaction ID for verification. An admin will confirm your purchase.
+        </div>
+      </div>
+
+      <!-- Step 2: Enter Details -->
+      <div id="mkt-pay-step-details" style="display:none;">
+        <h4 style="font-size:0.9rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.75rem;">
+          <span id="mkt-pay-method-label">bKash</span> — Payment Details
+        </h4>
+
+        <!-- bKash Checkout (auto-redirect) -->
+        <div id="mkt-pay-bkash-checkout" style="display:none;">
+          <div style="padding:0.75rem 1rem;background:#EBF5FB;border-radius:10px;margin-bottom:1rem;font-size:0.85rem;color:#1E4E79;">
+            <i class="lucide lucide-info" style="width:1em;height:1em;vertical-align:middle;"></i>
+            You'll be redirected to bKash's secure checkout page to complete the payment.
+          </div>
+        </div>
+
+        <!-- Merchant info (manual payment) -->
+        <div id="mkt-pay-merchant-info" style="display:block;">
+          <div style="padding:0.75rem 1rem;background:var(--mkt-gray-50);border-radius:10px;margin-bottom:1rem;font-size:0.85rem;color:var(--mkt-gray-600);">
+            Send exactly <strong>৳<span id="mkt-pay-details-amount">50</span></strong> to this number:
+            <div style="font-size:1.1rem;font-weight:700;color:var(--mkt-gray-800);margin-top:0.25rem;" id="mkt-pay-merchant">01XXXXXXXXX</div>
+          </div>
+        </div>
+
+        <!-- Phone (common for both flows) -->
+        <div style="margin-bottom:0.75rem;">
+          <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Your phone number</label>
+          <input type="text" id="mkt-pay-phone" placeholder="01XXXXXXXXX"
+                 style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
+                 class="mkt-input-focus">
+        </div>
+
+        <!-- Manual flow: Transaction ID (hidden for bKash checkout) -->
+        <div id="mkt-pay-manual-fields" style="display:block;">
+          <div style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;font-weight:500;color:var(--mkt-gray-600);margin-bottom:0.3rem;">Transaction ID (trxID)</label>
+            <input type="text" id="mkt-pay-trxid" placeholder="e.g. TRX123ABC"
+                   style="width:100%;padding:0.7rem 0.85rem;border:2px solid var(--mkt-gray-200);border-radius:10px;font-size:0.9rem;"
+                   class="mkt-input-focus">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;">
+          <button data-action="mkt-back-to-methods" class="mkt-modal-btn mkt-modal-btn-secondary" style="flex:0 0 auto;padding:0.7rem 1.25rem;">
+            <i class="lucide lucide-arrow-left" style="width:1em;height:1em;"></i> Back
+          </button>
+          <button data-action="mkt-submit-payment" id="mkt-pay-submit-btn" class="mkt-modal-btn mkt-modal-btn-primary" style="background:linear-gradient(135deg,#D4A017,#B8860B);flex:1;">
+            <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Submit Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div id="mkt-pay-step-success" style="display:none;text-align:center;padding:2rem 0;">
+        <i class="lucide lucide-check-circle" style="width:3rem;height:3rem;color:#10b981;"></i>
+        <h4 style="font-size:1.1rem;font-weight:700;color:var(--mkt-gray-800);margin-top:0.75rem;">Payment Submitted!</h4>
+        <p style="font-size:0.9rem;color:var(--mkt-gray-500);margin-top:0.5rem;line-height:1.5;">
+          Your transaction ID has been received. An admin will verify your payment and
+          activate the <strong id="mkt-pay-success-template">Executive Elite</strong> template shortly.
+        </p>
+        <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.75rem;">This usually takes less than 24 hours.</p>
+
+        <!-- ─── UPGRADE YOUR CV ─── -->
+        <div id="mkt-pay-upgrade-section" style="display:none;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--mkt-gray-200);text-align:left;">
+          <h5 style="font-size:0.95rem;font-weight:600;color:var(--mkt-gray-700);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+            <i class="lucide lucide-arrow-up-circle" style="width:1.1em;height:1.1em;color:var(--mkt-primary);"></i>
+            Apply to an Existing CV
+          </h5>
+          <p style="font-size:0.85rem;color:var(--mkt-gray-500);margin-bottom:1rem;">
+            Your <strong id="mkt-upgrade-template-name">Executive Elite</strong> template is ready!
+            Choose a CV to upgrade:
+          </p>
+          <div id="mkt-upgrade-cv-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;"></div>
+          <div id="mkt-upgrade-no-cvs" style="display:none;">
+            <p style="font-size:0.85rem;color:var(--mkt-gray-400);text-align:center;padding:1rem 0;">
+              No existing CVs available to upgrade.
+            </p>
+            <a href="javascript:void(0)" id="mkt-upgrade-new-link" class="mkt-modal-btn mkt-modal-btn-primary" style="max-width:280px;margin:0 auto;padding:0.7rem 1rem;font-size:0.9rem;text-decoration:none;">
+              <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create New CV
+            </a>
+          </div>
+          <div id="mkt-upgrade-loading" style="display:none;text-align:center;padding:1rem;">
+            <div class="mkt-spinner" style="width:1.5rem;height:1.5rem;border:3px solid var(--mkt-gray-200);border-top-color:var(--mkt-primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+            <p style="font-size:0.8rem;color:var(--mkt-gray-400);margin-top:0.5rem;">Checking your CVs...</p>
+          </div>
+        </div>
+
+        <button data-action="mkt-close-payment" class="mkt-modal-btn mkt-modal-btn-primary" style="margin-top:1.25rem;max-width:200px;margin-left:auto;margin-right:auto;">
+          Done
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div id="mkt-pay-loading" style="display:none;text-align:center;padding:2rem 0;">
+        <div class="mkt-spinner" style="width:2rem;height:2rem;border:3px solid var(--mkt-gray-200);border-top-color:var(--mkt-primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+        <p style="font-size:0.9rem;color:var(--mkt-gray-500);margin-top:0.75rem;">Processing...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PREVIEW MODAL (iframe-based rendered preview) ─── -->
+<div class="mkt-modal-overlay" id="mkt-modal">
+  <div class="mkt-modal">
+    <button class="mkt-modal-nav mkt-modal-prev" id="mkt-modal-prev" data-action="mkt-nav-preview" data-dir="-1" title="Previous template">
+      <i class="lucide lucide-chevron-left" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+    <button class="mkt-modal-nav mkt-modal-next" id="mkt-modal-next" data-action="mkt-nav-preview" data-dir="1" title="Next template">
+      <i class="lucide lucide-chevron-right" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+    <button class="mkt-modal-close" data-action="mkt-close-preview">
+      <i class="lucide lucide-x" style="width:1.25rem;height:1.25rem;"></i>
+    </button>
+
+    <!-- Preview header bar -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <i class="lucide lucide-eye w-4 h-4 text-indigo-600"></i>
+        <select id="mkt-modal-template-select" data-action="mkt-switch-template"
+                class="text-sm border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none min-w-[140px] cursor-pointer">
+          {% for slug, tmpl in templates %}
+          <option value="{{ slug }}">{{ tmpl.name }}</option>
+          {% endfor %}
+        </select>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-200">
+          <i class="lucide lucide-maximize-2 w-3 h-3"></i>
+          A4 Preview
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Zoom controls -->
+        <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          <button data-action="mkt-zoom-out" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom out (Ctrl+-)">
+            <i class="lucide lucide-zoom-out w-3.5 h-3.5"></i>
+          </button>
+          <span class="text-xs font-medium text-gray-600 min-w-[44px] text-center select-none border-x border-gray-100 px-1.5 py-1" id="mkt-zoom-level">100%</span>
+          <button data-action="mkt-zoom-in" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" title="Zoom in (Ctrl++)">
+            <i class="lucide lucide-zoom-in w-3.5 h-3.5"></i>
+          </button>
+          <button data-action="mkt-zoom-reset" class="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors border-l border-gray-100" title="Reset zoom (Ctrl+0)">
+            <i class="lucide lucide-rotate-ccw w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <span class="text-xs text-gray-400" id="mkt-modal-counter"></span>
+        <button data-action="mkt-close-preview" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Close (Esc)">
+          <i class="lucide lucide-x w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Iframe body -->
+    <div class="relative bg-gray-100" style="height:70vh;overflow:hidden;">
+      <!-- Loading overlay -->
+      <div id="mkt-preview-loading" class="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10 transition-opacity duration-300">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <span class="text-sm text-gray-500 font-medium">Loading preview...</span>
+        </div>
+      </div>
+      <!-- Scrollable iframe container -->
+      <div class="w-full h-full overflow-auto" id="mkt-preview-scroll">
+        <div class="flex items-start justify-center p-4 sm:p-8" id="mkt-preview-stage" style="transition:transform 0.15s ease;">
+          <iframe id="mkt-preview-iframe"
+                  class="bg-white rounded-lg shadow-lg origin-top"
+                  style="width:210mm;min-height:297mm;border:none;"
+                  sandbox="allow-scripts allow-same-origin"
+                  title="Template Preview"
+                  loading="lazy">
+          </iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer action bar -->
+    <div class="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        <i class="lucide lucide-info w-3.5 h-3.5"></i>
+        <span>Scroll to navigate · <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-[10px] font-mono">Esc</kbd> to close</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/cv-builder/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn" style="padding:0.5rem 1.25rem;font-size:0.85rem;border-radius:10px;">
+          <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> <span id="mkt-modal-btn-text">Use This Template</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── COMPARISON BAR ─── -->
+<div class="mkt-compare-bar" id="mkt-compare-bar">
+  <div class="mkt-compare-items" id="mkt-compare-items">
+    <span style="color:var(--mkt-gray-500);font-size:0.9rem;">Select templates to compare</span>
+  </div>
+  <div class="mkt-compare-actions">
+    <button class="mkt-compare-btn mkt-compare-btn-secondary" data-action="mkt-clear-compare">Clear</button>
+    <button class="mkt-compare-btn mkt-compare-btn-primary" data-action="mkt-compare-now" disabled id="mkt-compare-now">Compare</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───
+window.__mktTemplates = {{ templates|json_encode|raw }};
+window.__mktSlugs = {{ templates|keys|json_encode|raw }};
+window.__mktFavorites = JSON.parse(localStorage.getItem('mktFavs') || '[]');
+window.__mktCurrentFilter = 'all';
+window.__mktFavFilter = false;
+window.__mktCompareMode = false;
+window.__mktCompareList = [];
+window.__mktCurrentPreviewIdx = 0;
+
+// ─── FAVORITES ───
+function mktToggleFav(slug, btn) {
+  var idx = window.__mktFavorites.indexOf(slug);
+  if (idx === -1) {
+    window.__mktFavorites.push(slug);
+    if (btn) btn.classList.add('is-fav');
+  } else {
+    window.__mktFavorites.splice(idx, 1);
+    if (btn) btn.classList.remove('is-fav');
+  }
+  localStorage.setItem('mktFavs', JSON.stringify(window.__mktFavorites));
+  if (window.__mktFavFilter) mktApplyFilters();
+}
+function mktToggleFavFilter() {
+  window.__mktFavFilter = !window.__mktFavFilter;
+  document.getElementById('mkt-fav-filter-btn').classList.toggle('active');
+  mktApplyFilters();
+}
+function mktInitFavs() {
+  window.__mktFavorites.forEach(function(slug) {
+    var btn = document.querySelector('.mkt-card-favorite[data-slug="' + slug + '"]');
+    if (btn) btn.classList.add('is-fav');
+  });
+}
+
+// ─── SEARCH & FILTER ───
+function mktSetFilter(category, btn) {
+  window.__mktCurrentFilter = category;
+  document.querySelectorAll('.mkt-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  mktApplyFilters();
+}
+function mktApplyFilters() {
+  var query = (document.getElementById('mkt-search-input').value || '').toLowerCase();
+  var cards = document.querySelectorAll('.mkt-card');
+  var visible = 0;
+  cards.forEach(function(card) {
+    var name = card.getAttribute('data-name') || '';
+    var cat = card.getAttribute('data-category') || '';
+    var slug = card.getAttribute('data-slug') || '';
+    var matchesSearch = !query || name.indexOf(query) !== -1;
+    var matchesCategory = window.__mktCurrentFilter === 'all' || cat === window.__mktCurrentFilter;
+    var matchesFav = !window.__mktFavFilter || window.__mktFavorites.indexOf(slug) !== -1;
+    var show = matchesSearch && matchesCategory && matchesFav;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('mkt-result-count').textContent = 'Showing ' + visible + ' template(s)';
+  document.getElementById('mkt-empty').style.display = visible === 0 ? '' : 'none';
+  if (visible === 0) {
+    var msg = '';
+    if (query) msg = 'No templates match "' + query + '". Try different keywords.';
+    else if (window.__mktFavFilter) msg = 'No favorites yet. Click the heart icon on a template to add it.';
+    else msg = 'Try adjusting your filter to find what you\'re looking for.';
+    document.getElementById('mkt-empty-msg').textContent = msg;
+  }
+}
+function mktClearSearch() {
+  document.getElementById('mkt-search-input').value = '';
+  mktApplyFilters();
+}
+function mktResetAll() {
+  document.getElementById('mkt-search-input').value = '';
+  window.__mktCurrentFilter = 'all';
+  window.__mktFavFilter = false;
+  document.querySelectorAll('.mkt-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelector('.mkt-filter-btn[data-filter="all"]').classList.add('active');
+  document.getElementById('mkt-fav-filter-btn').classList.remove('active');
+  document.getElementById('mkt-sort-select').value = 'popularity';
+  mktSortTemplates();
+  mktApplyFilters();
+}
+
+// ─── SORT ───
+function mktSortTemplates() {
+  var sortBy = document.getElementById('mkt-sort-select').value;
+  var grid = document.getElementById('mkt-grid');
+  var cards = Array.from(grid.querySelectorAll('.mkt-card'));
+  cards.sort(function(a, b) {
+    if (sortBy === 'name') {
+      return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+    }
+    if (sortBy === 'popularity') {
+      return (parseInt(b.getAttribute('data-popularity')) || 0) - (parseInt(a.getAttribute('data-popularity')) || 0);
+    }
+    if (sortBy === 'category') {
+      var catA = a.getAttribute('data-category') || '';
+      var catB = b.getAttribute('data-category') || '';
+      return catA.localeCompare(catB);
+    }
+    return 0;
+  });
+  cards.forEach(function(card) { grid.appendChild(card); });
+  // Re-apply animations
+  cards.forEach(function(card, i) {
+    card.style.animation = 'none';
+    card.offsetHeight; // trigger reflow
+    card.style.animation = '';
+    card.style.animationDelay = ((i % 6) * 0.05) + 's';
+  });
+}
+
+// ─── PREVIEW MODAL ───
+function mktOpenPreview(slug) {
+  var idx = window.__mktSlugs.indexOf(slug);
+  if (idx === -1) return;
+  window.__mktCurrentPreviewIdx = idx;
+  window.__mktZoom = 1;
+  updateZoomDisplay();
+  mktRenderPreview(slug);
+  document.getElementById('mkt-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('mkt-modal-prev').style.display = idx > 0 ? '' : 'none';
+  document.getElementById('mkt-modal-next').style.display = idx < window.__mktSlugs.length - 1 ? '' : 'none';
+}
+function mktNavPreview(dir) {
+  var newIdx = window.__mktCurrentPreviewIdx + dir;
+  if (newIdx < 0 || newIdx >= window.__mktSlugs.length) return;
+  window.__mktCurrentPreviewIdx = newIdx;
+  mktRenderPreview(window.__mktSlugs[newIdx]);
+  document.getElementById('mkt-modal-prev').style.display = newIdx > 0 ? '' : 'none';
+  document.getElementById('mkt-modal-next').style.display = newIdx < window.__mktSlugs.length - 1 ? '' : 'none';
+}
+function mktRenderPreview(slug) {
+  var tmpl = window.__mktTemplates[slug];
+  if (!tmpl) return;
+  var loading = document.getElementById('mkt-preview-loading');
+  var iframe = document.getElementById('mkt-preview-iframe');
+  if (loading) loading.classList.remove('hidden');
+  // Update header — sync dropdown selection and counter
+  var select = document.getElementById('mkt-modal-template-select');
+  if (select) select.value = slug;
+  document.getElementById('mkt-modal-counter').textContent = (window.__mktCurrentPreviewIdx + 1) + ' of ' + window.__mktSlugs.length;
+  // Update select button
+  var btn = document.getElementById('mkt-modal-select-btn');
+  var btnText = document.getElementById('mkt-modal-btn-text');
+  if (tmpl.is_premium) {
+    btnText.textContent = 'Buy Premium Template';
+    btn.href = 'javascript:void(0)';
+    btn.onclick = function() { mktClosePreview(); mktOpenPaymentModal(slug); };
+    btn.style.background = 'linear-gradient(135deg, #D4A017, #B8860B)';
+  } else {
+    btnText.textContent = 'Use This Template';
+    btn.href = '/cv-builder/new?template=' + slug;
+    btn.onclick = null;
+    btn.style.background = '';
+  }
+  // Load preview iframe
+  var previewUrl = '/api/cv/templates/' + encodeURIComponent(slug) + '/preview?t=' + Date.now();
+  iframe.src = previewUrl;
+  iframe.onload = function() {
+    if (loading) loading.classList.add('hidden');
+  };
+  // Fallback: hide loading after 10s even if iframe doesn't fire onload
+  setTimeout(function() {
+    if (loading && !loading.classList.contains('hidden')) {
+      loading.classList.add('hidden');
+    }
+  }, 10000);
+}
+
+function mktSwitchTemplate(slug) {
+  if (!slug) return;
+  var idx = window.__mktSlugs.indexOf(slug);
+  if (idx === -1) return;
+  window.__mktCurrentPreviewIdx = idx;
+  mktRenderPreview(slug);
+  document.getElementById('mkt-modal-prev').style.display = idx > 0 ? '' : 'none';
+  document.getElementById('mkt-modal-next').style.display = idx < window.__mktSlugs.length - 1 ? '' : 'none';
+}
+function mktClosePreview() {
+  document.getElementById('mkt-modal').classList.remove('open');
+  document.body.style.overflow = '';
+  // Clear iframe to stop loading
+  var iframe = document.getElementById('mkt-preview-iframe');
+  if (iframe) iframe.src = '';
+  // Reset zoom
+  window.__mktZoom = 1;
+  updateZoomDisplay();
+}
+
+// ─── ZOOM CONTROLS ───
+window.__mktZoom = 1;
+var MKT_ZOOM_MIN = 0.25;
+var MKT_ZOOM_MAX = 2.5;
+var MKT_ZOOM_STEP = 0.1;
+
+function updateZoomDisplay() {
+  var el = document.getElementById('mkt-zoom-level');
+  if (el) el.textContent = Math.round(window.__mktZoom * 100) + '%';
+  var stage = document.getElementById('mkt-preview-stage');
+  if (!stage) return;
+  var iframe = document.getElementById('mkt-preview-iframe');
+  // Scale the iframe using CSS transform on the wrapping stage
+  stage.style.transform = 'scale(' + window.__mktZoom + ')';
+  stage.style.transformOrigin = 'top center';
+}
+
+function mktZoomIn() {
+  window.__mktZoom = Math.min(window.__mktZoom + MKT_ZOOM_STEP, MKT_ZOOM_MAX);
+  updateZoomDisplay();
+}
+function mktZoomOut() {
+  window.__mktZoom = Math.max(window.__mktZoom - MKT_ZOOM_STEP, MKT_ZOOM_MIN);
+  updateZoomDisplay();
+}
+function mktZoomReset() {
+  window.__mktZoom = 1;
+  updateZoomDisplay();
+}
+function mktToggleCompareMode() {
+  window.__mktCompareMode = !window.__mktCompareMode;
+  document.getElementById('mkt-compare-btn').classList.toggle('active');
+  document.getElementById('mkt-compare-bar').classList.toggle('open');
+  document.querySelectorAll('.mkt-card-compare').forEach(function(el) {
+    el.style.display = window.__mktCompareMode ? '' : 'none';
+  });
+  if (!window.__mktCompareMode) {
+    mktClearCompare();
+  }
+} 
+function mktClearCompare() {
+  window.__mktCompareList = [];
+  document.querySelectorAll('.mkt-card-compare input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+  mktRenderCompareBar();
+}
+function mktAddToCompare(slug) {
+  if (window.__mktCompareList.indexOf(slug) !== -1) return;
+  if (window.__mktCompareList.length >= 4) { window.showMessage('Maximum 4 templates can be compared at a time.', 'warning'); return; }
+  window.__mktCompareList.push(slug);
+  mktRenderCompareBar();
+}
+function mktRemoveFromCompare(slug) {
+  var idx = window.__mktCompareList.indexOf(slug);
+  if (idx === -1) return;
+  window.__mktCompareList.splice(idx, 1);
+  mktRenderCompareBar();
+}
+
+function mktRenderCompareBar() {
+  var container = document.getElementById('mkt-compare-items');
+  var btn = document.getElementById('mkt-compare-now');
+  if (window.__mktCompareList.length === 0) {
+    container.innerHTML = '<span style="color:var(--mkt-gray-500);font-size:0.9rem;">Select templates to compare</span>';
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = window.__mktCompareList.length < 2;
+  var html = '';
+  window.__mktCompareList.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    if (!tmpl) return;
+    html += '<div class="mkt-compare-item"><span>' + escHtml(tmpl.name) + '</span><button data-action="mkt-remove-compare" data-slug="' + slug + '">&times;</button></div>';
+  });
+  container.innerHTML = html;
+}
+function mktCompareNow() {
+  if (window.__mktCompareList.length < 2) return;
+  var slugs = window.__mktCompareList;
+  var html = '<div style="max-width:1200px;margin:2rem auto;padding:1rem;">';
+  html += '<h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;color:var(--mkt-gray-800);">Template Comparison</h2>';
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid var(--mkt-gray-200);border-radius:12px;overflow:hidden;">';
+  html += '<thead><tr style="background:var(--mkt-gray-50);">';
+  html += '<th style="padding:1rem;text-align:left;font-weight:600;color:var(--mkt-gray-700);border-bottom:2px solid var(--mkt-gray-200);">Feature</th>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    if (!tmpl) return;
+    html += '<th style="padding:1rem;text-align:center;font-weight:600;color:var(--mkt-gray-700);border-bottom:2px solid var(--mkt-gray-200);border-left:1px solid var(--mkt-gray-200);">' + escHtml(tmpl.name) + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  // Name row
+  html += '<tr><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);border-bottom:1px solid var(--mkt-gray-100);">Name</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    html += '<td style="padding:0.75rem 1rem;text-align:center;border-bottom:1px solid var(--mkt-gray-100);border-left:1px solid var(--mkt-gray-100);">' + escHtml(tmpl.name) + '</td>';
+  });
+  html += '</tr>';
+
+  // Category row
+  html += '<tr style="background:var(--mkt-gray-50);"><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);border-bottom:1px solid var(--mkt-gray-100);">Category</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    html += '<td style="padding:0.75rem 1rem;text-align:center;border-bottom:1px solid var(--mkt-gray-100);border-left:1px solid var(--mkt-gray-100);">' + escHtml(tmpl.category) + '</td>';
+  });
+  html += '</tr>';
+
+  // Description row
+  html += '<tr><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);border-bottom:1px solid var(--mkt-gray-100);">Description</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    html += '<td style="padding:0.75rem 1rem;text-align:center;font-size:0.85rem;border-bottom:1px solid var(--mkt-gray-100);border-left:1px solid var(--mkt-gray-100);">' + escHtml(tmpl.description) + '</td>';
+  });
+  html += '</tr>';
+
+  // Best for row
+  html += '<tr style="background:var(--mkt-gray-50);"><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);border-bottom:1px solid var(--mkt-gray-100);">Best For</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    html += '<td style="padding:0.75rem 1rem;text-align:center;border-bottom:1px solid var(--mkt-gray-100);border-left:1px solid var(--mkt-gray-100);">' + escHtml(tmpl.best_for || '-') + '</td>';
+  });
+  html += '</tr>';
+
+  // Features row
+  html += '<tr><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);border-bottom:1px solid var(--mkt-gray-100);">Features</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    html += '<td style="padding:0.75rem 1rem;text-align:center;border-bottom:1px solid var(--mkt-gray-100);border-left:1px solid var(--mkt-gray-100);">';
+    html += (tmpl.features || []).map(function(f) { return '<span style="display:inline-block;padding:0.15rem 0.4rem;margin:0.15rem;font-size:0.75rem;background:var(--mkt-gray-100);border-radius:4px;">' + escHtml(f) + '</span>'; }).join('');
+    html += '</td>';
+  });
+  html += '</tr>';
+
+  // Popularity row
+  html += '<tr style="background:var(--mkt-gray-50);"><td style="padding:0.75rem 1rem;font-weight:500;color:var(--mkt-gray-600);">Popularity</td>';
+  slugs.forEach(function(slug) {
+    var tmpl = window.__mktTemplates[slug];
+    var pop = tmpl.popularity || 0;
+    var color = pop >= 90 ? '#10b981' : pop >= 75 ? '#f59e0b' : '#6b7280';
+    html += '<td style="padding:0.75rem 1rem;text-align:center;border-left:1px solid var(--mkt-gray-100);"><span style="font-weight:700;color:' + color + ';">' + pop + '%</span></td>';
+  });
+  html += '</tr>';
+
+  html += '</tbody></table>';
+  html += '<div style="margin-top:1.5rem;text-align:center;"><button class="mkt-modal-btn mkt-modal-btn-secondary" data-action="mkt-close-comparison">Close Comparison</button></div>';
+  html += '</div>';
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:2000;overflow-y:auto;animation:mktFadeIn 0.2s ease;';
+  overlay.innerHTML = html;
+  overlay.onclick = function(e) { if (e.target === overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+// ─── KEYBOARD NAV & ZOOM ───
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    mktClosePreview();
+  }
+  var modalOpen = document.getElementById('mkt-modal').classList.contains('open');
+  if (!modalOpen) return;
+  if (e.key === 'ArrowLeft') {
+    mktNavPreview(-1);
+  }
+  if (e.key === 'ArrowRight') {
+    mktNavPreview(1);
+  }
+  // Zoom shortcuts (Ctrl/Meta +)
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === '=' || e.key === '+') {
+      e.preventDefault();
+      mktZoomIn();
+    } else if (e.key === '-') {
+      e.preventDefault();
+      mktZoomOut();
+    } else if (e.key === '0') {
+      e.preventDefault();
+      mktZoomReset();
+    }
+  }
+});
+
+// ─── EVENT DELEGATION (replaces all inline onclick/onchange handlers) ───
+document.addEventListener('click', function(e) {
+  var target = e.target.closest('[data-action]');
+  if (!target) return;
+  var action = target.getAttribute('data-action');
+
+  switch (action) {
+  case 'mkt-open-preview':
+    mktOpenPreview(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-clear-search':
+    mktClearSearch();
+    break;
+  case 'mkt-set-filter':
+    mktSetFilter(target.getAttribute('data-filter'), target);
+    break;
+  case 'mkt-toggle-fav-filter':
+    mktToggleFavFilter();
+    break;
+  case 'mkt-toggle-compare-mode':
+    mktToggleCompareMode();
+    break;
+  case 'mkt-toggle-fav':
+    mktToggleFav(target.getAttribute('data-slug'), target);
+    break;
+  case 'mkt-open-payment':
+    mktOpenPaymentModal(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-reset-all':
+    mktResetAll();
+    break;
+  case 'mkt-close-payment':
+    mktClosePaymentModal();
+    break;
+  case 'mkt-select-method':
+    mktSelectMethod(target.getAttribute('data-method'));
+    break;
+  case 'mkt-back-to-methods':
+    mktBackToMethods();
+    break;
+  case 'mkt-submit-payment':
+    mktSubmitPayment();
+    break;
+  case 'mkt-nav-preview':
+    mktNavPreview(parseInt(target.getAttribute('data-dir'), 10));
+    break;
+  case 'mkt-close-preview':
+    mktClosePreview();
+    break;
+  case 'mkt-zoom-out':
+    mktZoomOut();
+    break;
+  case 'mkt-zoom-in':
+    mktZoomIn();
+    break;
+  case 'mkt-zoom-reset':
+    mktZoomReset();
+    break;
+  case 'mkt-clear-compare':
+    mktClearCompare();
+    break;
+  case 'mkt-compare-now':
+    mktCompareNow();
+    break;
+  case 'mkt-remove-compare':
+    mktRemoveFromCompare(target.getAttribute('data-slug'));
+    break;
+  case 'mkt-close-comparison':
+    document.body.removeChild(target.closest('div').parentNode);
+    break;
+  case 'mkt-upgrade-cv':
+    var cvId = target.getAttribute('data-cv-id');
+    var templateSlug = target.getAttribute('data-template');
+    target.disabled = true;
+    target.textContent = 'Applying...';
+    var csrfToken = '{{ csrf_token }}';
+    fetch('/api/cv/' + cvId + '/upgrade-template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+      body: JSON.stringify({ template: templateSlug })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        target.textContent = '\u2713 Applied!';
+        target.style.background = '#10b981';
+        // Dim the item after a moment
+        setTimeout(function() {
+          var item = target.closest('[style*="display:flex"]');
+          if (item) { item.style.opacity = '0.5'; item.style.pointerEvents = 'none'; }
+          // Check if all CVs upgraded
+          var remaining = document.querySelectorAll('.mkt-upgrade-btn:not([disabled])');
+          if (remaining.length === 0) {
+            var noCvs = document.getElementById('mkt-upgrade-no-cvs');
+            if (noCvs) {
+              noCvs.querySelector('p').textContent = 'All CVs have been upgraded!';
+              noCvs.style.display = '';
+            }
+          }
+        }, 1200);
+      } else {
+        alert('Upgrade failed: ' + (data.error || 'Unknown error'));
+        target.disabled = false;
+        target.textContent = 'Apply';
+      }
+    })
+    .catch(function() {
+      alert('Connection error. Please try again.');
+      target.disabled = false;
+      target.textContent = 'Apply';
+    });
+    break;
+  }
+});
+
+document.addEventListener('change', function(e) {
+  var target = e.target.closest('[data-action]');
+  if (!target) return;
+  var action = target.getAttribute('data-action');
+
+  switch (action) {
+  case 'mkt-sort-templates':
+    mktSortTemplates();
+    break;
+  case 'mkt-switch-template':
+    mktSwitchTemplate(target.value);
+    break;
+  case 'mkt-compare-toggle':
+    if (target.checked) {
+      mktAddToCompare(target.getAttribute('data-slug'));
+    } else {
+      mktRemoveFromCompare(target.getAttribute('data-slug'));
+    }
+    break;
+  }
+});
+
+// ─── CLOSE MODAL ON OVERLAY CLICK ───
+document.addEventListener('click', function(e) {
+  var modal = document.getElementById('mkt-modal');
+  if (modal && modal.classList.contains('open') && e.target === modal) {
+    mktClosePreview();
+  }
+});
+
+// ─── SEARCH ON INPUT ───
+document.getElementById('mkt-search-input').addEventListener('input', mktApplyFilters);
+
+// ─── PAYMENT MODAL ───
+window.__mktPaySlug = '';
+window.__mktPayPurchaseId = 0;
+
+function mktOpenPaymentModal(slug) {
+  var tmpl = window.__mktTemplates[slug];
+  if (!tmpl) return;
+
+  // Check if user is authenticated
+  {% if not is_authenticated %}
+  window.location.href = '/login?redirect=' + encodeURIComponent('/cv-builder/templates');
+  return;
+  {% endif %}
+
+  window.__mktPaySlug = slug;
+  window.__mktPayPurchaseId = 0;
+
+  document.getElementById('mkt-pay-name').textContent = tmpl.name || 'Premium Template';
+  document.getElementById('mkt-pay-amount').textContent = tmpl.price || 50;
+  document.getElementById('mkt-pay-details-amount').textContent = tmpl.price || 50;
+  document.getElementById('mkt-pay-success-template').textContent = tmpl.name || 'Premium Template';
+
+  // Reset to step 1
+  document.getElementById('mkt-pay-step-method').style.display = '';
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-step-success').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = 'none';
+  document.getElementById('mkt-pay-phone').value = '';
+  document.getElementById('mkt-pay-trxid').value = '';
+
+  // Highlight selected method
+  document.querySelectorAll('.mkt-pay-method-btn').forEach(function(b) {
+    b.style.borderColor = 'var(--mkt-gray-200)';
+    b.style.background = 'white';
+  });
+
+  document.getElementById('mkt-payment-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function mktClosePaymentModal() {
+  document.getElementById('mkt-payment-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function mktSelectMethod(method) {
+  window.__mktPayMethod = method;
+  document.querySelectorAll('.mkt-pay-method-btn').forEach(function(b) {
+    if (b.getAttribute('data-method') === method) {
+      b.style.borderColor = '#D4A017';
+      b.style.background = '#FDF3D0';
+    } else {
+      b.style.borderColor = 'var(--mkt-gray-200)';
+      b.style.background = 'white';
+    }
+  });
+
+  var label = method.charAt(0).toUpperCase() + method.slice(1);
+  document.getElementById('mkt-pay-method-label').textContent = label;
+
+  // For bKash: show checkout button; for others: show manual flow with merchant number + trxid
+  var merchants = { bkash: '01XXXXXXXXX', nagad: '01XXXXXXXXX', rocket: '01XXXXXXXXX' };
+  document.getElementById('mkt-pay-merchant').textContent = merchants[method] || '01XXXXXXXXX';
+
+  // Show/hide bKash Checkout elements
+  var bkashCheckoutEl = document.getElementById('mkt-pay-bkash-checkout');
+  var manualFieldsEl = document.getElementById('mkt-pay-manual-fields');
+  var merchantInfoEl = document.getElementById('mkt-pay-merchant-info');
+  
+  if (method === 'bkash') {
+    bkashCheckoutEl.style.display = '';
+    manualFieldsEl.style.display = 'none';
+    merchantInfoEl.style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').textContent = 'Pay via bKash Checkout';
+  } else {
+    bkashCheckoutEl.style.display = 'none';
+    manualFieldsEl.style.display = '';
+    merchantInfoEl.style.display = '';
+    document.getElementById('mkt-pay-submit-btn').textContent = 'Submit Payment';
+  }
+
+  document.getElementById('mkt-pay-step-method').style.display = 'none';
+  document.getElementById('mkt-pay-step-details').style.display = '';
+}
+
+function mktBackToMethods() {
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-step-method').style.display = '';
+}
+
+function mktSubmitPayment() {
+  var method = window.__mktPayMethod || 'bkash';
+  var phone = document.getElementById('mkt-pay-phone').value.trim();
+
+  if (!phone) { alert('Please enter your phone number.'); document.getElementById('mkt-pay-phone').focus(); return; }
+
+  // bKash Checkout API flow
+  if (method === 'bkash') {
+    mktPayWithBkashCheckout(phone);
+    return;
+  }
+
+  // Manual flow for other methods
+  var trxId = document.getElementById('mkt-pay-trxid').value.trim();
+  if (!trxId) { alert('Please enter the transaction ID from your payment.'); document.getElementById('mkt-pay-trxid').focus(); return; }
+
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = '';
+  document.getElementById('mkt-pay-submit-btn').disabled = true;
+
+  var baseUrl = window.location.origin;
+  var csrfToken = '{{ csrf_token }}';
+
+  fetch(baseUrl + '/api/cv/templates/initiate-purchase', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    body: JSON.stringify({ template_slug: window.__mktPaySlug, payment_method: method, phone_number: phone })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success && data.purchase_id) {
+      window.__mktPayPurchaseId = data.purchase_id;
+      return fetch(baseUrl + '/api/cv/templates/verify-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ purchase_id: data.purchase_id, transaction_id: trxId })
+      });
+    } else {
+      throw new Error(data.error || 'Failed to initiate purchase');
+    }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    if (data.success) {
+      document.getElementById('mkt-pay-step-success').style.display = '';
+      if (typeof gtag !== 'undefined') { gtag('event', 'purchase', { currency: 'BDT', value: 50 }); }
+      // Show upgrade offer for purchased template
+      if (window.__mktPaySlug) {
+        var tmpl = window.__mktTemplates[window.__mktPaySlug];
+        setTimeout(function() {
+          mktShowUpgradeOffer(window.__mktPaySlug, tmpl ? tmpl.name : '');
+        }, 300);
+      }
+    } else {
+      alert('Error: ' + (data.error || 'Verification failed'));
+      mktBackToMethods();
+    }
+  })
+  .catch(function(err) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    alert('An error occurred: ' + err.message);
+    mktBackToMethods();
+  });
+}
+
+/**
+ * Pay with bKash Checkout API — redirects to bKash hosted checkout page.
+ */
+function mktPayWithBkashCheckout(phone) {
+  document.getElementById('mkt-pay-step-details').style.display = 'none';
+  document.getElementById('mkt-pay-loading').style.display = '';
+  document.getElementById('mkt-pay-submit-btn').disabled = true;
+
+  var baseUrl = window.location.origin;
+  var csrfToken = '{{ csrf_token }}';
+
+  fetch(baseUrl + '/api/cv/templates/bkash-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    body: JSON.stringify({ template_slug: window.__mktPaySlug, phone_number: phone })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+
+    if (!data.success) {
+      if (data.purchased) {
+        alert('You have already purchased this template!');
+        mktClosePaymentModal();
+        return;
+      }
+      if (data.pending) {
+        alert('You have a pending purchase. Please wait for confirmation.');
+        mktClosePaymentModal();
+        return;
+      }
+      alert('Error: ' + (data.error || 'Failed to initiate bKash checkout'));
+      mktBackToMethods();
+      return;
+    }
+
+    // If we have a checkout URL, redirect to bKash
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+      return;
+    }
+
+    // If gateway is unavailable, fall back to manual flow
+    if (data.manual_fallback) {
+      alert('bKash gateway is currently unavailable. You can make a manual payment instead.');
+      // Switch to manual flow for bKash
+      window.__mktPayMethod = 'bkash';
+      document.getElementById('mkt-pay-merchant').textContent = data.merchant_number || '01XXXXXXXXX';
+      document.getElementById('mkt-pay-bkash-checkout').style.display = 'none';
+      document.getElementById('mkt-pay-merchant-info').style.display = '';
+      document.getElementById('mkt-pay-manual-fields').style.display = '';
+      document.getElementById('mkt-pay-submit-btn').textContent = 'Submit Payment';
+      document.getElementById('mkt-pay-step-details').style.display = '';
+      return;
+    }
+
+    alert('Unexpected response. Please try again.');
+    mktBackToMethods();
+  })
+  .catch(function(err) {
+    document.getElementById('mkt-pay-loading').style.display = 'none';
+    document.getElementById('mkt-pay-submit-btn').disabled = false;
+    alert('Connection error: ' + err.message);
+    mktBackToMethods();
+  });
+}
+
+// ─── CV UPGRADE AFTER PURCHASE ───
+/**
+ * Fetches user's CVs and shows upgrade options in the success step.
+ * @param {string} templateSlug - e.g. 'executive'
+ * @param {string} templateName - e.g. 'Executive Elite'
+ */
+function mktShowUpgradeOffer(templateSlug, templateName) {
+  var section = document.getElementById('mkt-pay-upgrade-section');
+  var list = document.getElementById('mkt-upgrade-cv-list');
+  var noCvs = document.getElementById('mkt-upgrade-no-cvs');
+  var loading = document.getElementById('mkt-upgrade-loading');
+  var nameEl = document.getElementById('mkt-upgrade-template-name');
+  var linkEl = document.getElementById('mkt-upgrade-new-link');
+
+  if (!section) return;
+
+  nameEl.textContent = templateName || (templateSlug.charAt(0).toUpperCase() + templateSlug.slice(1));
+  linkEl.href = '/cv-builder/new?template=' + encodeURIComponent(templateSlug);
+  linkEl.innerHTML = '<i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create New CV with ' + escHtml(templateName || templateSlug);
+
+  section.style.display = '';
+  list.innerHTML = '';
+  noCvs.style.display = 'none';
+  loading.style.display = '';
+
+  fetch('/api/cv/my-cvs')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      if (!data.success || !data.cvs || data.cvs.length === 0) {
+        noCvs.style.display = '';
+        return;
+      }
+      var upgradable = data.cvs.filter(function(cv) {
+        return cv.template === 'minimal';
+      });
+      if (upgradable.length === 0) {
+        noCvs.style.display = '';
+        return;
+      }
+      list.innerHTML = '';
+      upgradable.forEach(function(cv) {
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.85rem;border:1px solid var(--mkt-gray-200);border-radius:10px;background:white;transition:all 0.2s;';
+        item.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;min-width:0;">' +
+          '<i class="lucide lucide-file-text" style="width:1em;height:1em;flex-shrink:0;color:var(--mkt-primary);"></i>' +
+          '<span style="font-size:0.85rem;font-weight:500;color:var(--mkt-gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(cv.title) + '</span>' +
+          '</div>' +
+          '<button class="mkt-upgrade-btn" data-action="mkt-upgrade-cv" data-cv-id="' + cv.id + '" data-template="' + templateSlug + '" style="flex-shrink:0;padding:0.35rem 0.85rem;border-radius:8px;font-size:0.8rem;font-weight:600;border:none;cursor:pointer;background:linear-gradient(135deg,var(--mkt-primary),var(--mkt-secondary));color:white;transition:all 0.2s;">Apply</button>';
+        list.appendChild(item);
+      });
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      noCvs.style.display = '';
+    });
+}
+
+// Close payment modal on overlay click
+document.addEventListener('click', function(e) {
+  var modal = document.getElementById('mkt-payment-modal');
+  if (modal && modal.classList.contains('open') && e.target === modal) {
+    mktClosePaymentModal();
+  }
+});
+
+// ─── GLOBAL TEMPLATE PREVIEW BUTTON HANDLER ───
+// Wire up .template-preview-btn buttons (used in template-preview-card.twig component)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.template-preview-btn');
+  if (btn) {
+    var slug = btn.getAttribute('data-template');
+    if (slug && window.__mktSlugs && window.__mktSlugs.indexOf(slug) !== -1) {
+      mktOpenPreview(slug);
+    } else if (slug) {
+      // If slug isn't in the current marketplace data, redirect to builder
+      window.location.href = '/cv-builder/new?template=' + encodeURIComponent(slug);
+    }
+  }
+});
+
+// ─── SPINNER KEYFRAMES ───
+var style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+
+// ─── INIT ───
+function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+document.addEventListener('DOMContentLoaded', function() {
+  mktInitFavs();
+  mktSortTemplates();
+
+  // Handle bKash callback redirect params
+  var urlParams = new URLSearchParams(window.location.search);
+  var paymentStatus = urlParams.get('payment');
+  if (paymentStatus === 'success') {
+    var purchaseId = urlParams.get('purchase_id') || '';
+    var trxId = urlParams.get('trxid') || '';
+    var templateSlug = urlParams.get('template_slug') || '';
+    // Show success notification
+    var msg = 'Payment successful! Your premium template is now available. Transaction ID: ' + trxId;
+    if (typeof window.showMessage !== 'undefined') {
+      window.showMessage(msg, 'success');
+    } else {
+      alert(msg);
+    }
+    // Auto-open the payment modal in success mode with upgrade offer
+    if (templateSlug && window.__mktTemplates[templateSlug]) {
+      var tmpl = window.__mktTemplates[templateSlug];
+      window.__mktPaySlug = templateSlug;
+      document.getElementById('mkt-pay-name').textContent = tmpl.name || 'Premium Template';
+      document.getElementById('mkt-pay-amount').textContent = tmpl.price || 50;
+      document.getElementById('mkt-pay-success-template').textContent = tmpl.name || 'Premium Template';
+      document.getElementById('mkt-pay-step-method').style.display = 'none';
+      document.getElementById('mkt-pay-step-details').style.display = 'none';
+      document.getElementById('mkt-pay-step-success').style.display = '';
+      document.getElementById('mkt-payment-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // Show upgrade offer
+      setTimeout(function() {
+        mktShowUpgradeOffer(templateSlug, tmpl.name);
+      }, 500);
+    }
+    // Clean URL without reload
+    if (window.history.replaceState) {
+      urlParams.delete('payment');
+      urlParams.delete('purchase_id');
+      urlParams.delete('trxid');
+      urlParams.delete('template_slug');
+      var newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  } else if (paymentStatus === 'cancel' || paymentStatus === 'failure') {
+    var msg = 'Payment was cancelled or failed. You can try again.';
+    if (typeof window.showMessage !== 'undefined') {
+      window.showMessage(msg, 'warning');
+    } else {
+      alert(msg);
+    }
+    if (window.history.replaceState) {
+      urlParams.delete('payment');
+      var newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }
+});
+</script>
+{% endblock %}

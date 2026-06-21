@@ -175,6 +175,7 @@
         const dropzone = imageModal.querySelector('.rte-dropzone');
         if (dropzone && fileInput) {
             dropzone.addEventListener('click', () => fileInput.click());
+
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -189,6 +190,65 @@
                 this._pendingImagePreviewUrl = URL.createObjectURL(file);
                 if (uploadPreviewImg) uploadPreviewImg.src = this._pendingImagePreviewUrl;
                 if (uploadPreviewArea) uploadPreviewArea.style.display = 'flex';
+            });
+
+            // Drag-and-drop support for instant upload preview
+            let dragCounter = 0;
+
+            dropzone.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                dropzone.classList.add('rte-dropzone-active');
+            });
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Do NOT increment counter — dragover fires continuously
+            });
+
+            dropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    dropzone.classList.remove('rte-dropzone-active');
+                }
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                dropzone.classList.remove('rte-dropzone-active');
+
+                const files = e.dataTransfer?.files;
+                if (!files || files.length === 0) return;
+
+                const file = files[0];
+                if (!file.type.startsWith('image/')) {
+                    if (typeof this.showNotification === 'function') {
+                        this.showNotification('Please drop an image file', 'warning');
+                    }
+                    return;
+                }
+
+                // Sync the file input value so form submission includes the selected file
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                clearPendingUploadPreview();
+                this._pendingImageFile = file;
+                this._pendingImagePreviewUrl = URL.createObjectURL(file);
+                if (uploadPreviewImg) uploadPreviewImg.src = this._pendingImagePreviewUrl;
+                if (uploadPreviewArea) uploadPreviewArea.style.display = 'flex';
+
+                if (typeof this.showNotification === 'function') {
+                    this.showNotification('Image ready — adjust settings and insert', 'info');
+                }
             });
         }
 

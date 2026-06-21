@@ -1356,6 +1356,7 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
             'provider' => $frontendProvider,
             'model' => $defaultModel,
             'frontend_model' => $defaultModel,
+            'backend_provider' => $backendProvider,
             'backend_model' => $backendModel,
             'providers' => $providerList,
             'openrouter_key_source' => $openrouterKeySource
@@ -2074,6 +2075,45 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
         echo json_encode(['success' => $ok]);
     });
 
+
+    // DELETE /api/ai/conversations/{id} - Public: delete your own conversation (ownership via visitorToken)
+    $router->delete('/api/ai/conversations/(\d+)', function ($conversationId) use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'ai_public_chat',
+            'limit' => 10,
+            'window' => 60,
+            'is_api' => true
+        ]);
+
+        $conversationId = (int)$conversationId;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Valid conversation id is required']);
+            return;
+        }
+
+        $visitorToken = trim((string)($_SERVER['HTTP_X_VISITOR_TOKEN'] ?? $_GET['visitorToken'] ?? ''));
+        if (empty($visitorToken)) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Visitor token is required']);
+            return;
+        }
+
+        $chatModel = new AIChatModel($mysqli);
+        $result = $chatModel->deleteConversationByToken($conversationId, $visitorToken);
+
+        if (!$result) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Conversation not found or not owned by you']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+    });
     $bootstrapSessionHandler = function (bool $isAdmin) use ($mysqli) {
         $input = json_decode(file_get_contents('php://input'), true);
         if (!is_array($input)) {
@@ -2164,6 +2204,45 @@ if (!defined('BROX_AI_API_ROUTES_HANDLED')) {
                 'error_code' => 'fatal_error'
             ], 500);
         }
+    });
+
+    // GET /api/admin/ai/conversations - List all conversations (Admin-only)
+    $router->get('/api/admin/ai/conversations', ['middleware' => ['auth', 'admin_only']], function () use ($mysqli) {
+        $chatModel = new AIChatModel($mysqli);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = (int)($_GET['limit'] ?? 50);
+        if ($limit <= 0) $limit = 50;
+        if ($limit > 200) $limit = 200;
+        $offset = ($page - 1) * $limit;
+
+        $conversations = $chatModel->listConversations($limit, $offset);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'conversations' => $conversations]);
+    });
+
+    // DELETE /api/admin/ai/conversations/{id} - Delete a conversation with all messages (Admin-only)
+    $router->delete('/api/admin/ai/conversations/(\d+)', ['middleware' => ['auth', 'admin_only']], function ($conversationId) use ($mysqli) {
+        run_middleware('rate_limit', [
+            'scope' => 'admin_api',
+            'limit' => 30,
+            'window' => 60,
+            'is_api' => true
+        ]);
+
+        $conversationId = (int)$conversationId;
+        if ($conversationId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Valid conversation id is required']);
+            return;
+        }
+
+        $chatModel = new AIChatModel($mysqli);
+        $result = $chatModel->deleteConversation($conversationId);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $result]);
     });
 
     // GET /api/admin/ai/conversations/export (Admin-only, PHP fallback supported)

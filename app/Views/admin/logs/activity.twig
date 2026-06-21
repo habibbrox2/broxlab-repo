@@ -1,257 +1,57 @@
-{# templates/admin/activity.twig #}
 {% extends "admin/layout.twig" %}
-{% block title %}{{ title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-clock-history"></i>
-        Live Activity Logs
-      </div>
-      <div class="admin-page-subtitle">Monitor real-time system activity and user actions</div>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-activity w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Logs</p>
+                    <h1 class="text-xl font-bold text-white">Activity Log</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Track all system activity and user actions.</p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div class="d-flex gap-2 align-items-center">
-        <div class="text-muted small">
-          Status: <span id="liveStatus" class="badge bg-info">Connecting...</span>
-          <span id="logCount" class="badge bg-secondary ms-2">0 logs</span>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-activity w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Activity Records</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ logs|length }}</span>
+            </div>
         </div>
-        {% if auth_user.role in ['superadmin','admin'] %}
-          <button id="toggleActivityBtn"
-                  class="modern-btn modern-btn-white btn-sm ms-2"
-                  title="Enable/Disable activity logging">
-            <i class="bi bi-power me-1"></i> <span id="toggleActivityLabel">{{ activityEnabled ? 'Activity: ON' : 'Activity: OFF' }}</span>
-          </button>
-        {% endif %}
-        <!-- Show limit selector moved to top -->
-        <div class="ms-3">
-          <label for="perPageSelect" class="small text-muted me-2">Show:</label>
-          <select id="perPageSelect"
-                  class="form-select form-select-sm d-inline-block inl-a-0002">
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50" selected>50</option>
-            <option value="100">100</option>
-          </select>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Time</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">User</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Action</th>
+                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if logs is defined and logs|length > 0 %}
+                        {% for log in logs %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ log.created_at|date('d M Y H:i:s') }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ log.user_name ?? 'System' }}</td>
+                            <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{{ log.action }}</span></td>
+                            <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 max-w-xs truncate">{{ log.details ?? '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="4" class="px-4 py-16"><div class="flex flex-col items-center justify-center text-center"><div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><i class="lucide lucide-activity w-7 h-7 text-slate-400 dark:text-slate-600"></i></div><h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No activity logs</h3><p class="text-sm text-slate-400 dark:text-slate-600 max-w-xs">No activity has been recorded yet.</p></div></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
-        {% if auth_user.is_super_admin or auth_user.role == 'admin' %}
-          <button id="clearLogsBtn"
-                  class="modern-btn modern-btn-primary btn-sm clear-logs-btn ms-3"
-                  title="সব লগ ডেলিট করুন (Delete all logs)">
-            <i class="bi bi-trash"></i> Clear All Logs
-          </button>
-        {% endif %}
-      </div>
     </div>
-    <!-- Filters -->
-    <div class="filter-section">
-      <div class="row g-3">
-        <div class="col-md-3">
-          <div class="filter-label">Search</div>
-          <input type="text"
-                 id="searchBox"
-                 class="form-control form-control-sm"
-                 placeholder="Action or details..." />
-        </div>
-        <div class="col-md-2">
-          <div class="filter-label">Status</div>
-          <select id="filterStatus" class="form-select form-select-sm">
-            <option value="">All Status</option>
-            <option value="success">Success</option>
-            <option value="error">Error</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <div class="filter-label">User ID</div>
-          <input type="number"
-                 id="filterUser"
-                 class="form-control form-control-sm"
-                 placeholder="ID" />
-        </div>
-        <div class="col-md-2">
-          <div class="filter-label">Resource</div>
-          <input type="text"
-                 id="filterResource"
-                 class="form-control form-control-sm"
-                 placeholder="Type" />
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button id="btnRefresh" class="modern-btn btn-light btn-sm flex-grow-1">
-            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-          </button>
-          <div class="dropdown">
-            <button class="modern-btn btn-light btn-sm"
-                    type="button"
-                    id="dropdownExport"
-                    data-bs-toggle="dropdown">
-              <i class="bi bi-download me-1"></i>Export
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="dropdownExport">
-              <li>
-                <a class="dropdown-item" href="#" id="exportCsv"><i class="bi bi-file-earmark-csv me-2"></i>CSV</a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#" id="exportJson"><i class="bi bi-file-earmark-json me-2"></i>JSON</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Table -->
-    <div class="table-wrapper">
-      <table class="table activity-table">
-        <thead>
-          <tr>
-            <th class="table-col-created" data-sort="created_at">
-              <i class="bi bi-clock"></i> Time
-              <span class="sort-indicator" id="sort-created_at"></span>
-            </th>
-            <th class="table-col-user" data-sort="user_id">
-              <i class="bi bi-person"></i> User
-              <span class="sort-indicator" id="sort-user_id"></span>
-            </th>
-            <th data-sort="action">
-              <i class="bi bi-lightning"></i> Action
-              <span class="sort-indicator" id="sort-action"></span>
-            </th>
-            <th class="table-col-120">
-              <i class="bi bi-box"></i> Resource
-            </th>
-            <th class="table-col-100" data-sort="status">
-              <i class="bi bi-check-circle"></i> Status
-              <span class="sort-indicator" id="sort-status"></span>
-            </th>
-            <th class="table-col-130">
-              <i class="bi bi-router"></i> IP Address / Browser
-            </th>
-          </tr>
-        </thead>
-        <tbody id="log-table-body"
-               data-activity-enabled="{{ activityEnabled ? 'true' : 'false' }}">
-          <tr>
-            <td colspan="6" class="empty-state">
-              <div>
-                <i class="bi bi-hourglass-split"></i>
-                <p>Loading...</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination-section">
-        <div class="pagination-info">
-          <span class="ms-3">Showing <span id="startRecord">0</span> - <span id="endRecord">0</span> of <span id="totalRecord">0</span> logs</span>
-        </div>
-        <div class="pagination-controls">
-          <button id="prevPage"
-                  class="modern-btn btn-sm btn-outline-secondary"
-                  disabled>
-            <i class="bi bi-chevron-left"></i> Previous
-          </button>
-          <span id="pageIndicator" class="text-muted small mx-3">Page 1</span>
-          <button id="nextPage"
-                  class="modern-btn btn-sm btn-outline-secondary"
-                  disabled>
-            Next <i class="bi bi-chevron-right"></i>
-          </button>
-          <!-- bottom clear button removed (moved to top) -->
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Log Details Modal -->
-  <div class="modal fade"
-       id="logDetailsModal"
-       tabindex="-1"
-       aria-labelledby="logDetailsLabel"
-       aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="logDetailsLabel">
-            <i class="bi bi-file-text me-2"></i>Activity Log Details
-          </h5>
-          <button type="button"
-                  class="modern-btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="log-detail-row">
-            <div class="log-detail-label">ID</div>
-            <div class="log-detail-value">
-              <strong id="modalLogId"></strong>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Time</div>
-            <div class="log-detail-value" id="modalLogTime"></div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">User</div>
-            <div class="log-detail-value">
-              <span class="badge bg-info" id="modalLogUser"></span>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Role</div>
-            <div class="log-detail-value">
-              <span class="badge bg-secondary" id="modalLogRole"></span>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Action</div>
-            <div class="log-detail-value">
-              <strong id="modalLogAction"></strong>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Resource</div>
-            <div class="log-detail-value">
-              <span class="badge bg-light text-surface-dark" id="modalLogResource"></span>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Status</div>
-            <div class="log-detail-value" id="modalLogStatus"></div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">IP Address</div>
-            <div class="log-detail-value">
-              <code id="modalLogIp" class="inl-a-0003"></code>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Browser</div>
-            <div class="log-detail-value" id="modalLogBrowser"></div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">User Agent</div>
-            <div class="log-detail-value">
-              <small id="modalLogAgent" class="inl-a-0004"></small>
-            </div>
-          </div>
-          <div class="log-detail-row">
-            <div class="log-detail-label">Details</div>
-            <div class="log-detail-value">
-              <div class="details-json" id="modalLogDetails">No additional details</div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button"
-                  class="modern-btn modern-btn-secondary"
-                  data-bs-dismiss="modal">Close</button>
-          <button type="button"
-                  class="modern-btn modern-btn-primary"
-                  id="modalCopyJson">
-            <i class="bi bi-clipboard me-2"></i>Copy JSON
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 {% endblock %}

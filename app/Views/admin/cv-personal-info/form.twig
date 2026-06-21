@@ -1,0 +1,218 @@
+{% extends "admin/layout.twig" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-file-user w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Personal Info</p>
+                    <h1 class="text-xl font-bold text-white">{% if mode == 'edit' %}Edit Personal Info{% else %}Create Personal Info{% endif %}</h1>
+                    <p class="text-sm text-white/60 mt-0.5">{% if mode == 'edit' %}Update personal information record{% else %}Create a new personal information record{% endif %}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/admin/cv-personal-info" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List</a>
+            </div>
+        </div>
+    </div>
+
+    {% if errors is defined and errors is not empty %}
+    <div class="flex items-start gap-3 p-4 rounded-xl mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200/60 dark:border-red-800/40">
+        <i class="lucide lucide-alert-circle w-4 h-4 text-red-600 mt-0.5 flex-shrink-0"></i>
+        <div class="text-sm text-red-800 dark:text-red-200">
+            <strong class="font-semibold">Please fix the following errors:</strong>
+            <ul class="mt-1.5 list-disc list-inside space-y-0.5">
+                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{% if mode == 'edit' %}/admin/cv-personal-info/{{ record.id }}{% else %}/admin/cv-personal-info{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
+            <div class="space-y-5">
+                {# Personal Information Card #}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-user w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Personal Information</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="full_name" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Full Name</label>
+                                <input type="text" id="full_name" name="full_name" value="{{ record.full_name ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="job_title" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Job Title</label>
+                                <input type="text" id="job_title" name="job_title" value="{{ record.job_title ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Email</label>
+                                <input type="email" id="email" name="email" value="{{ record.email ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Phone</label>
+                                <input type="text" id="phone" name="phone" value="{{ record.phone ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="address" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Address</label>
+                            <textarea id="address" name="address" rows="2" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">{{ record.address ?? '' }}</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="date_of_birth" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Date of Birth</label>
+                                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ record.date_of_birth ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="nationality" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Nationality</label>
+                                <input type="text" id="nationality" name="nationality" value="{{ record.nationality ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="gender" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Gender</label>
+                                <select id="gender" name="gender" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                    <option value="">Not specified</option>
+                                    <option value="male" {% if record.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if record.gender == 'female' %}selected{% endif %}>Female</option>
+                                    <option value="other" {% if record.gender == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Identity Documents Card #}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-id-card w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Identity & Documents</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="national_id_no" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">National ID No.</label>
+                                <input type="text" id="national_id_no" name="national_id_no" value="{{ record.national_id_no ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="passport_no" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Passport No.</label>
+                                <input type="text" id="passport_no" name="passport_no" value="{{ record.passport_no ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="birth_certificate_no" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Birth Certificate No.</label>
+                                <input type="text" id="birth_certificate_no" name="birth_certificate_no" value="{{ record.birth_certificate_no ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="religion" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Religion</label>
+                                <input type="text" id="religion" name="religion" value="{{ record.religion ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="driving_license" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Driving License</label>
+                            <input type="text" id="driving_license" name="driving_license" value="{{ record.driving_license ?? '' }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                        </div>
+                    </div>
+                </div>
+
+                {# Social & Web Profiles Card #}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-share-2 w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Social &amp; Web Profiles</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="website" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Website</label>
+                                <input type="url" id="website" name="website" value="{{ record.website ?? '' }}" placeholder="https://" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="portfolio" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Portfolio</label>
+                                <input type="url" id="portfolio" name="portfolio" value="{{ record.portfolio ?? '' }}" placeholder="https://" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="linkedin" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">LinkedIn</label>
+                                <input type="url" id="linkedin" name="linkedin" value="{{ record.linkedin ?? '' }}" placeholder="https://linkedin.com/in/" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="github" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">GitHub</label>
+                                <input type="url" id="github" name="github" value="{{ record.github ?? '' }}" placeholder="https://github.com/" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                            <div>
+                                <label for="twitter" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Twitter / X</label>
+                                <input type="url" id="twitter" name="twitter" value="{{ record.twitter ?? '' }}" placeholder="https://twitter.com/" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ── RIGHT COLUMN ── #}
+            <div class="space-y-5">
+                {# Relationship Card #}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-link-2 w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Linked Records</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label for="user_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">User</label>
+                            <select id="user_id" name="user_id" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                <option value="">Select a user</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if (mode == 'edit' and record.user_id == user.id) or (mode == 'create' and form_data.user_id == user.id) %}selected{% endif %}>{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="cv_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">CV</label>
+                            <select id="cv_id" name="cv_id" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                <option value="">Select a CV</option>
+                                {% for cv in cvs %}
+                                <option value="{{ cv.id }}" {% if (mode == 'edit' and record.cv_id == cv.id) or (mode == 'create' and form_data.cv_id == cv.id) %}selected{% endif %}>{{ cv.title }} (#{{ cv.id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {# Submit Card #}
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"><i class="lucide lucide-save w-4 h-4 text-indigo-500"></i> Save Record</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                            <i class="lucide lucide-save w-4 h-4"></i>
+                            {% if mode == 'edit' %}Update Record{% else %}Create Record{% endif %}
+                        </button>
+                        <a href="/admin/cv-personal-info" class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-150">
+                            <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

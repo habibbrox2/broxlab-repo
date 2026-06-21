@@ -194,16 +194,16 @@ export async function loadFirebaseConfig(timeout = 5000) {
 
     // 2) Network fetch from /api/firebase-config with timeout
     try {
-      const { ok, status: _status, data, } = await fetchWithTimeout('/api/firebase-config', {
+      const response = await fetchWithTimeout('/api/firebase-config', {
         method: 'GET',
         credentials: 'same-origin',
         cache: 'no-store',
         headers: { 'Accept': 'application/json', },
         timeoutMs: timeout,
       });
-      if (ok) {
-        const body = data || null;
-        const cfg = body && body.config ? body.config : body;
+      if (response.ok) {
+        const data = await response.json();
+        const cfg = data && data.config ? data.config : data;
         const validated = validateFirebaseConfig(cfg);
         if (validated) {
           try { localStorage.setItem('firebase_config_cache', JSON.stringify({ ts: Date.now(), config: validated, })); } catch (e) { /* ignore storage write failure */ }

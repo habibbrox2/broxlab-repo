@@ -1,206 +1,188 @@
 {% extends 'admin/layout.twig' %}
 {% block title %}Google Analytics Dashboard - FCM{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4" id="notificationsAnalyticsRoot">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-graph-up me-2"></i>
-        Notifications Analytics
-      </div>
-      <div class="admin-page-subtitle">Notification statistics</div>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4" id="notificationsAnalyticsRoot">
+
+  <!-- Gradient Header -->
+  <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 sm:p-8 shadow-lg">
+   <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl"></div>
+   <div class="pointer-events-none absolute -bottom-8 left-1/3 h-28 w-28 rounded-full bg-indigo-400/10 blur-2xl"></div>
+   <div class="relative flex flex-wrap items-end justify-between gap-4">
+    <div class="flex items-start gap-4">
+     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+      <i class="lucide lucide-trending-up text-2xl text-white"></i>
+     </div>
+     <div>
+      <h1 class="text-2xl font-bold text-white sm:text-3xl">Google Analytics Dashboard</h1>
+      <p class="mt-1 text-sm text-indigo-200/80">Firebase Cloud Messaging and notification performance analytics.</p>
+     </div>
     </div>
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2 class="mb-0">
-          <i class="bi bi-graph-up me-2"></i>Google Analytics Dashboard
-        </h2>
-        <small class="text-muted">Firebase Cloud Messaging and notification performance analytics</small>
-      </div>
-    </div>
-    <!-- Real-time Stats -->
-    <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="admin-panel-card shadow-sm border-left-primary">
-          <div class="admin-panel-card-body">
-            <div class="text-primary font-weight-bold text-uppercase mb-1">Notifications Sent</div>
-            <div class="h3 mb-0" id="totalNotificationsSent">-</div>
-            <small class="text-muted">All-time total</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="admin-panel-card shadow-sm border-left-success">
-          <div class="admin-panel-card-body">
-            <div class="text-success font-weight-bold text-uppercase mb-1">Delivered</div>
-            <div class="h3 mb-0" id="totalDelivered">-</div>
-            <small class="text-muted">Successfully sent</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="admin-panel-card shadow-sm border-left-info">
-          <div class="admin-panel-card-body">
-            <div class="text-info font-weight-bold text-uppercase mb-1">Clicks</div>
-            <div class="h3 mb-0" id="totalClicked">-</div>
-            <small class="text-muted">Total interactions</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="admin-panel-card shadow-sm border-left-warning">
-          <div class="admin-panel-card-body">
-            <div class="text-warning font-weight-bold text-uppercase mb-1">Permission Granted</div>
-            <div class="h3 mb-0" id="totalPermissionGranted">-</div>
-            <small class="text-muted">Users granted permission</small>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Info Boxes -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="alert alert-info border-left-info" role="alert">
-          <h4 class="alert-heading">
-            <i class="bi bi-info-circle-fill me-2"></i>Google Analytics Integration
-          </h4>
-          <p class="mb-2">
-            This dashboard tracks Firebase Console and Google Analytics
-            notification events such as:
-          </p>
-          <ul class="mb-0">
-            <li>
-              <strong>fcm_notification_sent</strong> - Notification sent
-            </li>
-            <li>
-              <strong>fcm_notification_delivered</strong> - Notification delivered
-            </li>
-            <li>
-              <strong>fcm_notification_clicked</strong> - Notification clicked
-            </li>
-            <li>
-              <strong>notification_permission_changed</strong> - Permission preference changed
-            </li>
-            <li>
-              <strong>fcm_token_generated</strong> - Token generated
-            </li>
-            <li>
-              <strong>fcm_token_migrated</strong> - Token migrated
-            </li>
-            <li>
-              <strong>user_login/logout</strong> - User login/logout events
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <!-- Charts Section -->
-    <div class="row mb-4">
-      <div class="col-md-6">
-        <div class="admin-panel-card shadow-sm">
-          <div class="admin-panel-card-header bg-primary text-white">
-            <h5 class="mb-0">Notification Flow</h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <canvas id="notificationFlowChart"></canvas>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="admin-panel-card shadow-sm">
-          <div class="admin-panel-card-header bg-primary text-white">
-            <h5 class="mb-0">Channel Breakdown</h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <canvas id="channelChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- How to Access Firebase Analytics -->
-    <div class="row">
-      <div class="col-12">
-        <div class="admin-panel-card shadow-sm">
-          <div class="admin-panel-card-header bg-secondary text-white">
-            <h5 class="mb-0">
-              <i class="bi bi-link-45deg me-2"></i>Firebase Console & Analytics Setup
-            </h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <p>To view Analytics data in Firebase Console, follow these steps:</p>
-            <ol>
-              <li>
-                <a href="https://console.firebase.google.com/"
-                   target="_blank"
-                   class="modern-btn btn-sm btn-primary">
-                  <i class="bi bi-box-arrow-up-right me-1"></i>Open Firebase Console
-                </a>
-              </li>
-              <li>
-                Open your project <strong>Current Project</strong>
-              </li>
-              <li>
-                Go to <strong>Analytics > Dashboard</strong>
-              </li>
-              <li>
-                Review custom events under <strong>Analytics Events</strong>
-              </li>
-            </ol>
-            <div class="alert alert-warning mt-3">
-              <strong>Note:</strong> Analytics data may take some time to appear, especially for newly generated events.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Event Examples -->
-    <div class="row mt-4">
-      <div class="col-12">
-        <div class="admin-panel-card shadow-sm">
-          <div class="admin-panel-card-header bg-info text-white">
-            <h5 class="mb-0">
-              <i class="bi bi-code me-2"></i>JavaScript Implementation
-            </h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <p>Use these frontend methods to track notification analytics events:</p>
-            <div class="row">
-              <div class="col-md-6">
-                <h6>Notification Events:</h6>
-                <pre><code>// Frontend - notifications.js
-                  AnalyticsSystem.trackNotificationSent()
-                  AnalyticsSystem.trackNotificationDelivered()
-                  AnalyticsSystem.trackNotificationClicked()
-                  AnalyticsSystem.trackNotificationDismissed()
-                  AnalyticsSystem.trackNotificationRead()</code></pre>
-              </div>
-              <div class="col-md-6">
-                <h6>Token & User Events:</h6>
-                <pre><code>// Frontend - notifications.js
-                  AnalyticsSystem.trackTokenGenerated()
-                  AnalyticsSystem.trackTokenMigration()
-                  AnalyticsSystem.trackUserLogin()
-                  AnalyticsSystem.trackUserLogout()</code></pre>
-              </div>
-            </div>
-            <div class="alert alert-success mt-3">
-              <strong>Tracks:</strong>
-              <ul class="mb-0">
-                <li>Real-time notification tracking</li>
-                <li>User engagement metrics</li>
-                <li>Token management monitoring</li>
-                <li>Admin actions logging</li>
-                <li>Error tracking and debugging</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+   </div>
   </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Notifications Sent</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+       <i class="lucide lucide-send" w-4 h-4></i>
+      </div>
+     </div>
+     <div class="mt-2 text-3xl font-bold text-slate-900" id="totalNotificationsSent">-</div>
+     <p class="mt-1 text-xs text-slate-500">All-time total</p>
+    </div>
+   </div>
+
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Delivered</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+       <i class="lucide lucide-check-circle" w-4 h-4></i>
+      </div>
+     </div>
+     <div class="mt-2 text-3xl font-bold text-slate-900" id="totalDelivered">-</div>
+     <p class="mt-1 text-xs text-slate-500">Successfully sent</p>
+    </div>
+   </div>
+
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-sky-600">Clicks</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+       <i class="lucide lucide-eye" w-4 h-4></i>
+      </div>
+     </div>
+     <div class="mt-2 text-3xl font-bold text-slate-900" id="totalClicked">-</div>
+     <p class="mt-1 text-xs text-slate-500">Total interactions</p>
+    </div>
+   </div>
+
+   <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+    <div class="p-4">
+     <div class="flex items-center justify-between">
+      <span class="text-xs font-semibold uppercase tracking-wider text-amber-600">Permission Granted</span>
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+       <i class="lucide lucide-shield-check" w-4 h-4></i>
+      </div>
+     </div>
+     <div class="mt-2 text-3xl font-bold text-slate-900" id="totalPermissionGranted">-</div>
+     <p class="mt-1 text-xs text-slate-500">Users granted permission</p>
+    </div>
+   </div>
+  </div>
+
+  <!-- Integration Info Card -->
+  <div class="rounded-xl border border-sky-200 bg-sky-50 p-5 shadow-sm">
+   <h2 class="flex items-center gap-2 text-base font-semibold text-sky-900">
+    <i class="lucide lucide-info" w-[18px] h-[18px]></i> Google Analytics Integration
+   </h2>
+   <p class="mt-2 text-sm text-sky-800">This dashboard tracks Firebase Console and Google Analytics notification events.</p>
+   <ul class="mt-3 space-y-1.5 text-sm text-sky-800">
+    <li><strong>fcm_notification_sent</strong> - Notification sent</li>
+    <li><strong>fcm_notification_delivered</strong> - Notification delivered</li>
+    <li><strong>fcm_notification_clicked</strong> - Notification clicked</li>
+    <li><strong>notification_permission_changed</strong> - Permission preference changed</li>
+    <li><strong>fcm_token_generated</strong> - Token generated</li>
+    <li><strong>fcm_token_migrated</strong> - Token migrated</li>
+    <li><strong>user_login/logout</strong> - User login/logout events</li>
+   </ul>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+   <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+      <i class="lucide lucide-chart-column" w-3.5 h-3.5></i>
+     </div>
+     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Notification Flow</h2>
+    </div>
+    <div class="p-4">
+     <canvas id="notificationFlowChart"></canvas>
+    </div>
+   </div>
+   <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+      <i class="lucide lucide-pie-chart" w-3.5 h-3.5></i>
+     </div>
+     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Channel Breakdown</h2>
+    </div>
+    <div class="p-4">
+     <canvas id="channelChart"></canvas>
+    </div>
+   </div>
+  </div>
+
+  <!-- Setup & Implementation Section -->
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+   <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+      <i class="lucide lucide-link" w-3.5 h-3.5></i>
+     </div>
+     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Firebase Console &amp; Analytics Setup</h2>
+    </div>
+    <div class="p-5 space-y-3">
+     <p class="text-sm text-slate-600">To view analytics data in Firebase Console, follow these steps:</p>
+     <ol class="list-decimal space-y-2 pl-5 text-sm text-slate-600">
+      <li><a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" class="text-indigo-600 hover:underline">Open Firebase Console</a></li>
+      <li>Open your project <strong>Current Project</strong></li>
+      <li>Go to <strong>Analytics &gt; Dashboard</strong></li>
+      <li>Review custom events under <strong>Analytics Events</strong></li>
+     </ol>
+     <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+      <i class="lucide lucide-alert-triangle mt-0.5" w-4 h-4 shrink-0></i>
+      <span><strong>Note:</strong> Analytics data may take some time to appear, especially for newly generated events.</span>
+     </div>
+    </div>
+   </div>
+
+   <div class="rounded-xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-5 py-4">
+     <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+      <i class="lucide lucide-code" w-3.5 h-3.5></i>
+     </div>
+     <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">JavaScript Implementation</h2>
+    </div>
+    <div class="p-5 space-y-4">
+     <p class="text-sm text-slate-600">Use these frontend methods to track notification analytics events.</p>
+     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+       <h3 class="mb-2 text-sm font-semibold text-slate-900">Notification Events</h3>
+       <pre class="overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100"><code>// Frontend - notifications.js
+AnalyticsSystem.trackNotificationSent()
+AnalyticsSystem.trackNotificationDelivered()
+AnalyticsSystem.trackNotificationClicked()
+AnalyticsSystem.trackNotificationDismissed()
+AnalyticsSystem.trackNotificationRead()</code></pre>
+      </div>
+      <div>
+       <h3 class="mb-2 text-sm font-semibold text-slate-900">Token &amp; User Events</h3>
+       <pre class="overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100"><code>// Frontend - notifications.js
+AnalyticsSystem.trackTokenGenerated()
+AnalyticsSystem.trackTokenMigration()
+AnalyticsSystem.trackUserLogin()
+AnalyticsSystem.trackUserLogout()</code></pre>
+      </div>
+     </div>
+     <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-start gap-2">
+      <i class="lucide lucide-info mt-0.5" w-4 h-4 shrink-0></i>
+      <span><strong>Tracks:</strong> Real-time notification tracking, user engagement metrics, token management monitoring, admin actions logging, and error tracking.</span>
+     </div>
+    </div>
+   </div>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
-          defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 {% endblock %}

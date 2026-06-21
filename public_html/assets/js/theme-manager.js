@@ -156,21 +156,23 @@ class ThemeManager {
 /**
  * Initialize Theme Manager on DOM Ready
  */
-document.addEventListener('DOMContentLoaded', () => {
+/** @type {ThemeManager|null} */
+let _themeManagerInstance = null;
+
+function initThemeManager() {
   const globalThemeConfig = window.__APP_JS_CONFIG?.ui?.theme || window.__APP_CONFIG?.ui?.theme || {};
 
-  // Create global instance
-  window.themeManager = new ThemeManager({
+  _themeManagerInstance = new ThemeManager({
     storageKey: globalThemeConfig.storageKey || 'broxbhai-theme',
     defaultTheme: globalThemeConfig.defaultTheme || 'light',
     transitionDuration: Number(globalThemeConfig.transitionDuration || 300),
   });
+  window.themeManager = _themeManagerInstance;
 
-  // Setup theme toggle button
   const themeToggleBtn = document.getElementById('broxThemeToggle') || document.getElementById('themeToggle');
   if (themeToggleBtn) {
     const updateButtonState = () => {
-      const currentTheme = window.themeManager.getCurrentTheme();
+      const currentTheme = _themeManagerInstance.getCurrentTheme();
       const isDark = currentTheme === 'dark';
       const themeToggleText = isDark
         ? window.broxI18n?.translate('Switch to light mode') || 'Switch to light mode'
@@ -179,10 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
       themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
       themeToggleBtn.setAttribute('title', themeToggleText);
       themeToggleBtn.setAttribute('aria-label', themeToggleText);
+      themeToggleBtn.dataset.theme = currentTheme;
+      themeToggleBtn.classList.toggle('dark', isDark);
+      themeToggleBtn.classList.toggle('light', !isDark);
     };
 
     themeToggleBtn.addEventListener('click', () => {
-      window.themeManager.toggleTheme(true);
+      _themeManagerInstance.toggleTheme(true);
       updateButtonState();
     });
 
@@ -190,7 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('themechange', updateButtonState);
   }
 
-  // Add CSS transition class
   const style = document.createElement('style');
   style.textContent = `
         .theme-transition,
@@ -201,7 +205,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     `;
   document.head.appendChild(style);
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initThemeManager, { once: true, });
+} else {
+  initThemeManager();
+}
 
 // ESM export for use in other modules
 export default ThemeManager;

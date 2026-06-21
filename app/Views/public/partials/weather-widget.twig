@@ -1,395 +1,404 @@
 {# ==================== WEATHER WIDGET SECTION ==================== #}
-<section class="container home-weather-section py-5" id="weather-section">
-    <div class="row">
-        <div class="col-12">
-            <div class="text-center mb-5">
-                <h2 class="display-6 fw-bold mb-3">
-                    <span class="text-primary">Weather</span> Update
-                </h2>
-                <p class="lead text-muted mb-0">Real-time weather for your location</p>
-            </div>
-        </div>
-    </div>
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 home-weather-section py-8" id="weather-section">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="col-span-12">
+ <div class="text-center mb-5">
+ <h2 class="text-3xl md:text-4xl font-bold mb-3">
+ <span class="text-indigo-600">Weather</span> Update
+ </h2>
+ <p class="text-lg text-slate-500 mb-0">Real-time weather for your location</p>
+ </div>
+ </div>
+ </div>
 
-    {# Weather Search Bar #}
-    <div class="row mb-4">
-        <div class="col-lg-8 mx-auto">
-            <form id="home-weather-search-form" class="weather-search-form">
-                <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden hover-lift">
-                    <span class="input-group-text bg-gradient-primary text-white border-0 px-4">
-                        <i class="bi bi-geo-alt-fill fs-4"></i>
-                    </span>
-                    <input type="text"
-                           name="location"
-                           id="home-weather-search-input"
-                           class="form-control form-control-lg border-0 py-4 px-4"
-                           placeholder="Enter city name or coordinates (e.g., Dhaka, 23.8103,90.4125)"
-                           aria-label="Search weather location">
-                    <button class="btn btn-primary px-4 fw-bold" type="submit">
-                        <i class="bi bi-search me-2"></i>Check Weather
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+ {# Weather Search Bar #}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-4">
+ <div class="lg:col-span-8 mx-auto">
+ <form id="home-weather-search-form" class="weather-search-form">
+ <div class="flex shadow-sm rounded-full overflow-hidden bg-white border border-slate-200">
+ <span class="inline-flex items-center bg-white text-indigo-600 border-0 px-4">
+ <i class="lucide lucide-map-pin text-xl"></i>
+ </span>
+ <input type="text"
+ name="location"
+ id="home-weather-search-input"
+ class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500  border-0 py-4 px-4"
+ placeholder="Enter city name or coordinates (e.g., Dhaka, 23.8103,90.4125)"
+ aria-label="Search weather location">
+ <button class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700" type="submit">
+ <i class="lucide lucide-search mr-2"></i>Check Weather
+ </button>
+ </div>
+ </form>
+ </div>
+ </div>
 
-    {# Weather Display Container - Populated via JavaScript #}
-    <div class="row">
-        <div class="col-12">
-            <div id="weather-widget-container">
-                {# Loading state #}
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-lift">
-                    <div class="card-body p-5 text-center">
-                        <div class="d-flex align-items-center justify-content-center" style="min-height: 220px;">
-                            <div class="text-center">
-                                <div class="spinner-border text-primary mb-4" role="status" style="width: 3.5rem; height: 3.5rem;">
-                                    <span class="visually-hidden">Loading weather...</span>
-                                </div>
-                                <p class="mb-0 fw-medium">Fetching latest weather data...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ {# Weather Display Container - Populated via JavaScript #}
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
+ <div class="col-span-12">
+ <div id="weather-widget-container">
+ {# Loading state #}
+ <div class="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-lg">
+ <div class="p-5 text-center">
+ <div class="flex items-center justify-center" style="min-height: 220px;">
+ <div class="text-center">
+ <div class="inline-block h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent mb-4" role="status">
+ <span class="sr-only">Loading weather...</span>
+ </div>
+ <p class="mb-0 font-medium">Fetching latest weather data...</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </section>
 
 {# Weather Widget JavaScript #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.getElementById('home-weather-search-form');
-    const searchInput = document.getElementById('home-weather-search-input');
-    const container = document.getElementById('weather-widget-container');
-    const weatherDetailsBaseUrl = '{{ path('weather.details') }}';
+ const searchForm = document.getElementById('home-weather-search-form');
+ const searchInput = document.getElementById('home-weather-search-input');
+ const container = document.getElementById('weather-widget-container');
+ const weatherDetailsBaseUrl = '{{ path('weather.details') }}';
 
-    if (searchForm && container) {
-        // Auto-detect user location on page load
-        loadWeatherForUserLocation();
+ if (searchForm && container) {
+ // Auto-detect user location on page load
+ loadWeatherForUserLocation();
 
-        // Handle form submission
-        searchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const location = searchInput.value.trim();
-            if (location) {
-                loadWeatherData(location);
-            }
-        });
+ // Handle form submission
+ searchForm.addEventListener('submit', function(e) {
+ e.preventDefault();
+ const location = searchInput.value.trim();
+ if (location) {
+ loadWeatherData(location);
+ }
+ });
 
-        // Handle "Enter" key
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const location = this.value.trim();
-                if (location) {
-                    loadWeatherData(location);
-                }
-            }
-        });
-    }
+ // Handle"Enter" key
+ searchInput.addEventListener('keydown', function(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ const location = this.value.trim();
+ if (location) {
+ loadWeatherData(location);
+ }
+ }
+ });
+ }
 
-    /**
-     * Fetch weather for user's detected location via IP geolocation
-     */
-    async function loadWeatherForUserLocation() {
-        const fallbackLocation = 'Dhaka';
+ /**
+ * Fetch weather for user's detected location via IP geolocation
+ */
+ async function loadWeatherForUserLocation() {
+ const fallbackLocation = 'Dhaka';
 
-        // Permissions Policy or browser settings may block geolocation before prompt.
-        if (!navigator.geolocation) {
-            loadWeatherData(fallbackLocation);
-            return;
-        }
+ // Permissions Policy or browser settings may block geolocation before prompt.
+ if (!navigator.geolocation) {
+ loadWeatherData(fallbackLocation);
+ return;
+ }
 
-        try {
-            const policy = document.permissionsPolicy || document.featurePolicy;
-            if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('geolocation')) {
-                loadWeatherData(fallbackLocation);
-                return;
-            }
-        } catch (error) {
-            // Ignore feature policy detection failures.
-        }
+ try {
+ const policy = document.permissionsPolicy || document.featurePolicy;
+ if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('geolocation')) {
+ loadWeatherData(fallbackLocation);
+ return;
+ }
+ } catch (error) {
+ // Ignore feature policy detection failures.
+ }
 
-        try {
-            if (navigator.permissions && typeof navigator.permissions.query === 'function') {
-                const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-                if (permissionStatus.state === 'denied') {
-                    loadWeatherData(fallbackLocation);
-                    return;
-                }
-            }
-        } catch (error) {
-            // Ignore permission query failures and continue with best-effort geolocation.
-        }
+ try {
+ if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+ const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+ if (permissionStatus.state === 'denied') {
+ loadWeatherData(fallbackLocation);
+ return;
+ }
+ }
+ } catch (error) {
+ // Ignore permission query failures and continue with best-effort geolocation.
+ }
 
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude.toFixed(4);
-                const lon = position.coords.longitude.toFixed(4);
-                loadWeatherData(lat + ',' + lon);
-            },
-            function() {
-                loadWeatherData(fallbackLocation);
-            },
-            {
-                timeout: 5000,
-                maximumAge: 600000
-            }
-        );
-    }
+ navigator.geolocation.getCurrentPosition(
+ function(position) {
+ const lat = position.coords.latitude.toFixed(4);
+ const lon = position.coords.longitude.toFixed(4);
+ loadWeatherData(lat + ',' + lon);
+ },
+ function() {
+ loadWeatherData(fallbackLocation);
+ },
+ {
+ timeout: 5000,
+ maximumAge: 600000
+ }
+ );
+ }
 
-    /**
-     * Fetch weather data from our API endpoint
-     * @param string location - City name or coordinates
-     */
-    async function loadWeatherData(location) {
-        showLoadingState();
+ /**
+ * Fetch weather data from our API endpoint
+ * @param string location - City name or coordinates
+ */
+ async function loadWeatherData(location) {
+ showLoadingState();
 
-        try {
-            const url = new URL(weatherDetailsBaseUrl, window.location.origin);
-            url.searchParams.set('location', location);
-            url.searchParams.set('units', 'metric');
-            url.searchParams.set('forecast_days', '1');
+ try {
+ const url = new URL(weatherDetailsBaseUrl, window.location.origin);
+ url.searchParams.set('location', location);
+ url.searchParams.set('units', 'metric');
+ url.searchParams.set('forecast_days', '1');
+ url.searchParams.set('format', 'json');
 
-            const response = await fetch(url.toString(), {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
+ const response = await fetch(url.toString(), {
+ headers: {
+ 'X-Requested-With': 'XMLHttpRequest'
+ }
+ });
 
-            if (!response.ok) {
-                throw new Error('Weather data not available');
-            }
+ if (!response.ok) {
+ throw new Error('Weather data not available');
+ }
 
-            const result = await parseJsonResponse(response);
+ const result = await parseJsonResponse(response);
 
-            if (result.success && result.data) {
-                renderWeatherWidget(result.data);
-            } else {
-                showErrorState(result.error || 'Could not load weather data');
-            }
-        } catch (error) {
-            console.error('Weather fetch error:', error);
-            showErrorState('Failed to fetch weather. Please try again.');
-        }
-    }
+ if (result.success && result.data) {
+ renderWeatherWidget(result.data);
+ } else {
+ showErrorState(result.error || 'Could not load weather data');
+ }
+ } catch (error) {
+ console.error('Weather fetch error:', error);
+ showErrorState('Failed to fetch weather. Please try again.');
+ }
+ }
 
-    /**
-     * Render weather widget with data
-     * @param object data - Weather data from API
-     */
-    async function parseJsonResponse(response) {
-        const text = await response.text();
-        const cleanText = text.replace(/^\uFEFF/, '').trim();
-        if (!cleanText) {
-            return {};
-        }
+ /**
+ * Render weather widget with data
+ * @param object data - Weather data from API
+ */
+ async function parseJsonResponse(response) {
+ const text = await response.text();
+ const cleanText = text.replace(/^\uFEFF/, '').trim();
+ if (!cleanText) {
+ return {};
+ }
 
-        try {
-            return JSON.parse(cleanText);
-        } catch (error) {
-            console.error('Failed to parse weather JSON response:', {error, text});
-            return {};
-        }
-    }
+ try {
+ return JSON.parse(cleanText);
+ } catch (error) {
+ console.error('Failed to parse weather JSON response:', {error, text});
+ return {};
+ }
+ }
 
-    function renderWeatherWidget(data) {
-        const current = data.current || {};
-        const locationName = current.location_name || 'Selected Location';
-        const temp = Math.round(current.temperature || 0);
-        const feels = Math.round(current.feels_like || temp);
-        const humidity = current.humidity || 0;
-        const wind = current.wind_speed || 0;
-        const windDeg = current.wind_deg || 0;
-        const pressure = current.pressure || 0;
-        const description = (current.description || 'Clear').toLowerCase();
-        const icon = current.icon || '01d';
-        const unit = '°C'; // metric default
+ function renderWeatherWidget(data) {
+ const current = data.current || {};
+ const locationName = current.location_name || 'Selected Location';
+ const temp = Math.round(current.temperature || 0);
+ const feels = Math.round(current.feels_like || temp);
+ const humidity = current.humidity || 0;
+ const wind = current.wind_speed || 0;
+ const windDeg = current.wind_deg || 0;
+ const pressure = current.pressure || 0;
+ const description = (current.description || 'Clear').toLowerCase();
+ const icon = current.icon || '01d';
+ const unit = '°C'; // metric default
 
-        // Wind direction
-        const windDir = getWindDirection(windDeg);
+ // Wind direction
+ const windDir = getWindDirection(windDeg);
 
-        // Determine icon class
-        const iconClass = getBootstrapIcon(icon);
-        const detailsUrl = weatherDetailsBaseUrl + '?location=' + encodeURIComponent(locationName);
+ // Determine icon class
+ const iconClass = getBootstrapIcon(icon);
+ const detailsUrl = weatherDetailsBaseUrl + '?location=' + encodeURIComponent(locationName);
 
-        container.innerHTML = `
-            <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden">
-                <div class="card-body p-4 p-lg-5">
-                    <div class="row align-items-center">
-                        <div class="col-md-4 text-center mb-4 mb-md-0">
-                            <i class="bi bi-${iconClass} fs-1 mb-3"></i>
-                            <h4 class="mb-1">${escapeHtml(locationName)}</h4>
-                            <p class="opacity-75 text-capitalize">${escapeHtml(description)}</p>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="row text-start g-3">
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-thermometer-half me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Temperature</small>
-                                            <strong class="fs-4">${temp}${unit}</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-droplet me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Humidity</small>
-                                            <strong class="fs-4">${humidity}%</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-wind me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Wind</small>
-                                            <strong class="fs-4">${wind} m/s ${windDir}</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-speedometer2 me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Pressure</small>
-                                            <strong class="fs-4">${pressure} hPa</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-eye me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Feels Like</small>
-                                            <strong class="fs-4">${feels}${unit}</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-clock me-2"></i>
-                                        <div>
-                                            <small class="d-block opacity-75">Updated</small>
-                                            <strong class="fs-6">Just now</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-white-50 small text-center">
-                    <i class="bi bi-lightning me-1"></i>
-                    Data updates every 10 minutes | <a href="${detailsUrl}" class="text-white text-decoration-underline">Full details</a>
-                </div>
-            </div>
-        `;
-    }
+ container.innerHTML = `
+ <div class="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-lg">
+ <div class="p-4 lg:p-5">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 items-center">
+ <div class="md:col-span-4 text-center mb-4 md:mb-0">
+ <div class="mx-auto mb-3 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/10 text-white text-4xl">
+ <i class="lucide lucide-${iconClass}"></i>
+ </div>
+ <h4 class="mb-1 text-white">${escapeHtml(locationName)}</h4>
+ <p class="opacity-75 capitalize">${escapeHtml(description)}</p>
+ </div>
+ <div class="md:col-span-8">
+ <div class="grid grid-cols-1 gap-4 md:grid-cols-12 text-left gap-3">
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-thermometer text-lg text-indigo-600"></i>
+ <div>
+ <small class="block opacity-75">Temperature</small>
+ <strong class="text-lg">${temp}${unit}</strong>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-droplets text-lg text-sky-600"></i>
+ <div>
+ <small class="block opacity-75">Humidity</small>
+ <strong class="text-lg">${humidity}%</strong>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-wind text-lg text-emerald-600"></i>
+ <div>
+ <small class="block opacity-75">Wind</small>
+ <strong class="text-lg">${wind} m/s ${windDir}</strong>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-gauge text-lg text-amber-600"></i>
+ <div>
+ <small class="block opacity-75">Pressure</small>
+ <strong class="text-lg">${pressure} hPa</strong>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-eye text-lg text-cyan"></i>
+ <div>
+ <small class="block opacity-75">Feels Like</small>
+ <strong class="text-lg">${feels}${unit}</strong>
+ </div>
+ </div>
+ </div>
+ <div class="col-span-6 md:col-span-4">
+ <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
+ <i class="lucide lucide-clock text-lg text-slate-500"></i>
+ <div>
+ <small class="block opacity-75">Updated</small>
+ <strong class="text-sm">Just now</strong>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div class="bg-white/10 text-center text-sm text-white/75">
+ <i class="lucide lucide-zap mr-1"></i>
+ Data updates every 10 minutes | <a href="${detailsUrl}" class="text-white underline hover:no-underline">Full details</a>
+ </div>
+ </div>
+ `;
+ }
 
-    /**
-     * Show loading spinner
-     */
-    function showLoadingState() {
-        container.innerHTML = `
-            <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden">
-                <div class="card-body p-4 p-lg-5 text-center">
-                    <div class="d-flex align-items-center justify-content-center" style="min-height: 200px;">
-                        <div class="text-center">
-                            <div class="spinner-border text-light mb-3" role="status" style="width: 3rem; height: 3rem;">
-                                <span class="visually-hidden">Loading weather...</span>
-                            </div>
-                            <p class="mb-0">Fetching latest weather data...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+ /**
+ * Show loading spinner
+ */
+ function showLoadingState() {
+ container.innerHTML = `
+ <div class="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-lg">
+ <div class="p-4 lg:p-5 text-center">
+ <div class="flex items-center justify-center" style="min-height: 200px;">
+ <div class="text-center">
+ <div class="inline-spinner text-white mb-3" role="status" style="width: 3rem; height: 3rem;">
+ <span class="sr-only">Loading weather...</span>
+ </div>
+ <p class="mb-0">Fetching latest weather data...</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ `;
+ }
 
-    /**
-     * Show error state with retry option
-     * @param string message
-     */
-    function showErrorState(message) {
-        container.innerHTML = `
-            <div class="card border-0 shadow-sm bg-gradient-danger text-white overflow-hidden">
-                <div class="card-body p-4 p-lg-5 text-center">
-                    <div class="d-flex align-items-center justify-content-center flex-column" style="min-height: 200px;">
-                        <i class="bi bi-cloud-slash fs-1 mb-3"></i>
-                        <h5 class="mb-2">Unable to load weather</h5>
-                        <p class="mb-3 opacity-75">${escapeHtml(message)}</p>
-                        <button class="btn btn-light btn-sm" onclick="location.reload()">
-                            <i class="bi bi-arrow-clockwise me-1"></i>Retry
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+ /**
+ * Show error state with retry option
+ * @param string message
+ */
+ function showErrorState(message) {
+ container.innerHTML = `
+ <div class="rounded-xl border border-slate-200 bg-white shadow-sm border-0 shadow-lg rounded-[2rem] overflow-hidden bg-red-600 text-white">
+ <div class="p-4 lg:p-5 text-center">
+ <div class="flex items-center justify-center flex-column" style="min-height: 200px;">
+ <i class="lucide lucide-cloud-off text-4xl mb-3"></i>
+ <h5 class="mb-2">Unable to load weather</h5>
+ <p class="mb-3 opacity-75">${escapeHtml(message)}</p>
+ <button class="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100" data-action="location.reload">
+ <i class="lucide lucide-rotate-ccw mr-1"></i>Retry
+ </button>
+ </div>
+ </div>
+ </div>
+ `;
+ }
 
-    /**
-     * Convert OpenWeatherMap icon code to Bootstrap Icon name
-     * @param string iconCode - e.g., "01d", "02n", "10d"
-     * @return string Bootstrap icon class name
-     */
-    function getBootstrapIcon(iconCode) {
-        const map = {
-            '01d': 'sun-fill',
-            '01n': 'moon-stars-fill',
-            '02d': 'cloud-sun-fill',
-            '02n': 'cloud-moon-fill',
-            '03d': 'cloud-fill',
-            '03n': 'cloud-fill',
-            '04d': 'cloud-fill',
-            '04n': 'cloud-fill',
-            '09d': 'cloud-rain-heavy-fill',
-            '09n': 'cloud-rain-heavy-fill',
-            '10d': 'cloud-rain-fill',
-            '10n': 'cloud-rain-fill',
-            '11d': 'cloud-lightning-rain-fill',
-            '11n': 'cloud-lightning-rain-fill',
-            '13d': 'cloud-snow-fill',
-            '13n': 'cloud-snow-fill',
-            '50d': 'fog-fill',
-            '50n': 'fog-fill'
-        };
-        return map[iconCode] || 'cloud-sun-fill';
-    }
+ /**
+ * Convert OpenWeatherMap icon code to Bootstrap Icon name
+ * @param string iconCode - e.g.,"01d","02n","10d"
+ * @return string Bootstrap icon class name
+ */
+ function getBootstrapIcon(iconCode) {
+ const map = {
+ '01d': 'sun',
+ '01n': 'moon-star',
+ '02d': 'cloud-sun',
+ '02n': 'cloud-moon',
+ '03d': 'cloud',
+ '03n': 'cloud',
+ '04d': 'cloud',
+ '04n': 'cloud',
+ '09d': 'cloud-drizzle',
+ '09n': 'cloud-drizzle',
+ '10d': 'cloud-rain',
+ '10n': 'cloud-rain',
+ '11d': 'cloud-lightning',
+ '11n': 'cloud-lightning',
+ '13d': 'cloud-snow',
+ '13n': 'cloud-snow',
+ '50d': 'fog',
+ '50n': 'fog'
+ };
+ return map[iconCode] || 'cloud-sun';
+ }
 
-    /**
-     * Convert wind degrees to cardinal direction
-     * @param number degrees
-     * @return string Direction (N, NE, E, etc.)
-     */
-    function getWindDirection(degrees) {
-        const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-        const index = Math.round(degrees / 45) % 8;
-        return directions[index];
-    }
+ /**
+ * Convert wind degrees to cardinal direction
+ * @param number degrees
+ * @return string Direction (N, NE, E, etc.)
+ */
+ function getWindDirection(degrees) {
+ const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+ const index = Math.round(degrees / 45) % 8;
+ return directions[index];
+ }
 
-    /**
-     * Escape HTML to prevent XSS
-     * @param string str
-     * @return string
-     */
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>"'`=\/]/g, function(m) {
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;',
-                '`': '&#x60;',
-                '=': '&#x3D;',
-                '/': '&#x2F;'
-            }[m];
-        });
-    }
+ /**
+ * Escape HTML to prevent XSS
+ * @param string str
+ * @return string
+ */
+ function escapeHtml(str) {
+ if (!str) return '';
+ return String(str).replace(/[&<>"'`=\/]/g, function(m) {
+ return {
+ '&': '&amp;',
+ '<': '&lt;',
+ '>': '&gt;',
+ '"': '&quot;',"'": '&#39;',
+ '`': '&#x60;',
+ '=': '&#x3D;',
+ '/': '&#x2F;'
+ }[m];
+ });
+ }
 });
 </script>
+
+
+
+
+
+
+

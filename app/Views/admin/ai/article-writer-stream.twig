@@ -4,139 +4,155 @@
 
 {% block stylesheets %}
 <style>
-.stream-writer { max-width: 1100px; margin: 0 auto; }
-.writer-card { background: var(--bs-card-bg,#fff); border: 1px solid var(--bs-border-color,#dee2e6); border-radius: 16px; padding: 1.75rem; margin-bottom: 1.5rem; }
-.writer-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--bs-border-color,#e9ecef); }
-.writer-card-header h5 { margin: 0; font-weight: 600; }
-.icon-circle { width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg,#667eea,#764ba2); }
-.topic-input { font-size: 1.1rem; padding: 1rem 1.25rem; border-radius: 10px; border: 2px solid var(--bs-border-color,#dee2e6); }
-.topic-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
-.btn-gen { padding: 0.8rem 2rem; font-weight: 600; border-radius: 10px; }
-.status-bar { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--bs-light,#f8f9fa); border-radius: 10px; }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.status-dot.idle { background: #6c757d; }
-.status-dot.generating { background: #0d6efd; animation: pulse 1.5s infinite; }
-.status-dot.done { background: #198754; }
-.status-dot.error { background: #dc3545; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-.content-preview { min-height: 400px; border: 1px solid var(--bs-border-color,#dee2e6); border-radius: 12px; }
-.preview-body { padding: 1.25rem; min-height: 350px; max-height: 800px; overflow-y: auto; line-height: 1.8; }
-.preview-body h1 { font-size: 1.5rem; font-weight: 700; }
-.preview-body h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; }
-.preview-body p { margin-bottom: 0.75rem; }
-.typing-cursor { display: inline-block; width: 2px; height: 1.2em; background: #667eea; animation: blink 0.8s infinite; vertical-align: text-bottom; }
-@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-.save-toast { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+ .stream-writer { max-width: 1100px; margin: 0 auto; }
+ .topic-input { font-size: 1.1rem; padding: 1rem 1.25rem; border-radius: 0.75rem; }
+ .status-bar { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #f1f5f9; border-radius: 0.75rem; }
+ .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+ .status-dot.idle { background: #6c757d; }
+ .status-dot.generating { background: #6366f1; animation: pulse 1.5s infinite; }
+ .status-dot.done { background: #059669; }
+ .status-dot.error { background: #dc3545; }
+ @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+ .content-preview { min-height: 400px; border: 1px solid #e2e8f0; border-radius: 0.75rem; }
+ .preview-body { padding: 1.25rem; min-height: 350px; max-height: 800px; overflow-y: auto; line-height: 1.8; }
+ .preview-body h1 { font-size: 1.5rem; font-weight: 700; }
+ .preview-body h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; }
+ .preview-body p { margin-bottom: 0.75rem; }
+ .typing-cursor { display: inline-block; width: 2px; height: 1.2em; background: #6366f1; animation: blink 0.8s infinite; vertical-align: text-bottom; }
+ @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+ .save-toast { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+ .section-divider { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e2e8f0; }
+ .section-divider h5 { margin: 0; font-weight: 600; }
+ .icon-circle { width: 36px; height: 36px; border-radius: 0.625rem; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #6366f1, #8b5cf6); flex-shrink: 0; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="stream-writer">
-  <h4 class="fw-bold mb-4"><i class="bi bi-sync me-2"></i>Live Streaming Article Writer</h4>
-
-  <div class="writer-card">
-    <div class="writer-card-header">
-      <div class="icon-circle"><i class="bi bi-pencil"></i></div>
-      <h5>Article Topic</h5>
-    </div>
-    <div class="mb-3">
-      <input type="text" class="form-control topic-input" id="topicInput" placeholder="Enter article topic..." autofocus>
-    </div>
-    <div class="row g-3 mb-3">
-      <div class="col-md-4">
-        <label class="form-label small fw-semibold">Tone</label>
-        <select class="form-select" id="toneSelect">
-          <option value="informative" selected>Informative</option>
-          <option value="professional">Professional</option>
-          <option value="conversational">Conversational</option>
-          <option value="persuasive">Persuasive</option>
-          <option value="technical">Technical</option>
-        </select>
+<div class="stream-writer w-full px-4 sm:px-6 py-4 space-y-4">
+    {# ── Gradient Page Header ── #}
+    <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+     <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+      <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+     </div>
+     <div class="relative flex items-center gap-3">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+       <i class="lucide lucide-refresh-cw w-6 h-6"></i>
       </div>
-      <div class="col-md-4">
-        <label class="form-label small fw-semibold">Length</label>
-        <select class="form-select" id="lengthSelect">
-          <option value="short">Short</option>
-          <option value="medium" selected>Medium</option>
-          <option value="long">Long</option>
-          <option value="detailed">Detailed</option>
-        </select>
+      <div>
+       <h1 class="text-xl font-black tracking-tight sm:text-2xl">Live Streaming Article Writer</h1>
+       <p class="mt-1 text-sm text-indigo-200/80">Watch articles generate in real-time with live streaming preview.</p>
       </div>
-      <div class="col-md-4">
-        <label class="form-label small fw-semibold">Language</label>
-        <select class="form-select" id="languageSelect">
-          <option value="en" selected>English</option>
-          <option value="bn">Bengali</option>
-          <option value="hi">Hindi</option>
-          <option value="ar">Arabic</option>
-        </select>
-      </div>
+     </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label small fw-semibold">Keywords (optional)</label>
-      <input type="text" class="form-control" id="keywordsInput" placeholder="e.g., statistics, recent research">
-    </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary btn-gen" id="generateBtn">
-        <span id="generateBtnText"><i class="bi bi-lightning-fill me-1"></i>Generate Article</span>
-        <span id="generateBtnSpinner" class="spinner-border spinner-border-sm d-none"></span>
-      </button>
-      <button class="btn btn-outline-secondary btn-gen" id="stopBtn" disabled>
-        <i class="bi bi-stop-fill me-1"></i>Stop
-      </button>
-      <button class="btn btn-outline-info btn-gen" id="newTopicBtn">
-        <i class="bi bi-arrow-counterclockwise me-1"></i>New Topic
-      </button>
-    </div>
-  </div>
 
-  <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
-    <span class="status-dot idle" id="statusDot"></span>
-    <span id="statusText">Ready</span>
-    <span class="ms-auto text-muted small" id="statusElapsed"></span>
-  </div>
-
-  <div class="progress mb-3" style="height:4px;">
-    <div class="progress-bar" id="progressFill" style="width:0%;background:linear-gradient(90deg,#667eea,#764ba2);"></div>
-  </div>
-
-  <div class="writer-card">
-    <div class="writer-card-header">
-      <div class="icon-circle" style="background:linear-gradient(135deg,#f093fb,#f5576c);"><i class="bi bi-eye-fill"></i></div>
-      <h5 id="liveTitle">Live Preview</h5>
-      <span class="badge bg-light text-dark ms-auto" id="wordCount">0 words</span>
-      <span class="badge bg-light text-dark ms-1" id="charCount">0 chars</span>
+    <!-- Article Topic Card -->
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-5">
+            <div class="section-divider">
+                <div class="icon-circle"><i class="lucide lucide-pencil"></i></div>
+                <h5>Article Topic</h5>
+            </div>
+            <div class="mb-4">
+                <input type="text" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 topic-input" id="topicInput" placeholder="Enter article topic..." autofocus>
+            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Tone</label>
+                    <select class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" id="toneSelect">
+                        <option value="informative" selected>Informative</option>
+                        <option value="professional">Professional</option>
+                        <option value="conversational">Conversational</option>
+                        <option value="persuasive">Persuasive</option>
+                        <option value="technical">Technical</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Length</label>
+                    <select class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" id="lengthSelect">
+                        <option value="short">Short</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="long">Long</option>
+                        <option value="detailed">Detailed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700">Language</label>
+                    <select class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" id="languageSelect">
+                        <option value="en" selected>English</option>
+                        <option value="bn">Bengali</option>
+                        <option value="hi">Hindi</option>
+                        <option value="ar">Arabic</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="mb-1.5 block text-sm font-semibold text-slate-700">Keywords <span class="text-slate-400 font-normal">(optional)</span></label>
+                <input type="text" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" id="keywordsInput" placeholder="e.g., statistics, recent research">
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]" id="generateBtn">
+                    <span id="generateBtnText"><i class="lucide lucide-zap"></i> Generate Article</span>
+                    <span id="generateBtnSpinner" class="inline-spinner inline-spinner-sm hidden"></span>
+                </button>
+                <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50" id="stopBtn" disabled>
+                    <i class="lucide lucide-stop-circle"></i> Stop
+                </button>
+                <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-sky-600 shadow-sm transition hover:bg-sky-50" id="newTopicBtn">
+                    <i class="lucide lucide-rotate-ccw"></i> New Topic
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="content-preview">
-      <div class="p-3 preview-body" id="contentEditor">
-        <p class="text-muted"><i class="bi bi-arrow-right-circle me-2"></i>Click <strong>Generate</strong> to start streaming.</p>
-      </div>
-    </div>
-  </div>
 
-  <div class="d-flex gap-2 flex-wrap">
-    <button class="btn btn-success" id="saveBtn" disabled>
-      <i class="bi bi-check2-circle me-1"></i>Save as Draft
-    </button>
-    <button class="btn btn-primary" id="publishBtn" disabled>
-      <i class="bi bi-megaphone me-1"></i>Publish Now
-    </button>
-    <button class="btn btn-outline-secondary" id="copyBtn" disabled>
-      <i class="bi bi-clipboard me-1"></i>Copy
-    </button>
-  </div>
-
-  <div class="save-toast" id="saveToast" style="display:none;">
-    <div class="toast align-items-center text-bg-success border-0" role="alert">
-      <div class="d-flex">
-        <div class="toast-body" id="toastMessage">Saved!</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
+    <div class="status-bar mb-4">
+        <span class="status-dot idle" id="statusDot"></span>
+        <span id="statusText" class="text-sm font-medium text-slate-700">Ready</span>
+        <span class="ml-auto text-sm text-slate-500" id="statusElapsed"></span>
     </div>
-  </div>
+
+    <div class="mb-4" style="height:4px;">
+        <div class="rounded-full transition-all duration-300" id="progressFill" style="width:0%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);"></div>
+    </div>
+
+    <!-- Live Preview Card -->
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-5">
+            <div class="section-divider">
+                <div class="icon-circle" style="background:linear-gradient(135deg,#ec4899,#f43f5e);"><i class="lucide lucide-eye"></i></div>
+                <h5 id="liveTitle">Live Preview</h5>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ms-auto" id="wordCount">0 words</span>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ml-1" id="charCount">0 chars</span>
+            </div>
+            <div class="content-preview">
+                <div class="p-3 preview-body" id="contentEditor">
+                    <p class="text-slate-500"><i class="lucide lucide-arrow-right-circle mr-2"></i>Click <strong>Generate</strong> to start streaming.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+        <button class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50" id="saveBtn" disabled>
+            <i class="lucide lucide-check-circle"></i> Save as Draft
+        </button>
+        <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50" id="publishBtn" disabled>
+            <i class="lucide lucide-megaphone"></i> Publish Now
+        </button>
+        <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50" id="copyBtn" disabled>
+            <i class="lucide lucide-clipboard"></i> Copy
+        </button>
+    </div>
+
+    <div class="save-toast" id="saveToast" style="display:none;">
+        <div class="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg flex items-center gap-2">
+            <i class="lucide lucide-check-circle"></i>
+            <span id="toastMessage">Saved!</span>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ asset('/assets/js/admin-article-writer-stream.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/admin-article-writer-stream.js') }}"></script>
 {% endblock %}

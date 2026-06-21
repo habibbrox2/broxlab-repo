@@ -7,24 +7,12 @@ export function initLinkedEmails(options = {}) {
   const containerSelector = options.containerSelector || '#linked-emails-container';
   const formSelector = options.formSelector || '#link-email-form';
   const emailInputSelector = options.emailInputSelector || '#new-email';
-  const messageSelector = options.messageSelector || '#link-email-message';
-  const csrfTokenSelector = options.csrfTokenSelector || null;
 
   const container = document.querySelector(containerSelector);
   const form = document.querySelector(formSelector);
   const emailInput = document.querySelector(emailInputSelector);
-  document.querySelector(messageSelector);
 
   if (!container && !form) return null;
-
-  // Helper: Get CSRF token
-  const getCsrfToken = () => {
-    const metaToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    if (metaToken) return metaToken;
-    if (!csrfTokenSelector) return '';
-    const csrfTokenEl = document.querySelector(csrfTokenSelector);
-    return csrfTokenEl?.value || csrfTokenEl?.content || '';
-  };
 
   const showError = (error) => {
     const message = error?.message || 'An unexpected error occurred.';
@@ -57,10 +45,10 @@ export function initLinkedEmails(options = {}) {
     } catch (error) {
       console.error('Error loading linked emails:', error);
       container.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Could not load linked emails. Please refresh the page.
-                </div>
+                <divclass="p-4 rounded-lg bg-amber-50 border-amber-200 text-amber-700 border">
+    <i class="lucide lucide-alert-triangle mr-2"></i>
+    Could not load linked emails. Please refresh the page.
+</div>
             `;
     }
   };
@@ -71,8 +59,8 @@ export function initLinkedEmails(options = {}) {
 
     if (!emails || emails.length === 0) {
       container.innerHTML = `
-                <div class="alert alert-secondary">
-                    <i class="bi bi-info-circle me-2"></i>
+                <div class="p-4 rounded-lg bg-neutral-100 text-neutral-700 border border-neutral-200">
+                    <i class="lucide lucide-info mr-2"></i>
                     No additional emails linked yet. Add one below to strengthen your account security.
                 </div>
             `;
@@ -87,25 +75,25 @@ export function initLinkedEmails(options = {}) {
       const isVerified = emailData.verified !== false;
 
       html += `
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-body d-flex align-items-center justify-content-between">
+                <div class="rounded-xl border-0 shadow-sm mb-3 bg-white">
+                    <div class="p-3 flex items-center justify-between">
                         <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="bi bi-envelope-fill text-primary"></i>
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="lucide lucide-mail text-indigo-600"></i>
                                 <strong>${escapeHtml(email)}</strong>
-                                ${isPrimary ? '<span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Primary</span>' : ''}
-                                ${!isVerified ? '<span class="badge bg-warning"><i class="bi bi-clock me-1"></i>Pending</span>' : ''}
+                                ${isPrimary ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><i class="lucide lucide-star mr-1"></i>Primary</span>' : ''}
+                                ${!isVerified ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="lucide lucide-clock mr-1"></i>Pending</span>' : ''}
                             </div>
-                            <small class="text-muted">${isVerified ? 'Verified' : 'Verification pending'}</small>
+                            <small class="text-slate-500">${isVerified ? 'Verified' : 'Verification pending'}</small>
                         </div>
-                        <div class="btn-group btn-group-sm gap-2" role="group">
+                        <div class="flex gap-2 items-center" role="group">
                             ${!isPrimary && isVerified ? `
-                                <button type="button" class="btn btn-outline-primary js-set-primary" data-email="${escapeHtml(email)}">
-                                    <i class="bi bi-star me-1"></i> Set Primary
+                                <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition-colors js-set-primary" data-email="${escapeHtml(email)}">
+                                    <i class="lucide lucide-star mr-1"></i> Set Primary
                                 </button>
                             ` : ''}
-                            <button type="button" class="btn btn-outline-danger js-unlink-email" data-email="${escapeHtml(email)}">
-                                <i class="bi bi-unlink me-1"></i> Unlink
+                            <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-400 text-red-600 hover:bg-red-50 transition-colors js-unlink-email" data-email="${escapeHtml(email)}">
+                                <i class="lucide lucide-unlink mr-1"></i> Unlink
                             </button>
                         </div>
                     </div>
@@ -127,9 +115,9 @@ export function initLinkedEmails(options = {}) {
     container.querySelectorAll('.js-unlink-email').forEach((btn) => {
       btn.addEventListener('click', () => {
         const email = btn.dataset.email;
-        if (confirm(`Are you sure you want to unlink ${email}?`)) {
-          unlinkEmail(email);
-        }
+        window.showConfirm(`Are you sure you want to unlink ${email}?`).then(confirmed => {
+          if (confirmed) unlinkEmail(email);
+        });
       });
     });
   };
@@ -238,16 +226,6 @@ export function initLinkedEmails(options = {}) {
   };
 }
 
-// Helper: Escape HTML
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
+import { escapeHtml, getCsrfToken } from './shared/utils.js';
 
 export default initLinkedEmails;

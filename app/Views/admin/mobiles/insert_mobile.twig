@@ -1,148 +1,58 @@
 {% extends "admin/layout.twig" %}
-{% block title %}{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}{% endblock %}
 {% block content %}
-  {% set filler = old is defined and old ? old : (mobile is defined ? mobile : {}) %}
-  <div class="container-fluid py-4">
-    <div class="admin-panel-card">
-      <div class="admin-panel-card-header d-flex align-items-center justify-content-between">
-        <h4 class="mb-0">
-          <i class="bi bi-{{ mobile is defined ? 'pencil-square text-primary' : 'plus-circle text-success' }} me-2"></i>{{ mobile is defined ? 'Edit Mobile' : 'Insert Mobile' }}
-        </h4>
-        <a href="/admin/mobiles/all" class="modern-btn modern-btn-white btn-sm"><i class="bi bi-arrow-left me-1"></i> Back to List</a>
-      </div>
-      <div class="admin-panel-card-body">
-        <form method="post" enctype="multipart/form-data" id="mobileForm">
-          {% if mobile is defined %}<input type="hidden" name="id" value="{{ mobile.id }}">{% endif %}
-          <div class="row g-3">
-            <!-- Brand & Model -->
-            <div class="col-md-6">
-              <label class="form-label">Brand</label>
-              <input type="text"
-                     name="brand_name"
-                     class="form-control"
-                     placeholder="Enter Brand"
-                     required
-                     value="{{ filler.brand_name|default("") }}">
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Devices</p>
+                    <h1 class="text-xl font-bold text-white">Add Device</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Register a new mobile device.</p>
+                </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Model</label>
-              <input type="text"
-                     name="model_name"
-                     class="form-control"
-                     placeholder="Enter Model"
-                     required
-                     value="{{ filler.model_name|default("") }}">
+            <div class="flex gap-2">
+                <a href="/admin/mobiles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to List
+                </a>
             </div>
-            <!-- Prices -->
-            <div class="col-md-6">
-              <label class="form-label">Official Price</label>
-              <input type="number"
-                     step="0.01"
-                     name="official_price"
-                     class="form-control"
-                     placeholder="৳0.00"
-                     value="{{ filler.official_price|default("") }}">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Unofficial Price</label>
-              <input type="number"
-                     step="0.01"
-                     name="unofficial_price"
-                     class="form-control"
-                     placeholder="৳0.00"
-                     value="{{ filler.unofficial_price|default("") }}">
-            </div>
-            <!-- Status & Release Date -->
-            <div class="col-md-6">
-              <label class="form-label">Status</label>
-              <select name="status" class="form-select" required>
-                <option value="official"
-                        {% if filler.status=='official' %}selected{% endif %}>Official</option>
-                <option value="unofficial"
-                        {% if filler.status=='unofficial' %}selected{% endif %}>Unofficial</option>
-                <option value="both" {% if filler.status=='both' %}selected{% endif %}>Both</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Release Date</label>
-              <input type="text"
-                     name="release_date"
-                     class="form-control datepicker"
-                     required
-                     value="{{ filler.release_date|default('') }}"
-                     placeholder="DD-MM-YYYY">
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-              <div class="form-check form-switch mb-2">
-                <input class="form-check-input"
-                       type="checkbox"
-                       id="is_official"
-                       name="is_official"
-                       value="1"
-                       {% if filler.is_official|default(false) %}checked{% endif %}>
-                <label class="form-check-label" for="is_official">Is Official</label>
-              </div>
-            </div>
-          </div>
-          <!-- Specifications -->
-          <h5 class="mt-4">
-            <i class="bi bi-list-check me-2"></i>Specifications
-          </h5>
-          <div id="specs-container" class="mb-3"></div>
-          <button type="button"
-                  class="btn btn-sm btn-outline-secondary mb-3"
-                  onclick="addSpec()">
-            <i class="bi bi-plus-lg me-1"></i> Add Spec
-          </button>
-          <!-- Tags -->
-          <h5 class="mt-4">
-            <i class="bi bi-tags me-2"></i>Tags
-          </h5>
-          <div class="mb-3">
-            <label for="tags" class="form-label">Add labels</label>
-            {% set selectedTagIds = [] %}
-            {% for st in (old is defined and old and old.tags is defined ? old.tags : mobile_tags|default([])) %}
-              {% if st is iterable and st.id is defined %}
-                {% set selectedTagIds = selectedTagIds|merge([st.id ~ '']) %}
-              {% elseif (st ~ '') matches '/^[0-9]+$/' %}
-                {% set selectedTagIds = selectedTagIds|merge([st ~ '']) %}
-              {% endif %}
-            {% endfor %}
-            <select multiple class="form-control blogspot-tags" id="tags" name="tags[]">
-              {% for tag in tags|default([]) %}
-                {% set tagId = tag.id ~ '' %}
-                <option value="{{ tag.id }}" {{ tagId in selectedTagIds ? 'selected' : '' }}>{{ tag.name }}
-                </option>
-              {% endfor %}
-            </select>
-            <small class="form-text text-muted mt-1">Type to search or create new tags</small>
-          </div>
-          <!-- Images -->
-          <h5 class="mt-4">
-            <i class="bi bi-image-fill me-2"></i>Images
-          </h5>
-          <div class="mb-3">
-            <input type="file"
-                   name="images[]"
-                   id="images-input"
-                   class="form-control"
-                   multiple
-                   accept="image/*">
-          </div>
-          <div id="images-preview" class="d-flex flex-wrap gap-2 mb-3"></div>
-          <!-- Submit -->
-          <button type="submit" class="modern-btn modern-btn-success">
-            <i class="bi bi-check-circle me-1"></i> Save
-          </button>
-        </form>
-      </div>
+        </div>
     </div>
-  </div>
-  <!-- Datalist for specs -->
-  <datalist id="spec_keys">
-    {% for spec in specifications %}<option value="{{ spec.spec_key }}"></option>{% endfor %}
-  </datalist>
-  <div id="mobile-insert-data"
-       data-initial-tags='{{ mobile_tags|default([]) |json_encode|e("html_attr") }}'
-       style="display:none"></div>
+    <div class="max-w-2xl">
+        <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+            <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Device Details</h3>
+            </div>
+            <div class="p-5">
+                <form method="POST" action="{{ action_url|default('/admin/mobiles/save') }}">
+                    {% if csrf_token is defined %}<input type="hidden" name="_token" value="{{ csrf_token }}">{% endif %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Brand <span class="text-rose-500 ml-0.5">*</span></label>
+                            <input type="text" name="brand" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="e.g., Samsung">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Model <span class="text-rose-500 ml-0.5">*</span></label>
+                            <input type="text" name="model" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="e.g., Galaxy S24">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">OS Version</label>
+                            <input type="text" name="os_version" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="e.g., Android 14">
+                        </div>
+                        <div class="flex items-center justify-end gap-2 pt-2">
+                            <a href="/admin/mobiles" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">Cancel</a>
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-save w-4 h-4"></i> Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

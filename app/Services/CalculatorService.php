@@ -59,33 +59,33 @@ class CalculatorService
     {
         return [
             // ── Calculator ─────────────────────────────────────────────────
-            'standard'              => self::makeDef('standard',              'calculator', 'Standard Calculator',         'bi-calculator'),
-            'scientific'            => self::makeDef('scientific',            'calculator', 'Scientific Calculator',       'bi-bezier'),
-            'graphing'              => self::makeDef('graphing',              'calculator', 'Graphing Calculator',         'bi-graph-up'),
-            'programmer'            => self::makeDef('programmer',            'calculator', 'Programmer Calculator',       'bi-code-slash'),
-            'date-calculation'      => self::makeDef('date-calculation',      'calculator', 'Date Calculator',             'bi-calendar-check'),
-            'simple-interest'       => self::makeDef('simple-interest',       'calculator', 'Simple Interest',            'bi-cash-stack'),
-            'compound-interest'     => self::makeDef('compound-interest',     'calculator', 'Compound Interest',          'bi-arrow-repeat'),
-            'loan-amortization'     => self::makeDef('loan-amortization',     'calculator', 'Loan Amortization',          'bi-receipt'),
-            'mortgage'              => self::makeDef('mortgage',              'calculator', 'Mortgage Calculator',        'bi-house'),
-            'percentage'            => self::makeDef('percentage',            'calculator', 'Percentage Calculator',      'bi-percent'),
-            'percentage-change'     => self::makeDef('percentage-change',     'calculator', 'Percentage Change',          'bi-arrow-up-right'),
-            'gpa'                   => self::makeDef('gpa',                   'calculator', 'GPA Calculator',             'bi-mortarboard'),
-            'bmi'                   => self::makeDef('bmi',                   'calculator', 'BMI Calculator',             'bi-heart-pulse'),
+            'standard'              => self::makeDef('standard',              'calculator', 'Standard Calculator',         'icon-calculator'),
+            'scientific'            => self::makeDef('scientific',            'calculator', 'Scientific Calculator',       'icon-pen-tool'),
+            'graphing'              => self::makeDef('graphing',              'calculator', 'Graphing Calculator',         'icon-trending-up'),
+            'programmer'            => self::makeDef('programmer',            'calculator', 'Programmer Calculator',       'icon-code'),
+            'date-calculation'      => self::makeDef('date-calculation',      'calculator', 'Date Calculator',             'icon-calendar-check'),
+            'simple-interest'       => self::makeDef('simple-interest',       'calculator', 'Simple Interest',            'icon-wallet'),
+            'compound-interest'     => self::makeDef('compound-interest',     'calculator', 'Compound Interest',          'icon-repeat'),
+            'loan-amortization'     => self::makeDef('loan-amortization',     'calculator', 'Loan Amortization',          'icon-receipt'),
+            'mortgage'              => self::makeDef('mortgage',              'calculator', 'Mortgage Calculator',        'icon-home'),
+            'percentage'            => self::makeDef('percentage',            'calculator', 'Percentage Calculator',      'icon-percent'),
+            'percentage-change'     => self::makeDef('percentage-change',     'calculator', 'Percentage Change',          'icon-arrow-up-right'),
+            'gpa'                   => self::makeDef('gpa',                   'calculator', 'GPA Calculator',             'icon-graduation-cap'),
+            'bmi'                   => self::makeDef('bmi',                   'calculator', 'BMI Calculator',             'icon-heart-pulse'),
             // ── Converter ──────────────────────────────────────────────────
-            'currency-converter'    => self::makeDef('currency-converter',    'converter',  'Currency Converter',         'bi-currency-exchange'),
-            'volume-converter'      => self::makeDef('volume-converter',      'converter',  'Volume Converter',           'bi-droplet-half'),
-            'length-converter'      => self::makeDef('length-converter',      'converter',  'Length Converter',           'bi-arrows-expand'),
-            'weight-converter'      => self::makeDef('weight-converter',      'converter',  'Weight & Mass Converter',    'bi-balance-scale'),
-            'temperature-converter' => self::makeDef('temperature-converter', 'converter',  'Temperature Converter',      'bi-thermometer-half'),
-            'energy-converter'      => self::makeDef('energy-converter',      'converter',  'Energy Converter',           'bi-lightning-charge'),
-            'area-converter'        => self::makeDef('area-converter',        'converter',  'Area Converter',             'bi-grid-1x2'),
-            'speed-converter'       => self::makeDef('speed-converter',       'converter',  'Speed Converter',            'bi-speedometer2'),
-            'time-converter'        => self::makeDef('time-converter',        'converter',  'Time Converter',             'bi-clock'),
-            'power-converter'       => self::makeDef('power-converter',       'converter',  'Power Converter',            'bi-plug'),
-            'data-converter'        => self::makeDef('data-converter',        'converter',  'Data Converter',             'bi-hdd-stack'),
-            'pressure-converter'    => self::makeDef('pressure-converter',    'converter',  'Pressure Converter',         'bi-arrow-down-up'),
-            'angle-converter'       => self::makeDef('angle-converter',       'converter',  'Angle Converter',            'bi-compass'),
+            'currency-converter'    => self::makeDef('currency-converter',    'converter',  'Currency Converter',         'icon-arrow-left-right'),
+            'volume-converter'      => self::makeDef('volume-converter',      'converter',  'Volume Converter',           'icon-droplet'),
+            'length-converter'      => self::makeDef('length-converter',      'converter',  'Length Converter',           'icon-maximize'),
+            'weight-converter'      => self::makeDef('weight-converter',      'converter',  'Weight & Mass Converter',    'icon-scale'),
+            'temperature-converter' => self::makeDef('temperature-converter', 'converter',  'Temperature Converter',      'icon-thermometer'),
+            'energy-converter'      => self::makeDef('energy-converter',      'converter',  'Energy Converter',           'icon-zap'),
+            'area-converter'        => self::makeDef('area-converter',        'converter',  'Area Converter',             'icon-grid-3x3'),
+            'speed-converter'       => self::makeDef('speed-converter',       'converter',  'Speed Converter',            'icon-gauge'),
+            'time-converter'        => self::makeDef('time-converter',        'converter',  'Time Converter',             'icon-clock'),
+            'power-converter'       => self::makeDef('power-converter',       'converter',  'Power Converter',            'icon-plug'),
+            'data-converter'        => self::makeDef('data-converter',        'converter',  'Data Converter',             'icon-hard-drive'),
+            'pressure-converter'    => self::makeDef('pressure-converter',    'converter',  'Pressure Converter',         'icon-arrow-down-up'),
+            'angle-converter'       => self::makeDef('angle-converter',       'converter',  'Angle Converter',            'icon-compass'),
         ];
     }
 
@@ -851,12 +851,12 @@ class CalculatorService
     private static function bmiCategory(float $bmi): array
     {
         return match (true) {
-            $bmi < 18.5  => ['label' => 'Underweight', 'class' => 'text-info',    'description' => 'Below 18.5 is considered underweight.'],
-            $bmi < 25    => ['label' => 'Normal weight', 'class' => 'text-success', 'description' => '18.5 – 24.9 is considered healthy.'],
-            $bmi < 30    => ['label' => 'Overweight',  'class' => 'text-warning', 'description' => '25 – 29.9 is considered overweight.'],
-            $bmi < 35    => ['label' => 'Obesity Class I', 'class' => 'text-danger', 'description' => '30 – 34.9 is considered obese (Class I).'],
-            $bmi < 40    => ['label' => 'Obesity Class II', 'class' => 'text-danger', 'description' => '35 – 39.9 is considered obese (Class II).'],
-            default      => ['label' => 'Extreme Obesity',  'class' => 'text-danger', 'description' => '40 or above is considered extreme obesity.'],
+            $bmi < 18.5  => ['label' => 'Underweight', 'class' => 'text-sky-600',    'description' => 'Below 18.5 is considered underweight.'],
+            $bmi < 25    => ['label' => 'Normal weight', 'class' => 'text-emerald-600', 'description' => '18.5 – 24.9 is considered healthy.'],
+            $bmi < 30    => ['label' => 'Overweight',  'class' => 'text-amber-600', 'description' => '25 – 29.9 is considered overweight.'],
+            $bmi < 35    => ['label' => 'Obesity Class I', 'class' => 'text-red-600', 'description' => '30 – 34.9 is considered obese (Class I).'],
+            $bmi < 40    => ['label' => 'Obesity Class II', 'class' => 'text-red-600', 'description' => '35 – 39.9 is considered obese (Class II).'],
+            default      => ['label' => 'Extreme Obesity',  'class' => 'text-red-600', 'description' => '40 or above is considered extreme obesity.'],
         };
     }
 

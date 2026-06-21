@@ -396,4 +396,63 @@ class AIChatModel
         $stmt->close();
         return $ok;
     }
+
+    /**
+     * Delete a conversation and all its messages
+     */
+    public function deleteConversation(int $id): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM ai_messages WHERE conversation_id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        if (!$ok) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare("DELETE FROM ai_conversations WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
+
+    /**
+     * Delete a conversation by guest token (public users).
+     * Verifies ownership before deleting.
+     */
+    public function deleteConversationByToken(int $id, string $guestToken): bool
+    {
+        // Verify ownership
+        $stmt = $this->db->prepare("SELECT id FROM ai_conversations WHERE id = ? AND guest_token = ? LIMIT 1");
+        $stmt->bind_param("is", $id, $guestToken);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            return false;
+        }
+
+        // Delete messages
+        $stmt = $this->db->prepare("DELETE FROM ai_messages WHERE conversation_id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        if (!$ok) {
+            return false;
+        }
+
+        // Delete conversation
+        $stmt = $this->db->prepare("DELETE FROM ai_conversations WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+
+        return $ok;
+    }
 }

@@ -1,175 +1,321 @@
-﻿{# templates/services/browse.twig #}
+{# templates/services/browse.twig #}
 {% extends 'layout.twig' %}
-{% block title %}Available Services - {{ app_settings.site_name|default(app_name) }}{% endblock %}
+
+{% block title %}Services – {{ app_settings.site_name|default(app_name) }}{% endblock %}
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ asset('assets/css/feed-discovery.css') }}?v={{ assets_version }}"></noscript>
+{% endblock %}
+{% block extra_scripts %}
+  <script type="module" src="{{ asset('assets/js/dist/feed-discovery.js') }}?v={{ assets_version }}"></script>
+{% endblock %}
 {% block meta_description %}Explore our comprehensive range of professional services designed to enhance your mobile experience and provide expert assistance.{% endblock %}
 {% block og_type %}website{% endblock %}
-{% set breadcrumbs = [{"label": "Services", "url": "/services", "icon": "briefcase"}] %}
+
+{% set breadcrumbs = [{"label":"Services","url":"/services","icon":"briefcase"}] %}
+
+{% set page_schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'Available Services',
+  'description': 'Browse our complete range of services',
+  'url': current_url
+} %}
+
+{% block schema %}
+  <script type="application/ld+json">{{ page_schema|schema_json }}
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  if (t.getAttribute("data-action") === "scroll-to-filter") {
+    document.querySelector("#services-filter")?.scrollIntoView({behavior:"smooth"});
+  }
+});
+document.addEventListener("change", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  if (t.getAttribute("data-action") === "auto-submit") {
+    if (t.form) t.form.submit();
+  }
+});
+</script>
+</script>
+{% endblock %}
+
 {% block content %}
-  <style>
-    .inl-p-0005 {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .inl-p-0002 {
-      width: 88px;
-      height: 88px;
-      margin: 0 auto;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      color: #fff;
-      font-size: 2rem;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-    }
-    .inl-p-0008 {
-      flex: 1 1 320px;
-    }
-    .inl-p-0009 {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .inl-p-0009 .search-input {
-      flex: 1 1 auto;
-    }
-  </style>
-  {# Structured Data - Service Collection Schema #}
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "Available Services",
-  "description": "Browse our complete range of services",
-  "url": "{{ current_url }}"
-}
-  </script>
-  {# Hero Section #}
-  <section class="hero-section position-relative py-5 mb-5 overflow-hidden inl-p-0005">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-white mb-3">
-            <i class="bi bi-award me-2"></i>Available Services
-          </h1>
-          <p class="lead text-white-50 fs-5">Explore our comprehensive range of professional services</p>
+
+{# ═══════════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════════ #}
+<section class="relative isolate overflow-hidden bg-slate-950 px-6 py-20 sm:py-28 lg:px-12">
+
+  {# Noise texture + grid overlay #}
+  <div class="pointer-events-none absolute inset-0 -z-10 opacity-[0.03]"
+       style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')">
+  </div>
+
+  {# Radial glow #}
+  <div class="pointer-events-none absolute -top-40 left-1/2 -z-10 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-indigo-600/20 blur-[120px]"></div>
+  <div class="pointer-events-none absolute bottom-0 right-0 -z-10 h-[300px] w-[400px] rounded-full bg-purple-600/15 blur-[100px]"></div>
+
+  <div class="mx-auto max-w-7xl">
+    <div class="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
+
+      {# Left copy #}
+      <div class="space-y-7">
+        <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-indigo-300 backdrop-blur-sm">
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-indigo-500"></span>
+          </span>
+          Professional Services
         </div>
-        <div class="col-lg-4 text-center">
-          <div class="hero-icon inl-p-0002">
-            <i class="bi bi-stars" aria-hidden="true"></i>
+
+        <h1 class="text-5xl font-black leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
+          Expert Help,<br>
+          <span class="bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">On Demand.</span>
+        </h1>
+
+        <p class="max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg">
+          Discover a curated range of professional services built to solve real problems — fast, reliable, and backed by experts.
+        </p>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button
+            data-action="scroll-to-filter"
+            class="group inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/40 transition-all duration-300 hover:bg-indigo-500 hover:shadow-indigo-500/50 active:scale-[0.97]"
+          >
+            <i class="lucide lucide-search w-4 h-4 transition-transform group-hover:scale-110"></i>
+            Browse Services
+          </button>
+          <a href="#" class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/25">
+            <i class="lucide lucide-play-circle w-4 h-4"></i>
+            Learn More
+          </a>
+        </div>
+
+        {# Social proof #}
+        <div class="flex items-center gap-5 pt-2">
+          <div class="flex -space-x-3">
+            {% for i in 1..4 %}
+              <img class="h-9 w-9 rounded-full border-2 border-slate-900 ring-1 ring-white/20" src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ i }}" alt="User" loading="lazy" width="36" height="36">
+            {% endfor %}
+          </div>
+          <div class="leading-tight">
+            <p class="text-sm font-bold text-white">1,000+ users</p>
+            <p class="text-xs text-slate-500">trust our services daily</p>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-  <div class="container py-5">
-    <div class="listing-header">
-      <h2>
-        <i class="bi bi-award text-primary me-2"></i>Our Services
-      </h2>
-    </div>
-    {# Filter Card #}
-    <div class="filter-card">
-      <div class="filter-group">
-        {# Search #}
-        <div class="filter-section inl-p-0008">
-          <form method="get" class="inl-p-0009">
-            <input type="text"
-                   name="search"
-                   value="{{ search|default("") }}"
-                   class="search-input"
-                   placeholder="Search services...">
-            <button type="submit" class="btn-search">
-              <i class="bi bi-search"></i>
-            </button>
-          </form>
-        </div>
-        {# Category Filter #}
-        <div class="filter-section">
-          <label>Category</label>
-          <form method="get">
-            <select name="category" class="filter-select" onchange="this.form.submit()">
-              <option value="">All Categories</option>
-              {% for category in categories %}
-                <option value="{{ category }}"
-                        {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
-              {% endfor %}
-            </select>
-          </form>
-        </div>
-        {# Sort #}
-        <div class="filter-section">
-          <label>Sort By</label>
-          <form method="get">
-            <select name="sort" class="filter-select" onchange="this.form.submit()">
-              <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-              <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
-              <option value="popularity" {% if sort == 'popularity' %}selected{% endif %}>Popular</option>
-            </select>
-          </form>
+
+      {# Right decorative card #}
+      <div class="hidden lg:flex items-center justify-center">
+        <div class="relative">
+          <div class="absolute inset-0 rounded-3xl bg-indigo-500/20 blur-3xl"></div>
+          <div class="relative grid grid-cols-2 gap-3 p-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+            {% set stat_items = [
+              { icon: 'briefcase', label: 'Services', value: services|length ~ '+', color: 'from-indigo-500 to-violet-500' },
+              { icon: 'shield-check', label: 'Verified', value: '100%', color: 'from-emerald-500 to-teal-500' },
+              { icon: 'zap', label: 'Fast', value: '< 24h', color: 'from-amber-500 to-orange-500' },
+              { icon: 'star', label: 'Rating', value: '4.9 ★', color: 'from-fuchsia-500 to-pink-500' }
+            ] %}
+            {% for s in stat_items %}
+              <div class="flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-sm">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br {{ s.color }}">
+                  <i class="lucide lucide-{{ s.icon }} h-5 w-5 text-white"></i>
+                </div>
+                <p class="text-lg font-black text-white">{{ s.value }}</p>
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{{ s.label }}</p>
+              </div>
+            {% endfor %}
+          </div>
         </div>
       </div>
+
     </div>
-    {# Services Grid #}
-    {% if services is not empty %}
-      <div class="listing-grid">
-        {% for service in services %}
-          {% include 'partials/content-card.twig' with { item: {
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════════════ #}
+<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+
+  {# Section header #}
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-3xl font-black tracking-tight text-slate-900">All Services</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        <span class="font-bold text-indigo-600">{{ services|length }}</span> services available
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+        <i class="lucide lucide-check-circle w-3.5 h-3.5"></i>All Verified
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+        <i class="lucide lucide-shield w-3.5 h-3.5"></i>Trusted
+      </span>
+    </div>
+  </div>
+
+  {# ── Filter Toolbar ──────────────────────────────────── #}
+  <div id="services-filter" class="mb-10 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+    <form method="get" class="space-y-4">
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {# Search #}
+        <div class="relative flex-1 group">
+          <i class="lucide lucide-search absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none transition-colors group-focus-within:text-indigo-500"></i>
+          <input
+            type="search" name="search"
+            value="{{ search|default('') }}"
+            placeholder="Search services…"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/15"
+          >
+        </div>
+
+        {# Category #}
+        <div class="relative">
+          <select
+            name="category" data-action="auto-submit"
+            class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-9 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/15 cursor-pointer sm:w-48"
+            aria-label="Filter by category"
+          >
+            <option value="">📂 All Categories</option>
+            {% for category in categories %}
+              <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+          </select>
+          <i class="lucide lucide-chevron-down absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+        </div>
+
+        {# Sort #}
+        <div class="relative">
+          <select
+            name="sort" data-action="auto-submit"
+            class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-9 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/15 cursor-pointer sm:w-44"
+            aria-label="Sort services"
+          >
+            <option value="latest"  {% if sort == 'latest'     %}selected{% endif %}>🆕 Newest</option>
+            <option value="name"    {% if sort == 'name'       %}selected{% endif %}>🔤 Name (A–Z)</option>
+            <option value="popularity" {% if sort == 'popularity' %}selected{% endif %}>⭐ Popular</option>
+          </select>
+          <i class="lucide lucide-chevron-down absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+        </div>
+
+        {# Search submit #}
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-500/30 transition-all duration-200 hover:bg-indigo-700 active:scale-[0.97]"
+        >
+          <i class="lucide lucide-search w-4 h-4"></i>Search
+        </button>
+
+        {# Clear #}
+        {% if search or selected_category or sort != 'latest' %}
+          <a
+            href="/services"
+            class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-100"
+          >
+            <i class="lucide lucide-x w-4 h-4"></i>Clear
+          </a>
+        {% endif %}
+      </div>
+
+      {# Quick filter chips #}
+      <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Quick:</span>
+        <button type="button" class="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200/60 transition-colors hover:bg-indigo-100">
+          <i class="lucide lucide-crown w-3 h-3 inline -mt-0.5 mr-1"></i>Premium
+        </button>
+        <button type="button" class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/60 transition-colors hover:bg-emerald-100">
+          <i class="lucide lucide-gift w-3 h-3 inline -mt-0.5 mr-1"></i>Free
+        </button>
+        <button type="button" class="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200/60 transition-colors hover:bg-amber-100">
+          <i class="lucide lucide-zap w-3 h-3 inline -mt-0.5 mr-1"></i>Popular
+        </button>
+        <button type="button" class="rounded-lg bg-fuchsia-50 px-3 py-1.5 text-xs font-semibold text-fuchsia-700 ring-1 ring-fuchsia-200/60 transition-colors hover:bg-fuchsia-100">
+          <i class="lucide lucide-star w-3 h-3 inline -mt-0.5 mr-1"></i>Top Rated
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  {# ── Services Grid ────────────────────────────────────── #}
+  {% if services is not empty %}
+    <div id="discovery-feed-grid" class="is-grid-view grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="feed" aria-label="Services feed">
+      {% for service in services %}
+        {% include 'partials/discovery-card.twig' with { item: {
           images: service.image_urls|default(service.images|default([])),
           image: service.featured_image_url|default(service.image_urls|first|default(service.featured_image.thumbnail_path|default(service.featured_image.image_path|default(service.image_path|default(service.thumbnail|default(null)))))),
           title: service.name,
-          subtitle: service.description|default('')|striptags|slice(0, 100) ~ '...',
-          rich_excerpt_html: service.description|default(''),
+          subtitle: service.description|default('')|striptags|slice(0, 120) ~ '…',
           categories: service.categories|default([]),
           tags: service.tags|default([]),
           created_at: service.created_at,
           url: service.slug,
           id: service.id,
-          slug: service.slug,
-          type: 'service',
-          price: service.price,
-          status: service.status|default(''),
-          is_premium: service.is_premium|default(0),
-          is_free: service.is_free|default(0)
-          }, index: loop.index } %}
-        {% endfor %}
-      </div>
-      {# Pagination #}
-      {% if total_pages > 1 %}
-        <div class="pagination-container">
-          <div class="pagination">
-            {% if current_page > 1 %}
-              <a class="pagination-link"
-                 href="?page={{ current_page - 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}"
-                 aria-label="Previous">
-                <i class="bi bi-chevron-left"></i>
-              </a>
-            {% else %}
-              <span class="pagination-link disabled"><i class="bi bi-chevron-left"></i></span>
-            {% endif %}
-            {% for p in 1..total_pages %}
-              <a class="pagination-link {% if p == current_page %}active{% endif %}"
-                 href="?page={{ p }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}">{{ p }}</a>
-            {% endfor %}
-            {% if current_page < total_pages %}
-              <a class="pagination-link"
-                 href="?page={{ current_page + 1 }}&search={{ search|default("") }}&sort={{ sort|default("latest") }}&category={{ selected_category|default("") }}"
-                 aria-label="Next">
-                <i class="bi bi-chevron-right"></i>
-              </a>
-            {% else %}
-              <span class="pagination-link disabled"><i class="bi bi-chevron-right"></i></span>
-            {% endif %}
-          </div>
+          type: 'service'
+        }, index: loop.index } %}
+      {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+      <div class="pagination-container mt-12">
+        <div class="pagination" aria-label="Pagination">
+          {% if current_page > 1 %}
+            <a class="pagination-link" href="?page={{ current_page - 1 }}&search={{ search|default('') }}&sort={{ sort|default('latest') }}&category={{ selected_category|default('') }}" aria-label="Previous page">
+              <i class="lucide lucide-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="pagination-link disabled"><i class="lucide lucide-chevron-left"></i></span>
+          {% endif %}
+
+          {% set start_page = max(2, current_page - 2) %}
+          {% set end_page = min(total_pages - 1, current_page + 2) %}
+
+          <a class="pagination-link {% if current_page == 1 %}active{% endif %}" href="?page=1&search={{ search|default('') }}&sort={{ sort|default('latest') }}&category={{ selected_category|default('') }}">1</a>
+          {% if start_page > 2 %}
+            <span class="pagination-link disabled" aria-hidden="true">...</span>
+          {% endif %}
+          {% for p in start_page..end_page %}
+            <a class="pagination-link {% if p == current_page %}active{% endif %}" href="?page={{ p }}&search={{ search|default('') }}&sort={{ sort|default('latest') }}&category={{ selected_category|default('') }}">{{ p }}</a>
+          {% endfor %}
+          {% if end_page < total_pages - 1 %}
+            <span class="pagination-link disabled" aria-hidden="true">...</span>
+          {% endif %}
+          <a class="pagination-link {% if current_page == total_pages %}active{% endif %}" href="?page={{ total_pages }}&search={{ search|default('') }}&sort={{ sort|default('latest') }}&category={{ selected_category|default('') }}">{{ total_pages }}</a>
+          {% if current_page < total_pages %}
+            <a class="pagination-link" href="?page={{ current_page + 1 }}&search={{ search|default('') }}&sort={{ sort|default('latest') }}&category={{ selected_category|default('') }}" aria-label="Next page">
+              <i class="lucide lucide-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="pagination-link disabled"><i class="lucide lucide-chevron-right"></i></span>
+          {% endif %}
         </div>
-      {% endif %}
-    {% else %}
-      <div class="empty-state">
-        <i class="bi bi-award"></i>
-        <h3>No services found</h3>
-        <p>Try adjusting your search criteria</p>
       </div>
     {% endif %}
+
+  {% else %}
+  {# ── Empty State ────────────────────────────────────── #}
+  <div class="flex flex-col items-center justify-center py-24 text-center">
+    <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50 ring-1 ring-indigo-200">
+      <i class="lucide lucide-briefcase h-9 w-9 text-indigo-500"></i>
+    </div>
+    <h3 class="mb-2 text-xl font-black text-slate-900">No services found</h3>
+    <p class="mb-8 text-sm text-slate-500">Try adjusting your search criteria or reset all filters.</p>
+    <a
+      href="/services"
+      class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-indigo-500/30 transition-all duration-200 hover:bg-indigo-700"
+    >
+      <i class="lucide lucide-refresh-cw w-4 h-4"></i>Reset Filters
+    </a>
   </div>
+  {% endif %}
+
+</div>
 {% endblock %}

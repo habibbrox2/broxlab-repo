@@ -1,465 +1,72 @@
 {% extends "admin/layout.twig" %}
-{% block title %}{{ title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
-        rel="stylesheet">
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="mdi mdi-bell-outline"></i>{{ title }}
-      </div>
-      <div class="admin-page-subtitle">
-        {% if template %}
-          Edit and manage notification template settings
-        {% else %}
-          Create a new notification template
-        {% endif %}
-      </div>
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-mail-open w-5 h-5 text-white"></i>
+                </div>
+                <div><p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Notification Templates</p><h1 class="text-xl font-bold text-white">{{ template.id is defined and template.id ? 'Edit Template' : 'New Template' }}</h1><p class="text-sm text-white/60 mt-0.5">{{ template.id is defined and template.id ? 'Update template details.' : 'Create a new notification template.' }}</p></div>
+            </div>
+            <div class="flex gap-2"><a href="/admin/notification-templates" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back</a></div>
+        </div>
     </div>
-    <div class="row">
-      <!-- Form Column -->
-      <div class="col-lg-8">
-        <form id="templateForm" class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-          <strong><i class="mdi mdi-pencil me-2"></i>
-          {% if template %}
-            Edit
-          {% else %}
-            Create New
-          {% endif %}
-        Template</strong>
-      </div>
-      <div class="admin-panel-card-body">
-        {% if template %}<input type="hidden" name="_method" value="PUT">{% endif %}
-        <!-- Basic Information Section -->
-        <div class="mb-4">
-          <h6 class="text-uppercase fw-bold mb-3">
-            <i class="mdi mdi-information-outline me-2"></i>Basic Information
-          </h6>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">
-                Template Name <span class="text-danger">*</span>
-              </label>
-              <input type="text"
-                     class="form-control"
-                     id="name"
-                     name="name"
-                     value="{{ template.name ?? '' }}"
-                     required
-                     placeholder="e.g., Welcome Notification">
+    <form method="POST" action="{{ action_url|default('/admin/notification-templates/save') }}">
+        {% if csrf_token is defined %}<input type="hidden" name="_token" value="{{ csrf_token }}">{% endif %}
+        {% if template.id is defined and template.id %}<input type="hidden" name="id" value="{{ template.id }}">{% endif %}
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_340px] gap-5">
+            <div class="space-y-5">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-mail-open w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Template Details</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Name <span class="text-rose-500 ml-0.5">*</span></label>
+                            <input type="text" name="name" value="{{ template.name|default('') }}" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="Template name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Type</label>
+                            <select name="type" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                                <option value="email" {{ template.type == 'email' ? 'selected' : '' }}>Email</option>
+                                <option value="push" {{ template.type == 'push' ? 'selected' : '' }}>Push</option>
+                                <option value="sms" {{ template.type == 'sms' ? 'selected' : '' }}>SMS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Subject</label>
+                            <input type="text" name="subject" value="{{ template.subject|default('') }}" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600" placeholder="Subject line">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Body <span class="text-rose-500 ml-0.5">*</span></label>
+                            <textarea name="body" rows="8" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[150px]">{{ template.body|default('') }}</textarea>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-700 dark:text-slate-300">Active</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_active" value="1" class="sr-only peer" {{ template.is_active|default(true) ? 'checked' : '' }}>
+                                <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/20 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">
-                Template Slug <span class="text-danger">*</span>
-              </label>
-              <input type="text"
-                     class="form-control"
-                     id="slug"
-                     name="slug"
-                     value="{{ template.slug ?? '' }}"
-                     required
-                     placeholder="e.g., welcome_notification"
-                     pattern="[a-z0-9_]+"
-                     title="Lowercase letters, numbers, and underscores only">
-              <small class="form-text text-muted">Used in code to reference this template</small>
+            <div class="space-y-5 xl:sticky xl:top-20">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-settings w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Actions</h3>
+                    </div>
+                    <div class="p-5 flex flex-col gap-2">
+                        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full"><i class="lucide lucide-save w-4 h-4"></i> Save</button>
+                        <a href="/admin/notification-templates" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out w-full">Cancel</a>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Description</label>
-            <textarea class="form-control"
-                      id="description"
-                      name="description"
-                      rows="2"
-                      placeholder="What is this template used for?">{{ template.description ?? '' }}</textarea>
-          </div>
         </div>
-        <hr>
-        <!-- Template Content Section -->
-        <div class="mb-4">
-          <h6 class="text-uppercase fw-bold mb-3">
-            <i class="mdi mdi-file-document-outline me-2"></i>Template Content
-          </h6>
-          <div class="mb-3">
-            <label class="form-label">
-              Notification Title <span class="text-danger">*</span>
-            </label>
-            <input type="text"
-                   class="form-control"
-                   id="title"
-                   name="title"
-                   value="{{ template.title ?? '' }}"
-                   required
-                   placeholder="e.g., স্বাগতম &#123;&#123; USER_NAME &#125;&#125;!"
-                   maxlength="255">
-            <small class="form-text text-muted">Supports variables like &#123;&#123; USER_NAME &#125;&#125;, &#123;&#123; APP_NAME &#125;&#125;, &#123;&#123; AMOUNT &#125;&#125;</small>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">
-              Message Body <span class="text-danger">*</span>
-            </label>
-            <textarea class="form-control"
-                      id="body"
-                      name="body"
-                      rows="6"
-                      required
-                      placeholder="Notification message with &#123;&#123; VARIABLES &#125;&#125;...">{{ template.body ?? '' }}</textarea>
-            <small class="form-text text-muted">Supports markdown and template variables. Use &#123;&#123; VARIABLE_NAME &#125;&#125; syntax.</small>
-          </div>
-          <!-- Live Preview -->
-          <div class="alert alert-light border">
-            <strong class="d-block mb-2"><i class="mdi mdi-eye-outline me-1"></i>Live Preview</strong>
-            <div class="row">
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-1">Title</small>
-                <div id="titlePreview" class="p-2 bg-white border rounded text-truncate">(Type to preview)</div>
-              </div>
-              <div class="col-md-6">
-                <small class="text-muted d-block mb-1">Body (first 100 chars)</small>
-                <div id="bodyPreview" class="p-2 bg-white border rounded inl-a-0027">(Type to preview)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <hr>
-        <!-- Channels & Configuration -->
-        <div class="row">
-          <div class="col-md-6 mb-4">
-            <h6 class="text-uppercase fw-bold mb-3">
-              <i class="mdi mdi-send-outline me-2"></i>Delivery Channels
-            </h6>
-            <div class="form-check mb-2">
-              <input type="checkbox"
-                     class="form-check-input"
-                     id="ch_in_app"
-                     name="channels"
-                     value="in_app"
-                     {% if template and 'in_app' in (template.channels|default([])) %}checked{% endif %}>
-              <label class="form-check-label" for="ch_in_app">
-                <i class="mdi mdi-bell me-1"></i><strong>In-App Notification</strong>
-                <br>
-                <small class="text-muted">Shows in user dashboard</small>
-              </label>
-            </div>
-            <div class="form-check mb-2">
-              <input type="checkbox"
-                     class="form-check-input"
-                     id="ch_fcm"
-                     name="channels"
-                     value="fcm"
-                     {% if template and 'fcm' in (template.channels|default([])) %}checked{% endif %}>
-              <label class="form-check-label" for="ch_fcm">
-                <i class="mdi mdi-mobile me-1"></i><strong>Push Notification (FCM)</strong>
-                <br>
-                <small class="text-muted">Mobile and web browsers</small>
-              </label>
-            </div>
-            <div class="form-check mb-2">
-              <input type="checkbox"
-                     class="form-check-input"
-                     id="ch_email"
-                     name="channels"
-                     value="email"
-                     {% if template and 'email' in (template.channels|default([])) %}checked{% endif %}>
-              <label class="form-check-label" for="ch_email">
-                <i class="mdi mdi-email me-1"></i><strong>Email</strong>
-                <br>
-                <small class="text-muted">Sent via SMTP</small>
-              </label>
-            </div>
-            <div class="form-check">
-              <input type="checkbox"
-                     class="form-check-input"
-                     id="ch_sms"
-                     name="channels"
-                     value="sms"
-                     {% if template and 'sms' in (template.channels|default([])) %}checked{% endif %}>
-              <label class="form-check-label" for="ch_sms">
-                <i class="mdi mdi-message-text me-1"></i><strong>SMS</strong>
-                <br>
-                <small class="text-muted">Text messages</small>
-              </label>
-            </div>
-          </div>
-          <div class="col-md-6 mb-4">
-            <h6 class="text-uppercase fw-bold mb-3">
-              <i class="mdi mdi-tag-multiple-outline me-2"></i>Template Variables
-            </h6>
-            <div id="variablesList" class="mb-3 inl-a-0028">
-              {% if template and template.variables %}
-                {% for key, placeholder in template.variables %}
-                  <div class="input-group input-group-sm mb-2">
-                    <span class="input-group-text">&#123;&#123;</span>
-                    <input type="text"
-                           class="form-control"
-                           placeholder="Variable name"
-                           value="{{ key }}"
-                           readonly>
-                    <span class="input-group-text">&#125;&#125;</span>
-                    <input type="text"
-                           class="form-control"
-                           placeholder="Description"
-                           value="{{ placeholder }}">
-                    <button type="button"
-                            class="btn btn-outline-danger"
-                            onclick="removeVariable(this)"
-                            aria-label="Remove variable">
-                      <i class="mdi mdi-delete"></i>
-                    </button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            </div>
-            <button type="button"
-                    class="modern-btn modern-btn-outline-secondary modern-btn-sm w-100"
-                    onclick="addVariable()">
-              <i class="mdi mdi-plus me-1"></i>Add Variable
-            </button>
-          </div>
-        </div>
-        <hr>
-        <!-- Visual Settings -->
-        <div class="mb-4">
-          <h6 class="text-uppercase fw-bold mb-3">
-            <i class="mdi mdi-palette-outline me-2"></i>Visual Settings
-          </h6>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Icon Class (MDI)</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="mdi mdi-bell"></i></span>
-                <input type="text"
-                       class="form-control"
-                       id="icon"
-                       name="icon"
-                       value="{{ template.icon ?? '' }}"
-                       placeholder="e.g., bell, check-circle, star">
-              </div>
-              <small class="form-text text-muted">See <a href="https://materialdesignicons.com/" target="_blank">MDI Icons</a></small>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Color Code</label>
-              <div class="input-group">
-                <input type="color"
-                       class="form-control form-control-color"
-                       id="color"
-                       name="color"
-                       value="{{ template.color ?? '#0d6efd' }}">
-                <input type="text"
-                       class="form-control"
-                       id="colorText"
-                       value="{{ template.color ?? '#0d6efd' }}"
-                       placeholder="#0d6efd">
-              </div>
-            </div>
-          </div>
-          <div class="form-check mt-3">
-            <input type="checkbox"
-                   class="form-check-input"
-                   id="is_active"
-                   name="is_active"
-                   value="1"
-                   {% if not template or template.is_active %}checked{% endif %}>
-            <label class="form-check-label" for="is_active">
-              <strong>Active</strong> - Enable this template for use
-            </label>
-          </div>
-        </div>
-        <!-- Form Actions -->
-        <div class="d-flex gap-2 pt-3 border-top">
-          <button type="submit" class="modern-btn modern-btn-primary">
-            <i class="mdi mdi-content-save me-2"></i>
-            {% if template %}
-              Save Changes
-            {% else %}
-              Create Template
-            {% endif %}
-          </button>
-          {% if template %}
-            <button type="button"
-                    class="modern-btn modern-btn-info"
-                    onclick="testSendTemplate()">
-              <i class="mdi mdi-send-clock me-2"></i>Test Send
-            </button>
-          {% endif %}
-          <a href="/admin/notification-templates"
-             class="modern-btn modern-btn-outline-secondary ms-auto">Cancel</a>
-        </div>
-      </div>
     </form>
-  </div>
-  <!-- Help Sidebar -->
-  <div class="col-lg-4">
-    <div class="admin-panel-card sticky-top inl-a-0029">
-      <div class="admin-panel-card-header bg-light">
-        <strong><i class="mdi mdi-help-circle-outline me-2"></i>Help & Guide</strong>
-      </div>
-      <div class="admin-panel-card-body small">
-        <div class="mb-3">
-          <strong><i class="mdi mdi-tag me-2"></i>Variables</strong>
-          <p class="text-muted mb-2">Use double braces with uppercase variable names:</p>
-          <code class="d-block bg-light p-2 rounded mb-2">&#123;&#123; USER_NAME &#125;&#125;
-            <br>
-            &#123;&#123; EMAIL &#125;&#125;
-            <br>
-          &#123;&#123; AMOUNT &#125;&#125;</code>
-        </div>
-        <div class="mb-3">
-          <strong><i class="mdi mdi-send-outline me-2"></i>Channels</strong>
-          <ul class="list-unstyled text-muted">
-            <li>
-              📱 <strong>In-App:</strong> Dashboard notifications
-            </li>
-            <li>
-              📲 <strong>FCM:</strong> Mobile push
-            </li>
-            <li>
-              ✉️ <strong>Email:</strong> Email delivery
-            </li>
-            <li>
-              💬 <strong>SMS:</strong> Text messages
-            </li>
-          </ul>
-        </div>
-        <div class="mb-3">
-          <strong><i class="mdi mdi-palette me-2"></i>Colors</strong>
-          <p class="text-muted mb-2">Use hex color codes:</p>
-          <div class="d-flex gap-1">
-            <span title="#0d6efd" class="inl-a-0030"></span>
-            <span title="#198754" class="inl-a-0031"></span>
-            <span title="#dc3545" class="inl-a-0032"></span>
-            <span title="#ffc107" class="inl-a-0033"></span>
-          </div>
-        </div>
-        <div class="alert alert-info py-2 mb-0">
-          <small><i class="mdi mdi-lightbulb-outline me-1"></i> Use the "Test Send" feature to preview your template before publishing.</small>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
-</div>
-<script>
-// Color picker sync
-document.getElementById('color')?.addEventListener('change', function() {
-    document.getElementById('colorText').value = this.value;
-});
-
-document.getElementById('colorText')?.addEventListener('input', function() {
-    if (/^#[0-9A-F]{6}$/i.test(this.value)) {
-        document.getElementById('color').value = this.value;
-    }
-});
-
-// Live preview
-function updatePreview() {
-    const title = document.getElementById('title').value;
-    const body = document.getElementById('body').value;
-    document.getElementById('titlePreview').textContent = title || '(Type to preview)';
-    document.getElementById('bodyPreview').textContent = (body.substring(0, 100)) + (body.length > 100 ? '...' : '') || '(Type to preview)';
-}
-
-document.getElementById('title')?.addEventListener('input', updatePreview);
-document.getElementById('body')?.addEventListener('input', updatePreview);
-
-// Variable management
-function addVariable() {
-    const list = document.getElementById('variablesList');
-    const html = `<div class="input-group input-group-sm mb-2">
-        <span class="input-group-text">&#123;&#123;</span>
-        <input type="text" class="form-control" placeholder="Variable name" required>
-        <span class="input-group-text">&#125;&#125;</span>
-        <input type="text" class="form-control" placeholder="Description">
-        <button type="button" class="btn btn-outline-danger" onclick="removeVariable(this)" aria-label="Remove variable">
-            <i class="mdi mdi-delete"></i>
-        </button>
-    </div>`;
-    list.insertAdjacentHTML('beforeend', html);
-}
-
-function removeVariable(btn) {
-    btn.closest('.input-group')?.remove();
-}
-
-// Form submission
-document.getElementById('templateForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-    const url = `/admin/notification-templates{% if template %}/{{ template.id }}{% endif %}`;
-
-    // Collect variables
-    const variables = {};
-    document.querySelectorAll('#variablesList .input-group').forEach(group => {
-        const inputs = group.querySelectorAll('input');
-        const name = inputs[1]?.value || '';
-        if (name) {
-            variables[name] = inputs[3]?.value || '';
-        }
-    });
-    formData.set('variables', JSON.stringify(variables));
-
-    // Collect channels
-    const channels = [];
-    document.querySelectorAll('input[name="channels"]:checked').forEach(cb => {
-        channels.push(cb.value);
-    });
-    formData.set('channels', JSON.stringify(channels));
-
-    try {
-        const response = await fetch(url, { method: 'POST', body: formData });
-        const data = await response.json();
-
-        if (data.success) {
-            Swal.fire('Success!', data.message, 'success').then(() => {
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    history.back();
-                }
-            });
-        } else {
-            Swal.fire('Error', data.message || 'Failed to save', 'error');
-        }
-    } catch (e) {
-        Swal.fire('Error', e.message, 'error');
-    }
-});
-
-{% if template %}
-function testSendTemplate() {
-    const { value: userId } = Swal.fire({
-        title: 'Test Send',
-        input: 'number',
-        inputLabel: 'User ID',
-        inputPlaceholder: 'Enter user ID',
-        showCancelButton: true,
-        inputAttributes: { min: 1 }
-    }).then(result => result.value);
-
-    if (!userId) return;
-
-    Swal.fire('Sending...', 'Please wait', 'info');
-
-    const formData = new FormData();
-    formData.append('user_id', userId);
-    Array.from(document.querySelectorAll('input[name="channels"]:checked')).forEach(ch => {
-        formData.append('channels[]', ch.value);
-    });
-
-    fetch('/admin/notification-templates/{{ template.id }}/test-send', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire('Sent!', `Sent to ${data.details.sent} channel(s)`, 'success');
-            } else {
-                Swal.fire('Error', data.message, 'error');
-            }
-        })
-        .catch(e => Swal.fire('Error', e.message, 'error'));
-}
-{% endif %}
-</script>
 {% endblock %}

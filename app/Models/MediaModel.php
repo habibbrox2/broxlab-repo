@@ -313,6 +313,27 @@ class MediaModel {
     }
 
     /**
+     * Bulk delete media records
+     * @return array ['success' => [...], 'failed' => [...]]
+     */
+    public function bulkDelete(array $mediaIds): array {
+        $result = ['success' => [], 'failed' => []];
+        foreach ($mediaIds as $id) {
+            $id = (int)$id;
+            if ($id <= 0) {
+                $result['failed'][] = $id;
+                continue;
+            }
+            if ($this->softDelete($id)) {
+                $result['success'][] = $id;
+            } else {
+                $result['failed'][] = $id;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Get last insert ID
      */
     public function lastId(): int {

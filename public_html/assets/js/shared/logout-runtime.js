@@ -1,118 +1,75 @@
-const logoutState = {
-  initialized: false,
-  inFlight: false,
-};
+/**
+ * Unified logout runtime (ES Module)
+ * Replaces previous IIFE + window.Brox pattern.
+ */
 
-const runtimeAssetVersion = (() => {
-  try {
-    return new URL(import.meta.url).searchParams.get('v') || '';
-  } catch (err) {
-    return '';
-  }
-})();
-
-function withAssetVersion(url) {
-  if (!runtimeAssetVersion) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${encodeURIComponent(runtimeAssetVersion)}`;
-}
-
-function toAbsoluteUrl(value) {
-  try {
-    return new URL(String(value || '/logout'), window.location.origin);
-  } catch (err) {
-    return new URL('/logout', window.location.origin);
-  }
-}
-
-function resolveLogoutTarget(options = {}, triggerEl = null) {
-  const configured = options.logoutUrl || '/logout';
-  const anchorHref = triggerEl?.getAttribute?.('href');
-  const candidate = anchorHref || configured;
-  const url = toAbsoluteUrl(candidate);
-  if (url.origin !== window.location.origin) {
-    return '/logout';
-  }
-  return `${url.pathname}${url.search}${url.hash}`;
-}
-
-function setGuestDeviceCookie() {
-  try {
-    const deviceId = localStorage.getItem('__fcm_device_id');
-    if (!deviceId) return;
-    const maxAge = 60 * 60 * 24 * 365; // 1 year
-    document.cookie = `guest_device_id=${encodeURIComponent(deviceId)}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
-  } catch (err) {
-    // Silent fail
-  }
-}
-
-function withTimeout(promise, timeoutMs) {
-  const timeout = Number.isFinite(timeoutMs) ? timeoutMs : 2500;
-  return Promise.race([
-    promise,
-    new Promise((resolve) => setTimeout(resolve, timeout)),
-  ]);
-}
-
-async function tryFirebaseSignOut(timeoutMs = 2500) {
-  try {
-    const mod = await import(withAssetVersion('/assets/firebase/v2/dist/auth.js'));
-    const signOutUser = mod?.signOutUser || mod?.default?.signOutUser;
-    if (typeof signOutUser !== 'function') return;
-    await withTimeout(
-      Promise.resolve().then(() => signOutUser({ syncWithBackend: false, })),
-      timeoutMs
-    );
-  } catch (err) {
-    // Silent fail, local logout must continue.
-  }
-}
-
+/**
+ * Perform unified logout — clears session, redirects
+ * @param {object} [options={}]
+ * @param {string} [options.redirectUrl] - URL to redirect after logout
+ * @param {boolean} [options.forceReload] - Force page reload after logout
+ * @param {boolean} [options.suppressRedirect] - Skip redirect entirely
+ * @param {string} [options.method] - HTTP method for logout request
+ * @param {object} [options.headers] - Extra headers for logout request
+ * @param {string} [options.csrfToken] - CSRF token override
+ */
 export async function performUnifiedLogout(options = {}) {
-  if (logoutState.inFlight) return false;
-  logoutState.inFlight = true;
+
+  if (options.redirectUrl && !options.suppressRedirect) {
+    window.location.href = options.redirectUrl;
+    return;
+  }
+
+  const method = (options.method || 'POST').toUpperCase();
+  const headers = {
+    'X-Requested-With': 'XMLHttpRequest',
+    'Accept': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  const csrfToken = options.csrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '';
+  if (csrfToken && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+    headers['X-CSRF-Token'] = csrfToken;
+  }
+
   try {
-    const target = resolveLogoutTarget(options, options.triggerEl || null);
-    setGuestDeviceCookie();
-
-    // Store current URL for redirect after login
-    const currentUrl = window.location.href;
-    // Don't store if already on login page or logout page
-    if (!currentUrl.includes('/login') && !currentUrl.includes('/logout')) {
-      sessionStorage.setItem('login_redirect_url', currentUrl);
+    const res = await fetch('/logout', { method, headers, credentials: 'same-origin', });
+    if (!res.ok) {
+      console.warn('[logout-runtime] Logout request failed:', res.status);
     }
+  } catch (err) {
+    console.warn('[logout-runtime] Logout request error:', err);
+  }
 
-    await tryFirebaseSignOut(options.timeoutMs);
-    window.location.href = target || '/logout';
-    return true;
-  } finally {
-    setTimeout(() => {
-      logoutState.inFlight = false;
-    }, 1500);
+  if (options.forceReload) {
+    window.location.reload();
   }
 }
 
+/**
+ * Initialize unified logout behavior on the page
+ * Attaches click handlers to elements with [data-logout] attribute
+ * @param {object} [options={}]
+ */
 export function initUnifiedLogout(options = {}) {
-  if (logoutState.initialized) return;
-  logoutState.initialized = true;
+  const triggers = document.querySelectorAll('[data-logout]');
+  if (!triggers.length) return;
 
-  const selector = options.selector || '[data-unified-logout], a[href="/logout"]';
-  document.addEventListener('click', (event) => {
-    const target = event.target?.closest?.(selector);
-    if (!target) return;
-    if (event.defaultPrevented) return;
-    if (event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-    event.preventDefault();
-    performUnifiedLogout({
-      ...options,
-      triggerEl: target,
+  triggers.forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const redirectUrl = el.getAttribute('data-logout-url') || '/';
+      const runtimeOptions = {
+        redirectUrl,
+        forceReload: el.hasAttribute('data-logout-force'),
+        suppressRedirect: el.hasAttribute('data-logout-skip-redirect'),
+        method: el.getAttribute('data-logout-method') || 'POST',
+        csrfToken: el.getAttribute('data-logout-csrf') || undefined,
+      };
+      await performUnifiedLogout({ ...options, ...runtimeOptions, });
     });
   });
-
-  window.performUnifiedLogout = (runtimeOptions = {}) =>
-    performUnifiedLogout({ ...options, ...runtimeOptions, });
 }
 
+// Auto-initialize on DOMContentLoaded
+initUnifiedLogout();

@@ -1,639 +1,664 @@
 {% extends "admin/layout.twig" %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-graph-up me-2"></i>
-        Analytics Dashboard
-      </div>
-      <div class="admin-page-subtitle">System analytics and reporting</div>
+<style>
+  .tab-pane:not(.active) { display: none; }
+  .tab-pane.active { display: block; }
+</style>
+
+<div class="w-full px-4 sm:px-6 py-4">
+
+  {# ── Gradient Page Header ── #}
+  <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+    <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+      <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
     </div>
-    <!-- Page Header -->
-    <div class="row mb-4">
-      <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-          <h1 class="h3 mb-0">Analytics Dashboard</h1>
-          <p class="text-muted small mt-1">Real-time analytics and activity monitoring</p>
+    <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+          <i class="lucide lucide-trending-up" style="width:1.5em;height:1.5em;"></i>
         </div>
+        <div>
+          <h1 class="text-xl font-black tracking-tight sm:text-2xl">Analytics Dashboard</h1>
+          <p class="mt-1 text-sm text-indigo-200/80">Real-time analytics and activity monitoring</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
         <button id="refreshBtnHeader"
-                data-action="refresh-dashboard"
-                class="modern-btn modern-btn-primary btn-sm"
-                title="Refresh dashboard data">
-          <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+          data-action="refresh-dashboard"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]"
+          title="Refresh dashboard data">
+          <i class="lucide lucide-refresh-cw" style="width:0.875em;height:0.875em;"></i> Refresh
         </button>
       </div>
     </div>
-    <!-- Alert Summary -->
-    {% if alert_summary.total_alerts > 0 %}
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="alert alert-warning" role="alert">
-            <h4 class="alert-heading">
-              <i class="bi bi-exclamation-triangle-fill"></i> Security Alerts
-            </h4>
-            <div class="row mt-3">
-              <div class="col-md-2">
-                <strong>Total:</strong>
-                <span class="badge badge-danger">{{ alert_summary.total_alerts }}</span>
-              </div>
-              {% if alert_summary.critical > 0 %}
-                <div class="col-md-2">
-                  <strong>Critical:</strong>
-                  <span class="badge badge-danger">{{ alert_summary.critical }}</span>
-                </div>
-              {% endif %}
-              {% if alert_summary.high > 0 %}
-                <div class="col-md-2">
-                  <strong>High:</strong>
-                  <span class="badge badge-warning">{{ alert_summary.high }}</span>
-                </div>
-              {% endif %}
-              {% if alert_summary.medium > 0 %}
-                <div class="col-md-2">
-                  <strong>Medium:</strong>
-                  <span class="badge badge-info">{{ alert_summary.medium }}</span>
-                </div>
-              {% endif %}
-            </div>
-            <hr class="my-3">
-            <small><a href="#recent-alerts">View recent alerts ?</a></small>
+  </div>
+
+  {# ── Alert Summary ── #}
+  {% if alert_summary.total_alerts > 0 %}
+  <div class="mb-4">
+    <div class="p-4 rounded-lg bg-amber-50 text-amber-700 border border-amber-200" role="alert">
+      <h4 class="flex items-center gap-2 font-semibold mb-3">
+        <i class="lucide lucide-alert-triangle" style="width:1em;height:1em;"></i> Security Alerts
+      </h4>
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <span class="text-xs font-medium text-amber-600 uppercase tracking-wide">Total</span>
+          <div class="mt-1">
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700">{{ alert_summary.total_alerts }}</span>
           </div>
         </div>
+        {% if alert_summary.critical > 0 %}
+        <div>
+          <span class="text-xs font-medium text-amber-600 uppercase tracking-wide">Critical</span>
+          <div class="mt-1">
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700">{{ alert_summary.critical }}</span>
+          </div>
+        </div>
+        {% endif %}
+        {% if alert_summary.high > 0 %}
+        <div>
+          <span class="text-xs font-medium text-amber-600 uppercase tracking-wide">High</span>
+          <div class="mt-1">
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800">{{ alert_summary.high }}</span>
+          </div>
+        </div>
+        {% endif %}
+        {% if alert_summary.medium > 0 %}
+        <div>
+          <span class="text-xs font-medium text-amber-600 uppercase tracking-wide">Medium</span>
+          <div class="mt-1">
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-sky-100 text-sky-700">{{ alert_summary.medium }}</span>
+          </div>
+        </div>
+        {% endif %}
       </div>
-    {% endif %}
-    <!-- Daily Overview -->
-    <div class="row mb-4">
-      <div class="col-lg-3 col-md-6 mb-3">
-        <div class="admin-panel-card stats-card stats-card-visitors">
-          <div class="admin-panel-card-body">
-            <div class="stat-label">Total Visitors</div>
-            <div class="stat-value" id="totalVisitors">0</div>
-            <small class="text-muted">Last 30 days</small>
+      <hr class="my-3 border-amber-200">
+      <a href="#recent-alerts" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors">
+        View recent alerts <i class="lucide lucide-arrow-right" style="width:0.75em;height:0.75em;"></i>
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── KPI Summary Cards ── #}
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+
+    {# Total Visitors #}
+    <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Visitors</span>
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+            <i class="lucide lucide-users" style="width:1em;height:1em;"></i>
           </div>
         </div>
-      </div>
-      <div class="col-lg-3 col-md-6 mb-3">
-        <div class="admin-panel-card stats-card stats-card-posts">
-          <div class="admin-panel-card-body">
-            <div class="stat-label">Total Posts</div>
-            <div class="stat-value" id="totalPosts">0</div>
-            <small class="text-muted">Published content</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 col-md-6 mb-3">
-        <div class="admin-panel-card stats-card stats-card-pages">
-          <div class="admin-panel-card-body">
-            <div class="stat-label">Total Pages</div>
-            <div class="stat-value" id="totalPages">0</div>
-            <small class="text-muted">Static pages</small>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 col-md-6 mb-3">
-        <div class="admin-panel-card stats-card stats-card-users">
-          <div class="admin-panel-card-body">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value" id="totalUsers">0</div>
-            <small class="text-muted">Registered users</small>
-          </div>
-        </div>
+        <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="totalVisitors">0</div>
+        <div class="mt-1 text-xs text-slate-500">Last 30 days</div>
       </div>
     </div>
-    <!-- Detailed Stats -->
-    <div class="row mb-4">
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-file-earmark-text"></i> Content Tracking
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <tbody>
-                  <tr>
-                    <td>Total Content Events</td>
-                    <td class="text-right">
-                      <strong id="pageImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Unique Content Events</td>
-                    <td class="text-right">
-                      <strong id="pageUniqueImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Top Content</td>
-                    <td class="text-right small" id="topPage">N/A</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+
+    {# Total Posts #}
+    <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-sky-400"></div>
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Posts</span>
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-colors duration-200 group-hover:bg-sky-100">
+            <i class="lucide lucide-file-text" style="width:1em;height:1em;"></i>
           </div>
         </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-bookmark-fill"></i> Content Tracking
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <tbody>
-                  <tr>
-                    <td>Total Content Events</td>
-                    <td class="text-right">
-                      <strong id="postImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Unique Content Events</td>
-                    <td class="text-right">
-                      <strong id="postUniqueImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Top Content</td>
-                    <td class="text-right small" id="topPost">N/A</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-briefcase-fill"></i> Content Tracking
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <tbody>
-                  <tr>
-                    <td>Total Content Events</td>
-                    <td class="text-right">
-                      <strong id="serviceImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Unique Content Events</td>
-                    <td class="text-right">
-                      <strong id="serviceUniqueImpressions">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Top Content</td>
-                    <td class="text-right small" id="topService">N/A</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-megaphone-fill"></i> Advertisement
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <tbody>
-                  <tr>
-                    <td>Total Inquiries</td>
-                    <td class="text-right">
-                      <strong id="totalInquiries">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Pending</td>
-                    <td class="text-right">
-                      <strong id="pendingInquiries">0</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Approved</td>
-                    <td class="text-right">
-                      <strong id="approvedInquiries">0</strong>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="totalPosts">0</div>
+        <div class="mt-1 text-xs text-slate-500">Published content</div>
       </div>
     </div>
-    <!-- Recent Client Events -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-broadcast"></i> Recent Client Events
-            </h6>
+
+    {# Total Pages #}
+    <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Pages</span>
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 group-hover:bg-amber-100">
+            <i class="lucide lucide-file" style="width:1em;height:1em;"></i>
           </div>
-          <div class="admin-panel-card-body">
-            <div class="table-responsive">
-              <table class="table table-sm table-striped">
+        </div>
+        <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="totalPages">0</div>
+        <div class="mt-1 text-xs text-slate-500">Static pages</div>
+      </div>
+    </div>
+
+    {# Total Users #}
+    <div class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Users</span>
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 group-hover:bg-emerald-100">
+            <i class="lucide lucide-user-check" style="width:1em;height:1em;"></i>
+          </div>
+        </div>
+        <div class="mt-2 text-2xl font-black tracking-tight text-slate-900" id="totalUsers">0</div>
+        <div class="mt-1 text-xs text-slate-500">Registered users</div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Detailed Tracking Stats ── #}
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+
+    {# Pages Tracking #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+          <i class="lucide lucide-file-text" style="width:0.875em;height:0.875em;"></i>
+        </div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Pages Tracking</h2>
+      </div>
+      <div class="p-5">
+        <table class="w-full text-left text-sm">
+          <tbody>
+            <tr>
+              <td class="py-1.5 text-slate-600">Total Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="pageImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Unique Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="pageUniqueImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Top Content</td>
+              <td class="py-1.5 text-right text-xs text-slate-400" id="topPage">N/A</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# Posts Tracking #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600">
+          <i class="lucide lucide-bookmark" style="width:0.875em;height:0.875em;"></i>
+        </div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Posts Tracking</h2>
+      </div>
+      <div class="p-5">
+        <table class="w-full text-left text-sm">
+          <tbody>
+            <tr>
+              <td class="py-1.5 text-slate-600">Total Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="postImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Unique Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="postUniqueImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Top Content</td>
+              <td class="py-1.5 text-right text-xs text-slate-400" id="topPost">N/A</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# Services Tracking #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-violet-50/50 to-fuchsia-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-violet-100 text-violet-600">
+          <i class="lucide lucide-briefcase" style="width:0.875em;height:0.875em;"></i>
+        </div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Services Tracking</h2>
+      </div>
+      <div class="p-5">
+        <table class="w-full text-left text-sm">
+          <tbody>
+            <tr>
+              <td class="py-1.5 text-slate-600">Total Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="serviceImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Unique Content Events</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="serviceUniqueImpressions">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Top Content</td>
+              <td class="py-1.5 text-right text-xs text-slate-400" id="topService">N/A</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# Advertisement #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+          <i class="lucide lucide-megaphone" style="width:0.875em;height:0.875em;"></i>
+        </div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Advertisement</h2>
+      </div>
+      <div class="p-5">
+        <table class="w-full text-left text-sm">
+          <tbody>
+            <tr>
+              <td class="py-1.5 text-slate-600">Total Inquiries</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="totalInquiries">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Pending</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="pendingInquiries">0</strong></td>
+            </tr>
+            <tr>
+              <td class="py-1.5 text-slate-600">Approved</td>
+              <td class="py-1.5 text-right"><strong class="text-slate-900" id="approvedInquiries">0</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Recent Client Events ── #}
+  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md" id="recent-alerts">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-cyan-50/50 to-teal-50/50 px-5 py-4">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-100 text-cyan-600">
+        <i class="lucide lucide-podcast" style="width:0.875em;height:0.875em;"></i>
+      </div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Recent Client Events</h2>
+    </div>
+    <div class="p-4 overflow-x-auto">
+      <table class="w-full text-left text-sm [&_tbody_tr:nth-child(even)]:bg-slate-50">
+        <thead>
+          <tr class="border-b border-slate-100">
+            <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Event</th>
+            <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">User</th>
+            <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Firebase UID</th>
+            <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Params</th>
+            <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">IP</th>
+            <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">When</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in recent_events %}
+          <tr>
+            <td class="py-2 pr-4 text-slate-800">{{ e.event_name }}</td>
+            <td class="py-2 pr-4 text-slate-600">{{ e.user_id ?: 'guest' }}</td>
+            <td class="py-2 pr-4 text-slate-600 font-mono text-xs">{{ e.firebase_uid ?: '-' }}</td>
+            <td class="py-2 pr-4 text-xs text-slate-500">{{ e.event_params ?: '-' }}</td>
+            <td class="py-2 pr-4 text-slate-600 font-mono text-xs">{{ e.ip_address ?: '-' }}</td>
+            <td class="py-2 text-xs text-slate-400">{{ e.created_at }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="py-4 text-center text-slate-400">No recent events</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# ── Reports Tab Section ── #}
+  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="px-5 pt-4 border-b border-slate-200">
+      <ul class="flex flex-wrap gap-1 -mb-px" role="tablist">
+        <li>
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-indigo-600 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition"
+            id="daily-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#daily-report"
+            type="button"
+            role="tab"
+            aria-controls="daily-report"
+            aria-selected="true">Daily Report</button>
+        </li>
+        <li>
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            id="weekly-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#weekly-report"
+            type="button"
+            role="tab"
+            aria-controls="weekly-report"
+            aria-selected="false">Weekly Report</button>
+        </li>
+        <li>
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            id="monthly-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#monthly-report"
+            type="button"
+            role="tab"
+            aria-controls="monthly-report"
+            aria-selected="false">Monthly Report</button>
+        </li>
+      </ul>
+    </div>
+    <div class="p-5 tab-content">
+
+      {# Daily Report Tab #}
+      <div class="tab-pane active" id="daily-report" role="tabpanel">
+        <h6 class="mb-4 text-sm font-semibold text-slate-700">Analytics for {{ today }}</h6>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Login Activity</p>
+            <canvas id="daily-login-chart"></canvas>
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Visitor Trends</p>
+            <canvas id="daily-visitor-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      {# Weekly Report Tab #}
+      <div class="tab-pane" id="weekly-report" role="tabpanel">
+        <h6 class="mb-4 text-sm font-semibold text-slate-700">Weekly Analytics Summary</h6>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Daily Breakdown</p>
+            <canvas id="weekly-chart"></canvas>
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Top Content</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
                 <thead>
-                  <tr>
-                    <th>Event</th>
-                    <th>User</th>
-                    <th>Firebase UID</th>
-                    <th>Params</th>
-                    <th>IP</th>
-                    <th>When</th>
+                  <tr class="border-b border-slate-100">
+                    <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Page/Post</th>
+                    <th class="pb-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Score</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {% for e in recent_events %}
-                    <tr>
-                      <td>{{ e.event_name }}</td>
-                      <td>{{ e.user_id ?: 'guest' }}</td>
-                      <td>{{ e.firebase_uid ?: '-' }}</td>
-                      <td>
-                        <small>{{ e.event_params ?: '-' }}</small>
-                      </td>
-                      <td>{{ e.ip_address ?: '-' }}</td>
-                      <td class="small text-muted">{{ e.created_at }}</td>
+                  {% if weekly_report.top_pages %}
+                    {% for page in weekly_report.top_pages|slice(0, 3) %}
+                    <tr class="border-b border-slate-50">
+                      <td class="py-2 text-slate-700">{{ page.title|truncate(30) }}</td>
+                      <td class="py-2 text-right text-xs text-slate-400">Tracked</td>
                     </tr>
-                  {% else %}
-                    <tr>
-                      <td colspan="6" class="text-muted">No recent events</td>
-                    </tr>
-                  {% endfor %}
+                    {% endfor %}
+                  {% endif %}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <!-- Reports Tab Section -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <ul class="nav nav-tabs card-header-tabs" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link active"
-                   id="daily-tab"
-                   data-bs-toggle="tab"
-                   data-bs-target="#daily-report"
-                   role="tab"
-                   aria-controls="daily-report"
-                   aria-selected="true">Daily Report</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link"
-                   id="weekly-tab"
-                   data-bs-toggle="tab"
-                   data-bs-target="#weekly-report"
-                   role="tab"
-                   aria-controls="weekly-report"
-                   aria-selected="false">Weekly Report</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link"
-                   id="monthly-tab"
-                   data-bs-toggle="tab"
-                   data-bs-target="#monthly-report"
-                   role="tab"
-                   aria-controls="monthly-report"
-                   aria-selected="false">Monthly Report</a>
-              </li>
-            </ul>
+
+      {# Monthly Report Tab #}
+      <div class="tab-pane" id="monthly-report" role="tabpanel">
+        <h6 class="mb-4 text-sm font-semibold text-slate-700">Monthly Analytics Summary</h6>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Browser Distribution</p>
+            <canvas id="browser-chart"></canvas>
           </div>
-          <div class="admin-panel-card-body">
-            <div class="tab-content">
-              <!-- Daily Report Tab -->
-              <div class="tab-pane fade show active" id="daily-report" role="tabpanel">
-                <h6 class="mb-3">Analytics for {{ today }}</h6>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <h6>Login Activity</h6>
-                    <canvas id="daily-login-chart" class="inl-a-0005"></canvas>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <h6>Visitor Trends</h6>
-                    <canvas id="daily-visitor-chart" class="inl-a-0005"></canvas>
-                  </div>
-                </div>
-              </div>
-              <!-- Weekly Report Tab -->
-              <div class="tab-pane fade" id="weekly-report" role="tabpanel">
-                <h6 class="mb-3">Weekly Analytics Summary</h6>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <h6>Daily Breakdown</h6>
-                    <canvas id="weekly-chart" class="inl-a-0005"></canvas>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <h6>Top Content</h6>
-                    <div class="table-responsive">
-                      <table class="table table-sm">
-                        <thead>
-                          <tr>
-                            <th>Page/Post</th>
-                            <th class="text-right">Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% if weekly_report.top_pages %}
-                            {% for page in weekly_report.top_pages|slice(0, 3) %}
-                              <tr>
-                                <td>{{ page.title|truncate(30) }}</td>
-                                <td class="text-right">Tracked</td>
-                              </tr>
-                            {% endfor %}
-                          {% endif %}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Monthly Report Tab -->
-              <div class="tab-pane fade" id="monthly-report" role="tabpanel">
-                <h6 class="mb-3">Monthly Analytics Summary</h6>
-                <div class="row">
-                  <div class="col-md-4 mb-3">
-                    <h6>Browser Distribution</h6>
-                    <canvas id="browser-chart" class="inl-a-0005"></canvas>
-                  </div>
-                  <div class="col-md-4 mb-3">
-                    <h6>OS Distribution</h6>
-                    <canvas id="os-chart" class="inl-a-0005"></canvas>
-                  </div>
-                  <div class="col-md-4 mb-3">
-                    <h6>Monthly Stats</h6>
-                    <div class="table-responsive">
-                      <table class="table table-sm">
-                        <tbody>
-                          <tr>
-                            <td>Total Visitors</td>
-                            <td class="text-right">
-                              <strong>{{ monthly_report.total_visitors.unique ?? 0 }}</strong>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>Total Logins</td>
-                            <td class="text-right">
-                              <strong>{{ monthly_report.login_stats.total ?? 0 }}</strong>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>Failed Logins</td>
-                            <td class="text-right">
-                              <strong>{{ monthly_report.login_stats.failed ?? 0 }}</strong>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">OS Distribution</p>
+            <canvas id="os-chart"></canvas>
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Monthly Stats</p>
+            <table class="w-full text-left text-sm">
+              <tbody>
+                <tr class="border-b border-slate-50">
+                  <td class="py-2 text-slate-600">Total Visitors</td>
+                  <td class="py-2 text-right"><strong class="text-slate-900">{{ monthly_report.total_visitors.unique ?? 0 }}</strong></td>
+                </tr>
+                <tr class="border-b border-slate-50">
+                  <td class="py-2 text-slate-600">Total Logins</td>
+                  <td class="py-2 text-right"><strong class="text-slate-900">{{ monthly_report.login_stats.total ?? 0 }}</strong></td>
+                </tr>
+                <tr>
+                  <td class="py-2 text-slate-600">Failed Logins</td>
+                  <td class="py-2 text-right"><strong class="text-slate-900">{{ monthly_report.login_stats.failed ?? 0 }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
     </div>
-    <!-- Security Alerts Section -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-shield-fill"></i> Security Alerts (Real-time)
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="alerts-container" id="securityAlerts">
-              <div class="alert alert-info">Loading security alerts...</div>
-            </div>
-          </div>
-        </div>
+  </div>
+
+  {# ── Security Alerts ── #}
+  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-rose-50/50 to-red-50/50 px-5 py-4">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-rose-100 text-rose-600">
+        <i class="lucide lucide-shield" style="width:0.875em;height:0.875em;"></i>
       </div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Security Alerts (Real-time)</h2>
     </div>
-    <!-- Charts Section -->
-    <div class="row mb-4">
-      <div class="col-lg-6">
-        <div class="chart-container">
-          <div class="chart-title">Daily Activity Trend (30 days)</div>
-          <canvas id="dailyActivityChart"></canvas>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="chart-container">
-          <div class="chart-title">Login Success/Failure Rate</div>
-          <canvas id="loginSuccessChart"></canvas>
-        </div>
-      </div>
-    </div>
-    <!-- Data Tables Section -->
-    <div class="row">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <ul class="nav nav-tabs card-header-tabs" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active"
-                        id="login-audit-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#login-audit"
-                        type="button">Login Audit</button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link"
-                        id="oauth-audit-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#oauth-audit"
-                        type="button">OAuth Audit</button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link"
-                        id="activity-logs-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#activity-logs"
-                        type="button">Activity Logs</button>
-              </li>
-            </ul>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="tab-content">
-              <!-- Login Audit Tab -->
-              <div class="tab-pane fade show active" id="login-audit" role="tabpanel">
-                <div class="table-responsive">
-                  <table class="table analytics-table table-hover">
-                    <thead>
-                      <tr>
-                        <th>User ID</th>
-                        <th>Status</th>
-                        <th>IP Address</th>
-                        <th>User Agent</th>
-                        <th>Date/Time</th>
-                      </tr>
-                    </thead>
-                    <tbody id="loginAuditBody">
-                      <tr>
-                        <td colspan="5" class="text-center text-muted">Loading...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <!-- OAuth Audit Tab -->
-              <div class="tab-pane fade" id="oauth-audit" role="tabpanel">
-                <div class="table-responsive">
-                  <table class="table analytics-table table-hover">
-                    <thead>
-                      <tr>
-                        <th>User ID</th>
-                        <th>Action</th>
-                        <th>Provider</th>
-                        <th>Status</th>
-                        <th>Error</th>
-                        <th>Date/Time</th>
-                      </tr>
-                    </thead>
-                    <tbody id="oauthAuditBody">
-                      <tr>
-                        <td colspan="6" class="text-center text-muted">Loading...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <!-- Activity Logs Tab -->
-              <div class="tab-pane fade" id="activity-logs" role="tabpanel">
-                <div class="table-responsive">
-                  <table class="table analytics-table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Action</th>
-                        <th>Module</th>
-                        <th>User ID</th>
-                        <th>Status</th>
-                        <th>Date/Time</th>
-                      </tr>
-                    </thead>
-                    <tbody id="activityLogsBody">
-                      <tr>
-                        <td colspan="5" class="text-center text-muted">Loading...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Management Section -->
-    <div class="row mt-4">
-      <div class="col-12">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-header bg-light">
-            <h6 class="mb-0">
-              <i class="bi bi-gear-fill"></i> Management Tools
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <div class="modern-btn-group-control d-flex gap-2 flex-wrap">
-              <button class="modern-btn btn-control btn-outline-primary"
-                      id="refreshBtnTools"
-                      data-action="refresh-dashboard">
-                <i class="bi bi-arrow-clockwise"></i> Refresh Data
-              </button>
-              <button class="modern-btn btn-control btn-outline-danger" id="clearLogsBtn">
-                <i class="bi bi-trash-fill"></i> Clear Old Logs
-              </button>
-              <button class="modern-btn btn-control btn-outline-success" id="exportBtn">
-                <i class="bi bi-download"></i> Export Data
-              </button>
-            </div>
-            <small class="d-block text-muted mt-3">
-              <i class="bi bi-info-circle-fill"></i> Clear logs: Removes records older than 90 days |
-              Export: Download audit logs in CSV or JSON format
-            </small>
-          </div>
-        </div>
+    <div class="p-4">
+      <div class="alerts-container" id="securityAlerts">
+        <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">Loading security alerts...</div>
       </div>
     </div>
   </div>
-  <!-- Export Modal -->
-  <div class="modal fade" id="exportModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Export Analytics Data</h5>
-          <button type="button" class="modern-btn-close" data-bs-dismiss="modal"></button>
+
+  {# ── Charts ── #}
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+          <i class="lucide lucide-trending-up" style="width:0.875em;height:0.875em;"></i>
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Data Type</label>
-            <select class="form-select" id="exportDataType">
-              <option value="all">All Data</option>
-              <option value="login_audit">Login Audit Only</option>
-              <option value="oauth_audit">OAuth Audit Only</option>
-              <option value="activity_logs">Activity Logs Only</option>
-            </select>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <label class="form-label">Start Date</label>
-              <input type="date" class="form-control" id="exportStartDate">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">End Date</label>
-              <input type="date" class="form-control" id="exportEndDate">
-            </div>
-          </div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Daily Activity Trend (30 days)</h2>
+      </div>
+      <div class="p-4">
+        <canvas id="dailyActivityChart"></canvas>
+      </div>
+    </div>
+
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+          <i class="lucide lucide-check-circle" style="width:0.875em;height:0.875em;"></i>
         </div>
-        <div class="modal-footer">
-          <button type="button"
-                  class="modern-btn modern-btn-white"
-                  data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="modern-btn modern-btn-white" id="exportCsvBtn">
-            <i class="bi bi-file-earmark-text"></i> Export CSV
-          </button>
-          <button type="button"
-                  class="modern-btn modern-btn-primary"
-                  id="exportJsonBtn">
-            <i class="bi bi-file-earmark-code"></i> Export JSON
-          </button>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Login Success / Failure Rate</h2>
+      </div>
+      <div class="p-4">
+        <canvas id="loginSuccessChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Data Tables (Login Audit / OAuth / Activity Logs) ── #}
+  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="px-5 pt-4 border-b border-slate-200">
+      <ul class="flex flex-wrap gap-1 -mb-px" role="tablist">
+        <li role="presentation">
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-indigo-600 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition"
+            id="login-audit-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#login-audit"
+            type="button">Login Audit</button>
+        </li>
+        <li role="presentation">
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            id="oauth-audit-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#oauth-audit"
+            type="button">OAuth Audit</button>
+        </li>
+        <li role="presentation">
+          <button class="inline-flex items-center gap-2 rounded-t-xl border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            id="activity-logs-tab"
+            data-brox-toggle="tab"
+            data-brox-target="#activity-logs"
+            type="button">Activity Logs</button>
+        </li>
+      </ul>
+    </div>
+    <div class="p-4 tab-content">
+
+      {# Login Audit Tab #}
+      <div class="tab-pane active" id="login-audit" role="tabpanel">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm analytics-table">
+            <thead>
+              <tr class="border-b border-slate-100">
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">User ID</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">IP Address</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">User Agent</th>
+                <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Date/Time</th>
+              </tr>
+            </thead>
+            <tbody id="loginAuditBody">
+              <tr><td colspan="5" class="py-4 text-center text-slate-400">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# OAuth Audit Tab #}
+      <div class="tab-pane" id="oauth-audit" role="tabpanel">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm analytics-table">
+            <thead>
+              <tr class="border-b border-slate-100">
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">User ID</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Action</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Provider</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Error</th>
+                <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Date/Time</th>
+              </tr>
+            </thead>
+            <tbody id="oauthAuditBody">
+              <tr><td colspan="6" class="py-4 text-center text-slate-400">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# Activity Logs Tab #}
+      <div class="tab-pane" id="activity-logs" role="tabpanel">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm analytics-table">
+            <thead>
+              <tr class="border-b border-slate-100">
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Action</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Module</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">User ID</th>
+                <th class="pb-2 pr-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Date/Time</th>
+              </tr>
+            </thead>
+            <tbody id="activityLogsBody">
+              <tr><td colspan="5" class="py-4 text-center text-slate-400">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# ── Management Tools ── #}
+  <div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-slate-100/50 px-5 py-4">
+      <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+        <i class="lucide lucide-settings" style="width:0.875em;height:0.875em;"></i>
+      </div>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Management Tools</h2>
+    </div>
+    <div class="p-5">
+      <div class="flex flex-wrap gap-2">
+        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 active:scale-[0.97]"
+          id="refreshBtnTools"
+          data-action="refresh-dashboard">
+          <i class="lucide lucide-refresh-cw" style="width:0.875em;height:0.875em;"></i> Refresh Data
+        </button>
+        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 active:scale-[0.97]"
+          id="clearLogsBtn">
+          <i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i> Clear Old Logs
+        </button>
+        <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:bg-emerald-50 active:scale-[0.97]"
+          id="exportBtn">
+          <i class="lucide lucide-download" style="width:0.875em;height:0.875em;"></i> Export Data
+        </button>
+      </div>
+      <p class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+        <i class="lucide lucide-info" style="width:0.75em;height:0.75em;"></i>
+        Clear logs removes records older than 90 days · Export downloads audit logs as CSV or JSON
+      </p>
+    </div>
+  </div>
+
+</div>{# /w-full #}
+
+{# ── Export Modal ── #}
+<div id="exportModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50" tabindex="-1">
+  <div class="mx-4 w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <h5 class="text-sm font-bold text-slate-900">Export Analytics Data</h5>
+      <button type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+        data-brox-dismiss="modal">
+        <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+      </button>
+    </div>
+    <div class="space-y-4 p-5">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700">Data Type</label>
+        <select class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" id="exportDataType">
+          <option value="all">All Data</option>
+          <option value="login_audit">Login Audit Only</option>
+          <option value="oauth_audit">OAuth Audit Only</option>
+          <option value="activity_logs">Activity Logs Only</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+          <input type="date" class="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 datepicker" id="exportStartDate">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">End Date</label>
+          <input type="date" class="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 datepicker" id="exportEndDate">
         </div>
       </div>
     </div>
+    <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
+      <button type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 active:scale-[0.97]"
+        data-brox-dismiss="modal">Cancel</button>
+      <button type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 active:scale-[0.97]"
+        id="exportCsvBtn">
+        <i class="lucide lucide-file-text" style="width:1em;height:1em;"></i> Export CSV
+      </button>
+      <button type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-[0.97]"
+        id="exportJsonBtn">
+        <i class="lucide lucide-file-code" style="width:1em;height:1em;"></i> Export JSON
+      </button>
+    </div>
   </div>
-  <!-- Dashboard data (read by analytics-dashboard.js) -->
-  <div id="analytics-dashboard-data"
-       data-daily-stats='{{ daily_report.stats|json_encode|e("html_attr") }}'
-       data-daily-logins='{{ daily_report.logins|json_encode|e("html_attr") }}'
-       data-weekly-stats='{{ weekly_report.stats|json_encode|e("html_attr") }}'
-       data-monthly-stats='{{ monthly_report.stats|json_encode|e("html_attr") }}'
-       class="inl-a-0006"></div>
+</div>
+
+{# Dashboard data — read by analytics-dashboard.js #}
+<div id="analytics-dashboard-data"
+  data-daily-stats='{{ daily_report.stats|json_encode|e("html_attr") }}'
+  data-daily-logins='{{ daily_report.logins|json_encode|e("html_attr") }}'
+  data-weekly-stats='{{ weekly_report.stats|json_encode|e("html_attr") }}'
+  data-monthly-stats='{{ monthly_report.stats|json_encode|e("html_attr") }}'>
+</div>
+
 {% endblock %}
+
 {% block scripts %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
-          defer></script>
-  <script src="{{ asset('/assets/js/dist/analytics-dashboard.js') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+<script type="module" src="{{ asset('/assets/js/dist/analytics-dashboard.js') }}"></script>
 {% endblock %}

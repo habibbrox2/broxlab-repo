@@ -1,5 +1,5 @@
 {# =========================================================
-Modern Advanced Comments Component (Isolated Styles)
+Modern Advanced Comments Component (Tailwind CSS)
 Features:
 - Markdown Support with Live Preview
 - Emoji Picker
@@ -11,821 +11,916 @@ Features:
 - Mobile Responsive
 - ✨ ISOLATED STYLES - Won't affect other pages
 ========================================================= #}
+
+{# Scoped CSS for markdown content rendering & emoji scroll #}
+<style>
+.modern-comments-section .markdown-content h1,
+.modern-comments-section .markdown-content h2,
+.modern-comments-section .markdown-content h3,
+.modern-comments-section .markdown-content h4 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0.75em 0 0.375em;
+  color: rgb(var(--text));
+}
+.modern-comments-section .markdown-content h1 { font-size: 1.25em; }
+.modern-comments-section .markdown-content h2 { font-size: 1.125em; }
+.modern-comments-section .markdown-content h3 { font-size: 1em; }
+.modern-comments-section .markdown-content p { margin: 0.5em 0; color: rgb(71 85 105); }
+.modern-comments-section .markdown-content code {
+  background: rgb(var(--surface-soft));
+  padding: 0.125em 0.375em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.modern-comments-section .markdown-content pre {
+  background: rgb(var(--surface-soft));
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.modern-comments-section .markdown-content pre code { background: transparent; padding: 0; }
+.modern-comments-section .markdown-content blockquote {
+  border-left: 3px solid rgb(var(--primary));
+  padding-left: 0.75rem;
+  margin: 0.5em 0;
+  color: rgb(var(--muted));
+  font-style: italic;
+}
+.modern-comments-section .markdown-content a { color: rgb(var(--primary)); text-decoration: underline; }
+.modern-comments-section .markdown-content ul,
+.modern-comments-section .markdown-content ol { padding-left: 1.5em; margin: 0.5em 0; }
+.modern-comments-section .markdown-content li { margin: 0.25em 0; }
+.modern-comments-section .markdown-content img { max-width: 100%; border-radius: 0.5rem; margin: 0.5em 0; }
+.modern-comments-section .markdown-content hr { border: 0; border-top: 1px solid rgb(var(--border)); margin: 1em 0; }
+.modern-comments-section .markdown-content table { width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+.modern-comments-section .markdown-content th,
+.modern-comments-section .markdown-content td { border: 1px solid rgb(var(--border)); padding: 0.5rem 0.75rem; text-align: left; }
+.modern-comments-section .markdown-content th { background: rgb(var(--surface-soft)); font-weight: 600; }
+
+/* ── Dark mode overrides ── */
+[data-theme="dark"] .modern-comments-section .markdown-content p { color: rgb(148 163 184); }
+[data-theme="dark"] .modern-comments-section .markdown-content code,
+[data-theme="dark"] .modern-comments-section .markdown-content pre {
+  background: rgba(30, 41, 59, 0.8);
+}
+[data-theme="dark"] .modern-comments-section .markdown-content blockquote {
+  color: rgb(148 163 184);
+}
+[data-theme="dark"] .modern-comments-section .markdown-content hr {
+  border-top-color: rgba(51, 65, 85, 0.6);
+}
+[data-theme="dark"] .modern-comments-section .markdown-content th,
+[data-theme="dark"] .modern-comments-section .markdown-content td {
+  border-color: rgba(51, 65, 85, 0.6);
+}
+[data-theme="dark"] .modern-comments-section .markdown-content th {
+  background: rgba(30, 41, 59, 0.5);
+}
+</style>
+
 <div class="modern-comments-section">
-  <!-- Header with Stats -->
-  <div class="comments-header mb-4">
-    <div class="d-flex align-items-center justify-content-between">
-      <h4 class="fw-bold mb-0">
-        <i class="bi bi-chat-dots-fill comments-text-gradient me-2"></i>
-        <span class="comments-gradient-text">Comments</span>
-      </h4>
-      <div class="comments-count badge comments-bg-gradient-primary rounded-pill px-3 py-2">
-        <i class="bi bi-chat-left-text-fill me-1"></i>
-        <span id="total-comments">{{ comments|length }}</span>
-        <span class="ms-1">{{ comments|length == 1 ? 'Comment' : 'Comments' }}</span>
-      </div>
-    </div>
+  {# ── Header with Stats ── #}
+  <div class="mb-6 flex items-center justify-between">
+    <h4 class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+      <i class="lucide lucide-message-square-more bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" style="width:1.25em;height:1.25em;"></i>
+      <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Comments</span>
+    </h4>
+    <span class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20">
+      <i class="lucide lucide-message-square-text" style="width:1em;height:1em;"></i>
+      <span id="total-comments">{{ comments|length }}</span>
+      <span class="hidden sm:inline">{{ comments|length == 1 ? 'Comment' : 'Comments' }}</span>
+    </span>
   </div>
-  <!-- Feedback Alert -->
+
+  {# ── Feedback Alert ── #}
   <div id="comment-feedback"
-       class="alert alert-dismissible fade d-none"
-       role="alert">
-    <i class="bi bi-info-circle-fill me-2"></i>
-    <span id="feedback-text"></span>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+       class="mb-4 hidden items-center gap-3 rounded-xl border p-4 text-sm font-medium"
+    <i class="lucide lucide-info shrink-0" style="width:1.125em;height:1.125em;"></i>
+    <span id="feedback-text" class="flex-1"></span>
+    <button type="button" class="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-lg opacity-60 transition-opacity hover:opacity-100" data-brox-dismiss="alert">
+      <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
+    </button>
   </div>
-  <!-- Loading Spinner -->
-  <div id="comment-loading" class="text-center my-4 d-none">
-    <div class="modern-spinner">
-      <div class="spinner-ring"></div>
-      <div class="spinner-ring"></div>
-      <div class="spinner-ring"></div>
+
+  {# ── Loading Spinner ── #}
+  <div id="comment-loading" class="my-6 hidden text-center">
+    <div class="mx-auto inline-flex items-center justify-center gap-3">
+      <div class="h-6 w-6 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"></div>
+      <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Processing your comment...</span>
     </div>
-    <p class="text-muted mt-2 small">Processing your comment...</p>
   </div>
-  <!-- Comment Form Section -->
-  <div class="comment-form-wrapper card border-0 shadow-hover rounded-4 mb-5 overflow-hidden">
-    <div class="card-header comments-bg-gradient-light border-0 p-4">
-      <h6 class="fw-bold mb-0">
-        <i class="bi bi-pencil-square text-success me-2"></i>
+
+  {# ── Comment Form Card ── #}
+  <div class="comment-form-wrapper mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    {# Form Header #}
+    <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-purple-50/60 px-5 py-4 dark:border-slate-700/80 dark:from-indigo-900/25 dark:to-purple-900/20">
+      <h6 class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+        <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-sm shadow-indigo-500/20">
+          <i class="lucide lucide-pencil" style="width:0.85em;height:0.85em;"></i>
+        </span>
         Share Your Thoughts
       </h6>
     </div>
-    <div class="card-body p-4">
-      <form id="commentForm" class="modern-comment-form">
+
+    {# Form Body #}
+    <div class="p-5">
+      <form id="commentForm" class="modern-comment-form space-y-4">
         <input type="hidden" name="content_type" value="{{ content_type }}">
         <input type="hidden" name="content_id" value="{{ content_id }}">
         <input type="hidden" name="parent_id" value="" id="parent_id_field">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
-        <!-- User Info (Guest Only) -->
+
+        {# Guest Name & Email (Guest Only) #}
         {% if not auth_user.is_authenticated %}
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <div class="comments-input-group-modern">
-                <i class="bi bi-person-fill comments-input-icon"></i>
-                <input type="text"
-                       name="guest_name"
-                       class="comments-form-control comments-form-control-modern"
-                       placeholder="Your Name *"
-                       id="guest_name_input"
-                       required>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="comments-input-group-modern">
-                <i class="bi bi-envelope-fill comments-input-icon"></i>
-                <input type="email"
-                       name="guest_email"
-                       class="comments-form-control comments-form-control-modern"
-                       placeholder="Your Email (Optional)">
-              </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-500 dark:text-slate-400">Name <span class="text-red-400">*</span></label>
+            <div class="relative">
+              <i class="lucide lucide-user pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" style="width:1em;height:1em;"></i>
+              <input type="text"
+                     name="guest_name"
+                     class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pl-10 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder:text-slate-500"
+                     placeholder="Your Name"
+                     id="guest_name_input"
+                     required>
             </div>
           </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-500 dark:text-slate-400">Email</label>
+            <div class="relative">
+              <i class="lucide lucide-mail pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" style="width:1em;height:1em;"></i>
+              <input type="email"
+                     name="guest_email"
+                     class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pl-10 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder:text-slate-500"
+                     placeholder="your@email.com">
+            </div>
+          </div>
+        </div>
         {% else %}
-          <!-- Logged-in user: use profile info, no input fields -->
-          <input type="hidden" name="user_id" value="{{ auth_user.id }}">
+        <input type="hidden" name="user_id" value="{{ auth_user.id }}">
         {% endif %}
-        <!-- Reply Info Banner -->
+
+        {# Reply Info Banner #}
         <div id="reply-banner"
-             class="alert alert-info border-0 rounded-3 d-none mb-3">
-          <div class="d-flex align-items-center justify-content-between">
-            <span>
-              <i class="bi bi-reply-fill me-2"></i>
-              Replying to <strong id="reply-to-name"></strong>
+             class="hidden rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 p-3 dark:border-sky-800/60 dark:from-sky-900/25 dark:to-blue-900/20">
+          <div class="flex items-center justify-between">
+            <span class="flex items-center gap-2 text-sm font-medium text-sky-700 dark:text-sky-300">
+              <i class="lucide lucide-reply" style="width:1em;height:1em;"></i>
+              Replying to <strong id="reply-to-name" class="text-sky-900 dark:text-sky-200"></strong>
             </span>
             <button type="button"
-                    class="btn btn-sm btn-link text-decoration-none"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sky-400 dark:text-sky-500 transition-colors hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/30 dark:hover:text-sky-300"
                     id="cancel-reply">
-              <i class="bi bi-x-lg"></i>
+              <i class="lucide lucide-x" style="width:1em;height:1em;"></i>
             </button>
           </div>
         </div>
-        <!-- Main Textarea -->
-        <div class="textarea-wrapper mb-3">
+
+        {# Main Textarea #}
+        <div>
           <textarea name="content"
                     id="comment-textarea"
-                    class="comments-form-control comments-form-control-modern"
-                    rows="5"
+                    class="w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder:text-slate-500"
+                    rows="4"
                     placeholder="Write your comment... (Markdown supported 📝)"
                     maxlength="2000"
                     required></textarea>
-          <!-- Live Preview Toggle -->
-          <div class="preview-toggle">
+          {# Live Preview Toggle #}
+          <div class="mt-1.5 flex justify-end">
             <button type="button"
-                    class="btn btn-sm btn-link text-muted"
+                    class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     id="toggle-preview">
-              <i class="bi bi-eye-fill me-1"></i>Preview
+              <i class="lucide lucide-eye" style="width:0.875em;height:0.875em;"></i>Preview
             </button>
           </div>
         </div>
-        <!-- Markdown Preview Panel -->
-        <div id="markdown-preview" class="markdown-preview-panel d-none mb-3">
-          <div class="preview-header">
-            <small class="text-muted">
-              <i class="bi bi-eye-fill me-1"></i>Preview
-            </small>
+
+        {# Markdown Preview Panel #}
+        <div id="markdown-preview" class="hidden overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/80">
+          <div class="border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-800">
+            <span class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500">
+              <i class="lucide lucide-eye" style="width:0.875em;height:0.875em;"></i> Preview
+            </span>
           </div>
-          <div class="preview-content" id="preview-content">
-            <!-- Rendered markdown will appear here -->
-          </div>
+          <div class="markdown-content p-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300" id="preview-content"></div>
         </div>
-        <!-- Toolbar -->
-        <div class="comment-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-          <div class="toolbar-buttons d-flex gap-2">
-            <!-- Emoji Button -->
+
+        {# Toolbar #}
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-0.5">
+            {# Emoji Button #}
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill emoji-trigger"
+                    class="emoji-trigger inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-slate-500 dark:hover:bg-amber-900/20 dark:hover:text-amber-400"
                     title="Add Emoji">
-              <i class="bi bi-emoji-smile"></i>
+              <i class="lucide lucide-smile" style="width:1em;height:1em;"></i>
             </button>
-            <!-- Markdown Buttons -->
+            <div class="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+            {# Markdown Buttons #}
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill md-btn"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     data-md="**text**"
                     title="Bold">
-              <i class="bi bi-type-bold"></i>
+              <i class="lucide lucide-bold" style="width:1em;height:1em;"></i>
             </button>
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill md-btn"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     data-md="_text_"
                     title="Italic">
-              <i class="bi bi-type-italic"></i>
+              <i class="lucide lucide-italic" style="width:1em;height:1em;"></i>
             </button>
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill md-btn"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     data-md="`code`"
                     title="Code">
-              <i class="bi bi-code"></i>
+              <i class="lucide lucide-code" style="width:1em;height:1em;"></i>
             </button>
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill md-btn"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     data-md="[link](url)"
                     title="Link">
-              <i class="bi bi-link-45deg"></i>
+              <i class="lucide lucide-link" style="width:1em;height:1em;"></i>
             </button>
             <button type="button"
-                    class="btn btn-sm btn-light-hover rounded-pill md-btn"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                     data-md="> quote"
                     title="Quote">
-              <i class="bi bi-blockquote-right"></i>
+              <i class="lucide lucide-text-quote" style="width:1em;height:1em;"></i>
             </button>
           </div>
-          <!-- Character Counter -->
-          <div class="char-counter">
-            <small class="text-muted">
-              <span id="char-count" class="fw-bold text-primary">0</span>
-              <span class="text-muted">/2000</span>
-            </small>
+          {# Character Counter #}
+          <div class="flex items-center gap-1 text-xs">
+            <span id="char-count" class="font-bold text-indigo-600">0</span>
+            <span class="text-slate-400 dark:text-slate-500">/ 2000</span>
           </div>
         </div>
-        <!-- Emoji Picker Panel -->
-        <div id="emoji-picker" class="emoji-picker-panel d-none">
-          <div class="emoji-picker-header">
-            <small class="text-muted">Pick an emoji</small>
-          </div>
-          <div class="emoji-grid">
-            {% for emoji in ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😙','😚','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','🥴','😠','😡','🤬','👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐','🖖','👋','🤙','💪','🙏','✍️','💅','🤳','💃','🕺','👯','🧘','🏃','🚶','🧍','🧎','💻','📱','⌨️','🖱','🖥','💾','💿','📀','🎮','🎯','🎲','🎰','🎳','🎪','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🎻','🎭','🎪','🎨','🎬','🎤','🎧','🎼','🎹','🥁','💕','❤️','💔','💖','💗','💓','💞','💝','💘','❣️','💟','🔥','✨','💫','⭐','🌟','💥','💯','🎉','🎊','🎈','🎁','🏆','🥇','🥈','🥉','🏅','🎖'] %}
-              <span class="emoji-item" data-emoji="{{ emoji }}">{{ emoji }}</span>
+
+        {# Emoji Picker Panel #}
+        <div id="emoji-picker" class="hidden rounded-xl border border-slate-200 bg-white p-3 shadow-lg shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-800 dark:shadow-slate-900/30">
+          <p class="mb-2 text-xs font-semibold text-slate-400 dark:text-slate-500">Pick an emoji</p>
+          <div class="grid max-h-48 grid-cols-8 gap-0.5 overflow-y-auto rounded-lg bg-slate-50/80 p-1 sm:grid-cols-10 dark:bg-slate-700/60">
+            {% for emoji in ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫢','🫣','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','🫤','😟','🙁','☹️','😮','😯','😲','😳','🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','👍','👎','👌','✌️','🤞','🤟','🤘','👈','👉','👆','👇','☝️','✋','🤚','🖐️','🖖','🫱','🫲','🫳','🫴','🫷','🫸','👋','🤙','💪','🙏','✍️','💅','🤳','💃','👯','🧖','🧑‍💻','💻','⌨️','🖱️','🖥️','💾','💿','📀','🎮','🎯','🎲','🎰','🎳','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺','🎸','🪕','🎻','🏆','🎖️','🏅','🥇','🥈','🥉','⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🥅','⛳','🤿','🏹','🎣','🤺','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','🎭','🎪','👔','🎁','❤️','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','💫','⭐','🌟','💥','💦','💨','🎉','🎊','🎈','💐','🏆'] %}
+            <span class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-lg transition-colors hover:bg-indigo-50 hover:scale-110 dark:hover:bg-indigo-900/30" data-emoji="{{ emoji }}">{{ emoji }}</span>
             {% endfor %}
           </div>
         </div>
-        <!-- Submit Buttons -->
-        <div class="d-flex gap-2">
+
+        {# Submit Buttons #}
+        <div class="flex items-center gap-3 pt-1">
           <button type="submit"
-                  class="btn btn-gradient-primary rounded-pill px-4 py-2 fw-bold">
-            <i class="bi bi-send-fill me-2"></i>
+                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all duration-200 hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg hover:shadow-indigo-500/25 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 active:scale-[0.98]">
+            <i class="lucide lucide-send" style="width:1em;height:1em;"></i>
             <span id="submit-text">Post Comment</span>
           </button>
           <button type="reset"
-                  class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold"
-                  id="cancel-btn">
-            <i class="bi bi-x-lg me-2"></i>Clear
+                  class="inline-flex items-center justify-center gap-2 rounded-xl border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+                  id="cancel-comment-btn">
+            <i class="lucide lucide-x" style="width:1em;height:1em;"></i>Clear
           </button>
         </div>
       </form>
     </div>
   </div>
-  <!-- Comments List -->
+
+  {# ── Comments List ── #}
   <div id="comments-list-container">
     {% if comments|length > 0 %}
-      <div id="comments-list" class="comments-list">
-        {% for comment in comments %}{{ _self.render_comment(comment, user) }}{% endfor %}
-      </div>
+    <div id="comments-list" class="space-y-4">
+      {% for comment in comments %}{{ _self.render_comment(comment, user) }}{% endfor %}
+    </div>
     {% else %}
-      <div class="empty-state text-center py-5">
-        <div class="empty-icon mb-3">
-          <i class="bi bi-chat-dots-fill fs-1 text-muted opacity-50"></i>
-        </div>
-        <h5 class="text-muted mb-2">No comments yet</h5>
-        <p class="text-muted">Be the first to share your thoughts!</p>
+    <div class="py-12 text-center">
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-700/50 dark:to-slate-800/30">
+        <i class="lucide lucide-message-square-more text-2xl text-slate-300 dark:text-slate-600"></i>
       </div>
+      <h5 class="text-base font-semibold text-slate-600 dark:text-slate-300">No comments yet</h5>
+      <p class="mt-1 text-sm text-slate-400 dark:text-slate-500">Be the first to share your thoughts!</p>
+    </div>
     {% endif %}
   </div>
 </div>
+
 {# =========================================================
 Recursive Comment Macro
 ========================================================= #}
 {% macro render_comment(comment, current_user) %}
-  <div class="comment-item modern-card"
-       data-id="{{ comment.id }}"
-       data-author="{{ comment.username ?: comment.guest_name ?: 'Guest' }}">
-    <div class="comment-inner">
-      <!-- Avatar & Header -->
-      <div class="d-flex gap-3">
-        <div class="comment-avatar">
-          <div class="avatar-circle">
-            {% if comment.user_avatar %}
-              <img src="{{ comment.user_avatar }}" alt="Avatar" class="avatar-img">
+<div class="comment-item group rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-200 dark:border-slate-700/60 dark:bg-slate-800 dark:shadow-slate-900/20 dark:hover:border-slate-600 dark:hover:shadow-slate-900/40"
+     data-id="{{ comment.id }}"
+     data-author="{{ comment.username ?: comment.guest_name ?: 'Guest' }}">
+  <div class="comment-inner">
+    {# Avatar & Header #}
+    <div class="flex gap-3">
+      <div class="shrink-0">
+        {% if comment.user_avatar %}
+        <img src="{{ comment.user_avatar }}" alt="Avatar" class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm dark:ring-slate-700">
+        {% else %}
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+          {{ (comment.username ?: comment.guest_name ?: 'G')|slice(0, 1)|upper }}
+        </div>
+        {% endif %}
+      </div>
+      <div class="min-w-0 flex-1">
+        {# Header #}
+        <div class="mb-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <strong class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ comment.username ?: comment.guest_name ?: 'Guest' }}</strong>
+            {% if comment.user_role == 'admin' %}
+            <span class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500 to-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm shadow-red-500/20">
+              <i class="lucide lucide-shield" style="width:0.7em;height:0.7em;"></i> Admin
+            </span>
+            {% endif %}
+          </div>
+          <div class="mt-0.5 flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+            <i class="lucide lucide-clock" style="width:0.75em;height:0.75em;"></i>
+            {{ comment.created_at|date("M d, Y \\a\\t H:i") }}
+          </div>
+        </div>
+
+        {# Comment Content (View Mode) #}
+        <div class="comment-content-view">
+          <div class="markdown-content text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+               data-raw="{{ comment.content|e }}">
+            {% if comment.content_html %}
+            {{ comment.content_html|raw }}
             {% else %}
-              <span class="avatar-initial">{{ (comment.username ?: comment.guest_name ?: 'G')|slice(0, 1) |upper }}</span>
+            {{ comment.content|e }}
             {% endif %}
           </div>
         </div>
-        <div class="flex-grow-1">
-          <!-- Header -->
-          <div class="comment-header mb-2">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div>
-                <strong class="comment-author">{{ comment.username ?: comment.guest_name ?: 'Guest' }}</strong>
-                {% if comment.user_role == 'admin' %}
-                  <span class="badge bg-danger rounded-pill ms-2 admin-badge">
-                    <i class="bi bi-shield-lock-fill"></i> Admin
-                  </span>
-                {% endif %}
-                <div class="comment-date text-muted small">
-                  <i class="bi bi-clock-history me-1"></i>
-                  {{ comment.created_at|date("M d, Y \\a\\t H:i") }}
-                </div>
-              </div>
-            </div>
+
+        {# Comment Edit Mode #}
+        <div class="comment-edit-mode mt-2 hidden">
+          <textarea class="w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder:text-slate-500 edit-textarea mb-2"
+                    rows="3">{{ comment.content|e }}</textarea>
+          <div class="flex items-center gap-2">
+            <button class="save-edit-btn inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-500/30">
+              <i class="lucide lucide-check-circle" style="width:0.875em;height:0.875em;"></i> Save
+            </button>
+            <button class="cancel-edit-btn inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">
+              <i class="lucide lucide-x" style="width:0.875em;height:0.875em;"></i> Cancel
+            </button>
           </div>
-          <!-- Comment Content (View Mode) -->
-          <div class="comment-content-view">
-            <div class="comment-text markdown-content"
-                 data-raw="{{ comment.content|e }}">
-              {% if comment.content_html %}
-                {{ comment.content_html|raw }}
-              {% else %}
-                {{ comment.content|e }}
-              {% endif %}
-            </div>
-          </div>
-          <!-- Comment Edit Mode -->
-          <div class="comment-edit-mode d-none">
-            <textarea class="comments-form-control comments-form-control-modern edit-textarea mb-2"
-                      rows="4">{{ comment.content|e }}</textarea>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-success rounded-pill save-edit-btn">
-                <i class="bi bi-check2-circle me-1"></i>Save
-              </button>
-              <button class="btn btn-sm btn-secondary rounded-pill cancel-edit-btn">
-                <i class="bi bi-x-lg me-1"></i>Cancel
-              </button>
-            </div>
-          </div>
-          <!-- Reaction Bar -->
-          <div class="reaction-bar mt-3">
-            <div class="reaction-wrapper position-relative">
-              <button class="reaction-trigger-btn" data-comment-id="{{ comment.id }}">
-                <span class="reaction-icon">👍</span>
-                <span class="reaction-label">React</span>
-              </button>
-              <!-- Reaction Panel (Hover) -->
-              <div class="reaction-panel-popup">
+        </div>
+
+        {# Reaction Bar #}
+        <div class="reaction-bar mt-3">
+          <div class="reaction-wrapper relative inline-block">
+            <button class="reaction-trigger inline-flex items-center gap-1.5 rounded-lg border border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                    data-comment-id="{{ comment.id }}">
+              <span class="reaction-icon">👍</span>
+              <span class="reaction-label">React</span>
+            </button>
+            {# Reaction Panel (Hover) #}
+            <div class="absolute bottom-full left-0 z-10 mb-2 hidden rounded-xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/50 group-hover:block dark:border-slate-700 dark:bg-slate-800 dark:shadow-slate-900/40">
+              <div class="flex gap-0.5">
                 {% for reaction in ['👍','❤️','🔥','😂','😮','😢','🎉','💯'] %}
-                  <button class="reaction-option"
-                          data-reaction="{{ reaction }}"
-                          title="{{ reaction }}">{{ reaction }}</button>
+                <button class="reaction-option flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-all hover:scale-125 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        data-reaction="{{ reaction }}"
+                        title="{{ reaction }}">{{ reaction }}</button>
                 {% endfor %}
               </div>
             </div>
-            <!-- Reaction Summary -->
-            {% if comment.reactions %}
-              <div class="reactions-summary">
-                {% for emoji, count in comment.reactions %}<span class="reaction-badge">{{ emoji }} {{ count }}</span>{% endfor %}
-              </div>
-            {% endif %}
           </div>
-          <!-- Action Buttons -->
-          <div class="comment-actions mt-3">
-            <button class="action-btn reply-btn"
-                    data-comment-id="{{ comment.id }}"
-                    data-author="{{ comment.username ?: comment.guest_name }}">
-              <i class="bi bi-reply-fill me-1"></i>Reply
-            </button>
-            {% if current_user and (current_user.id == comment.user_id or current_user.role == 'admin') %}
-              <button class="action-btn edit-comment-btn">
-                <i class="bi bi-pencil-fill me-1"></i>Edit
-              </button>
-              <button class="action-btn text-danger delete-comment-btn">
-                <i class="bi bi-trash-fill me-1"></i>Delete
-              </button>
-            {% endif %}
+          {# Reaction Summary #}
+          {% if comment.reactions %}
+          <div class="reactions-summary mt-2 flex flex-wrap gap-1.5">
+            {% for emoji, count in comment.reactions %}
+            <span class="reaction-badge inline-flex items-center gap-1 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300 dark:hover:bg-slate-700">{{ emoji }} {{ count }}</span>
+            {% endfor %}
           </div>
+          {% endif %}
+        </div>
+
+        {# Action Buttons #}
+        <div class="comment-actions mt-3 flex items-center gap-1">
+          <button class="reply-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                  data-comment-id="{{ comment.id }}"
+                  data-author="{{ comment.username ?: comment.guest_name }}">
+            <i class="lucide lucide-reply" style="width:0.875em;height:0.875em;"></i> Reply
+          </button>
+          {% if current_user and (current_user.id == comment.user_id or hasRole('admin')) %}
+          <button class="edit-comment-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-slate-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400">
+            <i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i> Edit
+          </button>
+          <button class="delete-comment-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+            <i class="lucide lucide-trash-2" style="width:0.875em;height:0.875em;"></i> Delete
+          </button>
+          {% endif %}
         </div>
       </div>
     </div>
-    <!-- Nested Replies -->
-    {% if comment.replies|length > 0 %}
-      <div class="replies-container">
-        <div class="replies-list">
-          {% for reply in comment.replies %}{{ _self.render_comment(reply, current_user) }}{% endfor %}
-        </div>
-      </div>
-    {% endif %}
   </div>
+
+  {# Nested Replies #}
+  {% if comment.replies|length > 0 %}
+  <div class="replies-container ml-8 mt-4 border-l-2 border-slate-100 pl-4 dark:border-slate-700">
+    <div class="replies-list space-y-3">
+      {% for reply in comment.replies %}{{ _self.render_comment(reply, current_user) }}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
 {% endmacro %}
+
 {# =========================================================
 External Dependencies
 ========================================================= #}
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-{# =========================================================
-ISOLATED STYLES - Only affects .modern-comments-section
-========================================================= #}
+
 {# =========================================================
 JavaScript - Enhanced with Better Error Handling
 ========================================================= #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ==========================================
-    // VARIABLES & ELEMENTS
-    // ==========================================
-    const form = document.getElementById('commentForm');
-    const textarea = document.getElementById('comment-textarea');
-    const charCount = document.getElementById('char-count');
-    const commentsList = document.getElementById('comments-list');
-    const feedbackDiv = document.getElementById('comment-feedback');
-    const feedbackText = document.getElementById('feedback-text');
-    const loadingDiv = document.getElementById('comment-loading');
-    const emojiPicker = document.getElementById('emoji-picker');
-    const emojiTrigger = document.querySelector('.emoji-trigger');
-    const previewPanel = document.getElementById('markdown-preview');
-    const previewContent = document.getElementById('preview-content');
-    const togglePreviewBtn = document.getElementById('toggle-preview');
-    const replyBanner = document.getElementById('reply-banner');
-    const replyToName = document.getElementById('reply-to-name');
-    const cancelReplyBtn = document.getElementById('cancel-reply');
-    const parentIdField = document.getElementById('parent_id_field');
-    const submitText = document.getElementById('submit-text');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const totalCommentsSpan = document.getElementById('total-comments');
+  // ==========================================
+  // VARIABLES & ELEMENTS
+  // ==========================================
+  const form = document.getElementById('commentForm');
+  const textarea = document.getElementById('comment-textarea');
+  const charCount = document.getElementById('char-count');
+  const commentsList = document.getElementById('comments-list');
+  const feedbackDiv = document.getElementById('comment-feedback');
+  const feedbackText = document.getElementById('feedback-text');
+  const loadingDiv = document.getElementById('comment-loading');
+  const emojiPicker = document.getElementById('emoji-picker');
+  const emojiTrigger = document.querySelector('.emoji-trigger');
+  const previewPanel = document.getElementById('markdown-preview');
+  const previewContent = document.getElementById('preview-content');
+  const togglePreviewBtn = document.getElementById('toggle-preview');
+  const replyBanner = document.getElementById('reply-banner');
+  const replyToName = document.getElementById('reply-to-name');
+  const cancelReplyBtn = document.getElementById('cancel-reply');
+  const parentIdField = document.getElementById('parent_id_field');
+  const submitText = document.getElementById('submit-text');
+  const cancelBtn = document.getElementById('cancel-comment-btn');
+  const totalCommentsSpan = document.getElementById('total-comments');
 
-    let currentParentId = null;
-    let isLoggedIn = {{ user.is_authenticated ? 'true' : 'false' }};
-    let currentUserId = {{ user.id ?? 'null' }};
+  let currentParentId = null;
+  let isLoggedIn = {{ user.is_authenticated ? 'true' : 'false' }};
+  let currentUserId = {{ user.id ?? 'null' }};
 
-    // ==========================================
-    // CHARACTER COUNTER
-    // ==========================================
-    textarea.addEventListener('input', function() {
-        const length = this.value.length;
-        charCount.textContent = length;
+  if (!form || !textarea || !charCount || !commentsList || !feedbackDiv || !feedbackText || !loadingDiv || !previewPanel || !previewContent || !togglePreviewBtn || !replyBanner || !replyToName || !cancelReplyBtn || !parentIdField || !submitText || !cancelBtn || !totalCommentsSpan) {
+    return;
+  }
 
-        if (length > 1800) {
-            charCount.classList.add('text-danger');
-            charCount.classList.remove('text-primary');
-        } else {
-            charCount.classList.add('text-primary');
-            charCount.classList.remove('text-danger');
-        }
-    });
+  // ==========================================
+  // CHARACTER COUNTER
+  // ==========================================
+  textarea.addEventListener('input', function() {
+    const length = this.value.length;
+    charCount.textContent = length;
 
-    // ==========================================
-    // EMOJI PICKER
-    // ==========================================
+    if (length > 1800) {
+      charCount.classList.add('text-red-600');
+      charCount.classList.remove('text-indigo-600');
+    } else {
+      charCount.classList.add('text-indigo-600');
+      charCount.classList.remove('text-red-600');
+    }
+  });
+
+  // ==========================================
+  // EMOJI PICKER
+  // ==========================================
+  if (emojiTrigger && emojiPicker) {
     emojiTrigger.addEventListener('click', function(e) {
-        e.preventDefault();
-        emojiPicker.classList.toggle('d-none');
+      e.preventDefault();
+      emojiPicker.classList.toggle('hidden');
     });
 
     // Close emoji picker when clicking outside
     document.addEventListener('click', function(e) {
-        if (!emojiTrigger.contains(e.target) && !emojiPicker.contains(e.target)) {
-            emojiPicker.classList.add('d-none');
-        }
+      if (!emojiTrigger.contains(e.target) && !emojiPicker.contains(e.target)) {
+        emojiPicker.classList.add('hidden');
+      }
     });
 
     // Insert emoji on click
     emojiPicker.addEventListener('click', function(e) {
-        if (e.target.classList.contains('emoji-item')) {
-            const emoji = e.target.dataset.emoji;
-            const cursorPos = textarea.selectionStart;
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const textAfter = textarea.value.substring(cursorPos);
+      if (e.target.classList.contains('emoji-item')) {
+        const emoji = e.target.dataset.emoji;
+        const cursorPos = textarea.selectionStart;
+        const textBefore = textarea.value.substring(0, cursorPos);
+        const textAfter = textarea.value.substring(cursorPos);
 
-            textarea.value = textBefore + emoji + textAfter;
-            textarea.focus();
-            textarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
-
-            // Update character count
-            charCount.textContent = textarea.value.length;
-
-            emojiPicker.classList.add('d-none');
-        }
-    });
-
-    // ==========================================
-    // MARKDOWN BUTTONS
-    // ==========================================
-    document.querySelectorAll('.md-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const markdown = this.dataset.md;
-            const cursorPos = textarea.selectionStart;
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const textAfter = textarea.value.substring(cursorPos);
-
-            textarea.value = textBefore + markdown + textAfter;
-            textarea.focus();
-
-            // Place cursor in the middle of markdown syntax
-            let newPos = cursorPos + markdown.indexOf('text');
-            if (newPos < cursorPos) newPos = cursorPos + markdown.length;
-            textarea.setSelectionRange(newPos, newPos);
-
-            charCount.textContent = textarea.value.length;
-        });
-    });
-
-    // ==========================================
-    // MARKDOWN PREVIEW
-    // ==========================================
-    togglePreviewBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        previewPanel.classList.toggle('d-none');
-
-        if (!previewPanel.classList.contains('d-none')) {
-            // Render markdown
-            const rawText = textarea.value || '_Nothing to preview..._';
-            previewContent.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
-            this.innerHTML = '<i class="bi bi-pencil-fill me-1"></i>Edit';
-        } else {
-            this.innerHTML = '<i class="bi bi-eye-fill me-1"></i>Preview';
-        }
-    });
-
-    // Live preview update
-    textarea.addEventListener('input', function() {
-        if (!previewPanel.classList.contains('d-none')) {
-            const rawText = this.value || '_Nothing to preview..._';
-            previewContent.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
-        }
-    });
-
-    // ==========================================
-    // REPLY FUNCTIONALITY
-    // ==========================================
-    function setupReply(commentId, authorName) {
-        currentParentId = commentId;
-        parentIdField.value = commentId;
-        replyToName.textContent = authorName;
-        replyBanner.classList.remove('d-none');
-        submitText.textContent = 'Post Reply';
-
-        // Scroll to form
-        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        textarea.value = textBefore + emoji + textAfter;
         textarea.focus();
+        textarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+
+        // Update character count
+        charCount.textContent = textarea.value.length;
+
+        emojiPicker.classList.add('hidden');
+      }
+    });
+  }
+
+  // ==========================================
+  // MARKDOWN BUTTONS
+  // ==========================================
+  document.querySelectorAll('[data-md]').forEach(function(mdBtn) {
+    mdBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const markdown = this.dataset.md;
+      const cursorPos = textarea.selectionStart;
+      const textBefore = textarea.value.substring(0, cursorPos);
+      const textAfter = textarea.value.substring(cursorPos);
+
+      textarea.value = textBefore + markdown + textAfter;
+      textarea.focus();
+
+      // Place cursor in the middle of markdown syntax
+      let newPos = cursorPos + markdown.indexOf('text');
+      if (newPos < cursorPos) newPos = cursorPos + markdown.length;
+      textarea.setSelectionRange(newPos, newPos);
+
+      charCount.textContent = textarea.value.length;
+    });
+  });
+
+  // ==========================================
+  // MARKDOWN PREVIEW
+  // ==========================================
+  togglePreviewBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    previewPanel.classList.toggle('hidden');
+
+    if (! previewPanel.classList.contains('hidden')) {
+      // Render markdown
+      const rawText = textarea.value || '_Nothing to preview..._';
+      previewContent.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
+      this.innerHTML = '<i class="lucide lucide-pencil" style="width:0.875em;height:0.875em;"></i>Edit';
+    } else {
+      this.innerHTML = '<i class="lucide lucide-eye" style="width:0.875em;height:0.875em;"></i>Preview';
     }
+  });
 
-    cancelReplyBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        currentParentId = null;
-        parentIdField.value = '';
-        replyBanner.classList.add('d-none');
-        submitText.textContent = 'Post Comment';
-    });
+  // Live preview update
+  textarea.addEventListener('input', function() {
+    if (! previewPanel.classList.contains('hidden')) {
+      const rawText = this.value || '_Nothing to preview..._';
+      previewContent.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
+    }
+  });
 
-    // ==========================================
-    // FORM SUBMISSION
-    // ==========================================
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+  // ==========================================
+  // REPLY FUNCTIONALITY
+  // ==========================================
+  function setupReply(commentId, authorName) {
+    currentParentId = commentId;
+    parentIdField.value = commentId;
+    replyToName.textContent = authorName;
+    replyBanner.classList.remove('hidden');
+    submitText.textContent = 'Post Reply';
 
-        const formData = new FormData(form);
+    // Scroll to form
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    textarea.focus();
+  }
 
-        // Show loading
-        loadingDiv.classList.remove('d-none');
+  cancelReplyBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    currentParentId = null;
+    parentIdField.value = '';
+    replyBanner.classList.add('hidden');
+    submitText.textContent = 'Post Comment';
+  });
 
-        fetch('/comment/add', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            loadingDiv.classList.add('d-none');
+  // ==========================================
+  // FORM SUBMISSION
+  // ==========================================
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-            if (data.success) {
-                showFeedback('Comment posted successfully!', 'success');
+    const formData = new FormData(form);
 
-                // Reset form
-                form.reset();
-                charCount.textContent = '0';
-                previewPanel.classList.add('d-none');
-                emojiPicker.classList.add('d-none');
+    // Show loading
+    loadingDiv.classList.remove('hidden');
 
-                // Reset reply state
-                if (currentParentId) {
-                    currentParentId = null;
-                    parentIdField.value = '';
-                    replyBanner.classList.add('d-none');
-                    submitText.textContent = 'Post Comment';
-                }
+    fetch('/comment/add', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      loadingDiv.classList.add('hidden');
 
-                // Reload page after 1 second
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
+      if (data.success) {
+        showFeedback('Comment posted successfully!', 'success');
 
-            } else {
-                showFeedback(data.message || 'Failed to post comment', 'danger');
-            }
-        })
-        .catch(error => {
-            loadingDiv.classList.add('d-none');
-            showFeedback('An error occurred. Please try again.', 'danger');
-            console.error('Error:', error);
-        });
-    });
-
-    // Cancel button
-    cancelBtn.addEventListener('click', function() {
+        // Reset form
+        form.reset();
         charCount.textContent = '0';
-        previewPanel.classList.add('d-none');
-        emojiPicker.classList.add('d-none');
+        previewPanel.classList.add('hidden');
+        if (emojiPicker) {
+          emojiPicker.classList.add('hidden');
+        }
 
+        // Reset reply state
         if (currentParentId) {
-            currentParentId = null;
-            parentIdField.value = '';
-            replyBanner.classList.add('d-none');
-            submitText.textContent = 'Post Comment';
+          currentParentId = null;
+          parentIdField.value = '';
+          replyBanner.classList.add('hidden');
+          submitText.textContent = 'Post Comment';
         }
-    });
 
-    // ==========================================
-    // FEEDBACK MESSAGES
-    // ==========================================
-    function showFeedback(message, type = 'info') {
-        feedbackText.textContent = message;
-        feedbackDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        feedbackDiv.classList.remove('d-none');
-
+        // Reload page after 1 second
         setTimeout(() => {
-            feedbackDiv.classList.add('d-none');
-        }, 5000);
+          location.reload();
+        }, 1000);
+
+      } else {
+        showFeedback(data.message || 'Failed to post comment', 'danger');
+      }
+    })
+    .catch(error => {
+      loadingDiv.classList.add('hidden');
+      showFeedback('An error occurred. Please try again.', 'danger');
+      console.error('Error:', error);
+    });
+  });
+
+  // Cancel button
+  cancelBtn.addEventListener('click', function() {
+    charCount.textContent = '0';
+    previewPanel.classList.add('hidden');
+    if (emojiPicker) {
+      emojiPicker.classList.add('hidden');
     }
 
-    // ==========================================
-    // DELEGATED EVENT LISTENERS (Comments List)
-    // ==========================================
-    if (commentsList) {
-        commentsList.addEventListener('click', function(e) {
-            const commentItem = e.target.closest('.comment-item');
-            if (!commentItem) return;
+    if (currentParentId) {
+      currentParentId = null;
+      parentIdField.value = '';
+      replyBanner.classList.add('hidden');
+      submitText.textContent = 'Post Comment';
+    }
+  });
 
-            const commentId = commentItem.dataset.id;
-            const authorName = commentItem.dataset.author;
+  // ==========================================
+  // FEEDBACK MESSAGES
+  // ==========================================
+  function showFeedback(message, type = 'info') {
+    feedbackText.textContent = message;
+    feedbackDiv.className = `mb-4 hidden items-center gap-3 rounded-xl border p-4 text-sm font-medium ${type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : type === 'danger' ? 'border-red-200 bg-red-50 text-red-800' : type === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-sky-200 bg-sky-50 text-sky-800'}`;
+    feedbackDiv.classList.remove('hidden');
 
-            // ========== REPLY BUTTON ==========
-            if (e.target.closest('.reply-btn')) {
-                e.preventDefault();
-                setupReply(commentId, authorName);
-            }
+    setTimeout(() => {
+      feedbackDiv.classList.add('hidden');
+    }, 5000);
+  }
 
-            // ========== EDIT BUTTON ==========
-            if (e.target.closest('.edit-comment-btn')) {
-                e.preventDefault();
-                const viewMode = commentItem.querySelector('.comment-content-view');
-                const editMode = commentItem.querySelector('.comment-edit-mode');
+  // ==========================================
+  // DELEGATED EVENT LISTENERS (Comments List)
+  // ==========================================
+  if (commentsList) {
+    commentsList.addEventListener('click', async function(e) {
+      const commentItem = e.target.closest('.comment-item');
+      if (!commentItem) return;
 
-                viewMode.classList.add('d-none');
-                editMode.classList.remove('d-none');
-            }
+      const commentId = commentItem.dataset.id;
+      const authorName = commentItem.dataset.author;
 
-            // ========== SAVE EDIT ==========
-            if (e.target.closest('.save-edit-btn')) {
-                e.preventDefault();
-                const editTextarea = commentItem.querySelector('.edit-textarea');
-                const newContent = editTextarea.value.trim();
+      // ========== REPLY BUTTON ==========
+      if (e.target.closest('.reply-btn')) {
+        e.preventDefault();
+        setupReply(commentId, authorName);
+      }
 
-                if (!newContent || newContent.length < 2) {
-                    showFeedback('Comment must be at least 2 characters', 'warning');
-                    return;
-                }
+      // ========== EDIT BUTTON ==========
+      if (e.target.closest('.edit-comment-btn')) {
+        e.preventDefault();
+        const viewMode = commentItem.querySelector('.comment-content-view');
+        const editMode = commentItem.querySelector('.comment-edit-mode');
 
-                loadingDiv.classList.remove('d-none');
+        viewMode.classList.add('hidden');
+        editMode.classList.remove('hidden');
+      }
 
-                fetch('/comment/edit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        comment_id: commentId,
-                        content: newContent
-                    })
-                })
-                .then(r => r.json())
-                .then(d => {
-                    loadingDiv.classList.add('d-none');
-                    if (d.success) {
-                        showFeedback('Comment updated successfully!', 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showFeedback(d.message || 'Failed to edit comment', 'danger');
-                    }
-                })
-                .catch(err => {
-                    loadingDiv.classList.add('d-none');
-                    showFeedback('Error editing comment', 'danger');
-                });
-            }
+      // ========== SAVE EDIT ==========
+      if (e.target.closest('.save-edit-btn')) {
+        e.preventDefault();
+        const editTextarea = commentItem.querySelector('.edit-textarea');
+        const newContent = editTextarea.value.trim();
 
-            // ========== CANCEL EDIT ==========
-            if (e.target.closest('.cancel-edit-btn')) {
-                e.preventDefault();
-                const viewMode = commentItem.querySelector('.comment-content-view');
-                const editMode = commentItem.querySelector('.comment-edit-mode');
+        if (!newContent || newContent.length < 2) {
+          showFeedback('Comment must be at least 2 characters', 'warning');
+          return;
+        }
 
-                editMode.classList.add('d-none');
-                viewMode.classList.remove('d-none');
-            }
+        loadingDiv.classList.remove('hidden');
 
-            // ========== DELETE BUTTON ==========
-            if (e.target.closest('.delete-comment-btn')) {
-                e.preventDefault();
-
-                if (!confirm('Are you sure you want to delete this comment?')) {
-                    return;
-                }
-
-                loadingDiv.classList.remove('d-none');
-
-                fetch('/comment/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ comment_id: commentId })
-                })
-                .then(r => r.json())
-                .then(d => {
-                    loadingDiv.classList.add('d-none');
-                    if (d.success) {
-                        showFeedback('Comment deleted successfully!', 'success');
-                        commentItem.style.opacity = '0';
-                        commentItem.style.transform = 'scale(0.9)';
-                        setTimeout(() => commentItem.remove(), 300);
-
-                        // Update total count
-                        const currentCount = parseInt(totalCommentsSpan.textContent);
-                        totalCommentsSpan.textContent = currentCount - 1;
-                    } else {
-                        showFeedback(d.message || 'Failed to delete comment', 'danger');
-                    }
-                })
-                .catch(err => {
-                    loadingDiv.classList.add('d-none');
-                    showFeedback('Error deleting comment', 'danger');
-                });
-            }
-
-            // ========== REACTION BUTTONS ==========
-            if (e.target.closest('.reaction-option')) {
-                e.preventDefault();
-                const reactionBtn = e.target.closest('.reaction-option');
-                const reaction = reactionBtn.dataset.reaction;
-
-                fetch('/comment/react', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        comment_id: commentId,
-                        reaction: reaction
-                    })
-                })
-                .then(r => r.json())
-                .then(d => {
-                    if (d.success) {
-                        // Update reaction summary
-                        const reactionBar = commentItem.querySelector('.reaction-bar');
-                        let summaryDiv = reactionBar.querySelector('.reactions-summary');
-
-                        if (!summaryDiv) {
-                            summaryDiv = document.createElement('div');
-                            summaryDiv.className = 'reactions-summary';
-                            reactionBar.appendChild(summaryDiv);
-                        }
-
-                        // Update with new reaction data
-                        if (d.reactions && Object.keys(d.reactions).length > 0) {
-                            summaryDiv.innerHTML = Object.entries(d.reactions)
-                                .map(([emoji, count]) => `<span class="reaction-badge">${emoji} ${count}</span>`)
-                                .join('');
-                        } else {
-                            summaryDiv.innerHTML = '';
-                        }
-
-                        showFeedback('Reaction added!', 'success');
-                    } else {
-                        showFeedback(d.message || 'Failed to add reaction', 'warning');
-                    }
-                })
-                .catch(err => {
-                    showFeedback('Error adding reaction', 'danger');
-                    console.error('Reaction error:', err);
-                });
-            }
+        fetch('/comment/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            comment_id: commentId,
+            content: newContent
+          })
+        })
+        .then(r => r.json())
+        .then(d => {
+          loadingDiv.classList.add('hidden');
+          if (d.success) {
+            showFeedback('Comment updated successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+          } else {
+            showFeedback(d.message || 'Failed to edit comment', 'danger');
+          }
+        })
+        .catch(err => {
+          loadingDiv.classList.add('hidden');
+          showFeedback('Error editing comment', 'danger');
         });
-    }
+      }
 
-    // ==========================================
-    // GUEST NAME PERSISTENCE (LocalStorage)
-    // ==========================================
-    if (!isLoggedIn) {
-        const guestNameInput = document.getElementById('guest_name_input');
+      // ========== CANCEL EDIT ==========
+      if (e.target.closest('.cancel-edit-btn')) {
+        e.preventDefault();
+        const viewMode = commentItem.querySelector('.comment-content-view');
+        const editMode = commentItem.querySelector('.comment-edit-mode');
 
-        if (guestNameInput) {
-            // Load saved guest name
-            const savedName = localStorage.getItem('guest_name');
-            const savedExpiry = localStorage.getItem('guest_name_expiry');
+        editMode.classList.add('hidden');
+        viewMode.classList.remove('hidden');
+      }
 
-            if (savedName && savedExpiry && Date.now() < parseInt(savedExpiry)) {
-                guestNameInput.value = savedName;
-            }
+      // ========== DELETE BUTTON ==========
+      if (e.target.closest('.delete-comment-btn')) {
+        e.preventDefault();
 
-            // Save guest name on form submit
-            form.addEventListener('submit', function() {
-                const guestName = guestNameInput.value.trim();
-                if (guestName) {
-                    localStorage.setItem('guest_name', guestName);
-                    // Expire after 7 days
-                    const expiry = Date.now() + (7 * 24 * 60 * 60 * 1000);
-                    localStorage.setItem('guest_name_expiry', expiry.toString());
-                }
-            });
+        if (!await window.showConfirm('Are you sure you want to delete this comment?')) {
+          return;
         }
-    }
 
-    // ==========================================
-    // SMOOTH ANIMATIONS ON LOAD
-    // ==========================================
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
+        loadingDiv.classList.remove('hidden');
+
+        fetch('/comment/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment_id: commentId })
+        })
+        .then(r => r.json())
+        .then(d => {
+          loadingDiv.classList.add('hidden');
+          if (d.success) {
+            showFeedback('Comment deleted successfully!', 'success');
+            commentItem.style.opacity = '0';
+            commentItem.style.transform = 'scale(0.95)';
+            setTimeout(() => commentItem.remove(), 300);
+
+            // Update total count
+            const currentCount = parseInt(totalCommentsSpan.textContent);
+            totalCommentsSpan.textContent = currentCount - 1;
+          } else {
+            showFeedback(d.message || 'Failed to delete comment', 'danger');
+          }
+        })
+        .catch(() => {
+          loadingDiv.classList.add('hidden');
+          showFeedback('Error deleting comment', 'danger');
         });
-    }, { threshold: 0.1 });
+      }
 
-    document.querySelectorAll('.comment-item').forEach(item => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateY(20px)';
-        item.style.transition = 'all 0.5s ease';
-        observer.observe(item);
-    });
+      // ========== REACTION BUTTONS ==========
+      if (e.target.closest('.reaction-option')) {
+        e.preventDefault();
+        const reactionBtn = e.target.closest('.reaction-option');
+        const reaction = reactionBtn.dataset.reaction;
 
-    // ==========================================
-    // KEYBOARD SHORTCUTS
-    // ==========================================
-    textarea.addEventListener('keydown', function(e) {
-        // Ctrl/Cmd + Enter to submit
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            e.preventDefault();
-            form.dispatchEvent(new Event('submit'));
-        }
+        fetch('/comment/react', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            comment_id: commentId,
+            reaction: reaction
+          })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            const reactionBar = commentItem.querySelector('.reaction-bar');
+            let summaryDiv = reactionBar.querySelector('.reactions-summary');
 
-        // Ctrl/Cmd + P to toggle preview
-        if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-            e.preventDefault();
-            togglePreviewBtn.click();
-        }
-    });
-
-    // ==========================================
-    // AUTO-SAVE DRAFT (Optional)
-    // ==========================================
-    let autoSaveTimer;
-    textarea.addEventListener('input', function() {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-            const draft = this.value;
-            if (draft.length > 10) {
-                localStorage.setItem('comment_draft_{{ content_type }}_{{ content_id }}', draft);
+            if (!summaryDiv) {
+              summaryDiv = document.createElement('div');
+              summaryDiv.className = 'reactions-summary mt-2 flex flex-wrap gap-1.5';
+              reactionBar.appendChild(summaryDiv);
             }
-        }, 2000);
-    });
 
-    // Restore draft on page load
-    const savedDraft = localStorage.getItem('comment_draft_{{ content_type }}_{{ content_id }}');
-    if (savedDraft && !textarea.value) {
-        textarea.value = savedDraft;
-        charCount.textContent = savedDraft.length;
+            // Update with new reaction data
+            if (d.reactions && Object.keys(d.reactions).length > 0) {
+              summaryDiv.innerHTML = Object.entries(d.reactions)
+                .map(function(e) { return '<span class="reaction-badge inline-flex items-center gap-1 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100">' + e[0] + ' ' + e[1] + '</span>'; }).join('');
+            } else {
+              summaryDiv.innerHTML = '';
+            }
+
+            showFeedback('Reaction added!', 'success');
+          } else {
+            showFeedback(d.message || 'Failed to add reaction', 'warning');
+          }
+        })
+        .catch(err => {
+          showFeedback('Error adding reaction', 'danger');
+          console.error('Reaction error:', err);
+        });
+      }
+    });
+  }
+
+  // ==========================================
+  // GUEST NAME PERSISTENCE (LocalStorage)
+  // ==========================================
+  if (!isLoggedIn) {
+    const guestNameInput = document.getElementById('guest_name_input');
+
+    if (guestNameInput) {
+      // Load saved guest name
+      const savedName = localStorage.getItem('guest_name');
+      const savedExpiry = localStorage.getItem('guest_name_expiry');
+
+      if (savedName && savedExpiry && Date.now() < parseInt(savedExpiry)) {
+        guestNameInput.value = savedName;
+      }
+
+      // Save guest name on form submit
+      form.addEventListener('submit', function() {
+        const guestName = guestNameInput.value.trim();
+        if (guestName) {
+          localStorage.setItem('guest_name', guestName);
+          // Expire after 7 days
+          const expiry = Date.now() + (7 * 24 * 60 * 60 * 1000);
+          localStorage.setItem('guest_name_expiry', expiry.toString());
+        }
+      });
+    }
+  }
+
+  // ==========================================
+  // SMOOTH ANIMATIONS ON LOAD
+  // ==========================================
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.comment-item').forEach(item => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(12px)';
+    item.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    observer.observe(item);
+  });
+
+  // ==========================================
+  // KEYBOARD SHORTCUTS
+  // ==========================================
+  textarea.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + Enter to submit
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
     }
 
-    // Clear draft on successful submit
-    form.addEventListener('submit', function() {
-        localStorage.removeItem('comment_draft_{{ content_type }}_{{ content_id }}');
-    });
+    // Ctrl/Cmd + P to toggle preview
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      e.preventDefault();
+      togglePreviewBtn.click();
+    }
+  });
 
-    console.log('✅ Modern Comments System Initialized');
+  // ==========================================
+  // AUTO-SAVE DRAFT (Optional)
+  // ==========================================
+  let autoSaveTimer;
+  textarea.addEventListener('input', function() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      const draft = this.value;
+      if (draft.length > 10) {
+        localStorage.setItem('comment_draft_{{ content_type }}_{{ content_id }}', draft);
+      }
+    }, 2000);
+  });
+
+  // Restore draft on page load
+  const savedDraft = localStorage.getItem('comment_draft_{{ content_type }}_{{ content_id }}');
+  if (savedDraft && !textarea.value) {
+    textarea.value = savedDraft;
+    charCount.textContent = savedDraft.length;
+  }
+
+  // Clear draft on successful submit
+  form.addEventListener('submit', function() {
+    localStorage.removeItem('comment_draft_{{ content_type }}_{{ content_id }}');
+  });
+
+  console.log('✅ Modern Comments System Initialized');
 });
 </script>

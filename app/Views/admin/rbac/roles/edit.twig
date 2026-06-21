@@ -1,110 +1,137 @@
 {% extends "admin/layout.twig" %}
+{% block title %}Edit Role{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="service-form-wrapper">
-    <div class="container service-form-container">
-      <div class="modern-breadcrumb">
-        <a href="/admin"><i class="bi bi-house-door"></i> Dashboard</a>
-        <span class="separator">›</span>
-        <a href="/admin/roles">Roles</a>
-        <span class="separator">›</span>
-        <span class="active">Edit</span>
-      </div>
-      <div class="header-glass-card mb-4">
-        <div class="d-flex align-items-center justify-content-between gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="header-icon-badge">
-              <i class="bi bi-shield-lock"></i>
-            </div>
-            <div>
-              <h1 class="page-title">Edit: {{ role.name|upper }}</h1>
-              <p class="page-subtitle">Manage role details and permissions</p>
-            </div>
-          </div>
-          <a href="/admin/roles" class="modern-btn modern-btn-secondary">Back to Roles</a>
-        </div>
-      </div>
-      <div class="row g-4">
-        <div class="col-lg-6 mx-auto">
-          <div class="admin-panel-card">
-            <div class="admin-panel-card-header">
-              <h5 class="admin-panel-card-header-title">
-                <i class="bi bi-info-circle-fill"></i> Role Information
-              </h5>
-            </div>
-            <div class="admin-panel-card-body">
-              <form method="POST" action="/admin/roles/{{ role.id }}/update">
-                <div class="mb-3">
-                  <label for="name" class="form-label">Role Name *</label>
-                  <input type="text"
-                         class="form-control"
-                         id="name"
-                         name="name"
-                         value="{{ role.name }}"
-                         placeholder="e.g., moderator"
-                         required>
-                  <small class="text-muted">Use lowercase with underscores</small>
-                </div>
-                <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control"
-                            id="description"
-                            name="description"
-                            rows="3"
-                            placeholder="Brief description of this role">{{ role.description }}</textarea>
-                </div>
-                <div class="card mt-4 bg-light border">
-                  <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="mb-0">Assign Permissions</h6>
-                      <div>
-                        <button type="button"
-                                class="btn btn-sm btn-primary-outline"
-                                onclick="selectAll()">Select All</button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-secondary"
-                                onclick="deselectAll()">Clear</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="admin-panel-card-body">
-                    {% for module, perms in permissions %}
-                      <div class="mb-3">
-                        <h6 class="text-uppercase fw-bold text-primary module-header-sm">{{ module }}</h6>
-                        <div class="permission-group">
-                          {% for perm in perms %}
-                            <div class="form-check">
-                              <input class="form-check-input permission-checkbox"
-                                     type="checkbox"
-                                     name="permissions[]"
-                                     value="{{ perm.id }}"
-                                     id="perm_{{ perm.id }}"
-                                     {% if perm.id in rolePermissionIds %}checked{% endif %}>
-                              <label class="form-check-label" for="perm_{{ perm.id }}">
-                                <strong>{{ perm.name }}</strong>
-                                <br>
-                                <small class="text-muted">{{ perm.description }}</small>
-                              </label>
-                            </div>
-                          {% endfor %}
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
-                <div class="mt-4 d-flex gap-2">
-                  <button type="submit" class="modern-btn modern-btn-white">
-                    <i class="bi bi-check-circle me-2"></i>Update Role
-                  </button>
-                  <a href="/admin/roles" class="modern-btn modern-btn-secondary">
-                    <i class="bi bi-x-circle me-2"></i>Cancel
-                  </a>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-shield-edit w-5 h-5 text-white"></i>
     </div>
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Access Control</p>
+     <h1 class="text-xl font-bold text-white">Edit: {{ role.name|upper }}</h1>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">Manage role details and permissions.</p>
+    </div>
+   </div>
+   <div class="flex gap-2">
+    <a href="/admin/roles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Roles
+    </a>
+   </div>
   </div>
+ </div>
+
+ {# ── Form Card ── #}
+ <div class="max-w-3xl overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+   <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+    <i class="lucide lucide-shield w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+   </div>
+   <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Role Details</h3>
+  </div>
+  <div class="p-5">
+   <form method="POST" action="/admin/roles/{{ role.id }}/update">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="mb-4">
+     <label for="name" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+      Role Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+     </label>
+     <div class="relative">
+      <i class="lucide lucide-tag w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text"
+       class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
+       id="name" name="name" value="{{ role.name }}" placeholder="e.g., moderator" required>
+     </div>
+    </div>
+
+    <div class="mb-4">
+     <label for="description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Description</label>
+     <textarea
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[80px]"
+      id="description" name="description" rows="3" placeholder="Brief description of this role">{{ role.description }}</textarea>
+    </div>
+
+    {# ── Permissions Assignment Card ── #}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 overflow-hidden">
+     <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="flex items-center gap-3">
+       <div class="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+        <i class="lucide lucide-key w-4 h-4 text-violet-600 dark:text-violet-400"></i>
+       </div>
+       <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Assign Permissions</h3>
+      </div>
+      <div class="flex gap-1.5">
+       <button type="button" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1.5 text-xs font-semibold text-white transition-all duration-150" data-action="select-all-permissions">Select All</button>
+       <button type="button" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-150" data-action="clear-all-permissions">Clear</button>
+      </div>
+     </div>
+     <div class="p-5">
+      {% for module, perms in permissions %}
+      <div class="mb-5 last:mb-0">
+       <h4 class="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-400">{{ module }}</h4>
+       <div class="space-y-3">
+        {% for perm in perms %}
+        <label class="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm cursor-pointer">
+         <input class="permission-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20" type="checkbox" name="permissions[]" value="{{ perm.id }}" id="perm_{{ perm.id }}" {% if perm.id in rolePermissionIds %}checked{% endif %}>
+         <span>
+          <strong class="block text-sm text-slate-900 dark:text-white">{{ perm.name }}</strong>
+          <small class="text-xs text-slate-500 dark:text-slate-400">{{ perm.description }}</small>
+         </span>
+        </label>
+        {% endfor %}
+       </div>
+      </div>
+      {% endfor %}
+     </div>
+    </div>
+
+    {# ── Actions ── #}
+    <div class="mt-5 flex flex-wrap gap-2">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-amber-500/20 hover:shadow-md hover:shadow-amber-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-check-circle w-4 h-4"></i> Update Role
+     </button>
+     <a href="/admin/roles" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-x w-4 h-4"></i> Cancel
+     </a>
+    </div>
+   </form>
+  </div>
+ </div>
+</div>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
+});
+</script>
+</script>
 {% endblock %}

@@ -1,244 +1,239 @@
 {% extends "admin/layout.twig" %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <input type="hidden" id="global-csrf-token" value="{{ csrf_token }}">
-  <div class="container-fluid py-4 admin-account-settings-page">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-shield-lock"></i>
-        Account Settings
-      </div>
-      <div class="admin-page-subtitle">Manage your account security and preferences</div>
+ <input type="hidden" id="global-csrf-token" value="{{ csrf_token }}">
+ <div class="px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+
+  {# ── Page Header Banner ── #}
+  <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+   <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+   <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+     <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+      <i class="lucide lucide-shield w-5 h-5 text-white"></i>
+     </div>
+     <div>
+      <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Security</p>
+      <h1 class="text-xl font-bold text-white">Account Settings</h1>
+      <p class="text-sm text-white/60 mt-0.5 max-w-md">Manage your account security and preferences</p>
+     </div>
     </div>
-    <div class="row g-3">
-      <!-- Sidebar Navigation -->
-      <div class="col-lg-3 mb-4">
-        <div class="admin-panel-card settings-side-card">
-          <div class="admin-panel-card-header gradient settings-side-header">
-            <h6 class="admin-panel-card-title mb-0">
-              <i class="bi bi-list-check"></i>
-              Settings Menu
-            </h6>
-          </div>
-          <div class="list-group list-group-flush settings-side-nav">
-            <a href="/admin/profile"
-               class="list-group-item list-group-item-action settings-side-link">
-              <i class="bi bi-person-circle me-2 text-primary"></i>
-              <span>Profile</span>
-              <i class="bi bi-chevron-right ms-auto text-muted"></i>
-            </a>
-            <a href="/admin/account-settings"
-               class="list-group-item list-group-item-action settings-side-link active">
-              <i class="bi bi-lock me-2 text-primary"></i>
-              <span class="fw-bold">Account Security</span>
-            </a>
-            <a href="/admin/security/2fa"
-               class="list-group-item list-group-item-action settings-side-link">
-              <i class="bi bi-shield-check me-2 text-primary"></i>
-              <span>Two-Factor Auth</span>
-              <i class="bi bi-chevron-right ms-auto text-muted"></i>
-            </a>
-            {% if auth_user.is_super_admin %}
-              <a href="/admin/app-settings"
-                 class="list-group-item list-group-item-action settings-side-link">
-                <i class="bi bi-sliders me-2 text-primary"></i>
-                <span>App Settings</span>
-                <i class="bi bi-chevron-right ms-auto text-muted"></i>
-              </a>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <!-- Main Content -->
-      <div class="col-lg-9">
-        <!-- Alert Container -->
-        <div id="alert-container"></div>
-        <!-- Password Management Section -->
-        <div class="admin-panel-card bordered-primary mb-4 account-settings-card">
-          <div class="admin-panel-card-header">
-            <h6 class="admin-panel-card-title mb-0">
-              <i class="bi bi-key"></i>
-              Password Management
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <p class="text-muted">Update and manage your account password</p>
-            <div class="row g-3 account-settings-actions">
-              {% if user_has_password %}
-                <!-- Change Password -->
-                <div class="col-md-6">
-                  <div class="p-3 border rounded text-center password-action-tile">
-                    <i class="bi bi-arrow-repeat text-primary password-action-icon"></i>
-                    <h6 class="mt-2 mb-1">Change Password</h6>
-                    <p class="text-muted small mb-3">Update your current password</p>
-                    <button type="button"
-                            class="modern-btn modern-btn-primary modern-btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#changePasswordModal">
-                      <i class="bi bi-pencil-square me-1"></i> Change
-                    </button>
-                  </div>
-                </div>
-              {% else %}
-                <!-- Set Password -->
-                <div class="col-md-6">
-                  <div class="p-3 border rounded text-center password-action-tile">
-                    <i class="bi bi-plus-circle text-success password-action-icon"></i>
-                    <h6 class="mt-2 mb-1">Set Password</h6>
-                    <p class="text-muted small mb-3">Create a password for your account</p>
-                    <button type="button"
-                            class="modern-btn modern-btn-primary modern-btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#setPasswordModal">
-                      <i class="bi bi-plus me-1"></i> Set Password
-                    </button>
-                  </div>
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-        <!-- OAuth Account Linking Section -->
-        <div class="admin-panel-card bordered-info mb-4 account-settings-card">
-          <div class="admin-panel-card-header">
-            <h6 class="admin-panel-card-title mb-0">
-              <i class="bi bi-link-45deg"></i>
-              Connected Accounts
-            </h6>
-          </div>
-          <div class="admin-panel-card-body inl-a-0001">
-            <p class="text-muted mb-4">Link or unlink your social media accounts for easier login</p>
-            <div id="oauth-accounts-container" class="oauth-accounts-wrapper">
-              <div class="text-center py-4">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="text-muted small mt-2">Loading your linked accounts...</p>
-              </div>
-            </div>
-            <hr class="my-4">
-            <!-- Link New Account Section -->
-            <div>
-              <h6 class="mb-3 text-muted text-uppercase fw-bold">
-                <i class="bi bi-plus-circle me-2"></i> Link New Account
-              </h6>
-              <p class="small text-muted mb-3">
-                Connect your social accounts to your admin profile for convenient login and enhanced security.
-              </p>
-              <div id="oauth-providers-container"
-                   class="d-flex flex-wrap gap-2 oauth-provider-grid">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-              <!-- Security Info -->
-              <div class="alert alert-info small mt-3 mb-0 oauth-security-note">
-                <i class="bi bi-shield-lock me-2"></i>
-                <strong>Security:</strong> Your passwords are never shared with social providers. We only store authorization tokens.
-              </div>
-            </div>
-            <!-- Notification Channels for Admin -->
-            <hr class="my-4">
-            <div class="admin-panel-card bordered-secondary mb-4 account-settings-card">
-              <div class="admin-panel-card-header">
-                <h6 class="admin-panel-card-title mb-0">
-                  <i class="bi bi-bell-fill"></i>
-                  Notification Channels
-                </h6>
-              </div>
-              <div class="admin-panel-card-body">
-                <p class="text-muted mb-3">Choose how you want to receive system notifications.</p>
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input notification-channel"
-                             type="checkbox"
-                             id="email-notifications"
-                             data-channel="email">
-                      <label class="form-check-label" for="email-notifications">
-                        <strong>Email Notifications</strong>
-                        <small class="d-block text-muted">Receive updates via email</small>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input notification-channel"
-                             type="checkbox"
-                             id="push-notifications"
-                             data-channel="push">
-                      <label class="form-check-label" for="push-notifications">
-                        <strong>Push Notifications</strong>
-                        <small class="d-block text-muted">Browser push notifications</small>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input notification-channel"
-                             type="checkbox"
-                             id="sms-notifications"
-                             data-channel="sms">
-                      <label class="form-check-label" for="sms-notifications">
-                        <strong>SMS Notifications</strong>
-                        <small class="d-block text-muted">Text message alerts if supported</small>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input notification-channel"
-                             type="checkbox"
-                             id="in-app-notifications"
-                             data-channel="in-app">
-                      <label class="form-check-label" for="in-app-notifications">
-                        <strong>In-App Notifications</strong>
-                        <small class="d-block text-muted">Receive alerts within dashboard</small>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <button class="modern-btn modern-btn-primary" id="save-notifications-btn">
-                  <i class="bi bi-save me-1"></i>Save Preferences
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Two-Factor Authentication Quick Access -->
-        <div class="admin-panel-card bordered-warning account-settings-card">
-          <div class="admin-panel-card-header">
-            <h6 class="admin-panel-card-title mb-0">
-              <i class="bi bi-shield-check"></i>
-              Two-Factor Authentication
-            </h6>
-          </div>
-          <div class="admin-panel-card-body">
-            <p class="text-muted mb-3">Add an extra layer of security to your account by enabling two-factor authentication.</p>
-            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-              <div class="twofa-status-wrap">
-                {% if twofa_enabled %}
-                  <span class="badge bg-success mb-2 d-block twofa-status-chip">
-                    <i class="bi bi-check-circle me-1"></i> 2FA is Active
-                  </span>
-                  <p class="text-muted small mb-0">Your account is protected with two-factor authentication</p>
-                {% else %}
-                  <span class="badge bg-warning mb-2 d-block twofa-status-chip">
-                    <i class="bi bi-exclamation-circle me-1"></i> 2FA Not Enabled
-                  </span>
-                  <p class="text-muted small mb-0">Enable 2FA to secure your account with an authenticator app</p>
-                {% endif %}
-              </div>
-              <a href="/admin/security/2fa" class="modern-btn modern-btn-primary">
-                <i class="bi bi-arrow-right me-1"></i> Manage 2FA
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+   </div>
   </div>
-  <!-- Modals -->
-  {% include "admin/partials/password-modals.twig" %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+   {# ── Sidebar Navigation ── #}
+   <div class="lg:col-span-3">
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+       <i class="lucide lucide-list-checks w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Settings Menu</h3>
+     </div>
+     <div class="flex flex-col p-2">
+      <a href="/admin/profile" class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-150">
+       <i class="lucide lucide-user-circle w-4 h-4 text-indigo-600"></i>
+       <span>Profile</span>
+       <i class="lucide lucide-chevron-right w-4 h-4 ml-auto text-slate-400"></i>
+      </a>
+      <a href="/admin/account-settings" class="flex items-center gap-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 px-4 py-3 text-sm font-semibold text-indigo-700 dark:text-indigo-400">
+       <i class="lucide lucide-lock w-4 h-4 text-indigo-600"></i>
+       <span>Account Security</span>
+      </a>
+      <a href="/admin/security/2fa" class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-150">
+       <i class="lucide lucide-shield-check w-4 h-4 text-indigo-600"></i>
+       <span>Two-Factor Auth</span>
+       <i class="lucide lucide-chevron-right w-4 h-4 ml-auto text-slate-400"></i>
+      </a>
+      {% if auth_user.is_super_admin %}
+      <a href="/admin/app-settings" class="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-150">
+       <i class="lucide lucide-sliders w-4 h-4 text-indigo-600"></i>
+       <span>App Settings</span>
+       <i class="lucide lucide-chevron-right w-4 h-4 ml-auto text-slate-400"></i>
+      </a>
+      {% endif %}
+     </div>
+    </div>
+   </div>
+
+   {# ── Main Content ── #}
+   <div class="lg:col-span-9 space-y-6">
+    <div id="alert-container"></div>
+
+    {# Password Management Card #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+       <i class="lucide lucide-key w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Password Management</h3>
+     </div>
+     <div class="p-5">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Update and manage your account password</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+       {% if user_has_password %}
+       <div>
+        <div class="rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/30 bg-gradient-to-br from-white dark:from-slate-900 to-indigo-50/50 dark:to-indigo-950/20 p-5 text-center transition-all hover:shadow-md hover:-translate-y-0.5 duration-200">
+         <div class="mx-auto w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-3">
+          <i class="lucide lucide-repeat w-5 h-5"></i>
+         </div>
+         <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Change Password</p>
+         <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Update your current password</p>
+         <button type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"
+          data-brox-toggle="modal"
+          data-brox-target="#changePasswordModal">
+          <i class="lucide lucide-pencil w-4 h-4"></i> Change
+         </button>
+        </div>
+       </div>
+       {% else %}
+       <div>
+        <div class="rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-white dark:from-slate-900 to-emerald-50/50 dark:to-emerald-950/20 p-5 text-center transition-all hover:shadow-md hover:-translate-y-0.5 duration-200">
+         <div class="mx-auto w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-3">
+          <i class="lucide lucide-plus-circle w-5 h-5"></i>
+         </div>
+         <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Set Password</p>
+         <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Create a password for your account</p>
+         <button type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"
+          data-brox-toggle="modal"
+          data-brox-target="#setPasswordModal">
+          <i class="lucide lucide-plus w-4 h-4"></i> Set Password
+         </button>
+        </div>
+       </div>
+       {% endif %}
+      </div>
+     </div>
+    </div>
+
+    {# Connected Accounts Card #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+       <i class="lucide lucide-link w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Connected Accounts</h3>
+     </div>
+     <div class="p-5">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Link or unlink your social media accounts for easier login</p>
+      <div id="oauth-accounts-container" class="oauth-accounts-wrapper">
+       <div class="text-center py-6">
+        <div class="inline-spinner inline-spinner-sm text-indigo-600" role="status">
+         <span class="sr-only">Loading...</span>
+        </div>
+        <p class="text-sm text-slate-500 mt-2">Loading your linked accounts...</p>
+       </div>
+      </div>
+      <hr class="my-4 border-slate-200 dark:border-slate-700">
+      <div>
+       <p class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 uppercase tracking-[0.14em]">
+        <i class="lucide lucide-plus-circle w-4 h-4 text-indigo-600"></i> Link New Account
+       </p>
+       <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+        Connect your social accounts to your admin profile for convenient login and enhanced security.
+       </p>
+       <div id="oauth-providers-container" class="flex flex-wrap gap-3">
+        <div class="inline-spinner inline-spinner-sm text-indigo-600" role="status">
+         <span class="sr-only">Loading...</span>
+        </div>
+       </div>
+       <div class="rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/40 px-4 py-3 text-xs text-sky-700 dark:text-sky-300 mt-3 oauth-security-note flex items-center gap-2">
+        <i class="lucide lucide-shield w-3.5 h-3.5"></i>
+        <strong>Security:</strong> Your passwords are never shared with social providers. We only store authorization tokens.
+       </div>
+      </div>
+     </div>
+    </div>
+
+    {# Notification Channels Card #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+       <i class="lucide lucide-bell w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notification Channels</h3>
+     </div>
+     <div class="p-5">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Choose how you want to receive system notifications.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm">
+        <label class="flex items-start gap-3 cursor-pointer">
+         <input class="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20 notification-channel" type="checkbox" id="email-notifications" data-channel="email">
+         <div>
+          <strong class="block text-sm text-slate-900 dark:text-white">Email Notifications</strong>
+          <small class="text-xs text-slate-500 dark:text-slate-400">Receive updates via email</small>
+         </div>
+        </label>
+       </div>
+       <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm">
+        <label class="flex items-start gap-3 cursor-pointer">
+         <input class="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20 notification-channel" type="checkbox" id="push-notifications" data-channel="push">
+         <div>
+          <strong class="block text-sm text-slate-900 dark:text-white">Push Notifications</strong>
+          <small class="text-xs text-slate-500 dark:text-slate-400">Browser push notifications</small>
+         </div>
+        </label>
+       </div>
+       <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm">
+        <label class="flex items-start gap-3 cursor-pointer">
+         <input class="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20 notification-channel" type="checkbox" id="sms-notifications" data-channel="sms">
+         <div>
+          <strong class="block text-sm text-slate-900 dark:text-white">SMS Notifications</strong>
+          <small class="text-xs text-slate-500 dark:text-slate-400">Text message alerts if supported</small>
+         </div>
+        </label>
+       </div>
+       <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-sm">
+        <label class="flex items-start gap-3 cursor-pointer">
+         <input class="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/20 notification-channel" type="checkbox" id="in-app-notifications" data-channel="in-app">
+         <div>
+          <strong class="block text-sm text-slate-900 dark:text-white">In-App Notifications</strong>
+          <small class="text-xs text-slate-500 dark:text-slate-400">Receive alerts within dashboard</small>
+         </div>
+        </label>
+       </div>
+      </div>
+      <button class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150" id="save-notifications-btn">
+       <i class="lucide lucide-save w-4 h-4"></i> Save Preferences
+      </button>
+     </div>
+    </div>
+
+    {# 2FA Card #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+      <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+       <i class="lucide lucide-shield-check w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Two-Factor Authentication</h3>
+     </div>
+     <div class="p-5">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Add an extra layer of security to your account by enabling two-factor authentication.</p>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+       <div>
+        {% if twofa_enabled %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 mb-2">
+         <span class="w-1 h-1 rounded-full bg-emerald-500"></span> 2FA is Active
+        </span>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Your account is protected with two-factor authentication</p>
+        {% else %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 mb-2">
+         <span class="w-1 h-1 rounded-full bg-amber-500"></span> 2FA Not Enabled
+        </span>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Enable 2FA to secure your account with an authenticator app</p>
+        {% endif %}
+       </div>
+       <a href="/admin/security/2fa" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+        <i class="lucide lucide-arrow-right w-4 h-4"></i> Manage 2FA
+       </a>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+ {% include "admin/partials/password-modals.twig" %}
 {% endblock %}

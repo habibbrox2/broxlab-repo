@@ -1,0 +1,52 @@
+{# Pagination Component for MedEx #}
+{% if pagination is defined and pagination.total_pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+ <ul class="flex items-center justify-center gap-1"
+
+ {# Previous button #}
+ <li class="{% if pagination.current_page <= 1 %}opacity-50 pointer-events-none{% endif %}">
+ <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ pagination.current_page - 1 }}" aria-label="Previous">
+ <span aria-hidden="true">&laquo;</span>
+ <span class="sr-only">Previous</span>
+ </a>
+ </li>
+
+ {# Page numbers #}
+ {% set current = pagination.current_page %}
+ {% set total = pagination.total_pages %}
+ {% set start = max(1, current - 2) %}
+ {% set end = min(total, current + 2) %}
+
+ {% if start > 1 %}
+ <li><a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page=1">1</a></li>
+ {% if start > 2 %}<li><span class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-400 text-sm cursor-default">...</span></li>{% endif %}
+ {% endif %}
+
+ {% for page in start..end %}
+ <li>
+ <a class="inline-flex items-center px-3 py-2 rounded-lg text-sm {% if page == current %}bg-indigo-600 text-white{% else %}border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100{% endif %} transition-colors" href="?page={{ page }}">{{ page }}</a>
+ </li>
+ {% endfor %}
+
+ {% if end < total %}
+ {% if end < total - 1 %}<li><span class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-400 text-sm cursor-default">...</span></li>{% endif %}
+ <li><a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ total }}">{{ total }}</a></li>
+ {% endif %}
+
+ {# Next button #}
+ <li class="{% if pagination.current_page >= pagination.total_pages %}opacity-50 pointer-events-none{% endif %}">
+ <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ pagination.current_page + 1 }}" aria-label="Next">
+ <span aria-hidden="true">&raquo;</span>
+ <span class="sr-only">Next</span>
+ </a>
+ </li>
+ </ul>
+</nav>
+
+{# Page info #}
+<div class="text-center text-neutral-500 text-sm mt-2">
+ Showing {{ pagination.from }}–{{ pagination.to }} of {{ pagination.total }} companies
+</div>
+{% endif %}
+
+

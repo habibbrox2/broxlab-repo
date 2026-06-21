@@ -2,10 +2,81 @@
 
 declare(strict_types=1);
 
+// ============================================================================
+// SERVE STATIC FILES DIRECTLY (Before any processing)
+// ============================================================================
+// Check if the request is for a static file. If so, serve it directly
+// and exit without going through the PHP routing system.
+$requestPath = $_SERVER['REQUEST_URI'] ?? '/';
+
+// Remove query string from path
+$requestPath = parse_url($requestPath, PHP_URL_PATH);
+
+// Define allowed static asset directories
+$staticDirs = ['/assets/', '/uploads/', '/rtceditor/', '/public/', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
+
+$isStaticFile = false;
+foreach ($staticDirs as $dir) {
+    if (str_starts_with($requestPath, $dir)) {
+        $isStaticFile = true;
+        break;
+    }
+}
+
+// If it's a static file, check if it exists and serve it
+if ($isStaticFile) {
+    $filePath = __DIR__ . $requestPath;
+    
+    // Security: Prevent path traversal attacks
+    $realPath = realpath($filePath);
+    $baseDir = realpath(__DIR__);
+    
+    if ($realPath && $baseDir && str_starts_with($realPath, $baseDir) && is_file($realPath)) {
+        // Determine MIME type
+        $mimeTypes = [
+            'css'   => 'text/css; charset=utf-8',
+            'js'    => 'application/javascript; charset=utf-8',
+            'json'  => 'application/json; charset=utf-8',
+            'jpg'   => 'image/jpeg',
+            'jpeg'  => 'image/jpeg',
+            'png'   => 'image/png',
+            'gif'   => 'image/gif',
+            'svg'   => 'image/svg+xml',
+            'webp'  => 'image/webp',
+            'ico'   => 'image/x-icon',
+            'woff'  => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf'   => 'font/ttf',
+            'eot'   => 'application/vnd.ms-fontobject',
+            'xml'   => 'application/xml; charset=utf-8',
+            'txt'   => 'text/plain; charset=utf-8',
+        ];
+        
+        $ext = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+        $mimeType = $mimeTypes[$ext] ?? 'application/octet-stream';
+        
+        header('Content-Type: ' . $mimeType);
+        header('Cache-Control: public, max-age=31536000, immutable');
+        header('X-Content-Type-Options: nosniff');
+        
+        // For CSS and JS, add more aggressive caching
+        if (in_array($ext, ['css', 'js'])) {
+            header('Cache-Control: public, max-age=31536000, immutable');
+        }
+        
+        readfile($realPath);
+        exit;
+    }
+    
+    // Static file requested but not found - return 404
+    http_response_code(404);
+    exit;
+}
+
 // Enable output buffering to prevent "headers already sent" errors
 ob_start();
 
-// Set UTF-8 character encoding for all responses
+// Set UTF-8 character encoding for all responses (HTML only)
 header('Content-Type: text/html; charset=utf-8');
 
 
@@ -89,6 +160,7 @@ if (!empty($timezone)) {
 // Load All Constants
 // ============================================================================
 require_once dirname(__DIR__) . '/Config/Constants.php';
+require_once dirname(__DIR__) . '/app/Models/Permissions.php';
 
 // ============================================================================
 // Ensure Required Directories
@@ -112,6 +184,13 @@ initializeErrorLogging();
 function secureSession(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        $sessionDir = TEMP_DIR . 'sessions' . DIRECTORY_SEPARATOR;
+        if (!is_dir($sessionDir)) {
+            @mkdir($sessionDir, 0775, true);
+        }
+        @ini_set('session.save_path', $sessionDir);
+        session_save_path($sessionDir);
+
         $isHttps =
             (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
             ($_SERVER['SERVER_PORT'] ?? 80) == 443;
@@ -313,9 +392,55 @@ function register_middleware(string $name, callable $callback): void
 function run_middleware(string $name, array $ctx = []): bool
 {
     global $middlewares;
+    
+    // Handle permission: prefixed middleware names (e.g., 'permission:users.delete')
+    if (strpos($name, 'permission:') === 0) {
+        return run_permission_middleware(substr($name, strlen('permission:')), $ctx);
+    }
+    
     return isset($middlewares[$name])
         ? $middlewares[$name]($ctx) !== false
         : true;
+}
+
+function run_permission_middleware(string $permission, array $ctx = []): bool
+{
+    global $userModel;
+    
+    $userId = AuthManager::getCurrentUserId();
+    
+    if (!$userId) {
+        logMiddlewareReject('permission', 'NOT_AUTHENTICATED', ['permission' => $permission]);
+        json_response(['success' => false, 'error' => 'Authentication required'], 401);
+        return false;
+    }
+    
+    // Super admins bypass permission checks
+    if ($userModel && $userModel->isSuperAdmin($userId)) {
+        return true;
+    }
+    
+    if (!$userModel || !$userModel->hasPermission($userId, $permission)) {
+        logMiddlewareReject('permission', 'PERMISSION_DENIED', [
+            'permission' => $permission,
+            'user_id' => $userId
+        ]);
+        $currentPath = strtolower((string)($ctx['uri'] ?? (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/')));
+        $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+        $isApiRequest = (strpos($currentPath, '/api/') === 0)
+            || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')
+            || (strpos($accept, 'application/json') !== false);
+        
+        if ($isApiRequest) {
+            json_response(['success' => false, 'error' => "Permission denied: {$permission}"], 403);
+        } else {
+            showMessage("Access denied. Required permission: {$permission}", 'danger');
+            redirect('/');
+        }
+        return false;
+    }
+    
+    return true;
 }
 
 
@@ -364,6 +489,13 @@ foreach ($controllerFiles as $controller) {
     require_once $controller;
 }
 
+$routeFiles = glob(BASE_PATH . 'app/Routes/*.php') ?: [];
+foreach ($routeFiles as $routeFile) {
+    if (basename($routeFile) !== 'Router.php') {
+        require_once $routeFile;
+    }
+}
+
 // ============================================================================
 // Register Routes from Controllers
 // ============================================================================
@@ -381,9 +513,15 @@ try {
         }
     }
 
-    $requestUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/';
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '/', PHP_URL_PATH) ?: '/';
     $router->dispatch($requestMethod, $requestUri);
 } catch (Throwable $e) {
+    // Handle ForbiddenException with proper 403 response
+    if ($e instanceof ForbiddenException) {
+        logError('Forbidden: ' . $e->getMessage() . ' | User: ' . (($ctx = $e->getContext()) ? ($ctx['user_id'] ?? 'unknown') : 'unknown'));
+        $e->respond();
+        exit; // Safety: ensure no fallthrough
+    }
     logError('Routing Error: ' . $e->getMessage());
     renderError(500, 'Routing Error');
 }

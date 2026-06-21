@@ -1,126 +1,139 @@
 {% extends 'admin/layout.twig' %}
 {% block title %}Device Sync Manager{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4" id="deviceSyncRoot">
-    <div class="admin-page-header mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <div class="admin-page-title">
-          <i class="bi bi-phone-landscape"></i> Multi-Device Sync Manager
-        </div>
-        <p class="admin-page-subtitle">Monitor and control sync state across registered devices.</p>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="modern-btn modern-btn-primary btn-sm" onclick="manualSync()">
-          <i class="bi bi-arrow-repeat me-1"></i>Manual Sync
-        </button>
-        <button class="modern-btn modern-btn-outline-secondary btn-sm"
-                onclick="refreshDeviceList()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
-      </div>
-    </div>
-    <div class="row mb-4">
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Active Devices</small>
-            <h4 class="mb-0" id="activeDevicesCount">0</h4>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Pending Sync</small>
-            <h4 class="mb-0" id="pendingSyncCount">0</h4>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Synced Items</small>
-            <h4 class="mb-0" id="syncedItemsCount">0</h4>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="admin-panel-card">
-          <div class="admin-panel-card-body">
-            <small class="text-muted">Sync Rate</small>
-            <h4 class="mb-0" id="syncRatePercent">0%</h4>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="autoSyncToggle">
-          <label class="form-check-label" for="autoSyncToggle">Auto sync every 30 seconds</label>
-        </div>
-      </div>
-    </div>
-    <div class="row g-4">
-      <div class="col-lg-7">
-        <div class="admin-panel-card h-100">
-          <div class="admin-panel-card-body">
-            <h6 class="mb-3">Registered Devices</h6>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>Device</th>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Last Active</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="devicesTableBody">
-                  <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
+<div class="w-full px-4 sm:px-6 py-4 space-y-4" id="deviceSyncRoot">
+    <!-- Gradient Header -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 p-6 shadow-lg">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di00aC00djRoLTR2NGg0djRoNHYtNGg0di00aC00em0wIDB2LTRoLTR2NGg0eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                    <i class="lucide lucide-smartphone text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white sm:text-3xl">Device Sync</h1>
+                    <p class="mt-1 text-sm text-indigo-100">Monitor and control sync state across registered devices.</p>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-5">
-        <div class="admin-panel-card h-100">
-          <div class="admin-panel-card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Sync Logs</h6>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" onclick="filterSyncLog('all')">All</button>
-                <button class="btn btn-outline-secondary" onclick="filterSyncLog('sync')">Sync</button>
-                <button class="btn btn-outline-secondary" onclick="filterSyncLog('read')">Read</button>
-                <button class="btn btn-outline-secondary" onclick="clearSyncLog()">Clear</button>
-              </div>
+            <div class="flex flex-wrap gap-2">
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="manual-sync">
+                    <i class="lucide lucide-repeat"></i> Manual Sync
+                </button>
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20" data-action="refresh-device-list">
+                    <i class="lucide lucide-refresh-cw"></i> Refresh
+                </button>
             </div>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Action</th>
-                    <th>Notification</th>
-                    <th>Device</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="syncLogBody">
-                  <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
+
+    <!-- Stats Cards -->
+    <section class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Active Devices</p>
+            <p class="mt-1 text-3xl font-bold text-slate-900" id="activeDevicesCount">0</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Pending Sync</p>
+            <p class="mt-1 text-3xl font-bold text-amber-600" id="pendingSyncCount">0</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Synced Items</p>
+            <p class="mt-1 text-3xl font-bold text-emerald-600" id="syncedItemsCount">0</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Sync Rate</p>
+            <p class="mt-1 text-3xl font-bold text-indigo-600" id="syncRatePercent">0%</p>
+        </div>
+    </section>
+
+    <!-- Auto Sync Toggle -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <label class="flex items-start gap-3 cursor-pointer">
+            <input class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" id="autoSyncToggle">
+            <div>
+                <span class="text-sm font-medium text-slate-700">Auto sync every 30 seconds</span>
+                <p class="text-xs text-slate-500 mt-0.5">Periodically checks for new sync events</p>
+            </div>
+        </label>
+    </div>
+
+    <!-- Devices & Sync Logs -->
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div class="lg:col-span-7">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden h-full">
+                <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+                    <div class="flex items-center gap-2">
+                        <i class="lucide lucide-list text-indigo-500" w-[18px] h-[18px]></i>
+                        <h2 class="text-sm font-semibold text-slate-900">Registered Devices</h2>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/50">
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Device</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">ID</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Type</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Last Active</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTableBody">
+                            <tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="lg:col-span-5">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden h-full">
+                <div class="border-b border-slate-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="lucide lucide-clock text-amber-500" w-[18px] h-[18px]></i>
+                            <h2 class="text-sm font-semibold text-slate-900">Sync Logs</h2>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="all">All</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="sync">Sync</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-action="filter-sync-log" data-filter="read">Read</button>
+                            <button class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" data-action="clear-sync-log">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/50">
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Time</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Action</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Notification</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Device</th>
+                                <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="syncLogBody">
+                            <tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var f = t.getAttribute("data-filter");
+  switch (a) {
+  case "manual-sync": manualSync(); break;
+  case "refresh-device-list": refreshDeviceList(); break;
+  case "filter-sync-log": filterSyncLog(f); break;
+  case "clear-sync-log": clearSyncLog(); break;
+  }
+});
+</script>
 {% endblock %}

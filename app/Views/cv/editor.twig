@@ -1,1981 +1,259 @@
 {% extends 'layout.twig' %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title|default('Edit CV') }}{% endblock %}
 
 {% block extra_styles %}
 <style>
-    :root {
-        --cv-editor-primary: #667eea;
-        --cv-editor-secondary: #764ba2;
-        --cv-editor-success: #059669;
-        --cv-editor-warning: #F59E0B;
-        --cv-editor-danger: #DC2626;
-        --cv-editor-gray-50: #F9FAFB;
-        --cv-editor-gray-100: #F3F4F6;
-        --cv-editor-gray-200: #E5E7EB;
-        --cv-editor-gray-300: #D1D5DB;
-        --cv-editor-gray-400: #9CA3AF;
-        --cv-editor-gray-500: #6B7280;
-        --cv-editor-gray-600: #4B5563;
-        --cv-editor-gray-700: #374151;
-        --cv-editor-gray-800: #1F2937;
-        --cv-editor-gray-900: #111827;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    .cv-editor {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        background: linear-gradient(135deg, var(--cv-editor-gray-50) 0%, var(--cv-editor-gray-100) 100%);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .cv-editor::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background:
-            radial-gradient(circle at 20% 20%, rgba(102,126,234,0.05) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(118,75,162,0.05) 0%, transparent 50%);
-        pointer-events: none;
-    }
-
-    /* Enhanced Header */
-    .editor-header {
-        background: white;
-        border-bottom: 1px solid var(--cv-editor-gray-200);
-        padding: 1rem 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        position: relative;
-        z-index: 100;
-        backdrop-filter: blur(10px);
-    }
-
-    .editor-header-left {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-    }
-
-    .btn-back {
-        color: var(--cv-editor-gray-500);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.95rem;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-
-    .btn-back:hover {
-        color: var(--cv-editor-gray-700);
-        background: var(--cv-editor-gray-100);
-        transform: translateX(-2px);
-    }
-
-    .cv-title-section {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .cv-title-input {
-        font-size: 1.5rem;
-        font-weight: 700;
-        border: none;
-        border-bottom: 3px solid transparent;
-        padding: 0.5rem 0;
-        background: transparent;
-        color: var(--cv-editor-gray-800);
-        width: 350px;
-        transition: all 0.3s ease;
-        border-radius: 4px;
-    }
-
-    .cv-title-input:focus {
-        outline: none;
-        border-bottom-color: var(--cv-editor-primary);
-        background: rgba(102,126,234,0.05);
-        padding: 0.5rem 1rem;
-    }
-
-    .cv-title-input:hover {
-        background: rgba(102,126,234,0.03);
-    }
-
-    .editor-header-right {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .save-status {
-        font-size: 0.875rem;
-        color: var(--cv-editor-gray-400);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        background: var(--cv-editor-gray-50);
-        font-weight: 500;
-    }
-
-    .save-status.saving {
-        color: var(--cv-editor-warning);
-        background: rgba(245, 158, 11, 0.1);
-    }
-
-    .save-status.saved {
-        color: var(--cv-editor-success);
-        background: rgba(5, 150, 105, 0.1);
-    }
-
-    .save-status.error {
-        color: var(--cv-editor-danger);
-        background: rgba(220, 38, 38, 0.1);
-    }
-
-    .save-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.2); }
-    }
-
-    /* Enhanced Template Selector */
-    .template-selector {
-        position: relative;
-    }
-
-    .btn-template {
-        background: var(--cv-editor-gray-100);
-        border: 2px solid var(--cv-editor-gray-200);
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-template::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(102,126,234,0.1), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-template:hover::before {
-        left: 100%;
-    }
-
-    .btn-template:hover {
-        background: white;
-        border-color: var(--cv-editor-primary);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102,126,234,0.2);
-    }
-
-    .template-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        margin-top: 0.75rem;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-        width: 360px;
-        display: none;
-        z-index: 1000;
-        overflow: hidden;
-        border: 1px solid var(--cv-editor-gray-200);
-        backdrop-filter: blur(10px);
-    }
-
-    .template-dropdown.show {
-        display: block;
-        animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .template-dropdown-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--cv-editor-gray-200);
-        background: linear-gradient(135deg, var(--cv-editor-gray-50) 0%, white 100%);
-    }
-
-    .template-dropdown-header h6 {
-        margin: 0;
-        font-size: 1rem;
-        color: var(--cv-editor-gray-700);
-        font-weight: 600;
-    }
-
-    .template-list {
-        padding: 0.75rem;
-        max-height: 320px;
-        overflow-y: auto;
-    }
-
-    .template-option {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        color: inherit;
-        border: 1px solid transparent;
-        margin-bottom: 0.5rem;
-    }
-
-    .template-option:hover {
-        background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
-        border-color: rgba(102,126,234,0.2);
-        transform: translateX(4px);
-    }
-
-    .template-option.active {
-        background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-        border-color: var(--cv-editor-primary);
-        box-shadow: 0 4px 15px rgba(102,126,234,0.2);
-    }
-
-    .template-preview {
-        width: 50px;
-        height: 35px;
-        border-radius: 6px;
-        flex-shrink: 0;
-        border: 2px solid var(--cv-editor-gray-200);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .template-preview::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, var(--cv-editor-gray-200) 0%, var(--cv-editor-gray-300) 100%);
-    }
-
-    .template-info {
-        flex: 1;
-    }
-
-    .template-name {
-        font-weight: 600;
-        font-size: 1rem;
-        color: var(--cv-editor-gray-800);
-        margin-bottom: 0.25rem;
-    }
-
-    .template-desc {
-        font-size: 0.8rem;
-        color: var(--cv-editor-gray-500);
-        margin: 0;
-        line-height: 1.4;
-    }
-
-    /* Enhanced Action Buttons */
-    .btn-action {
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-pdf {
-        background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-        color: var(--cv-editor-danger);
-        border: 2px solid #FCA5A5;
-    }
-
-    .btn-pdf:hover {
-        background: linear-gradient(135deg, #FCA5A5 0%, #F87171 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(252, 165, 165, 0.3);
-    }
-
-    .btn-ats {
-        background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(102,126,234,0.3);
-    }
-
-    .btn-ats:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(102,126,234,0.4);
-    }
-
-    /* Enhanced Main Content */
-    .editor-main {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
-        position: relative;
-        z-index: 10;
-    }
-
-    .cv-editor.preview-only .editor-panel {
-        display: none;
-    }
-
-    .cv-editor.preview-only .preview-panel {
-        width: 100%;
-    }
-
-    /* Enhanced Editor Panel */
-    .editor-panel {
-        width: 45%;
-        overflow-y: auto;
-        padding: 2rem;
-        background: white;
-        border-right: 1px solid var(--cv-editor-gray-200);
-        box-shadow: 2px 0 20px rgba(0,0,0,0.05);
-    }
-
-    .editor-panel-header {
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--cv-editor-gray-100);
-    }
-
-    .editor-panel-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--cv-editor-gray-800);
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .editor-panel-title i {
-        color: var(--cv-editor-primary);
-    }
-
-    .editor-panel-subtitle {
-        color: var(--cv-editor-gray-500);
-        font-size: 0.9rem;
-        margin: 0;
-    }
-
-    .sections-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    /* Enhanced Section Card */
-    .section-card {
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border: 2px solid transparent;
-        position: relative;
-    }
-
-    .section-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-        border-color: rgba(102,126,234,0.2);
-    }
-
-    .section-card.dragging {
-        opacity: 0.5;
-        transform: rotate(5deg);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    }
-
-    .section-header {
-        background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%);
-        padding: 1.25rem 1.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .section-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: float 8s ease-in-out infinite;
-    }
-
-    .section-title {
-        color: white;
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin: 0;
-        position: relative;
-        z-index: 1;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .section-title i {
-        opacity: 0.9;
-    }
-
-    .section-actions {
-        display: flex;
-        gap: 0.5rem;
-        position: relative;
-        z-index: 1;
-    }
-
-    .btn-section {
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-    }
-
-    .btn-section:hover {
-        background: rgba(255,255,255,0.3);
-        transform: scale(1.1);
-    }
-
-    .section-content {
-        padding: 1.5rem;
-    }
-
-    .section-items {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .section-item {
-        background: var(--cv-editor-gray-50);
-        border-radius: 12px;
-        padding: 1.25rem;
-        border: 1px solid var(--cv-editor-gray-200);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .section-item:hover {
-        background: white;
-        border-color: var(--cv-editor-primary);
-        box-shadow: 0 4px 15px rgba(102,126,234,0.1);
-        transform: translateX(4px);
-    }
-
-    .section-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .section-item:hover::before {
-        opacity: 1;
-    }
-
-    .item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 1rem;
-    }
-
-    .item-title {
-        font-weight: 600;
-        color: var(--cv-editor-gray-800);
-        margin: 0;
-        font-size: 1rem;
-    }
-
-    .item-actions {
-        display: flex;
-        gap: 0.5rem;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .section-item:hover .item-actions {
-        opacity: 1;
-    }
-
-    .btn-item {
-        background: none;
-        border: none;
-        color: var(--cv-editor-gray-400);
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-item:hover {
-        background: var(--cv-editor-gray-200);
-        color: var(--cv-editor-gray-600);
-    }
-
-    .item-content {
-        color: var(--cv-editor-gray-600);
-        font-size: 0.9rem;
-        line-height: 1.6;
-    }
-
-    .add-item-btn {
-        width: 100%;
-        padding: 1rem;
-        border: 2px dashed var(--cv-editor-gray-300);
-        background: var(--cv-editor-gray-50);
-        color: var(--cv-editor-gray-500);
-        border-radius: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    .add-item-btn:hover {
-        border-color: var(--cv-editor-primary);
-        background: rgba(102,126,234,0.05);
-        color: var(--cv-editor-primary);
-        transform: translateY(-1px);
-    }
-
-    /* Enhanced Preview Panel */
-    .preview-panel {
-        flex: 1;
-        background: var(--cv-editor-gray-50);
-        display: flex;
-        flex-direction: column;
-        position: relative;
-    }
-
-    .preview-header {
-        padding: 1.5rem 2rem;
-        background: white;
-        border-bottom: 1px solid var(--cv-editor-gray-200);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-
-    .preview-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--cv-editor-gray-800);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .preview-controls {
-        display: flex;
-        gap: 0.75rem;
-    }
-
-    .preview-zoom {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: var(--cv-editor-gray-100);
-        padding: 0.5rem;
-        border-radius: 8px;
-    }
-
-    .btn-zoom {
-        background: none;
-        border: none;
-        color: var(--cv-editor-gray-500);
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-zoom:hover {
-        background: var(--cv-editor-gray-200);
-        color: var(--cv-editor-gray-700);
-    }
-
-    .zoom-level {
-        font-size: 0.8rem;
-        color: var(--cv-editor-gray-600);
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .preview-content {
-        flex: 1;
-        padding: 2rem;
-        overflow-y: auto;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-    }
-
-    .preview-frame {
-        background: white;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        padding: 2rem;
-        max-width: 800px;
-        width: 100%;
-        transform-origin: top center;
-        transition: transform 0.3s ease;
-    }
-
-    /* Mobile Responsiveness */
-    @media (max-width: 1024px) {
-        .editor-main {
-            flex-direction: column;
-        }
-
-        .editor-panel {
-            width: 100%;
-            height: 50vh;
-        }
-
-        .preview-panel {
-            height: 50vh;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .editor-header {
-            padding: 1rem;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .editor-header-left {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .cv-title-input {
-            width: 200px;
-        }
-
-        .editor-header-right {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .editor-panel,
-        .preview-panel {
-            height: 45vh;
-        }
-
-        .editor-panel {
-            padding: 1rem;
-        }
-
-        .preview-content {
-            padding: 1rem;
-        }
-    }
-
-    /* Loading States */
-    .loading-spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--cv-editor-gray-300);
-        border-radius: 50%;
-        border-top-color: var(--cv-editor-primary);
-        animation: spin 1s ease-in-out infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    /* Success/Error Messages */
-    .message {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 500;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-    }
-
-    .message.success {
-        background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-        color: var(--cv-editor-success);
-        border: 1px solid rgba(5, 150, 105, 0.2);
-    }
-
-    .message.error {
-        background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-        color: var(--cv-editor-danger);
-        border: 1px solid rgba(220, 38, 38, 0.2);
-    }
-
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-        color: var(--warning);
-    }
-    
-    .save-status.saved {
-        color: var(--success);
-    }
-    
-    /* Template Selector */
-    .template-selector {
-        position: relative;
-    }
-    
-    .btn-template {
-        background: var(--gray-100);
-        border: 1px solid var(--gray-200);
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .btn-template:hover {
-        background: var(--gray-200);
-    }
-    
-    .template-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        margin-top: 0.5rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        width: 320px;
-        display: none;
-        z-index: 1000;
-        overflow: hidden;
-    }
-    
-    .template-dropdown.show {
-        display: block;
-    }
-    
-    .template-dropdown-header {
-        padding: 1rem;
-        border-bottom: 1px solid var(--gray-200);
-    }
-    
-    .template-dropdown-header h6 {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--gray-700);
-    }
-    
-    .template-list {
-        padding: 0.5rem;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    
-    .template-option {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.2s;
-        text-decoration: none;
-        color: inherit;
-    }
-    
-    .template-option:hover {
-        background: var(--gray-100);
-    }
-    
-    .template-option.active {
-        background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-    }
-    
-    .template-preview {
-        width: 40px;
-        height: 30px;
-        border-radius: 4px;
-        flex-shrink: 0;
-    }
-    
-    .template-info {
-        flex: 1;
-    }
-    
-    .template-name {
-        font-weight: 500;
-        font-size: 0.9rem;
-        color: var(--gray-800);
-    }
-    
-    .template-desc {
-        font-size: 0.75rem;
-        color: var(--gray-500);
-    }
-    
-    /* Action Buttons */
-    .btn-action {
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-    }
-    
-    .btn-pdf {
-        background: #FEE2E2;
-        color: var(--danger);
-    }
-    
-    .btn-pdf:hover {
-        background: #FECACA;
-    }
-    
-    .btn-ats {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        color: white;
-    }
-    
-    .btn-ats:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 12px rgba(102,126,234,0.4);
-    }
-    
-    /* Main Content */
-    .editor-main {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
-    }
-    
-    /* Editor Panel */
-    .editor-panel {
-        width: 50%;
-        overflow-y: auto;
-        padding: 1.5rem;
-        background: var(--gray-50);
-        border-right: 1px solid var(--gray-200);
-    }
-    
-    .sections-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    /* Section Card */
-    .section-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        overflow: hidden;
-        transition: box-shadow 0.2s;
-    }
-    
-    .section-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .section-header {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        padding: 1rem 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .section-title {
-        color: white;
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    
-    .section-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .btn-section {
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-    }
-    
-    .btn-section:hover {
-        background: rgba(255,255,255,0.3);
-    }
-    
-    .btn-section.danger:hover {
-        background: rgba(220,38,38,0.5);
-    }
-    
-    .section-body {
-        padding: 1rem 1.25rem;
-    }
-    
-    /* Item */
-    .item-container {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .item-card {
-        border: 1px solid var(--gray-200);
-        border-radius: 8px;
-        padding: 1rem;
-        background: var(--gray-50);
-    }
-    
-    .item-fields {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-    
-    .field-row {
-        display: flex;
-        gap: 0.75rem;
-    }
-    
-    .field-row .field-group {
-        flex: 1;
-    }
-    
-    .field-label {
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--gray-500);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .field-input {
-        padding: 0.625rem 0.875rem;
-        border: 1px solid var(--gray-300);
-        border-radius: 6px;
-        font-size: 0.9rem;
-        transition: all 0.2s;
-        background: white;
-    }
-    
-    .field-input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-    }
-    
-    .field-textarea {
-        resize: vertical;
-        min-height: 80px;
-    }
-    
-    .item-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 0.75rem;
-    }
-    
-    .btn-delete-item {
-        background: transparent;
-        border: none;
-        color: var(--danger);
-        font-size: 0.8rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        transition: background 0.2s;
-    }
-    
-    .btn-delete-item:hover {
-        background: #FEE2E2;
-    }
-    
-    .btn-add-item {
-        background: transparent;
-        border: none;
-        color: var(--primary);
-        font-size: 0.875rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.5rem;
-        margin-top: 0.75rem;
-        border-radius: 6px;
-        transition: background 0.2s;
-    }
-    
-    .btn-add-item:hover {
-        background: rgba(102,126,234,0.1);
-    }
-    
-    /* Add Section Button */
-    .btn-add-section {
-        width: 100%;
-        padding: 1rem;
-        background: white;
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        color: var(--gray-500);
-        font-size: 0.9rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-        margin-top: 1rem;
-    }
-    
-    .btn-add-section:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: rgba(102,126,234,0.05);
-    }
-    
-    /* Preview Panel */
-    .preview-panel {
-        width: 50%;
-        overflow-y: auto;
-        padding: 1.5rem;
-        background: var(--gray-200);
-        display: flex;
-        justify-content: center;
-    }
-    
-    .preview-container {
-        background: white;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        border-radius: 4px;
-        width: 210mm;
-        min-height: 297mm;
-        padding: 20mm;
-    }
-    
-    .preview-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 200px;
-        color: var(--gray-400);
-    }
-    
-    /* Modals */
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1050;
-        backdrop-filter: blur(4px);
-    }
-    
-    .modal-overlay.show {
-        display: flex;
-    }
-    
-    .modal-content {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    
-    .modal-content h5 {
-        color: var(--gray-800);
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
-    }
-    
-    .section-type-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-    }
-    
-    .section-type-btn {
-        padding: 0.75rem;
-        border: 1px solid var(--gray-300);
-        border-radius: 8px;
-        background: white;
-        color: var(--gray-700);
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: left;
-    }
-    
-    .section-type-btn:hover {
-        border-color: var(--primary);
-        background: rgba(102,126,234,0.05);
-    }
-    
-    .modal-close {
-        background: transparent;
-        border: none;
-        color: var(--gray-500);
-        cursor: pointer;
-        font-size: 0.9rem;
-        padding: 0;
-    }
-    
-    .modal-close:hover {
-        color: var(--gray-700);
-    }
-    
-    /* ATS Modal */
-    .ats-score-display {
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-    
-    .ats-score-value {
-        font-size: 3rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .ats-score-label {
-        color: var(--gray-500);
-        font-size: 0.9rem;
-    }
-    
-    .ats-suggestions {
-        text-align: left;
-    }
-    
-    .ats-suggestions h6 {
-        color: var(--gray-700);
-        font-size: 0.9rem;
-        margin-bottom: 0.75rem;
-    }
-    
-    .ats-suggestion-item {
-        color: var(--gray-600);
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-        padding-left: 1rem;
-        position: relative;
-    }
-    
-    .ats-suggestion-item::before {
-        content: '•';
-        position: absolute;
-        left: 0;
-        color: var(--primary);
-    }
-    
-    /* Responsive */
-    @media (max-width: 1024px) {
-        .editor-main {
-            flex-direction: column;
-        }
-        
-        .editor-panel,
-        .preview-panel {
-            width: 100%;
-        }
-        
-        .preview-panel {
-            display: none;
-        }
-    }
+.cv-editor-page { min-height: 100vh; background: #f1f5f9; }
+.cv-editor-topbar {
+  background: white; border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 40; gap: 1rem; flex-wrap: wrap;
+}
+.cv-editor-topbar-left { display: flex; align-items: center; gap: 1rem; }
+.cv-editor-title-edit {
+  border: none; background: transparent;
+  font-size: 1.1rem; font-weight: 700; color: #1e293b;
+  padding: 0.25rem 0.5rem; border-radius: 6px;
+  border: 1px solid transparent; transition: all 0.15s; min-width: 150px;
+}
+.cv-editor-title-edit:hover { border-color: #cbd5e1; background: #f8fafc; }
+.cv-editor-title-edit:focus { outline: none; border-color: #6366f1; background: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.cv-editor-topbar-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.cv-editor-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1rem; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 600;
+  border: 1px solid #e2e8f0; background: white; color: #475569;
+  cursor: pointer; transition: all 0.15s;
+  text-decoration: none; white-space: nowrap;
+}
+.cv-editor-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.cv-editor-btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
+.cv-editor-btn-primary:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 4px 12px rgba(99,102,241,0.35); }
+.cv-editor-btn-success { background: #10b981; color: white; border: none; }
+.cv-editor-btn-success:hover { background: #059669; }
+.cv-editor-btn-danger { color: #ef4444; }
+.cv-editor-btn-danger:hover { background: #fef2f2; border-color: #fca5a5; }
+.cv-editor-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.cv-editor-main { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: calc(100vh - 60px); }
+@media (max-width: 1024px) { .cv-editor-main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; min-height: calc(100vh - 60px); } }
+.cv-editor-sidebar { background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 1rem; }
+@media (max-width: 1024px) { .cv-editor-sidebar { border-right: none; border-bottom: 1px solid #e2e8f0; max-height: 50vh; } }
+.cv-editor-sidebar-section { margin-bottom: 1.5rem; }
+.cv-editor-sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.75rem; padding: 0 0.5rem; }
+.cv-editor-template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.cv-editor-template-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.cv-editor-template-card:hover { border-color: #a5b4fc; background: #eef2ff; }
+.cv-editor-template-card.active { border-color: #6366f1; background: #eef2ff; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+.cv-editor-template-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; color: white; font-size: 1rem; }
+.cv-editor-template-name { font-size: 0.75rem; font-weight: 600; color: #334155; }
+.cv-editor-section-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 0.75rem; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 0.25rem; border: 1px solid transparent; }
+.cv-editor-section-item:hover { background: #f8fafc; border-color: #e2e8f0; }
+.cv-editor-section-item.active { background: #eef2ff; border-color: #a5b4fc; }
+.cv-editor-section-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; color: white; }
+.cv-editor-section-label { flex: 1; font-size: 0.85rem; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-editor-section-badge { font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
+.cv-editor-section-badge.has-data { background: #d1fae5; color: #065f46; }
+.cv-editor-section-badge.empty { background: #f1f5f9; color: #94a3b8; }
+.cv-editor-section-actions { display: flex; gap: 0.15rem; opacity: 0; transition: opacity 0.15s; }
+.cv-editor-section-item:hover .cv-editor-section-actions { opacity: 1; }
+.cv-editor-section-action-btn { width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; transition: all 0.15s; padding: 0; }
+.cv-editor-section-action-btn:hover { background: #f1f5f9; color: #475569; }
+.cv-editor-section-action-btn-danger:hover { background: #fef2f2; color: #ef4444; }
+.cv-editor-pane { display: flex; flex-direction: column; height: calc(100vh - 60px); background: #f8fafc; overflow: hidden; }
+@media (max-width: 1024px) { .cv-editor-pane { height: auto; min-height: 60vh; } }
+.cv-editor-content-panel { flex: 1; overflow-y: auto; padding: 1.5rem; }
+.cv-editor-content-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 300px; text-align: center; color: #94a3b8; gap: 0.75rem; }
+.cv-editor-content-empty i { font-size: 3rem; }
+.cv-editor-content-empty h3 { font-size: 1.1rem; font-weight: 600; color: #64748b; }
+.cv-editor-content-empty p { font-size: 0.9rem; max-width: 320px; }
+.cv-editor-form { max-width: 640px; }
+.cv-editor-form-group { margin-bottom: 1.25rem; }
+.cv-editor-form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+.cv-editor-form-input, .cv-editor-form-select, .cv-editor-form-textarea { width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white; color: #1e293b; transition: all 0.15s; font-family: inherit; box-sizing: border-box; }
+.cv-editor-form-input:hover, .cv-editor-form-select:hover, .cv-editor-form-textarea:hover { border-color: #cbd5e1; }
+.cv-editor-form-input:focus, .cv-editor-form-select:focus, .cv-editor-form-textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.cv-editor-form-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+.cv-editor-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.cv-editor-form-hint { font-size: 0.78rem; color: #94a3b8; margin-top: 0.3rem; }
+.cv-editor-subitem { background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; margin-bottom: 0.75rem; position: relative; transition: all 0.15s; }
+.cv-editor-subitem:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.cv-editor-subitem-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.cv-editor-subitem-title { font-size: 0.85rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.4rem; }
+.cv-editor-subitem-remove { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 0.8rem; }
+.cv-editor-subitem-remove:hover { background: #fef2f2; color: #ef4444; }
+.cv-editor-add-subitem { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: 1.5px dashed #cbd5e1; border-radius: 8px; background: transparent; color: #64748b; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 0.5rem; }
+.cv-editor-add-subitem:hover { border-color: #6366f1; color: #6366f1; background: #eef2ff; }
+.cv-editor-preview-body { flex: 1; overflow: auto; position: relative; background: #e2e8f0; }
+.cv-editor-preview-iframe { width: 100%; height: 100%; min-height: 500px; border: none; background: white; }
+.cv-editor-tabs { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; background: white; flex-shrink: 0; }
+.cv-editor-tab { padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.cv-editor-tab:hover { color: #334155; background: #f8fafc; }
+.cv-editor-tab.active { color: #6366f1; border-bottom-color: #6366f1; }
+.cv-editor-preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: white; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.cv-editor-preview-title { font-size: 0.8rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 0.4rem; }
+.cv-editor-preview-controls { display: flex; align-items: center; gap: 0.35rem; }
+.cv-editor-preview-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s; }
+.cv-editor-preview-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.cv-editor-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 3rem; color: #94a3b8; }
+.cv-editor-loading-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: cvSpin 0.8s linear infinite; }
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+.cv-editor-toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; padding: 0.75rem 1.25rem; border-radius: 10px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.5rem; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+.cv-editor-toast.show { transform: translateY(0); opacity: 1; }
+.cv-editor-toast.success { background: #065f46; color: white; }
+.cv-editor-toast.error { background: #991b1b; color: white; }
+.cv-editor-toast.info { background: #1e3a5f; color: white; }
+@media (max-width: 768px) { .cv-editor-topbar { padding: 0.5rem 0.75rem; } .cv-editor-main { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
-
 {% block content %}
-<div class="cv-editor">
-    <!-- Enhanced Header -->
-    <div class="editor-header">
-        <div class="editor-header-left">
-            <a href="/cv" class="btn-back">
-                <i class="bi bi-arrow-left"></i>
-                <span>Back to CVs</span>
-            </a>
-
-            <div class="cv-title-section">
-                <input type="text" id="cvTitle" value="{{ cv.title }}"
-                    class="cv-title-input"
-                    onchange="updateCvTitle({{ cv.id }}, this.value)"
-                    placeholder="Enter CV title...">
-                <div class="save-status" id="saveStatus">
-                    <div class="save-indicator"></div>
-                    <span>Saved</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="editor-header-right">
-            <div class="template-selector">
-                <button class="btn-template" onclick="toggleTemplateDropdown()">
-                    <i class="bi bi-palette"></i>
-                    <span id="currentTemplateLabel">{{ selected_template|capitalize }}</span>
-                    <i class="bi bi-chevron-down"></i>
-                </button>
-                <div id="templateDropdown" class="template-dropdown">
-                    <div class="template-dropdown-header">
-                        <h6><i class="bi bi-brush"></i> Choose Template</h6>
-                    </div>
-                    <div class="template-list">
-                        {% set template_previews = {
-                            'modern': {name: 'Modern', desc: 'Clean design with colored accents', icon: 'bi-palette', color: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)'},
-                            'minimal': {name: 'Minimal', desc: 'Simple and elegant design', icon: 'bi-square', color: 'linear-gradient(135deg, #374151 0%, #6B7280 100%)'},
-                            'ats': {name: 'ATS Friendly', desc: 'Optimized for resume scanners', icon: 'bi-robot', color: 'linear-gradient(135deg, #059669 0%, #10B981 100%)'},
-                            'professional': {name: 'Professional', desc: 'Classic business style', icon: 'bi-briefcase', color: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)'}
-                        } %}
-                        {% for template in templates %}
-                            <a href="javascript:changeTemplate('{{ template }}')"
-                               class="template-option {{ selected_template == template ? 'active' : '' }}">
-                                <div class="template-preview" style="background: {{ template_previews[template].color ?? 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)' }};">
-                                    <i class="bi {{ template_previews[template].icon ?? 'bi-file-earmark-text' }}" style="color: white; font-size: 1.2rem;"></i>
-                                </div>
-                                <div class="template-info">
-                                    <div class="template-name">{{ template_previews[template].name ?? template|capitalize }}</div>
-                                    <div class="template-desc">{{ template_previews[template].desc ?? 'Professional CV template' }}</div>
-                                </div>
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <a id="pdfExportLink" href="/cv/{{ cv.id }}/export?template={{ selected_template }}" class="btn-action btn-pdf">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span>Export PDF</span>
-            </a>
-
-            <button onclick="runAtsScore({{ cv.id }})" class="btn-action btn-ats">
-                <i class="bi bi-graph-up"></i>
-                <span>ATS Score</span>
-            </button>
-        </div>
+{% set section_steps = {
+  'personal': {'icon': 'user', 'color': '#6366f1', 'bg': '#eef2ff', 'label': 'Personal Info'},
+  'experience': {'icon': 'briefcase', 'color': '#f59e0b', 'bg': '#fffbeb', 'label': 'Experience'},
+  'education': {'icon': 'graduation-cap', 'color': '#10b981', 'bg': '#ecfdf5', 'label': 'Education'},
+  'skills': {'icon': 'zap', 'color': '#06b6d4', 'bg': '#ecfeff', 'label': 'Skills'},
+  'languages': {'icon': 'globe', 'color': '#3b82f6', 'bg': '#eff6ff', 'label': 'Languages'},
+  'social_links': {'icon': 'share-2', 'color': '#ec4899', 'bg': '#fdf2f8', 'label': 'Social Links'},
+  'custom_sections': {'icon': 'layout', 'color': '#78716c', 'bg': '#fafaf9', 'label': 'Custom'},
+  'references': {'icon': 'users', 'color': '#6366f1', 'bg': '#eef2ff', 'label': 'References'}
+} %}
+{% set template_colors = {
+  'modern': {'from': '#6366f1', 'to': '#8b5cf6', 'icon': 'palette'},
+  'minimal': {'from': '#374151', 'to': '#6b7280', 'icon': 'minus'},
+  'ats': {'from': '#059669', 'to': '#10b981', 'icon': 'bot'},
+  'professional': {'from': '#1e40af', 'to': '#3b82f6', 'icon': 'briefcase'}
+} %}
+<div class="cv-editor-page" id="cv-editor-app">
+  <div class="cv-editor-topbar">
+    <div class="cv-editor-topbar-left">
+      <a href="/cv-builder" class="cv-editor-btn"><i class="lucide lucide-chevron-left" style="width:1em;height:1em;"></i></a>
+      <input type="text" class="cv-editor-title-edit" id="cv-editor-title-input" value="{{ cv.title|default('My CV') }}" placeholder="CV Title">
     </div>
-
-    <!-- Enhanced Main Content -->
-    <div class="editor-main">
-        <!-- Enhanced Editor Panel -->
-        <div class="editor-panel">
-            <div class="editor-panel-header">
-                <h3 class="editor-panel-title">
-                    <i class="bi bi-pencil-square"></i>
-                    Edit Sections
-                </h3>
-                <p class="editor-panel-subtitle">Drag and drop sections to reorder, click to edit content</p>
-            </div>
-
-            <div class="sections-container" id="sectionsContainer">
-                {% for section in sections %}
-                    <div class="section-card" data-section-id="{{ section.id }}" data-is-visible="{{ section.is_visible ? 1 : 0 }}">
-                        <div class="section-header">
-                            <h5 class="section-title">
-                                {% set section_icons = {
-                                    'summary': 'bi-person-circle',
-                                    'experience': 'bi-briefcase',
-                                    'education': 'bi-mortarboard',
-                                    'skills': 'bi-tools',
-                                    'projects': 'bi-code-slash',
-                                    'certifications': 'bi-award'
-                                } %}
-                                <i class="bi {{ section_icons[section.section_type] ?? 'bi-circle' }}"></i>
-                                {{ section.title }}
-                            </h5>
-                            <div class="section-actions">
-                                <button onclick="toggleSectionVisibility({{ section.id }})"
-                                    class="btn-section"
-                                    data-action="toggle-visibility"
-                                    title="{{ section.is_visible ? 'Hide section' : 'Show section' }}">
-                                    <i class="bi bi-{{ section.is_visible ? 'eye' : 'eye-slash' }}"></i>
-                                </button>
-                                <button onclick="editSectionTitle({{ section.id }}, '{{ section.title }}')"
-                                    class="btn-section"
-                                    title="Edit section title">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button onclick="deleteSection({{ cv.id }}, {{ section.id }})"
-                                    class="btn-section danger"
-                                    title="Delete section">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="section-content">
-                            <div class="section-items">
-                                {% for item in section.items %}
-                                    <div class="section-item" data-item-id="{{ item.id }}">
-                                        <div class="item-header">
-                                            <h6 class="item-title">
-                                                {% if item.title %}
-                                                    {{ item.title }}
-                                                {% elseif section.section_type == 'summary' %}
-                                                    Professional Summary
-                                                {% elseif section.section_type == 'experience' %}
-                                                    {{ item.company ?? 'Company Name' }}
-                                                {% elseif section.section_type == 'education' %}
-                                                    {{ item.institution ?? 'Institution Name' }}
-                                                {% elseif section.section_type == 'skills' %}
-                                                    Skills
-                                                {% elseif section.section_type == 'projects' %}
-                                                    {{ item.name ?? 'Project Name' }}
-                                                {% elseif section.section_type == 'certifications' %}
-                                                    {{ item.name ?? 'Certification Name' }}
-                                                {% else %}
-                                                    Item
-                                                {% endif %}
-                                            </h6>
-                                            <div class="item-actions">
-                                                <button onclick="editItem({{ item.id }}, '{{ section.section_type }}')"
-                                                    class="btn-item"
-                                                    title="Edit item">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button onclick="duplicateItem({{ item.id }}, {{ section.id }}, '{{ section.section_type }}')"
-                                                    class="btn-item"
-                                                    title="Duplicate item">
-                                                    <i class="bi bi-copy"></i>
-                                                </button>
-                                                <button onclick="deleteItem({{ item.id }})"
-                                                    class="btn-item danger"
-                                                    title="Delete item">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="item-content">
-                                            {% if section.section_type == 'summary' %}
-                                                {{ item.content|slice(0, 150) }}{% if item.content|length > 150 %}...{% endif %}
-                                            {% elseif section.section_type == 'experience' %}
-                                                <div class="text-muted small">{{ item.position ?? 'Position' }} at {{ item.company ?? 'Company' }}</div>
-                                                {% if item.start_date or item.end_date %}
-                                                    <div class="text-muted small">
-                                                        {{ item.start_date ? item.start_date|date('M Y') : '' }} -
-                                                        {{ item.end_date ? item.end_date|date('M Y') : 'Present' }}
-                                                    </div>
-                                                {% endif %}
-                                            {% elseif section.section_type == 'education' %}
-                                                <div class="text-muted small">{{ item.degree ?? 'Degree' }} in {{ item.field ?? 'Field of Study' }}</div>
-                                                {% if item.graduation_date %}
-                                                    <div class="text-muted small">Graduated {{ item.graduation_date|date('M Y') }}</div>
-                                                {% endif %}
-                                            {% elseif section.section_type == 'skills' %}
-                                                {{ item.skills ? item.skills|join(', ') : 'Skill 1, Skill 2, Skill 3' }}
-                                            {% elseif section.section_type == 'projects' %}
-                                                <div class="text-muted small">{{ item.description|slice(0, 100) }}{% if item.description|length > 100 %}...{% endif %}</div>
-                                            {% elseif section.section_type == 'certifications' %}
-                                                <div class="text-muted small">Issued by {{ item.issuer ?? 'Organization' }}</div>
-                                                {% if item.issue_date %}
-                                                    <div class="text-muted small">Issued {{ item.issue_date|date('M Y') }}</div>
-                                                {% endif %}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-
-                            <button onclick="addItem({{ cv.id }}, {{ section.id }}, '{{ section.section_type }}')"
-                                class="add-item-btn">
-                                <i class="bi bi-plus-circle"></i>
-                                <span>Add {{ section.section_type|title }} Item</span>
-                            </button>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <!-- Add New Section -->
-            <div class="section-card add-section-card">
-                <div class="section-content text-center py-4">
-                    <button onclick="showAddSectionModal()" class="add-item-btn" style="border: 2px dashed var(--cv-editor-primary); background: rgba(102,126,234,0.05);">
-                        <i class="bi bi-plus-circle-fill" style="font-size: 1.5rem; color: var(--cv-editor-primary);"></i>
-                        <span style="color: var(--cv-editor-primary); font-weight: 600;">Add New Section</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Preview Panel -->
-        <div class="preview-panel">
-            <div class="preview-header">
-                <h4 class="preview-title">
-                    <i class="bi bi-eye"></i>
-                    Live Preview
-                </h4>
-                <div class="preview-controls">
-                    <div class="preview-zoom">
-                        <button class="btn-zoom" onclick="zoomOut()" title="Zoom out">
-                            <i class="bi bi-dash"></i>
-                        </button>
-                        <span class="zoom-level" id="zoomLevel">100%</span>
-                        <button class="btn-zoom" onclick="zoomIn()" title="Zoom in">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                        <button class="btn-zoom" onclick="resetZoom()" title="Reset zoom">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
-                    </div>
-                    <button class="btn-zoom" onclick="togglePreviewMode()" title="Toggle preview mode">
-                        <i class="bi bi-arrows-fullscreen"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="preview-content">
-                <div class="preview-frame" id="cvPreview">
-                    <div class="text-center py-5">
-                        <div class="loading-spinner mb-3"></div>
-                        <p>Loading preview...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="cv-editor-topbar-right">
+      <button class="cv-editor-btn cv-editor-btn-success" data-action="editor-save" id="cv-editor-save-btn">
+        <i class="lucide lucide-save" style="width:0.85em;height:0.85em;"></i> <span>Save</span>
+      </button>
     </div>
+  </div>
+  <div class="cv-editor-main">
+    <div class="cv-editor-sidebar">
+      <div class="cv-editor-sidebar-section">
+        <div class="cv-editor-sidebar-title">Template</div>
+        <div class="cv-editor-template-grid">
+          {% for t in templates %}
+          {% set c = template_colors[t]|default({'from': '#6366f1', 'to': '#8b5cf6', 'icon': 'file-text'}) %}
+          <div class="cv-editor-template-card {{ t == selected_template ? 'active' : '' }}" data-template="{{ t }}" data-action="editor-select-template" data-template="{{ t }}">
+            <div class="cv-editor-template-icon" style="background:linear-gradient(135deg,{{ c.from }},{{ c.to }});">
+              <i class="lucide lucide-{{ c.icon }}" style="width:1em;height:1em;"></i>
+            </div>
+            <div class="cv-editor-template-name">{{ t|capitalize }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="cv-editor-sidebar-section">
+        <div class="cv-editor-sidebar-title">Sections</div>
+        <div id="cv-editor-section-list">
+          {% for key, info in section_steps %}
+          {% set bd = builder_data[key]|default(null) %}
+          {% set has_data = bd and ((bd is iterable and (bd|length > 0)) or (bd is not iterable and bd is not empty)) %}
+          <div class="cv-editor-section-item {{ key == 'personal' ? 'active' : '' }}" data-section="{{ key }}" data-action="editor-select-section" data-section="{{ key }}">
+            <div class="cv-editor-section-icon" style="background:{{ info.color }};">
+              <i class="lucide lucide-{{ info.icon }}" style="width:0.8em;height:0.8em;"></i>
+            </div>
+            <span class="cv-editor-section-label">{{ info.label }}</span>
+            <span class="cv-editor-section-badge {{ has_data ? 'has-data' : 'empty' }}">{{ has_data ? '&#10003;' : '&mdash;' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="cv-editor-pane" id="cv-editor-pane">
+      <div class="cv-editor-tabs">
+        <div class="cv-editor-tab active" data-tab="content" data-action="editor-switch-tab" data-tab="content"><i class="lucide lucide-pencil" style="width:0.85em;height:0.85em;"></i> <span>Content</span></div>
+        <div class="cv-editor-tab" data-tab="preview" data-action="editor-switch-tab" data-tab="preview"><i class="lucide lucide-eye" style="width:0.85em;height:0.85em;"></i> <span>Preview</span></div>
+      </div>
+      <div class="cv-editor-content-panel" id="cv-editor-content-panel">
+        <div class="cv-editor-loading" id="cv-editor-loading">
+          <div class="cv-editor-loading-spinner"></div>
+          <span>Loading editor...</span>
+        </div>
+        <div id="cv-editor-content-body" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
 </div>
-
-<!-- Enhanced Modals -->
-<div id="itemModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
-            <div class="modal-header" style="background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); color: white; border: none; border-radius: 16px 16px 0 0;">
-                <h5 class="modal-title" id="itemModalTitle">
-                    <i class="bi bi-pencil-square me-2"></i>
-                    Edit Item
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="itemForm">
-                    <input type="hidden" id="itemId" name="itemId">
-                    <input type="hidden" id="sectionType" name="sectionType">
-                    <div id="itemFormContent">
-                        <!-- Dynamic form content will be loaded here -->
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer" style="border: none; padding: 1rem 2rem;">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>
-                    Cancel
-                </button>
-                <button type="button" class="btn" onclick="saveItem()" style="background: linear-gradient(135deg, var(--cv-editor-primary) 0%, var(--cv-editor-secondary) 100%); border: none; color: white;">
-                    <i class="bi bi-check-circle me-1"></i>
-                    Save Changes
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Section Modal -->
-<div id="addSectionModal" class="modal-overlay">
-    <div class="modal-content">
-        <h5>Add Section</h5>
-        
-        <div class="section-type-grid">
-            {% set section_types = [
-                {type: 'summary', title: 'Professional Summary'},
-                {type: 'experience', title: 'Work Experience'},
-                {type: 'education', title: 'Education'},
-                {type: 'skills', title: 'Skills'},
-                {type: 'projects', title: 'Projects'},
-                {type: 'certifications', title: 'Certifications'}
-            ] %}
-            
-            {% for st in section_types %}
-                <button onclick="addSection({{ cv.id }}, '{{ st.type }}', '{{ st.title }}')"
-                    class="section-type-btn">
-                    {{ st.title }}
-                </button>
-            {% endfor %}
-        </div>
-        
-        <button onclick="closeAddSectionModal()" class="modal-close">Cancel</button>
-    </div>
-</div>
-
-
-<!-- ATS Score Modal -->
-<div id="atsScoreModal" class="modal-overlay">
-    <div class="modal-content">
-        <h5>ATS Score Analysis</h5>
-        <div id="atsScoreContent">
-            <div class="preview-loading">
-                <i class="bi bi-arrow-repeat spin"></i> Analyzing CV...
-            </div>
-        </div>
-        <button onclick="closeAtsScoreModal()" class="modal-close" style="margin-top: 1rem;">Close</button>
-    </div>
-</div>
-
-{% endblock %}
-
-{% block extra_scripts %}
+<div class="cv-editor-toast" id="cv-editor-toast"></div>
 <script>
-let currentCvId = {{ cv.id }};
-let currentTemplate = '{{ selected_template }}';
-let autoSaveTimer = null;
-let previewScale = 1;
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-const previewScaleKey = `cv-editor-preview-scale-${currentCvId}`;
-const jsonHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
+(function(){
+'use strict';
+var cvId={{ cv.id|default('0') }},csrf='{{ csrf_token|default('') }}',builderData={{ builder_data|json_encode|raw }},templates={{ templates|json_encode|raw }},selectedTemplate='{{ selected_template|default('modern') }}',curSec='personal',curTab='content',saveTimer=null,isSaving=false;
+var defSecs=['personal','experience','education','skills','languages','social_links','custom_sections','references'];
+defSecs.forEach(function(s){if(!builderData[s]){if(s==='skills')builderData[s]={technical:[],soft:[]};else if(['experience','education','languages','social_links','custom_sections','references'].indexOf(s)!==-1)builderData[s]=[];else builderData[s]={};}});
+var editor={init:function(){this.renderSection('personal');document.getElementById('cv-editor-loading').style.display='none';document.getElementById('cv-editor-content-body').style.display='block';document.getElementById('cv-editor-title-input').addEventListener('change',function(){editor.schedSave();});document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();editor.save();}});},
+selectSection:function(key){curSec=key;document.querySelectorAll('.cv-editor-section-item').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-section')===key);});this.renderSection(key);},
+selectTemplate:function(tmpl){selectedTemplate=tmpl;document.querySelectorAll('.cv-editor-template-card').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-template')===tmpl);});this.schedSave();},
+renderSection:function(key){var body=document.getElementById('cv-editor-content-body'),data=builderData[key]||{},meta=window.__steps&&window.__steps[key]||{icon:'file',color:'#6366f1',label:key.charAt(0).toUpperCase()+key.slice(1)};var self=this,html='';switch(key){
+case'personal':html=self.renderPersonal(data);break;
+case'experience':case'education':case'languages':case'social_links':case'custom_sections':case'references':html=self.renderList(key,data);break;
+case'skills':html=self.renderSkills(data);break;
+default:html='<div class="cv-editor-content-empty"><i class="lucide lucide-file-text"></i><h3>Select a section</h3><p>Choose a section from the sidebar.</p></div>';}
+body.innerHTML='<div class="cv-editor-form"><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0;"><div class="cv-editor-section-icon" style="width:36px;height:36px;border-radius:8px;background:'+meta.color+';display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;"><i class="lucide lucide-'+meta.icon+'" style="width:1em;height:1em;"></i></div><div><h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">'+meta.label+'</h3><p style="font-size:0.8rem;color:#94a3b8;margin:0;">Edit your '+meta.label.toLowerCase()+'</p></div></div>'+html+'</div>';
+body.querySelectorAll('input,textarea,select').forEach(function(el){el.addEventListener('change',function(){editor.schedSave();});el.addEventListener('input',function(){if(el.tagName!=='SELECT')editor.schedSave();});});
+body.querySelectorAll('.cv-editor-add-subitem').forEach(function(el){el.addEventListener('click',function(){editor.addItem(el.getAttribute('data-field'));});});
+body.querySelectorAll('.cv-editor-subitem-remove').forEach(function(el){el.addEventListener('click',function(){editor.rmItem(el.getAttribute('data-field'),parseInt(el.getAttribute('data-idx'),10));});});
+body.querySelectorAll('.cv-editor-skill-input').forEach(function(el){el.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();editor.addSkill(el.getAttribute('data-category'),el.value.trim());el.value='';}});});
+body.querySelectorAll('.cv-editor-skill-remove').forEach(function(el){el.addEventListener('click',function(){editor.rmSkill(el.getAttribute('data-category'),parseInt(el.getAttribute('data-idx'),10));});});},
+renderPersonal:function(d){function v(k,def){return d[k]!==undefined&&d[k]!==null&&d[k]!==''?esc(String(d[k])):(def||'');}
+return '<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Full Name</label><input class="cv-editor-form-input" data-p="full_name" value="'+v('full_name')+'" placeholder="John Doe"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Job Title</label><input class="cv-editor-form-input" data-p="job_title" value="'+v('job_title')+'" placeholder="Software Engineer"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Email</label><input class="cv-editor-form-input" type="email" data-p="email" value="'+v('email')+'" placeholder="john@example.com"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Phone</label><input class="cv-editor-form-input" type="tel" data-p="phone" value="'+v('phone')+'" placeholder="+1 555-0000"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">DOB</label><input class="cv-editor-form-input datepicker" type="date" data-p="date_of_birth" data-disable-future="true" value="'+v('date_of_birth')+'" class="datepicker"></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Nationality</label><input class="cv-editor-form-input" data-p="nationality" value="'+v('nationality')+'" placeholder="American"></div></div>'+
+'<div class="cv-editor-form-row"><div class="cv-editor-form-group"><label class="cv-editor-form-label">Gender</label><select class="cv-editor-form-select" data-p="gender"><option value="">Select</option><option value="male"'+(d.gender==='male'?' selected':'')+'>Male</option><option value="female"'+(d.gender==='female'?' selected':'')+'>Female</option><option value="other"'+(d.gender==='other'?' selected':'')+'>Other</option></select></div><div class="cv-editor-form-group"><label class="cv-editor-form-label">Address</label><input class="cv-editor-form-input" data-p="address" value="'+v('address')+'" placeholder="City, Country"></div></div>';},
+renderSkills:function(d){var t=Array.isArray(d.technical)?d.technical:[],s=Array.isArray(d.soft)?d.soft:[];var tg=function(a,c){return a.map(function(x,i){return'<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:20px;font-size:0.8rem;font-weight:500;">'+esc(x)+'<button class="cv-editor-skill-remove" data-category="'+c+'" data-idx="'+i+'" style="cursor:pointer;border:none;background:none;color:#9ca3af;padding:0;display:inline-flex;font-size:0.7rem;width:16px;height:16px;align-items:center;justify-content:center;border-radius:50%;">x</button></span>';}).join('');};
+return '<div class="cv-editor-form-group"><label class="cv-editor-form-label">Technical Skills</label><div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;min-height:2.5rem;margin-bottom:0.5rem;" id="cv-edit-skills-tech">'+tg(t,'technical')+'</div><input class="cv-editor-form-input cv-editor-skill-input" data-category="technical" placeholder="Type and press Enter..." style="border-style:dashed;border-radius:20px;"></div>'+
+'<div class="cv-editor-form-group"><label class="cv-editor-form-label">Soft Skills</label><div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;min-height:2.5rem;margin-bottom:0.5rem;" id="cv-edit-skills-soft">'+tg(s,'soft')+'</div><input class="cv-editor-form-input cv-editor-skill-input" data-category="soft" placeholder="Type and press Enter..." style="border-style:dashed;border-radius:20px;"></div>';},
+renderList:function(f,d){var items=Array.isArray(d)?d:[],html='<div id="cv-editor-list-'+f+'">';items.forEach(function(item,i){html+='<div class="cv-editor-subitem"><div class="cv-editor-subitem-header"><span class="cv-editor-subitem-title"><i class="lucide lucide-grip-vertical" style="width:0.8em;height:0.8em;color:#cbd5e1;"></i> Entry '+(i+1)+'</span><button class="cv-editor-subitem-remove" data-field="'+f+'" data-idx="'+i+'"><i class="lucide lucide-x" style="width:0.85em;height:0.85em;"></i></button></div>';
+var keys=f==='experience'?['company','position','location','start_date','end_date','responsibilities']:f==='education'?['institution','degree','field','year']:f==='languages'?['name','proficiency']:f==='social_links'?['platform','url']:f==='custom_sections'?['title','content']:f==='references'?['name','title','email','phone']:['title','description'];
+html+='<div class="cv-editor-form-row">';keys.forEach(function(k,ki){if(ki>0&&ki%2===0)html+='</div><div class="cv-editor-form-row">';
+if(k==='proficiency'){var profs=['basic','intermediate','advanced','fluent','native'];html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">Proficiency</label><select class="cv-editor-form-select" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'"><option value="">Select</option>';profs.forEach(function(p){html+='<option value="'+p+'"'+(item[k]===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';});html+='</select></div>';}
+else if(k==='platform'){var plats=['linkedin','github','twitter','website','facebook','instagram','youtube','dribbble','behance','other'];html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">Platform</label><select class="cv-editor-form-select" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'"><option value="">Select</option>';plats.forEach(function(p){html+='<option value="'+p+'"'+(item[k]===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';});html+='</select></div>';}
+else if(k==='responsibilities'||k==='description'||k==='content'){html+='<div class="cv-editor-form-group" style="grid-column:1/-1;"><label class="cv-editor-form-label">'+k.charAt(0).toUpperCase()+k.slice(1)+'</label><textarea class="cv-editor-form-textarea" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'" placeholder="'+k.replace(/_/g,' ')+'">'+esc(item[k]||'')+'</textarea></div>';}
+else{html+='<div class="cv-editor-form-group"><label class="cv-editor-form-label">'+k.charAt(0).toUpperCase()+k.replace(/_/g,' ')+'</label><input class="cv-editor-form-input" data-l="'+f+'" data-idx="'+i+'" data-key="'+k+'" value="'+esc(item[k]||'')+'" placeholder="'+k.replace(/_/g,' ')+'"></div>';}});html+='</div></div>';});
+html+='</div><button class="cv-editor-add-subitem" data-field="'+f+'"><i class="lucide lucide-plus-circle" style="width:0.85em;height:0.85em;"></i> Add Entry</button>';return html;},
+addItem:function(f){if(!Array.isArray(builderData[f]))builderData[f]=[];builderData[f].push({});this.renderSection(curSec);},
+rmItem:function(f,i){if(!Array.isArray(builderData[f]))return;builderData[f].splice(i,1);this.renderSection(curSec);this.schedSave();},
+addSkill:function(c,v){if(!v)return;if(!builderData.skills)builderData.skills={technical:[],soft:[]};if(!Array.isArray(builderData.skills[c]))builderData.skills[c]=[];builderData.skills[c].push(v);this.renderSection(curSec);this.schedSave();},
+rmSkill:function(c,i){if(!builderData.skills||!Array.isArray(builderData.skills[c]))return;builderData.skills[c].splice(i,1);this.renderSection(curSec);this.schedSave();},
+collect:function(){var b=document.getElementById('cv-editor-content-body');if(!b)return;
+b.querySelectorAll('[data-p]').forEach(function(el){builderData.personal[el.getAttribute('data-p')]=el.value;});
+b.querySelectorAll('[data-l]').forEach(function(el){var f=el.getAttribute('data-l'),i=parseInt(el.getAttribute('data-idx'),10),k=el.getAttribute('data-key');if(!Array.isArray(builderData[f]))builderData[f]=[];if(!builderData[f][i])builderData[f][i]={};builderData[f][i][k]=el.value;});return builderData;},
+schedSave:function(){var self=this;if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(function(){self.save(true);},3000);},
+save:function(silent){if(isSaving)return;isSaving=true;this.collect();var t=document.getElementById('cv-editor-title-input').value.trim()||'My CV',btn=document.getElementById('cv-editor-save-btn');if(!silent&&btn){btn.disabled=true;btn.innerHTML='<i class="lucide lucide-hourglass" style="width:0.85em;height:0.85em;"></i> Saving...';}
+fetch('/cv-builder/'+cvId,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({title:t,template:selectedTemplate,content:builderData})})
+.then(function(r){return r.json();})
+.then(function(res){if(res.success){if(!silent)editor.toast('CV saved successfully!','success');}else{if(!silent)editor.toast(res.error||'Save failed','error');}})
+.catch(function(){if(!silent)editor.toast('Failed to save','error');})
+.finally(function(){isSaving=false;if(!silent&&btn){btn.disabled=false;btn.innerHTML='<i class="lucide lucide-save" style="width:0.85em;height:0.85em;"></i> Save';}});},
+switchTab:function(tab){curTab=tab;document.querySelectorAll('.cv-editor-tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===tab);});
+if(tab==='preview'){document.getElementById('cv-editor-content-panel').innerHTML='<iframe id="cv-editor-preview-iframe" style="width:100%;height:100%;min-height:80vh;border:none;background:white;" sandbox="allow-scripts allow-same-origin"></iframe>';this.loadPreview();}
+else{this.renderSection(curSec);}},
+loadPreview:function(){var ifr=document.getElementById('cv-editor-preview-iframe');if(!ifr)return;ifr.src='/api/cv/'+cvId+'/preview?template='+encodeURIComponent(selectedTemplate)+'&zoom=0.8&t='+Date.now();},
+toast:function(m,t){var el=document.getElementById('cv-editor-toast');if(!el)return;el.textContent=m;el.className='cv-editor-toast '+(t||'info');el.classList.add('show');clearTimeout(el._h);el._h=setTimeout(function(){el.classList.remove('show');},3000);}};
+function esc(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+window.editor=editor;window.__steps={{ section_steps|json_encode|raw }};
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){editor.init();});}else{editor.init();}
+})();
+
+<script>
+document.addEventListener("click", function(e) {
+  var t = e.target.closest("[data-action]");
+  if (!t) return;
+  var a = t.getAttribute("data-action");
+  var id = t.dataset.id;
+  if (a && window[a]) window[a](id, t);
 });
-
-// Auto-save functionality
-function scheduleAutoSave() {
-    const status = document.getElementById('saveStatus');
-    status.innerHTML = '<i class="bi bi-clock"></i> Saving...';
-    status.className = 'save-status saving';
-    
-    if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-    }
-    
-    autoSaveTimer = setTimeout(() => {
-        status.innerHTML = '<i class="bi bi-check-circle"></i> Saved';
-        status.className = 'save-status saved';
-    }, 1500);
-}
-
-// Template dropdown
-function toggleTemplateDropdown() {
-    const dropdown = document.getElementById('templateDropdown');
-    dropdown.classList.toggle('show');
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('templateDropdown');
-    const btn = document.querySelector('.btn-template');
-    if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-        dropdown.classList.remove('show');
-    }
-});
-
-function setTemplateUi(template) {
-    const label = document.getElementById('currentTemplateLabel');
-    if (label) label.textContent = String(template || '').charAt(0).toUpperCase() + String(template || '').slice(1);
-
-    const pdfLink = document.getElementById('pdfExportLink');
-    if (pdfLink) {
-        pdfLink.href = `/cv/${currentCvId}/export?template=${encodeURIComponent(template)}`;
-    }
-}
-
-function applyPreviewScale() {
-    const frame = document.getElementById('cvPreview');
-    if (frame) {
-        frame.style.transform = `scale(${previewScale})`;
-    }
-    const zoomLabel = document.getElementById('zoomLevel');
-    if (zoomLabel) {
-        zoomLabel.textContent = `${Math.round(previewScale * 100)}%`;
-    }
-
-    try {
-        localStorage.setItem(previewScaleKey, String(previewScale));
-    } catch (e) {
-    }
-}
-
-function zoomIn() {
-    previewScale = Math.min(1.6, previewScale + 0.1);
-    applyPreviewScale();
-}
-
-function zoomOut() {
-    previewScale = Math.max(0.6, previewScale - 0.1);
-    applyPreviewScale();
-}
-
-function resetZoom() {
-    previewScale = 1;
-    applyPreviewScale();
-}
-
-function togglePreviewMode() {
-    const container = document.querySelector('.cv-editor');
-    if (!container) return;
-    container.classList.toggle('preview-only');
-
-    const btn = document.querySelector('[onclick="togglePreviewMode()"] i');
-    if (btn) {
-        const isPreviewOnly = container.classList.contains('preview-only');
-        btn.classList.toggle('bi-arrows-fullscreen', !isPreviewOnly);
-        btn.classList.toggle('bi-layout-split', isPreviewOnly);
-    }
-
-    try {
-        const isPreviewOnly = container.classList.contains('preview-only');
-        localStorage.setItem('cv-editor-preview-only', isPreviewOnly ? '1' : '0');
-    } catch (e) {
-    }
-}
-
-// Restore preview mode from localStorage
-document.addEventListener('DOMContentLoaded', function () {
-    try {
-        const stored = localStorage.getItem('cv-editor-preview-only');
-        if (stored === '1') {
-            const container = document.querySelector('.cv-editor');
-            if (container) {
-                container.classList.add('preview-only');
-                const btn = document.querySelector('[onclick="togglePreviewMode()"] i');
-                if (btn) {
-                    btn.classList.remove('bi-arrows-fullscreen');
-                    btn.classList.add('bi-layout-split');
-                }
-            }
-        }
-    } catch (e) {
-    }
-
-    try {
-        const storedScale = parseFloat(localStorage.getItem(previewScaleKey) || '');
-        if (!Number.isNaN(storedScale)) {
-            previewScale = Math.max(0.6, Math.min(1.6, storedScale));
-            applyPreviewScale();
-        }
-    } catch (e) {
-    }
-});
-
-// Update CV title
-function updateCvTitle(id, title) {
-    fetch('/cv/' + id, {
-        method: 'PUT',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ title })
-    })
-    .then(() => scheduleAutoSave());
-}
-
-// Change template
-function changeTemplate(template) {
-    currentTemplate = template;
-    setTemplateUi(template);
-    document.getElementById('templateDropdown').classList.remove('show');
-
-    fetch('/cv/' + currentCvId, {
-        method: 'PUT',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ template })
-    })
-    .then(() => scheduleAutoSave())
-    .finally(() => loadPreview());
-}
-
-// Load preview
-function loadPreview() {
-    const preview = document.getElementById('previewContent');
-    preview.innerHTML = '<div class="preview-loading"><i class="bi bi-arrow-repeat spin"></i> Loading preview...</div>';
-    
-    fetch(`/cv/${currentCvId}/preview?template=${currentTemplate}`)
-    .then(response => response.text())
-    .then(html => {
-        preview.innerHTML = html;
-    })
-    .catch(() => {
-        preview.innerHTML = '<div class="preview-loading">Failed to load preview</div>';
-    });
-}
-
-// Initial load
-setTemplateUi(currentTemplate);
-loadPreview();
-
-// Section visibility
-function toggleSectionVisibility(sectionId) {
-    const sectionCard = document.querySelector(`.section-card[data-section-id="${sectionId}"]`);
-    if (!sectionCard) return;
-
-    const current = String(sectionCard.dataset.isVisible || '1') === '1';
-    const next = current ? 0 : 1;
-
-    fetch(`/cv/${currentCvId}/sections/${sectionId}`, {
-        method: 'PUT',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ is_visible: next })
-    })
-    .then(() => {
-        sectionCard.dataset.isVisible = String(next);
-
-        const btn = sectionCard.querySelector('button[data-action="toggle-visibility"]');
-        const icon = btn ? btn.querySelector('i') : null;
-
-        if (btn) {
-            btn.title = next ? 'Hide' : 'Show';
-        }
-        if (icon) {
-            icon.className = `bi bi-${next ? 'eye' : 'eye-slash'}`;
-        }
-
-        scheduleAutoSave();
-        loadPreview();
-    });
-}
-
-// Delete section
-function deleteSection(cvId, sectionId) {
-    if (confirm('Are you sure you want to delete this section?')) {
-        fetch(`/cv/${cvId}/sections/${sectionId}`, {
-            method: 'DELETE',
-            headers: jsonHeaders()
-        })
-        .then(() => location.reload());
-    }
-}
-
-// Add section modal
-function showAddSectionModal() {
-    document.getElementById('addSectionModal').classList.add('show');
-}
-
-function closeAddSectionModal() {
-    document.getElementById('addSectionModal').classList.remove('show');
-}
-
-function addSection(cvId, sectionType, title) {
-    fetch(`/cv/${cvId}/sections`, {
-        method: 'POST',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ section_type: sectionType, title })
-    })
-    .then(() => location.reload());
-}
-
-// Add item
-function addItem(cvId, sectionId, sectionType) {
-    fetch(`/cv/${cvId}/sections/${sectionId}/items`, {
-        method: 'POST',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ item_type: sectionType, content: {} })
-    })
-    .then(() => location.reload());
-}
-
-// Update item
-function updateItem(cvId, sectionId, itemId, content) {
-    fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
-        method: 'PUT',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ content: { text: content } })
-    })
-    .then(() => {
-        scheduleAutoSave();
-        loadPreview();
-    });
-}
-
-function updateItemField(cvId, sectionId, itemId, field, value) {
-    fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
-        method: 'PUT',
-        headers: jsonHeaders(),
-        body: JSON.stringify({ content: { [field]: value } })
-    })
-    .then(() => {
-        scheduleAutoSave();
-        loadPreview();
-    });
-}
-
-// Delete item
-function deleteItem(cvId, sectionId, itemId) {
-    if (confirm('Are you sure you want to delete this item?')) {
-        fetch(`/cv/${cvId}/sections/${sectionId}/items/${itemId}`, {
-            method: 'DELETE',
-            headers: jsonHeaders()
-        })
-        .then(() => location.reload());
-    }
-}
-
-// ATS Score
-function runAtsScore(cvId) {
-    const modal = document.getElementById('atsScoreModal');
-    const content = document.getElementById('atsScoreContent');
-    
-    modal.classList.add('show');
-    content.innerHTML = '<div class="preview-loading"><i class="bi bi-arrow-repeat spin"></i> Analyzing CV...</div>';
-    
-    fetch(`/cv/${cvId}/ai/ats-score`, {
-        method: 'POST',
-        headers: jsonHeaders()
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.score !== undefined) {
-            content.innerHTML = `
-                <div class="ats-score-display">
-                    <div class="ats-score-value">${data.score}/100</div>
-                    <div class="ats-score-label">ATS Compatibility Score</div>
-                </div>
-                <div class="ats-suggestions">
-                    <h6>Suggestions for Improvement:</h6>
-                    ${data.suggestions ? data.suggestions.map(s => `<div class="ats-suggestion-item">${s}</div>`).join('') : '<p>No suggestions available</p>'}
-                </div>
-            `;
-        } else {
-            content.innerHTML = '<p style="color: var(--danger);">Failed to analyze CV</p>';
-        }
-    })
-    .catch(() => {
-        content.innerHTML = '<p style="color: var(--danger);">Failed to analyze CV</p>';
-    });
-}
-
-function closeAtsScoreModal() {
-    document.getElementById('atsScoreModal').classList.remove('show');
-}
-
-// Close modals on backdrop click
-document.querySelectorAll('.modal-overlay').forEach(modal => {
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.remove('show');
-        }
-    });
-});
-
-// Add spin animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-    .spin {
-        animation: spin 1s linear infinite;
-    }
-`;
-document.head.appendChild(style);
+</script>
 </script>
 {% endblock %}

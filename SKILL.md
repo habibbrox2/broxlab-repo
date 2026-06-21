@@ -1,78 +1,117 @@
 ---
 name: broxlab-full-stack-dev
-description: Full multi-step BroxLab development workflow for PHP, Twig, Node, prompts, and frontend assets.
+description: Full multi-step BroxLab development workflow for PHP, Twig, Node, prompts, and frontend assets
 license: Complete terms in LICENSE.txt
 ---
 
 ## BroxLab Full Development Workflow
 
-Use this skill for end-to-end BroxLab development: planning, implementation, validation, review, and delivery.
+**For complete guidance:** Read [`CORE_RULES.md`](CORE_RULES.md) → [`AGENTS.md`](AGENTS.md) → [`README.md`](README.md)
 
-### 1. Understand the task
+### Quick Start
 
-- Confirm the feature, bug, or enhancement scope.
-- Identify the affected layers: backend logic, routes, Twig templates, Node services, frontend assets, or deployment.
-- Review project docs and conventions: `AGENTS.md`, `README.md`, `copilot-instructions.md`, `system/prompts/`, and existing root `SKILL.md`.
-- If the task changes user-facing flows, locate the relevant route and template before editing.
+1. **Understand** the task scope and affected layers
+2. **Read** the relevant code first
+3. **Make** the smallest change that solves the issue
+4. **Verify** syntax and lint immediately
+5. **Rebuild** assets if frontend changed: `npm run build:prod`
+6. **Validate** with `npm run validate` before finishing
 
-### 2. Locate the right files
+### Layers & Locations
 
-- Backend controllers, services, and middleware: `app/Controllers/`, `app/Models/`, `app/Helpers/`, `app/Middleware/`
-- Routing: `app/Routes/Router.php`
-- Views and UI templates: `app/Views/`
-- Entry and app bootstrap: `public_html/index.php`
-- Node service logic: `src/`
-- Build tooling and scripts: `build/`
-- Frontend source assets: `public_html/assets/`
-- System prompts and agent assets: `system/prompts/`
+| Layer | Path | When To Edit |
+|-------|------|--------------|
+| Routes | `app/Controllers/` | New endpoints, HTTP logic |
+| Data | `app/Models/` | Database access, queries |
+| Utils | `app/Helpers/` | Reusable functions |
+| Views | `app/Views/` | HTML/Twig templates |
+| Frontend | `public_html/assets/` | UI, CSS, JavaScript |
+| Node/TS | `src/` | Backend services |
+| Prompts | `system/prompts/` | AI behavior, templates |
 
-### 3. Apply BroxLab development rules
+### Rules (Non-Negotiable)
 
-- Prefer existing helpers and models instead of adding new duplicates.
-- Use prepared SQL statements with explicit column lists.
-- Validate and sanitize user input everywhere.
-- Preserve CSRF protection on all mutating actions.
-- Do not modify generated bundles under `public_html/assets/**/dist/` directly.
-- Keep UI/UX changes consistent with the current app design.
+✅ **Always:**
+- Use prepared SQL statements (never raw SQL)
+- List explicit columns in SELECT (never `SELECT *`)
+- Filter soft deletes: `WHERE deleted_at IS NULL`
+- Keep CSRF tokens on POST/PUT/DELETE
+- Validate and sanitize user input
+- Use kebab-case for JS/CSS file names
+- Use `{{ withAssetVersion() }}` for asset links
 
-### 4. Implement incrementally
+❌ **Never:**
+- Edit files in `public_html/assets/**/dist/` directly
+- Use raw SQL or raw string concatenation
+- Forget to rebuild: `npm run build:prod`
+- Skip validation: `npm run validate`
 
-- Make focused changes with a single purpose per commit.
-- Separate concerns: backend business logic in PHP, presentation in Twig, asset logic in JS/CSS.
-- Add tests or update existing ones when appropriate.
-- Document any non-obvious behavior in code comments or README notes.
+### Prompts/Agents
+- Edit files in `system/prompts/`, `.kilo/`, `.ai/`
+- Reference `CORE_RULES.md` instead of duplicating content
+- Keep files concise and linked to core documentation
 
-### 5. Validate continuously
+### Validation Checklist
 
-- PHP syntax check: `php -l path/to/file.php`
-- Lint JS/TS: `npm run lint`
-- Type check: `npm run type-check`
-- Run tests: `npm run test:run`
-- Check assets: `npm run check:assets`
-- Full validation gate: `npm run validate`
+```bash
+npm run validate  # Runs all checks below
+```
 
-### 6. Rebuild assets when needed
+Individual checks:
+- `php -l path/to/file.php` — PHP syntax
+- `npm run lint` — Code style
+- `npm run type-check` — TypeScript types
+- `npm run test:run` — Unit tests
+- `npm run check:assets` — Asset naming
 
-- After changing frontend sources in `public_html/assets/` or Node code in `src/`, rebuild using the project’s build tools.
-- Verify generated output and ensure no direct edits were made in `public_html/assets/**/dist/`.
+### Decision Tree
 
-### 7. Review and finalize
+**Is it backend logic?** → Focus on `app/Controllers/`, `app/Models/`, `app/Helpers/`
 
-- Review the full code path and user flow.
-- Confirm no security, validation, or UI regressions were introduced.
-- Keep the diff small and relevant to the task.
-- Use the validation commands above before marking the work complete.
+**Is it frontend UI?** → Focus on `app/Views/`, `public_html/assets/{js,css}/`
 
-## Decision checkpoints
+**Does it change the database?** → Use prepared statements, explicit columns, soft deletes
 
-- Backend-only task? Focus on `app/Controllers/`, `app/Models/`, `app/Helpers/`, and `app/Middleware/`.
-- Template/UI task? Focus on `app/Views/`, `public_html/assets/`, and the build pipeline.
-- Database or query change? Use explicit columns and prepared statements.
-- Prompt/agent update? Use `system/prompts/` and preserve existing prompt style.
-- Release readiness? Run `npm run validate` and verify that assets are rebuilt.
+**Is it a prompt/agent update?** → Reference CORE_RULES.md, keep files thin
 
-## Example prompts
+### Workflow Example (Backend API)
 
-- "Use the BroxLab full development workflow to implement a backend bug fix and validate the changes."
-- "Apply the BroxLab skill to review a UI enhancement across Twig, JS, and build assets."
-- "Help me follow the BroxLab dev workflow for a feature that spans PHP, routes, and frontend assets."
+1. Read existing Model patterns
+2. Create `app/Models/FeatureModel.php` with prepared statements
+3. Create `app/Controllers/FeatureController.php` with routes + middleware
+4. Add Controller route: `$router->post('/api/feature', ['middleware' => ['auth', 'csrf']], ...)`
+5. Create view if needed: `app/Views/features/list.twig`
+6. Add DB schema: `Database/feature_table.sql`
+7. Validate: `npm run validate`
+
+### Key Gotchas
+
+| Issue | Fix |
+|-------|-----|
+| CSS not updating | Run `npm run clean && npm run build` |
+| Routes not found | Use `grep -r "\$router->" app/Controllers/` to list all |
+| Old JS cached | Hard refresh browser (Ctrl+Shift+R) |
+| SELECT * in queries | Always list columns: `SELECT id, name FROM table` |
+| Forgot soft delete filter | Add `WHERE deleted_at IS NULL` to WHERE clause |
+| Building fails | Check kebab-case file names in `public_html/assets/` |
+
+### Essential References
+
+- **Minimal rules:** [`CORE_RULES.md`](CORE_RULES.md)
+- **Architecture & patterns:** [`AGENTS.md`](AGENTS.md)
+- **Project overview:** [`README.md`](README.md)
+- **Backend workflow:** [`.ai/backend-tasks.skill.md`](.ai/backend-tasks.skill.md)
+- **Frontend workflow:** [`.ai/frontend-tasks.skill.md`](.ai/frontend-tasks.skill.md)
+- **Prompt templates:** [`system/prompts/`](system/prompts/)
+
+### Quick Commands
+
+```bash
+npm run dev              # Watch + rebuild (development)
+npm run build:prod      # Production build (minified)
+npm run lint            # Check code style
+npm run type-check      # TypeScript validation
+npm run test:run        # Run tests
+npm run validate        # Full validation gate
+php -l file.php         # Check PHP syntax
+```

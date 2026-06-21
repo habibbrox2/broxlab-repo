@@ -65,6 +65,7 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
     $router->post(
         '/store',
         function () use ($twig, $roleModel, $permissionModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_ROLES_CREATE, 'You do not have permission to create roles.');
             $rawData = $_POST;
             $data = array_map('sanitize_input', $rawData);
 
@@ -132,6 +133,7 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
     $router->post(
         '/{id}/update',
         function ($id) use ($roleModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_ROLES_EDIT, 'You do not have permission to edit roles.');
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -176,6 +178,7 @@ $router->group('/admin/roles', ['middleware' => ['auth', 'admin_only']], functio
     $router->post(
         '/{id}/delete',
         function ($id) use ($roleModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_ROLES_DELETE, 'You do not have permission to delete roles.');
             $role = $roleModel->getById($id);
 
             if (!$role) {
@@ -260,6 +263,7 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
     $router->post(
         '/store',
         function () use ($twig, $permissionModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_PERMISSIONS_CREATE, 'You do not have permission to create permissions.');
             $rawData = $_POST;
             $data = array_map('sanitize_input', $rawData);
 
@@ -316,6 +320,7 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
     $router->post(
         '/{id}/update',
         function ($id) use ($permissionModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_PERMISSIONS_EDIT, 'You do not have permission to edit permissions.');
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -347,6 +352,7 @@ $router->group('/admin/permissions', ['middleware' => ['auth', 'admin_only']], f
     $router->post(
         '/{id}/delete',
         function ($id) use ($permissionModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_PERMISSIONS_DELETE, 'You do not have permission to delete permissions.');
             $permission = $permissionModel->getById($id);
 
             if (!$permission) {
@@ -411,6 +417,7 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
     $router->post(
         '/{userId}/assign/{roleId}',
         function ($userId, $roleId) use ($userModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_ROLES_ASSIGN, 'You do not have permission to assign roles.');
             if (!$userModel->assignRole($userId, $roleId)) {
                 json_response(['error' => 'Failed to assign role'], 400);
             }
@@ -464,7 +471,7 @@ $router->group('/api/user-roles', ['middleware' => ['auth', 'admin_only']], func
 // ====================================
 // RBAC INFO API ENDPOINTS
 // ====================================
-$router->group('/api/rbac', [], function ($router) use ($twig, $roleModel, $permissionModel, $userModel) {
+$router->group('/api/rbac', ['middleware' => ['auth', 'admin_only']], function ($router) use ($twig, $roleModel, $permissionModel, $userModel) {
 
     // Get all roles (API)
     $router->get(

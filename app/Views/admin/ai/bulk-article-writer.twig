@@ -4,254 +4,271 @@
 
 {% block stylesheets %}
 <style>
-  .bulk-writer { max-width: 1400px; }
-  .bulk-card {
-    background: var(--bs-card-bg, #fff);
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: box-shadow .2s ease;
-  }
-  .bulk-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-  .bulk-card h5 {
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-  }
-  .bulk-card h5 .bi { font-size: 1.25rem; color: var(--bs-primary, #0d6efd); }
-
-  .csv-dropzone {
-    border: 2px dashed var(--bs-border-color, #adb5bd);
-    border-radius: 12px;
-    padding: 2.5rem 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all .25s ease;
-    background: var(--bs-gray-100, #f8f9fa);
-  }
-  .csv-dropzone:hover, .csv-dropzone.dragover {
-    border-color: var(--bs-primary, #0d6efd);
-    background: rgba(var(--bs-primary-rgb,13,110,253),0.04);
-    transform: scale(1.01);
-  }
-  .csv-dropzone-icon { font-size: 2.5rem; color: var(--bs-primary, #0d6efd); margin-bottom: .75rem; }
-  .csv-dropzone-text { font-size: .95rem; color: var(--bs-secondary-color, #6c757d); margin-bottom: .5rem; }
-  .csv-dropzone-hint { font-size: .8rem; color: var(--bs-secondary-color, #adb5bd); }
-  .csv-preview-table { font-size: .875rem; }
-  .csv-preview-table th {
-    white-space: nowrap;
-    background: var(--bs-gray-100, #f8f9fa);
-    position: sticky;
-    top: 0;
-  }
-  .csv-preview-wrap {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 6px;
-  }
-
-  .step-indicator { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-  .step-badge {
-    display: flex; align-items: center; gap: .5rem;
-    padding: .4rem .9rem; border-radius: 20px; font-size: .8rem; font-weight: 500;
-    background: var(--bs-gray-200, #e9ecef);
-    color: var(--bs-secondary-color, #6c757d);
-    transition: all .25s ease;
-  }
-  .step-badge.active { background: var(--bs-primary, #0d6efd); color: #fff; }
-  .step-badge.done { background: var(--bs-success, #198754); color: #fff; }
-  .step-badge .step-num {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 50%; font-size: .7rem; font-weight: 700;
-    background: rgba(255,255,255,0.25);
-  }
-
-  .progress-wrapper { padding: 1rem 0; }
-  .progress-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; font-size: .875rem; }
-  .progress-current {
-    background: var(--bs-gray-100, #f8f9fa); border-radius: 6px; padding: .75rem 1rem; margin-top: .5rem;
-    display: flex; align-items: center; gap: .75rem; font-size: .875rem;
-  }
-  .progress-current .spinner-border { width: 1rem; height: 1rem; }
-
-  .article-result-card {
-    border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 8px;
-    margin-bottom: .75rem; transition: all .2s ease; overflow: hidden;
-  }
-  .article-result-card:hover { border-color: var(--bs-primary, #0d6efd); }
-  .article-result-card.success { border-left: 3px solid var(--bs-success, #198754); }
-  .article-result-card.failed { border-left: 3px solid var(--bs-danger, #dc3545); }
-  .article-result-header {
-    padding: .75rem 1rem; display: flex; align-items: center;
-    justify-content: space-between; gap: .75rem; cursor: pointer; user-select: none;
-  }
-  .article-result-header:hover { background: var(--bs-gray-50, #f8f9fa); }
-  .article-result-title { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .article-result-meta { font-size: .75rem; color: var(--bs-secondary-color, #6c757d); white-space: nowrap; }
-  .article-result-body { padding: .75rem 1rem 1rem; border-top: 1px solid var(--bs-border-color, #eee); display: none; }
-  .article-result-body.open { display: block; }
-  .article-result-body .article-preview-content {
-    max-height: 300px; overflow-y: auto; font-size: .85rem; line-height: 1.6;
-    background: var(--bs-gray-50, #f8f9fa); border-radius: 4px; padding: .75rem;
-  }
-  .article-result-body .article-preview-content h1 { font-size: 1.1rem; }
-  .article-result-body .article-preview-content h2 { font-size: 1rem; }
-  .article-result-body .article-preview-content h3 { font-size: .9rem; }
-
-  .publish-article-checkbox { width: 18px; height: 18px; cursor: pointer; }
-
-  .summary-stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem; margin-bottom: 1rem;
-  }
-  .stat-card {
-    text-align: center; padding: 1rem .75rem; border-radius: 8px;
-    background: var(--bs-gray-50, #f8f9fa); border: 1px solid var(--bs-border-color, #dee2e6);
-  }
-  .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
-  .stat-card .stat-label { font-size: .75rem; color: var(--bs-secondary-color, #6c757d); margin-top: .25rem; }
-  .stat-card.success .stat-value { color: var(--bs-success, #198754); }
-  .stat-card.failed .stat-value { color: var(--bs-danger, #dc3545); }
-  .stat-card.total .stat-value { color: var(--bs-primary, #0d6efd); }
-  .stat-card.time .stat-value { color: var(--bs-warning, #ffc107); font-size: 1.2rem; }
-
-  .sample-csv-btn { font-size: .8rem; cursor: pointer; text-decoration: none; }
-  .sample-csv-btn:hover { text-decoration: underline; }
-
-  @media (max-width: 576px) {
-    .bulk-card { padding: 1rem; }
-    .csv-dropzone { padding: 1.5rem 1rem; }
-    .step-badge { font-size: .7rem; padding: .3rem .6rem; }
-    .summary-stats { grid-template-columns: repeat(2, 1fr); }
-  }
+ .bulk-writer { max-width: 1400px; }
+ .csv-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: #f8fafc;
+ }
+ .csv-dropzone:hover, .csv-dropzone.dragover {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.04);
+  transform: scale(1.01);
+ }
+ .csv-dropzone-icon { font-size: 2.5rem; color: #6366f1; margin-bottom: 0.75rem; }
+ .csv-dropzone-text { font-size: 0.95rem; color: #64748b; margin-bottom: 0.5rem; }
+ .csv-dropzone-hint { font-size: 0.8rem; color: #94a3b8; }
+ .csv-preview-table { font-size: 0.875rem; }
+ .csv-preview-table th {
+  white-space: nowrap;
+  background: #f1f5f9;
+  position: sticky;
+  top: 0;
+ }
+ .csv-preview-wrap {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+ }
+ .step-indicator { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+ .step-badge {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500;
+  background: #e2e8f0; color: #64748b; transition: all 0.25s ease;
+ }
+ .step-badge.active { background: #6366f1; color: #fff; }
+ .step-badge.done { background: #059669; color: #fff; }
+ .step-badge .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; font-weight: 700;
+  background: rgba(255,255,255,0.25);
+ }
+ .progress-wrapper { padding: 1rem 0; }
+ .progress-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.875rem; }
+ .progress-current {
+  background: #f1f5f9; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-top: 0.5rem;
+  display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem;
+ }
+ .article-result-card {
+  border: 1px solid #e2e8f0; border-radius: 0.5rem;
+  margin-bottom: 0.75rem; transition: all 0.2s ease; overflow: hidden;
+ }
+ .article-result-card:hover { border-color: #6366f1; }
+ .article-result-card.success { border-left: 3px solid #059669; }
+ .article-result-card.failed { border-left: 3px solid #dc2626; }
+ .article-result-header {
+  padding: 0.75rem 1rem; display: flex; align-items: center;
+  justify-content: space-between; gap: 0.75rem; cursor: pointer; user-select: none;
+ }
+ .article-result-header:hover { background: #f8fafc; }
+ .article-result-title { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .article-result-meta { font-size: 0.75rem; color: #64748b; white-space: nowrap; }
+ .article-result-body { padding: 0.75rem 1rem 1rem; border-top: 1px solid #f1f5f9; display: none; }
+ .article-result-body.open { display: block; }
+ .article-result-body .article-preview-content {
+  max-height: 300px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6;
+  background: #f8fafc; border-radius: 0.25rem; padding: 0.75rem;
+ }
+ .summary-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem; margin-bottom: 1rem;
+ }
+ .stat-card {
+  text-align: center; padding: 1rem 0.75rem; border-radius: 0.5rem;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+ }
+ .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+ .stat-card .stat-label { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+ .stat-card.success .stat-value { color: #059669; }
+ .stat-card.failed .stat-value { color: #dc2626; }
+ .stat-card.total .stat-value { color: #6366f1; }
+ .stat-card.time .stat-value { color: #f59e0b; font-size: 1.2rem; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="bulk-writer">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div>
-      <h4 class="fw-bold mb-1"><i class="bi bi-boxes me-2"></i> Bulk Article Generator</h4>
-      <p class="text-muted mb-0 small">Upload a CSV of topics to generate articles in batches</p>
-    </div>
-    <div>
-      <a href="/admin/ai/article-writer" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-pencil-square me-1"></i> Single Article Writer
+<div class="bulk-writer w-full px-4 sm:px-6 py-4 space-y-4">
+    {# ── Gradient Page Header ── #}
+    <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+     <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+      <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+      <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+     </div>
+     <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+       <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+        <i class="lucide lucide-boxes w-6 h-6"></i>
+       </div>
+       <div>
+        <h1 class="text-xl font-black tracking-tight sm:text-2xl">Bulk Article Generator</h1>
+        <p class="mt-1 text-sm text-indigo-200/80">Upload a CSV of topics to generate articles in batches.</p>
+       </div>
+      </div>
+      <a href="/admin/ai/article-writer" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+       <i class="lucide lucide-pencil w-3.5 h-3.5"></i> Single Article Writer
       </a>
+     </div>
     </div>
-  </div>
 
-  <div class="step-indicator">
-    <span class="step-badge active" data-step="1">
-      <span class="step-num">1</span> Upload CSV
-    </span>
-    <span class="step-badge" data-step="2">
-      <span class="step-num">2</span> Review Topics
-    </span>
-    <span class="step-badge" data-step="3">
-      <span class="step-num">3</span> Generate
-    </span>
-    <span class="step-badge" data-step="4">
-      <span class="step-num">4</span> Publish
-    </span>
-  </div>
+    <div class="step-indicator">
+        <span class="step-badge active" data-step="1">
+            <span class="step-num">1</span> Upload CSV
+        </span>
+        <span class="step-badge" data-step="2">
+            <span class="step-num">2</span> Review Topics
+        </span>
+        <span class="step-badge" data-step="3">
+            <span class="step-num">3</span> Generate
+        </span>
+        <span class="step-badge" data-step="4">
+            <span class="step-num">4</span> Publish
+        </span>
+    </div>
 
-  {# Step 1 #}
-  <div class="bulk-card" id="step1">
-    <h5><i class="bi bi-upload"></i> Step 1: Upload Your Topics</h5>
-    <div class="row g-3 mb-3">
-      <div class="col-md-8">
-        <div class="csv-dropzone" id="csvDropzone">
-          <div class="csv-dropzone-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
-          <div class="csv-dropzone-text">Drop a CSV file here, or click to browse</div>
-          <div class="csv-dropzone-hint">CSV must have a <strong>topic</strong> column (first column). Optional: tone, length, language, keywords, style</div>
-          <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" class="d-none">
+    {# Step 1: Upload #}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" id="step1">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-upload text-indigo-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Step 1: Upload Your Topics</h2>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="bulk-card h-100" style="margin-bottom:0;">
-          <h6 class="fw-semibold mb-2"><i class="bi bi-info-circle"></i> CSV Format</h6>
-          <p class="small text-muted mb-2">Required: <code>topic</code>. Optional columns let you override settings per article.</p>
-          <button type="button" class="btn btn-sm btn-outline-primary" id="downloadSampleCsv">
-            <i class="bi bi-download me-1"></i> Download Sample CSV
-          </button>
+        <div class="p-5">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-12 mb-3">
+                <div class="md:col-span-8">
+                    <div class="csv-dropzone" id="csvDropzone">
+                        <div class="csv-dropzone-icon"><i class="lucide lucide-file-spreadsheet"></i></div>
+                        <div class="csv-dropzone-text">Drop a CSV file here, or click to browse</div>
+                        <div class="csv-dropzone-hint">CSV must have a <strong>topic</strong> column (first column). Optional: tone, length, language, keywords, style</div>
+                        <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" class="hidden">
+                    </div>
+                </div>
+                <div class="md:col-span-4">
+                    <div class="rounded-xl border border-slate-200 bg-white shadow-sm h-full">
+                        <div class="p-4">
+                            <h6 class="font-semibold mb-2 flex items-center gap-2">
+                                <i class="lucide lucide-info text-indigo-600"></i> CSV Format
+                            </h6>
+                            <p class="text-xs text-slate-500 mb-2">Required: <code>topic</code>. Optional columns let you override settings per article.</p>
+                            <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50" id="downloadSampleCsv">
+                                <i class="lucide lucide-download"></i> Download Sample CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="csvUploadStatus" class="hidden"></div>
+            <div id="csvPreviewSection" class="hidden">
+                <hr class="my-4 border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h6 class="font-semibold mb-0"><span id="csvTopicCount">0</span> topics found</h6>
+                    <div class="flex gap-2">
+                        <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50" id="clearCsvBtn">
+                            <i class="lucide lucide-trash-2"></i> Clear
+                        </button>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700" id="generateAllBtn">
+                            <i class="lucide lucide-wand"></i> Generate All Articles
+                        </button>
+                    </div>
+                </div>
+                <div class="csv-preview-wrap">
+                    <table class="w-full text-sm csv-preview-table mb-0">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">#</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Topic</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Tone</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Length</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Language</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Keywords</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Style</th>
+                            </tr>
+                        </thead>
+                        <tbody id="csvPreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="csvEmptyState" class="text-center py-4 text-slate-500">
+                <i class="lucide lucide-inbox" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
+                <span>Upload a CSV to get started</span>
+            </div>
         </div>
-      </div>
     </div>
-    <div id="csvUploadStatus" class="d-none"></div>
-    <div id="csvPreviewSection" class="d-none">
-      <hr>
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="fw-semibold mb-0"><span id="csvTopicCount">0</span> topics found</h6>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-danger btn-sm" id="clearCsvBtn"><i class="bi bi-trash me-1"></i> Clear</button>
-          <button type="button" class="btn btn-primary btn-sm" id="generateAllBtn"><i class="bi bi-magic me-1"></i> Generate All Articles</button>
+
+    {# Step 3: Progress #}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden hidden" id="step3Card">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-wand text-indigo-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Generation Progress</h2>
+            </div>
         </div>
-      </div>
-      <div class="csv-preview-wrap">
-        <table class="table table-sm table-hover csv-preview-table mb-0">
-          <thead><tr>
-            <th style="width:40px">#</th><th>Topic</th><th>Tone</th><th>Length</th><th>Language</th><th>Keywords</th><th>Style</th>
-          </tr></thead>
-          <tbody id="csvPreviewBody"></tbody>
-        </table>
-      </div>
+        <div class="p-5">
+            <div class="progress-wrapper">
+                <div class="progress-status">
+                    <span id="progressLabel">Starting...</span>
+                    <span id="progressCount">0 / 0</span>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div class="h-full rounded-full bg-indigo-600 transition-all duration-300" id="progressBar" style="width:0%"></div>
+                </div>
+                <div class="progress-current hidden" id="progressCurrentArticle">
+                    <div class="inline-spinner inline-spinner-sm text-indigo-600" role="status"></div>
+                    <span id="progressCurrentText">Generating article...</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="csvEmptyState" class="text-center py-4 text-muted">
-      <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
-      <span>Upload a CSV to get started</span>
-    </div>
-  </div>
 
-  {# Step 3 - Progress #}
-  <div class="bulk-card d-none" id="step3Card">
-    <h5><i class="bi bi-magic"></i> Generation Progress</h5>
-    <div class="progress-wrapper">
-      <div class="progress-status">
-        <span id="progressLabel">Starting...</span>
-        <span id="progressCount">0 / 0</span>
-      </div>
-      <div class="progress" style="height:8px;">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" style="width:0%"></div>
-      </div>
-      <div class="progress-current d-none" id="progressCurrentArticle">
-        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-        <span id="progressCurrentText">Generating article...</span>
-      </div>
+    {# Step 4: Results #}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden hidden" id="step4Card">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+            <div class="flex items-center gap-2">
+                <i class="lucide lucide-clipboard-check text-emerald-500" style="width:1.125em;height:1.125em;"></i>
+                <h2 class="text-sm font-semibold text-slate-900">Generation Results</h2>
+            </div>
+        </div>
+        <div class="p-5">
+            <div id="resultsSummary" class="hidden">
+                <div class="summary-stats" id="resultsStats"></div>
+            </div>
+            <div id="resultsActions" class="flex gap-2 flex-wrap mb-3 hidden">
+                <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700" id="publishSelectedBtn">
+                    <i class="lucide lucide-check-circle"></i> Publish Selected
+                </button>
+                <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50" id="selectAllResultsBtn">
+                    <i class="lucide lucide-check-check"></i> Select All
+                </button>
+                <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" id="deselectAllResultsBtn">
+                    <i class="lucide lucide-x"></i> Deselect All
+                </button>
+                <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" id="backToUploadBtn">
+                    <i class="lucide lucide-arrow-left"></i> New Batch
+                </button>
+            </div>
+            <div id="articlesList"></div>
+            <div id="publishProgress" class="hidden mt-3">
+                <hr class="my-4 border-slate-200">
+                <h6 class="font-semibold mb-2 flex items-center gap-2">
+                    <i class="lucide lucide-send text-indigo-600"></i> Publishing...
+                </h6>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div class="h-full rounded-full bg-emerald-600 transition-all duration-300" id="publishProgressBar" style="width:0%"></div>
+                </div>
+            </div>
+            <div id="publishStatus" class="hidden mt-3"></div>
+        </div>
     </div>
-  </div>
 
-  {# Step 4 - Results #}
-  <div class="bulk-card d-none" id="step4Card">
-    <h5><i class="bi bi-journal-check"></i> Generation Results</h5>
-    <div id="resultsSummary" class="d-none">
-      <div class="summary-stats" id="resultsStats"></div>
-    </div>
-    <div id="resultsActions" class="d-flex gap-2 flex-wrap mb-3 d-none">
-      <button type="button" class="btn btn-success" id="publishSelectedBtn"><i class="bi bi-check2-circle me-1"></i> Publish Selected</button>
-      <button type="button" class="btn btn-outline-primary" id="selectAllResultsBtn"><i class="bi bi-check-all me-1"></i> Select All</button>
-      <button type="button" class="btn btn-outline-secondary" id="deselectAllResultsBtn"><i class="bi bi-x me-1"></i> Deselect All</button>
-      <button type="button" class="btn btn-outline-secondary" id="backToUploadBtn"><i class="bi bi-arrow-left me-1"></i> New Batch</button>
-    </div>
-    <div id="articlesList"></div>
-    <div id="publishProgress" class="d-none mt-3">
-      <hr>
-      <h6 class="fw-semibold mb-2"><i class="bi bi-send"></i> Publishing...</h6>
-      <div class="progress" style="height:6px;">
-        <div class="progress-bar bg-success" id="publishProgressBar" style="width:0%"></div>
-      </div>
-    </div>
-    <div id="publishStatus" class="d-none mt-3"></div>
-  </div>
-
-  <div id="bulkWriterStatus" class="d-none"></div>
+    <div id="bulkWriterStatus" class="hidden"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ asset('/assets/js/admin-bulk-article-writer.js') }}"></script>
+<script type="module" src="{{ asset('/assets/js/dist/admin-bulk-article-writer.js') }}"></script>
 {% endblock %}

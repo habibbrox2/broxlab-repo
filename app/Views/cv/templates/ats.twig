@@ -1,156 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ cv.title }}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 10pt;
-            line-height: 1.3;
-            color: #000;
-            background: #fff;
-        }
-        
-        .container {
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 10mm;
-        }
-        
-        .header {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        
-        .header h1 {
-            font-size: 16pt;
-            font-weight: bold;
-        }
-        
-        .section {
-            margin-bottom: 12px;
-        }
-        
-        .section-title {
-            font-size: 11pt;
-            font-weight: bold;
-            text-decoration: underline;
-            margin-bottom: 5px;
-        }
-        
-        .item {
-            margin-bottom: 8px;
-            margin-left: 10px;
-        }
-        
-        .item-title {
-            font-weight: bold;
-        }
-        
-        .item-subtitle {
-            font-style: normal;
-        }
-        
-        .item-date {
-            font-style: normal;
-        }
-        
-        .item-content {
-            margin-left: 15px;
-        }
-        
-        .skills-list {
-            margin-left: 15px;
-        }
-        
-        /* ATS-friendly: no complex tables, no floating elements */
-        p, div {
-            display: block;
-        }
-        
-        /* Avoid fancy formatting that ATS can't read */
-        .no-graphics {
-            border: none;
-            background: none;
-        }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>{{ cv.title }}</title>
+ <style>
+ * { margin: 0; padding: 0; box-sizing: border-box; }
+ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10pt; line-height: 1.35; color: #000; background: #fff; }
+ .cv-container { max-width: 210mm; margin: 0 auto; padding: 12mm 15mm; }
+ .cv-header { margin-bottom: 14px; border-bottom: 2px solid #059669; padding-bottom: 8px; }
+ .cv-photo-name { display: flex; align-items: center; gap: 12px; }
+ .cv-photo { width: 60px; height: 60px; flex-shrink: 0; background: #ECFDF5; border: 1px solid #A7F3D0; display: flex; align-items: center; justify-content: center; }
+ .cv-photo img { width: 100%; height: 100%; object-fit: cover; }
+ .cv-photo-placeholder { font-size: 1rem; color: #059669; font-weight: bold; }
+ .cv-name { font-size: 16pt; font-weight: bold; color: #059669; margin-bottom: 2px; }
+ .cv-job-title { font-size: 10pt; color: #374151; }
+ .cv-contact { margin-top: 6px; font-size: 9pt; color: #374151; }
+ .cv-contact span:not(:last-child)::after { content: ' | '; color: #9CA3AF; }
+ .cv-section { margin-bottom: 10px; page-break-inside: avoid; }
+ .section-title { font-size: 11pt; font-weight: bold; color: #059669; text-decoration: underline; margin-bottom: 4px; padding-top: 4px; border-top: 1px solid #D1FAE5; }
+ .cv-item { margin-bottom: 8px; page-break-inside: avoid; }
+ .item-title { font-weight: bold; }
+ .item-subtitle { font-style: normal; color: #374151; }
+ .item-date { color: #374151; }
+ .item-description { margin-left: 10px; font-size: 9.5pt; }
+ .skills-list { margin-left: 10px; font-size: 9.5pt; }
+ .summary-text { font-size: 10pt; margin-bottom: 6px; }
+ @media print {
+   body { font-size: 9pt; }
+   .cv-container { padding: 0; }
+   .cv-section { page-break-inside: avoid; }
+   .cv-item { page-break-inside: avoid; }
+ }
+ </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>{{ cv.title }}</h1>
-        </div>
-
-        <!-- Sections -->
-        {% for section in sections %}
-            <div class="section">
-                <h2 class="section-title">{{ section.title|upper }}</h2>
-                
-                {% if section.section_type == 'summary' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            {{ item.content.text ?? '' }}
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'experience' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.position ?? '' }}</span> - 
-                            <span class="item-subtitle">{{ item.content.company ?? '' }}</span> - 
-                            <span class="item-date">{{ item.content.start_date ?? '' }} to {{ item.content.end_date ?? 'Present' }}</span>
-                            <div class="item-content">
-                                {{ item.content.description ?? '' }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'education' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.degree ?? '' }}</span> - 
-                            <span class="item-subtitle">{{ item.content.institution ?? '' }}</span> - 
-                            <span class="item-date">{{ item.content.start_date ?? '' }} to {{ item.content.end_date ?? '' }}</span>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'skills' %}
-                    <div class="skills-list">
-                        {% for item in section.items %}
-                            {{ item.content.name ?? '' }}{% if not loop.last %}; {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                {% elseif section.section_type == 'projects' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.name ?? '' }}</span>
-                            <div class="item-content">
-                                {{ item.content.description ?? '' }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                    
-                {% elseif section.section_type == 'certifications' %}
-                    {% for item in section.items %}
-                        <div class="item">
-                            <span class="item-title">{{ item.content.name ?? '' }}</span> - 
-                            <span class="item-subtitle">{{ item.content.issuer ?? '' }}</span> - 
-                            <span class="item-date">{{ item.content.date ?? '' }}</span>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
+<div class="cv-container">
+  <header class="cv-header">
+    {% set photo_url = cv.profile_photo|default('') %}
+    <div class="cv-photo-name">
+      {% if photo_url %}
+      <div class="cv-photo"><img src="{{ photo_url }}" alt="{{ cv.title }}" /></div>
+      {% else %}
+      <div class="cv-photo"><span class="cv-photo-placeholder">{{ (cv.title|first)|default('?')|upper }}</span></div>
+      {% endif %}
+      <div>
+        <h1 class="cv-name">{{ cv.title }}</h1>
+        {% for section in sections if section.section_type == 'summary' %}
+          {% for item in section.items %}
+            {% if item.content.job_title %}<div class="cv-job-title">{{ item.content.job_title }}</div>{% endif %}
+          {% endfor %}
         {% endfor %}
+      </div>
     </div>
+    <div class="cv-contact">
+      {% for section in sections if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          {% if item.content.email %}<span>Email: {{ item.content.email }}</span>{% endif %}
+          {% if item.content.phone %}<span>Phone: {{ item.content.phone }}</span>{% endif %}
+          {% if item.content.location %}<span>Location: {{ item.content.location }}</span>{% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </header>
+  {% for section in sections %}
+  <section class="cv-section">
+    <div class="section-title">{{ section.title|upper }}</div>
+    {% if section.section_type == 'summary' %}
+      {% for item in section.items %}
+      <div class="summary-text">{{ item.content.text|default(item.content.summary|default('')) }}</div>
+      {% endfor %}
+    {% elseif section.section_type == 'experience' %}
+      {% for item in section.items %}
+      <div class="cv-item">
+        <span class="item-title">{{ item.content.position|default('Position') }}</span>
+        {% if item.content.company %} &mdash; <span class="item-subtitle">{{ item.content.company }}</span>{% endif %}
+        {% if item.content.location %} ({{ item.content.location }}){% endif %}
+        <br><span class="item-date">{{ item.content.start_date|default('') }} to {{ item.content.end_date|default('Present') }}</span>
+        {% if item.content.description %}<div class="item-description">{{ item.content.description|nl2br }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% elseif section.section_type == 'education' %}
+      {% for item in section.items %}
+      <div class="cv-item">
+        <span class="item-title">{{ item.content.degree|default('Degree') }}{% if item.content.field %} in {{ item.content.field }}{% endif %}</span>
+        {% if item.content.institution %} &mdash; <span class="item-subtitle">{{ item.content.institution }}</span>{% endif %}
+        <br><span class="item-date">{{ item.content.start_date|default('') }} to {{ item.content.end_date|default('') }}</span>
+        {% if item.content.gpa %}<br><span class="item-subtitle">GPA: {{ item.content.gpa }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    {% elseif section.section_type == 'skills' %}
+      <div class="skills-list">
+      {% for item in section.items %}
+        {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+        {{ skills_list|join('; ') }}
+      {% endfor %}
+      </div>
+    {% elseif section.section_type == 'languages' %}
+      <div class="skills-list">
+      {% for item in section.items %}
+        {{ item.content.name }} ({{ item.content.proficiency|default('') }}){% if not loop.last %}; {% endif %}
+      {% endfor %}
+      </div>
+    {% elseif section.section_type == 'projects' %}
+      {% for item in section.items %}
+      <div class="cv-item">
+        <span class="item-title">{{ item.content.name|default('Project') }}</span>
+        {% if item.content.description %}<div class="item-description">{{ item.content.description|nl2br }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% elseif section.section_type == 'certifications' %}
+      {% for item in section.items %}
+      <div class="cv-item">
+        <span class="item-title">{{ item.content.name|default('Certification') }}</span>
+        {% if item.content.issuer %} &mdash; <span class="item-subtitle">{{ item.content.issuer }}</span>{% endif %}
+        {% if item.content.date %} - <span class="item-date">{{ item.content.date }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    {% elseif section.section_type == 'social_links' %}
+      <div class="skills-list">
+      {% for item in section.items %}
+        {{ item.content.platform }}: {{ item.content.url }}{% if not loop.last %} | {% endif %}
+      {% endfor %}
+      </div>
+    {% else %}
+      {% for item in section.items %}
+      <div class="cv-item">
+        <span class="item-title">{{ item.content.title|default(item.content.name|default('')) }}</span>
+        {% if item.content.description or item.content.content %}<div class="item-description">{{ (item.content.description|default(item.content.content|default('')))|nl2br }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
 </body>
 </html>

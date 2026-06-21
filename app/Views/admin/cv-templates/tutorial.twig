@@ -1,0 +1,120 @@
+{% extends "admin/layout.twig" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-book-open w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Tutorial</p>
+                    <h1 class="text-xl font-bold text-white">CV Template Tutorial</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Learn how to create and customize CV templates.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="/admin/cv-templates" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Templates
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="lg:col-span-2 space-y-5">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-file-text w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Getting Started</h3>
+                </div>
+                <div class="p-5 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                    <p>CV templates are built using HTML with Tailwind CSS classes. Each template receives CV data as Twig variables and renders it into a formatted document.</p>
+                    <p>Templates support auto-scaling to fit content on a single page, making them ideal for PDF generation.</p>
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-code w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Template Structure</h3>
+                </div>
+                <div class="p-5 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                    <p>Each template follows this structure:</p>
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-pre overflow-x-auto">&lt;div class="max-w-[210mm] mx-auto bg-white p-8"&gt;
+  &lt;!-- Personal Info --&gt;
+  &lt;h1&gt;{{ cv.full_name }}&lt;/h1&gt;
+  &lt;p&gt;{{ cv.email }} | {{ cv.phone }}&lt;/p&gt;
+
+  &lt;!-- Sections --&gt;
+  {% for section in sections %}
+    &lt;div class="section-{{ section.type }}"&gt;
+      &lt;h2&gt;{{ section.title }}&lt;/h2&gt;
+      {{ section.content|raw }}
+    &lt;/div&gt;
+  {% endfor %}
+&lt;/div&gt;</div>
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-variable w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Available Variables</h3>
+                </div>
+                <div class="p-5">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-100 dark:border-slate-800">
+                                <th class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Variable</th>
+                                <th class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr class="text-sm text-slate-700 dark:text-slate-300">
+                                <td class="px-3 py-2 font-mono text-xs">{{ '{{ cv.full_name }}' }}</td>
+                                <td class="px-3 py-2">Full name of the candidate</td>
+                            </tr>
+                            <tr class="text-sm text-slate-700 dark:text-slate-300">
+                                <td class="px-3 py-2 font-mono text-xs">{{ '{{ cv.email }}' }}</td>
+                                <td class="px-3 py-2">Email address</td>
+                            </tr>
+                            <tr class="text-sm text-slate-700 dark:text-slate-300">
+                                <td class="px-3 py-2 font-mono text-xs">{{ '{{ cv.phone }}' }}</td>
+                                <td class="px-3 py-2">Phone number</td>
+                            </tr>
+                            <tr class="text-sm text-slate-700 dark:text-slate-300">
+                                <td class="px-3 py-2 font-mono text-xs">{{ '{{ sections }}' }}</td>
+                                <td class="px-3 py-2">Array of CV sections</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-5">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-lightbulb w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tips</h3>
+                </div>
+                <div class="p-5">
+                    <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300 list-disc list-inside">
+                        <li>Use semantic HTML for better structure</li>
+                        <li>Include CSS media queries for print</li>
+                        <li>Test templates with sample data</li>
+                        <li>Avoid JavaScript in templates</li>
+                        <li>Use Tailwind classes for styling</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

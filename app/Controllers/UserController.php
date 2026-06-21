@@ -61,6 +61,9 @@ $router->get('/admin/users/create', ['middleware' => ['auth', 'admin_only']], fu
 
 // Store new user
 $router->post('/admin/users/create', ['middleware' => ['auth', 'admin_only']], function () use ($userModel, $roleModel, $mysqli) {
+    // AuthorizationService inline check (defense-in-depth)
+    AuthorizationService::getInstance()->requirePermission(Permissions::PERM_USERS_CREATE, 'You do not have permission to create users.');
+    
     $data = [
         'username' => sanitize_input($_POST['username'] ?? ''),
         'email' => sanitize_input($_POST['email'] ?? ''),
@@ -130,6 +133,8 @@ $router->get('/admin/users/edit', ['middleware' => ['auth', 'admin_only']], func
 
 // Update user
 $router->post('/admin/users/edit', ['middleware' => ['auth', 'admin_only']], function () use ($userModel, $roleModel) {
+    AuthorizationService::getInstance()->requirePermission(Permissions::PERM_USERS_EDIT, 'You do not have permission to edit users.');
+    
     $id = (int)($_POST['id'] ?? 0);
     $user = $userModel->findById($id);
 
@@ -176,9 +181,17 @@ $router->post('/admin/users/edit', ['middleware' => ['auth', 'admin_only']], fun
     exit;
 });
 
-// Delete user
+// Delete user (triple-validation: middleware + service check + controller check)
 $router->post('/admin/users/delete', ['middleware' => ['auth', 'admin_only']], function () use ($userModel) {
+    AuthorizationService::getInstance()->requirePermission(Permissions::PERM_USERS_DELETE, 'You do not have permission to delete users.');
+    
     $id = (int)($_POST['id'] ?? 0);
+    
+    // Belt-and-suspenders: verify the user cannot delete themselves
+    $currentUserId = AuthManager::getCurrentUserId();
+    if ($id === $currentUserId) {
+        throw new ForbiddenException('You cannot delete your own account.', 'SELF_DELETE_DENIED');
+    }
 
     $user = $userModel->findById($id);
     if ($userModel->deleteUser($id)) {
@@ -245,6 +258,7 @@ $router->group('/api/admin/users', ['middleware' => ['auth', 'admin_only']], fun
     $router->post(
         '/delete',
         function () use ($userModel) {
+            AuthorizationService::getInstance()->requirePermission(Permissions::PERM_USERS_DELETE, 'You do not have permission to delete users.');
             header('Content-Type: application/json');
             $id = (int)($_POST['id'] ?? 0);
 

@@ -1,0 +1,231 @@
+import { escapeHtml } from './core.js';
+
+const byIdDefault = (id) => document.getElementById(id);
+const getCsrfTokenDefault = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+function setAlertHtml(container, type, message, strongLabel = '') {
+  if (!container) return;
+  const safeType = escapeHtml(type || 'info');
+  const safeMessage = escapeHtml(message || '');
+  const strong = strongLabel ? `<strong>${escapeHtml(strongLabel)}</strong> ` : '';
+  const icon = safeType === 'success' ? 'check-circle' : 'alert-circle';
+
+  const alertColors = {
+    success: 'bg-emerald-50 border border-emerald-200 text-emerald-800',
+    danger: 'bg-red-50 border border-red-200 text-red-800',
+    info: 'bg-sky-50 border border-sky-200 text-sky-800',
+    warning: 'bg-amber-50 border border-amber-200 text-amber-800',
+  };
+  const alertClass = alertColors[safeType] || alertColors.info;
+  container.innerHTML = `
+        <div class="${alertClass} rounded-xl p-4 flex items-start gap-3" role="alert">
+            <i class="lucide lucide-${icon} mt-0.5 shrink-0"></i>
+            <div class="flex-1 text-sm">${strong}${safeMessage}</div>
+            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0" data-brox-dismiss="alert">
+              <i class="lucide lucide-x"></i>
+            </button>
+        </div>
+    `;
+}
+
+export function initSecurity2FASetup(options = {}) {
+  const byId = options.byId || byIdDefault;
+  const authCode = byId('authCode');
+  if (!authCode) return;
+
+  function verifyCode() {
+    const code = authCode.value.trim();
+    const alertBox = byId('verifyAlert');
+
+    if (!code || code.length !== 6) {
+      setAlertHtml(alertBox, 'danger', 'Please enter a 6-digit code');
+      return;
+    }
+
+    const form = byId('verifyTwoFAForm');
+    if (!form) return;
+    const formData = new FormData(form);
+    formData.set('code', code);
+
+    fetch('/admin/security/2fa/verify', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((response) => {
+        if (response.ok) {
+          setAlertHtml(alertBox, 'success', 'Two-Factor Authentication enabled successfully!');
+          setTimeout(() => {
+            window.location.href = '/admin/security/2fa';
+          }, 2000);
+          return;
+        }
+        setAlertHtml(alertBox, 'danger', 'Invalid code. Please try again.');
+        authCode.value = '';
+        authCode.focus();
+      })
+      .catch(() => {
+        setAlertHtml(alertBox, 'danger', 'An error occurred. Please try again.');
+      });
+  }
+
+  window.copySecret = function (buttonEl) {
+    const secretKey = byId('secretKey');
+    if (!secretKey) return;
+    secretKey.select();
+    document.execCommand('copy');
+    const btn = buttonEl || document.querySelector('button[onclick*="copySecret"]');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="lucide lucide-check mr-1"></i> Copied!';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+    }, 2000);
+  };
+
+  window.goBack = function () {
+    window.location.href = '/admin/security/2fa';
+  };
+
+  authCode.addEventListener('input', (event) => {
+    event.target.value = event.target.value.replace(/[^0-9]/g, '');
+  });
+
+  byId('verifyBtn')?.addEventListener('click', verifyCode);
+}
+
+export function initSecurity2FABackup(options = {}) {
+  const byId = options.byId || byIdDefault;
+  const getCsrfToken = options.getCsrfToken || getCsrfTokenDefault;
+
+  if (!document.querySelector('.code-box')) return;
+
+  window.copyAllBackupCodes = function (buttonEl) {
+    const codeElements = document.querySelectorAll('.code-box code');
+    let allCodes = '';
+    codeElements.forEach((code) => {
+      allCodes += `${code.textContent.trim() }\n`;
+    });
+
+    navigator.clipboard.writeText(allCodes).then(() => {
+      const btn = buttonEl || document.querySelector('button[onclick*="copyAllBackupCodes"]');
+      if (!btn) return;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="lucide lucide-check"></i> Copied!';
+      btn.classList.add('disabled');
+
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('disabled');
+      }, 2000);
+    }).catch(() => {
+      window.showMessage('Failed to copy codes. Please try again.', 'danger');
+    });
+  };
+
+  window.regenerateBackupCodes = function (buttonEl) {
+    const password = byId('password')?.value.trim();
+    if (!password) {
+      window.showMessage('Please enter your password', 'warning');
+      return;
+    }
+
+    const btn = buttonEl || document.querySelector('button[onclick*="regenerateBackupCodes"]');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Generating...';
+
+    fetch('/admin/security/2fa/backup-codes/regenerate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+      body: new URLSearchParams({
+        password: password,
+        csrf_token: getCsrfToken(),
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data?.success) {
+          window.showMessage('New backup codes generated! Refreshing page...', 'success');
+          setTimeout(() => location.reload(), 1500);
+          return;
+        }
+        window.showMessage(`Error: ${ data?.error || 'Failed to generate codes'}`, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
+      })
+      .catch(() => {
+        window.showMessage('An error occurred. Please try again.', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="lucide lucide-refresh-cw"></i> Generate New Codes';
+      });
+  };
+
+  document.querySelectorAll('.code-box').forEach((box) => {
+    box.addEventListener('click', () => {
+      const codeEl = box.querySelector('code');
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.textContent.trim()).then(() => {
+        const originalBg = box.style.backgroundColor;
+        box.style.backgroundColor = '#d4edda';
+        setTimeout(() => {
+          box.style.backgroundColor = originalBg;
+        }, 500);
+      });
+    });
+  });
+}
+
+export function initSecurity2FA(options = {}) {
+  const byId = options.byId || byIdDefault;
+  const getCsrfToken = options.getCsrfToken || getCsrfTokenDefault;
+  const csrfToken = () => getCsrfToken();
+
+  function showAlert(message, type = 'success') {
+    const container = byId('alert-container');
+    const strong = type === 'success' ? 'Success!' : 'Error!';
+    setAlertHtml(container, type, message, strong);
+  }
+
+  function showAlertInModal(container, message, type) {
+    setAlertHtml(container, type, message);
+  }
+
+  function disableTwoFA(event) {
+    const password = byId('disablePassword')?.value || '';
+    const alertBox = byId('disableAlert');
+
+    if (!password) {
+      showAlertInModal(alertBox, 'Please enter your password', 'danger');
+      return;
+    }
+
+    const button = event?.currentTarget || byId('confirmDisableTwoFABtn');
+    if (!button) return;
+    button.disabled = true;
+    button.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Disabling...';
+
+    fetch('/admin/security/2fa/disable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+      body: new URLSearchParams({ password, csrf_token: csrfToken(), }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data?.success) {
+          showAlert('2FA has been disabled successfully');
+          setTimeout(() => location.reload(), 1500);
+          return;
+        }
+        showAlertInModal(alertBox, data?.error || 'Failed to disable 2FA', 'danger');
+        button.disabled = false;
+        button.innerHTML = '<i class="lucide lucide-trash-2 mr-1"></i> Disable 2FA';
+      })
+      .catch(() => {
+        showAlertInModal(alertBox, 'An error occurred. Please try again.', 'danger');
+        button.disabled = false;
+        button.innerHTML = '<i class="lucide lucide-trash-2 mr-1"></i> Disable 2FA';
+      });
+  }
+
+  byId('confirmDisableTwoFABtn')?.addEventListener('click', (event) => disableTwoFA(event));
+}

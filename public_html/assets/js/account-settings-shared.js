@@ -1,4 +1,5 @@
 import { fetchJson } from './shared/fetch-utils.js';
+import { escapeHtml, getCsrfToken, withAssetVersion } from './shared/utils.js';
 
 const PROVIDER_UI = {
   google: { name: 'Google', icon: 'google', color: '#EA4335', btn: 'danger', },
@@ -6,25 +7,13 @@ const PROVIDER_UI = {
   github: { name: 'GitHub', icon: 'github', color: '#333333', btn: 'dark', },
 };
 
-const runtimeAssetVersion = (() => {
-  try {
-    return new URL(import.meta.url).searchParams.get('v') || '';
-  } catch (error) {
-    return '';
-  }
-})();
-
-function withAssetVersion(url) {
-  if (!runtimeAssetVersion) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${encodeURIComponent(runtimeAssetVersion)}`;
-}
-
-function escapeHtml(value) {
-  if (value === null || value === undefined) return '';
-  const div = document.createElement('div');
-  div.textContent = String(value);
-  return div.innerHTML;
+function sanitizeCssColor(color, fallback = '#0d6efd') {
+  if (typeof color !== 'string') return fallback;
+  const value = color.trim();
+  if (!value) return fallback;
+  if (/^#[0-9A-Fa-f]{3,8}$/.test(value)) return value;
+  if (/^[a-zA-Z]+$/.test(value)) return value;
+  return fallback;
 }
 
 function sanitizeCssColor(color, fallback = '#0d6efd') {
@@ -62,31 +51,17 @@ function defaultShowAlert(message, type = 'info', containerId = 'alerts-containe
   }
 
   const alertDiv = document.createElement('div');
-  alertDiv.className = `alert alert-${normalizedType} alert-dismissible fade show`;
+  alertDiv.className = `p-4 rounded-xl border text-sm ${normalizedType === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : normalizedType === 'danger' ? 'bg-red-50 border-red-200 text-red-700' : normalizedType === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-sky-50 border-sky-200 text-sky-700'}`;
   alertDiv.role = 'alert';
   alertDiv.innerHTML = `
-        <i class="bi bi-${normalizedType === 'success' ? 'check-circle-fill' : normalizedType === 'danger' ? 'exclamation-circle-fill' : 'info-circle-fill'} me-2"></i>
+        <i class="lucide ${normalizedType === 'success' ? 'lucide-check-circle' : normalizedType === 'danger' ? 'lucide-alert-circle' : 'lucide-info'} mr-2 h-5 w-5"></i>
         ${escapeHtml(safeMessage)}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="alert" aria-label="Close"></button>
     `;
   container.appendChild(alertDiv);
   setTimeout(() => {
     alertDiv.remove?.();
   }, 5000);
-}
-
-function getCsrfToken(selector) {
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  if (meta?.content) return meta.content;
-
-  if (selector) {
-    const el = document.querySelector(selector);
-    if (el) return el.value || el.content || '';
-  }
-
-  const hidden = document.getElementById('csrf_token');
-  if (hidden?.value) return hidden.value;
-  return '';
 }
 
 function mapErrorCodeToMessage(code, fallbackMessage) {
@@ -142,14 +117,20 @@ function channelPreferenceInputId(channel) {
   return `${key}-notifications`;
 }
 
+const BTN_BORDER_MAP = {
+  danger: 'border-red-300 text-red-600 hover:bg-red-50',
+  primary: 'border-indigo-300 text-indigo-600 hover:bg-indigo-50',
+  dark: 'border-slate-400 text-slate-700 hover:bg-slate-100',
+};
+
 function renderProviders(providersContainer, providers, theme, onLinkProvider) {
   if (!providersContainer) return;
 
   const providerEntries = Object.entries(providers || {});
   if (providerEntries.length === 0) {
     providersContainer.innerHTML = `
-            <div class="alert alert-info small mb-0">
-                <i class="bi bi-info-circle-fill me-2"></i>
+            <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-sm mb-0">
+                <i class="lucide lucide-info mr-2" style="width:1rem;height:1rem;"></i>
                 No OAuth providers are currently available.
             </div>
         `;
@@ -164,15 +145,16 @@ function renderProviders(providersContainer, providers, theme, onLinkProvider) {
     if (theme === 'modern') {
       return `
                 <button type="button" class="modern-btn modern-btn-white modern-btn-sm js-oauth-link-btn" data-provider="${escapeHtml(provider)}">
-                    <i class="bi bi-${icon} me-1"></i> Link ${name} Account
+                    <i class="lucide lucide-${escapeHtml(icon)} mr-1" style="width:1rem;height:1rem;"></i> Link ${name} Account
                 </button>
             `;
     }
 
-    const btnColor = escapeHtml(meta.btn || 'secondary');
+    const btnColor = meta.btn || 'secondary';
+    const btnClasses = BTN_BORDER_MAP[btnColor] || 'border-slate-300 text-slate-700 hover:bg-slate-50';
     return `
-            <button type="button" class="btn btn-outline-${btnColor} btn-sm js-oauth-link-btn" data-provider="${escapeHtml(provider)}">
-                <i class="bi bi-${icon} me-1"></i> Link ${name} Account
+            <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors js-oauth-link-btn ${btnClasses}" data-provider="${escapeHtml(provider)}">
+                <i class="lucide lucide-${escapeHtml(icon)}" style="width:1rem;height:1rem;"></i> Link ${name} Account
             </button>
         `;
   }).join('');
@@ -191,8 +173,8 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
 
   if (!Array.isArray(accounts) || accounts.length === 0) {
     accountsContainer.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle-fill me-2"></i>
+            <div class="p-4 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
+                <i class="lucide lucide-info mr-2" style="width:1rem;height:1rem;"></i>
                 <strong>No linked accounts yet.</strong> Link an account below to get started.
             </div>
         `;
@@ -213,24 +195,24 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
       return `
                 <div class="admin-panel-card mb-3 border-0" style="background-color: #f8f9fa;">
                     <div class="admin-panel-card-body p-3">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-${icon}" style="font-size: 1.5rem; color: ${color};"></i>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="lucide lucide-${escapeHtml(icon)}" style="width:1.5rem;height:1.5rem;color:${color};"></i>
                                 <div>
                                     <h6 class="mb-0">${providerLabel}</h6>
-                                    <small class="text-muted">${email}</small>
+                                    <small class="text-slate-500">${email}</small>
                                 </div>
                             </div>
-                            <span class="badge ${isPrimary ? 'bg-primary' : 'bg-success'}">
-                                <i class="bi bi-${isPrimary ? 'star-fill' : 'check-circle'} me-1"></i>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isPrimary ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">
+                                <i class="lucide lucide-${isPrimary ? 'star' : 'check-circle'} mr-1" style="width:1rem;height:1rem;"></i>
                                 ${isPrimary ? 'Primary' : 'Connected'}
                             </span>
                         </div>
-                        <p class="text-muted small mb-3">Linked on ${escapeHtml(linkedDate)}</p>
-                        <div class="d-flex gap-2">
-                            ${isPrimary ? '' : `<button type="button" class="modern-btn modern-btn-primary modern-btn-sm js-oauth-set-primary" data-provider="${escapeHtml(provider)}"><i class="bi bi-star me-1"></i> Set Primary</button>`}
+                        <p class="text-slate-500 text-sm mb-3">Linked on ${escapeHtml(linkedDate)}</p>
+                        <div class="flex gap-2">
+                            ${isPrimary ? '' : `<button type="button" class="modern-btn modern-btn-primary modern-btn-sm js-oauth-set-primary" data-provider="${escapeHtml(provider)}">                            <i class="lucide lucide-star mr-1" style="width:1rem;height:1rem;"></i> Set Primary</button>`}
                             <button type="button" class="modern-btn modern-btn-danger modern-btn-sm js-oauth-unlink" data-provider="${escapeHtml(provider)}">
-                                <i class="bi bi-unlink me-1"></i> Unlink
+                                <i class="lucide lucide-unlink mr-1" style="width:1rem;height:1rem;"></i> Unlink
                             </button>
                         </div>
                     </div>
@@ -239,21 +221,21 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
     }
 
     return `
-            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <div class="flex justify-between items-center p-3">
                 <div>
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-${icon} me-2 fs-5"></i>
+                    <div class="flex items-center">
+                        <i class="lucide lucide-${escapeHtml(icon)} mr-2" style="width:1.25rem;height:1.25rem;"></i>
                         <div>
-                            <strong class="d-block">${providerLabel} Account</strong>
-                            <small class="text-muted d-block">${email}</small>
-                            <small class="text-muted d-block">Linked: ${escapeHtml(linkedDate)}</small>
+                            <strong class="block text-slate-900">${providerLabel} Account</strong>
+                            <small class="text-slate-500 block">${email}</small>
+                            <small class="text-slate-500 block">Linked: ${escapeHtml(linkedDate)}</small>
                         </div>
-                        ${isPrimary ? '<span class="badge bg-success ms-2">Primary</span>' : ''}
+                        ${isPrimary ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 ml-2">Primary</span>' : ''}
                     </div>
                 </div>
-                <div class="btn-group" role="group">
-                    ${isPrimary ? '' : `<button type="button" class="btn btn-sm btn-outline-secondary js-oauth-set-primary" data-provider="${escapeHtml(provider)}">Set Primary</button>`}
-                    <button type="button" class="btn btn-sm btn-outline-danger js-oauth-unlink" data-provider="${escapeHtml(provider)}">Unlink</button>
+                <div class="flex gap-1" role="group">
+                    ${isPrimary ? '' : `<button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors js-oauth-set-primary" data-provider="${escapeHtml(provider)}">Set Primary</button>`}
+                    <button type="button" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium border border-red-300 text-red-600 hover:bg-red-50 transition-colors js-oauth-unlink" data-provider="${escapeHtml(provider)}">Unlink</button>
                 </div>
             </div>
         `;
@@ -261,7 +243,7 @@ function renderAccounts(accountsContainer, accounts, theme, onSetPrimary, onUnli
 
   accountsContainer.innerHTML = theme === 'modern'
     ? rows
-    : `<div class="list-group list-group-flush">${rows}</div>`;
+    : `<div class="flex flex-col divide-y divide-slate-100">${rows}</div>`;
 
   accountsContainer.querySelectorAll('.js-oauth-set-primary').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -295,7 +277,7 @@ function updatePasswordStrengthMeter(password, config = {}) {
   const meterFill = document.getElementById(config.meterFillId || 'strength-meter-fill');
   if (meterFill) {
     meterFill.style.width = `${Math.round(strength * 100)}%`;
-    meterFill.style.backgroundColor = strength < 0.4 ? '#dc3545' : strength < 0.7 ? '#ffc107' : '#28a745';
+    meterFill.style.backgroundColor = strength < 0.4 ? '#dc2626' : strength < 0.7 ? '#f59e0b' : '#16a34a';
   }
 
   const meterText = document.getElementById(config.meterTextId || 'strength-text');
@@ -523,7 +505,7 @@ export function initAccountSettingsOAuth(options = {}) {
 
   const unlink = async (provider) => {
     const providerLabel = provider.charAt(0).toUpperCase() + provider.slice(1);
-    if (!window.confirm(`Are you sure you want to unlink your ${providerLabel} account?`)) {
+    if (!(await window.showConfirm(`Are you sure you want to unlink your ${providerLabel} account?`))) {
       return;
     }
 
@@ -559,7 +541,7 @@ export function initAccountSettingsOAuth(options = {}) {
     const token = csrfToken();
 
     if (currentHasPassword) {
-      const currentPassword = window.prompt('For security, enter your current password to continue:');
+      const currentPassword = await window.showPrompt('For security, enter your current password to continue:', '');
       if (currentPassword === null) {
         showAlert('Re-authentication was cancelled.', 'warning');
         return false;
@@ -653,8 +635,8 @@ export function initAccountSettingsOAuth(options = {}) {
     if (accountsContainer) {
       accountsContainer.innerHTML = `
                 <div class="text-center py-4">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                    <p class="text-muted small mt-2">Opening ${escapeHtml(normalizedProvider)} sign-in popup...</p>
+                    <div class="inline-spinner inline-spinner-sm text-indigo-600" role="status"></div>
+                    <p class="text-slate-500 text-sm mt-2">Opening ${escapeHtml(normalizedProvider)} sign-in popup...</p>
                 </div>
             `;
     }
@@ -722,8 +704,8 @@ export function initAccountSettingsOAuth(options = {}) {
     if (!accountsContainer) return;
     accountsContainer.innerHTML = `
             <div class="text-center py-4">
-                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                <p class="text-muted small mt-2">Loading your linked accounts...</p>
+                <div class="inline-spinner inline-spinner-sm text-indigo-600" role="status"></div>
+                <p class="text-slate-500 text-sm mt-2">Loading your linked accounts...</p>
             </div>
         `;
 
@@ -809,7 +791,7 @@ export function initAccountPasswordChange(options = {}) {
     const originalText = submitBtn?.innerHTML || '';
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+      submitBtn.innerHTML = '<span class="inline-spinner inline-spinner-sm mr-2"></span>Updating...';
     }
 
     const { data, } = await fetchJson('/user/change-password', {

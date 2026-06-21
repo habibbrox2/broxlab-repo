@@ -1,204 +1,372 @@
 {% extends "admin/layout.twig" %}
-
-{% block title %}{{ page_title }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
-{% set current_page = current_page|default('cv-templates') %}
-
-{% block stylesheets %}
-  <link rel="stylesheet" href="{{ asset('/assets/css/cv-admin.css') }}">
-  <style>
-    .template-editor {
-      min-height: 500px;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 14px;
-      line-height: 1.4;
-    }
-  </style>
-{% endblock %}
-
 {% block content %}
-  <div class="container-fluid py-4 cv-admin-page">
-    <div class="cv-admin-hero">
-      <div>
-        <div class="cv-admin-title">{{ page_title }}</div>
-        <div class="cv-admin-subtitle">
-          {% if mode == 'create' %}
-            Create a new CV template by cloning an existing one.
-          {% else %}
-            Edit the template content and metadata.
-          {% endif %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+
+    {# Page Header Banner #}
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-file-user w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Templates</p>
+                    <h1 class="text-xl font-bold text-white">
+                        {% if mode == 'create' %}
+                            Create Template
+                        {% else %}
+                            Edit Template
+                        {% endif %}
+                    </h1>
+                    <p class="text-sm text-white/60 mt-0.5">
+                        {% if mode == 'create' %}
+                            Create a new CV template by cloning an existing design
+                        {% else %}
+                            Update the template content and metadata
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="/admin/cv-templates" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-arrow-left w-4 h-4"></i> Back
+                </a>
+            </div>
         </div>
-      </div>
-      <div class="cv-admin-hero-actions">
-        <a href="/admin/cv-templates" class="modern-btn modern-btn-outline">
-          <i class="bi bi-arrow-left me-1"></i> Back to Templates
-        </a>
-      </div>
     </div>
 
+    {# Flash Messages #}
     {% if errors is defined and errors is not empty %}
-      <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        <strong>Please fix the following errors:</strong>
-        <ul class="mb-0 mt-2">
-          {% for error in errors %}
-            <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-      </div>
+    <div class="flex items-start gap-3 p-4 rounded-xl mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200/60 dark:border-red-800/40">
+        <i class="lucide lucide-alert-circle w-4 h-4 text-red-600 mt-0.5 flex-shrink-0"></i>
+        <div class="text-sm text-red-800 dark:text-red-200">
+            <strong class="font-semibold">Please fix the following errors:</strong>
+            <ul class="mt-1.5 list-disc list-inside space-y-0.5">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
     {% endif %}
 
-    <div class="row">
-      <div class="col-lg-8">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">Template Details</h5>
-          </div>
-          <div class="card-body">
-            <form method="post" action="{% if mode == 'edit' %}/admin/cv-templates/{{ template_slug }}{% else %}/admin/cv-templates{% endif %}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {# Main Form Grid #}
+    <form method="post" action="{% if mode == 'edit' %}/admin/cv-templates/{{ template_slug }}{% else %}/admin/cv-templates{% endif %}" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_340px] gap-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
-                  <input type="text"
-                         class="form-control"
-                         id="name"
-                         name="name"
-                         value="{{ form_data.name|default(template.name|default('')) }}"
-                         required>
-                  <div class="form-text">Display name for the template</div>
+        {# ── LEFT COLUMN ── #}
+        <div class="space-y-5">
+
+            {# Basic Information Card #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Basic Information</h3>
                 </div>
-                {% if mode == 'create' %}
-                  <div class="col-md-6">
-                    <label for="slug" class="form-label">Slug <span class="text-danger">*</span></label>
-                    <input type="text"
-                           class="form-control"
-                           id="slug"
-                           name="slug"
-                           value="{{ form_data.slug|default('') }}"
-                           pattern="[a-z0-9][a-z0-9-]*"
-                           maxlength="50"
-                           required>
-                    <div class="form-text">URL-friendly identifier (lowercase, alphanumeric, hyphens only)</div>
-                  </div>
-                {% else %}
-                  <div class="col-md-6">
-                    <label class="form-label">Slug</label>
-                    <input type="text" class="form-control" value="{{ template_slug }}" readonly>
-                    <div class="form-text">Slug cannot be changed after creation</div>
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control"
-                          id="description"
-                          name="description"
-                          rows="2"
-                          placeholder="Optional description of the template">{{ form_data.description|default(template.description|default('')) }}</textarea>
-              </div>
-
-              {% if mode == 'create' %}
-                <div class="mb-3">
-                  <label for="base_template" class="form-label">Base Template <span class="text-danger">*</span></label>
-                  <select class="form-select" id="base_template" name="base_template" required>
-                    <option value="">Select a template to clone...</option>
-                    {% for slug, baseTemplate in base_templates %}
-                      <option value="{{ slug }}" {% if form_data.base_template == slug %}selected{% endif %}>
-                        {{ baseTemplate.name }} ({{ slug }})
-                      </option>
-                    {% endfor %}
-                  </select>
-                  <div class="form-text">Choose an existing template as the starting point</div>
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="name" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                                Template Name <span class="text-rose-500 ml-0.5">*</span>
+                            </label>
+                            <input type="text" id="name" name="name"
+                                   value="{{ form_data.name|default(template.name|default('')) }}"
+                                   placeholder="e.g., Modern Professional" required
+                                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 dark:focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600">
+                        </div>
+                        <div>
+                            <label for="slug" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                                Slug <span class="text-rose-500 ml-0.5">*</span>
+                                <span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400 dark:text-slate-600 mt-0.5">URL-friendly identifier</span>
+                            </label>
+                            {% if mode == 'create' %}
+                            <input type="text" id="slug" name="slug"
+                                   value="{{ form_data.slug|default('') }}"
+                                   pattern="[a-z0-9][a-z0-9-]*" maxlength="50"
+                                   placeholder="e.g., modern-pro" required
+                                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600">
+                            {% else %}
+                            <input type="text" value="{{ template_slug }}" readonly
+                                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-3.5 py-2.5 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <label for="description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                            Description
+                            <span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400 dark:text-slate-600 mt-0.5">Brief description of template style and purpose</span>
+                        </label>
+                        <textarea id="description" name="description" rows="2"
+                                  placeholder="e.g., A clean and modern CV template optimized for tech professionals"
+                                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-150 ease-out focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[60px]">{{ form_data.description|default(template.description|default('')) }}</textarea>
+                    </div>
                 </div>
-              {% endif %}
+            </div>
 
-              {% if mode == 'edit' %}
-                <div class="mb-3">
-                  <label for="profession" class="form-label">Default Profession</label>
-                  <select class="form-select" id="profession" name="profession">
-                    <option value="">Select a profession...</option>
-                    <option value="software-engineer" {% if template.profession == 'software-engineer' %}selected{% endif %}>Software Engineer</option>
-                    <option value="product-manager" {% if template.profession == 'product-manager' %}selected{% endif %}>Product Manager</option>
-                    <option value="data-scientist" {% if template.profession == 'data-scientist' %}selected{% endif %}>Data Scientist</option>
-                    <option value="marketing-manager" {% if template.profession == 'marketing-manager' %}selected{% endif %}>Marketing Manager</option>
-                    <option value="sales-executive" {% if template.profession == 'sales-executive' %}selected{% endif %}>Sales Executive</option>
-                    <option value="hr-manager" {% if template.profession == 'hr-manager' %}selected{% endif %}>HR Manager</option>
-                    <option value="accountant" {% if template.profession == 'accountant' %}selected{% endif %}>Accountant</option>
-                    <option value="teacher" {% if template.profession == 'teacher' %}selected{% endif %}>Teacher</option>
-                    <option value="doctor" {% if template.profession == 'doctor' %}selected{% endif %}>Doctor</option>
-                    <option value="lawyer" {% if template.profession == 'lawyer' %}selected{% endif %}>Lawyer</option>
-                  </select>
-                  <div class="form-text">Optional: Set a default profession for this template's professional summary</div>
+            {# Clone From Template (create mode) #}
+            {% if mode == 'create' %}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-copy w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Clone From Template</h3>
                 </div>
-
-                <div class="mb-3">
-                  <label for="content" class="form-label">Template Content <span class="text-danger">*</span></label>
-                  {% include 'partials/editor.twig' with {
-                    'editorId': 'content',
-                    'editorName': 'content',
-                    'editorClass': 'template-editor',
-                    'initialContent': template_content,
-                    'darkMode': false,
-                    'rtl': false,
-                    'minHeight': '400px',
-                    'autoGrow': true
-                  } %}
-                  <div class="form-text text-warning">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    This editor contains HTML/Twig template code. Be careful with syntax - invalid Twig code will break the template.
-                  </div>
+                <div class="p-5">
+                    <label for="base_template" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                        Base Template <span class="text-rose-500 ml-0.5">*</span>
+                        <span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400 dark:text-slate-600 mt-0.5">Choose an existing template to use as starting point</span>
+                    </label>
+                    <select id="base_template" name="base_template" required
+                            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                        <option value="">Select a template to clone...</option>
+                        {% for slug, baseTemplate in base_templates %}
+                        <option value="{{ slug }}" {% if form_data.base_template == slug %}selected{% endif %}>{{ baseTemplate.name }} ({{ slug }})</option>
+                        {% endfor %}
+                    </select>
                 </div>
-              {% endif %}
+            </div>
+            {% endif %}
 
-              <div class="d-flex gap-2">
-                <button type="submit" class="modern-btn modern-btn-primary">
-                  <i class="bi bi-check-circle me-1"></i>
-                  {% if mode == 'create' %}Create Template{% else %}Save Changes{% endif %}
+            {# Target Profession + Template Content (edit mode) #}
+            {% if mode == 'edit' %}
+
+            {# Profession Classification #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-briefcase w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Target Profession</h3>
+                </div>
+                <div class="p-5">
+                    <label for="profession" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                        Default Profession
+                        <span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400 dark:text-slate-600 mt-0.5">AI will use this for professional summary suggestions</span>
+                    </label>
+                    <select id="profession" name="profession"
+                            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150">
+                        <option value="">Select a profession...</option>
+                        <option value="software-engineer" {% if template.profession|default('') == 'software-engineer' %}selected{% endif %}>Software Engineer</option>
+                        <option value="product-manager" {% if template.profession|default('') == 'product-manager' %}selected{% endif %}>Product Manager</option>
+                        <option value="data-scientist" {% if template.profession|default('') == 'data-scientist' %}selected{% endif %}>Data Scientist</option>
+                        <option value="marketing-manager" {% if template.profession|default('') == 'marketing-manager' %}selected{% endif %}>Marketing Manager</option>
+                        <option value="sales-executive" {% if template.profession|default('') == 'sales-executive' %}selected{% endif %}>Sales Executive</option>
+                        <option value="hr-manager" {% if template.profession|default('') == 'hr-manager' %}selected{% endif %}>HR Manager</option>
+                        <option value="accountant" {% if template.profession|default('') == 'accountant' %}selected{% endif %}>Accountant</option>
+                        <option value="teacher" {% if template.profession|default('') == 'teacher' %}selected{% endif %}>Teacher</option>
+                        <option value="doctor" {% if template.profession|default('') == 'doctor' %}selected{% endif %}>Doctor</option>
+                        <option value="lawyer" {% if template.profession|default('') == 'lawyer' %}selected{% endif %}>Lawyer</option>
+                    </select>
+                </div>
+            </div>
+
+            {# Template Content Editor #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-code w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Template Content</h3>
+                </div>
+                <div class="p-5">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+                        HTML/Twig Code <span class="text-rose-500 ml-0.5">*</span>
+                        <span class="block text-[10px] font-normal normal-case tracking-normal text-slate-400 dark:text-slate-600 mt-0.5">Edit template structure and styling</span>
+                    </label>
+                    {% include 'partials/editor.twig' with {
+                        'editorId': 'content',
+                        'editorName': 'content',
+                        'editorClass': 'min-h-[500px] font-mono',
+                        'initialContent': template_content,
+                        'darkMode': false,
+                        'rtl': false,
+                        'minHeight': '500px',
+                        'autoGrow': true
+                    } %}
+                    <div class="flex items-start gap-3 p-3 rounded-xl mt-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
+                        <i class="lucide lucide-alert-triangle w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0"></i>
+                        <p class="text-xs text-amber-800 dark:text-amber-200">
+                            <strong class="font-semibold">Important:</strong> This editor contains HTML/Twig template code. Invalid Twig syntax will break template rendering. Use only standard Twig syntax and avoid custom functions.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% endif %}
+
+            {# Form Actions — both create and edit mode #}
+            <div class="flex items-center gap-3 flex-wrap">
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out">
+                    <i class="lucide lucide-check w-4 h-4"></i>
+                    {% if mode == 'create' %}Create Template{% else %}Save Changes{% endif %}
                 </button>
-                <a href="/admin/cv-templates" class="modern-btn modern-btn-outline">Cancel</a>
-              </div>
-            </form>
-          </div>
+                {% if mode == 'edit' %}
+                <button type="button" data-action="open-template-preview" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out">
+                    <i class="lucide lucide-eye w-4 h-4"></i> Preview
+                </button>
+                {% endif %}
+                <a href="/admin/cv-templates" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 ease-out">
+                    <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                </button>
+            </div>
         </div>
-      </div>
 
-      <div class="col-lg-4">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">Help & Tips</h5>
-          </div>
-          <div class="card-body">
-            <h6>Template Structure</h6>
-            <p class="small text-muted mb-3">
-              Templates use Twig syntax and receive <code>cv</code> and <code>sections</code> variables.
-              See existing templates for examples.
-            </p>
+        {# ── RIGHT COLUMN ── #}
+        {% if mode == 'edit' %}
+        <div class="space-y-5 xl:sticky xl:top-20">
 
-            <h6>Available Variables</h6>
-            <ul class="small mb-3">
-              <li><code>cv</code> - CV metadata (id, title, dates)</li>
-              <li><code>sections</code> - Array of CV sections with items</li>
-              <li><code>section.items</code> - Content items for each section</li>
-            </ul>
+            {# Live Preview #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                            <i class="lucide lucide-eye w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Live Preview</h3>
+                    </div>
+                    <button type="button" id="bld-refresh-preview" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                        <i class="lucide lucide-refresh-cw w-3 h-3"></i> Refresh
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 overflow-hidden" style="min-height:520px">
+                        <iframe id="admin-template-preview-frame" class="w-full bg-white" style="height:520px;border:none" title="Template preview"></iframe>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-600">Preview renders with sample CV data. Click Refresh after editing template code.</p>
+                </div>
+            </div>
 
-            <h6>Best Practices</h6>
-            <ul class="small mb-0">
-              <li>Use semantic HTML</li>
-              <li>Include proper ARIA labels</li>
-              <li>Test with sample data</li>
-              <li>Keep responsive design in mind</li>
-            </ul>
-          </div>
+            {# Available Variables #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-book w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Available Variables</h3>
+                </div>
+                <div class="p-4 space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                    <div><code class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-1 py-0.5 rounded text-[11px]">{{ '{{' }} cv.title {{ '}}' }}</code> — CV title</div>
+                    <div><code class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-1 py-0.5 rounded text-[11px]">{{ '{{' }} cv.full_name {{ '}}' }}</code> — User's full name</div>
+                    <div><code class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-1 py-0.5 rounded text-[11px]">{{ '{{' }} cv.email {{ '}}' }}</code> — Email address</div>
+                    <div><code class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-1 py-0.5 rounded text-[11px]">{{ '{{' }} cv.phone {{ '}}' }}</code> — Phone number</div>
+                    <div><code class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-1 py-0.5 rounded text-[11px]">{{ '{{' }} sections {{ '}}' }}</code> — CV sections</div>
+                </div>
+            </div>
+
+            {# Template Loop Structure #}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-layers w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Template Loop</h3>
+                </div>
+                <div class="p-4">
+                    <pre class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-950 dark:bg-slate-900 p-4 text-xs text-slate-200 font-mono overflow-x-auto"><code>{% for section in sections %}
+  &lt;!-- {{ section.type }} --&gt;
+{% endfor %}</code></pre>
+                </div>
+            </div>
+
+            {# Quick Tips #}
+            <div class="overflow-hidden rounded-2xl border border-sky-200 dark:border-sky-800/40 bg-sky-50 dark:bg-sky-950/30 shadow-sm">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-sky-100 dark:border-sky-800/30 bg-sky-50/80 dark:bg-sky-950/40">
+                    <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center flex-shrink-0">
+                        <i class="lucide lucide-lightbulb w-4 h-4 text-sky-600 dark:text-sky-400"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-sky-900 dark:text-sky-200">Quick Tips</h3>
+                </div>
+                <div class="p-4">
+                    <ul class="space-y-1.5 text-xs text-sky-800 dark:text-sky-300 list-disc list-inside">
+                        <li>Use semantic HTML for better structure</li>
+                        <li>Include CSS media queries for print</li>
+                        <li>Test template with sample data</li>
+                        <li>Avoid JavaScript in templates</li>
+                        <li>Use Tailwind classes for styling</li>
+                    </ul>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
+        {% endif %}
+    </form>
+</div>
 {% endblock %}
 
 {% block scripts %}
-  {{ parent() }}
-  <script src="{{ asset('/assets/js/cv-admin.js') }}" defer></script>
+<script>
+(function () {
+    var frame = document.getElementById('admin-template-preview-frame');
+    var refreshBtn = document.getElementById('bld-refresh-preview');
+    var csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function getContent() {
+        var el = document.getElementById('content');
+        if (!el) return '';
+        if (el.tagName === 'TEXTAREA') return el.value;
+        if (el.isContentEditable) return el.innerHTML;
+        return '';
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updatePreview() {
+        var content = getContent();
+        if (!content || !frame) return;
+        var formData = new FormData();
+        formData.append('content', content);
+        formData.append('slug', '{{ template_slug|default("preview") }}');
+        if (csrf) {
+            formData.append('csrf_token', csrf);
+        }
+        fetch('/admin/cv-templates/preview-content', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRF-Token': csrf }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (!res.success) {
+                    frame.srcdoc = '<html><body style="padding:2rem;font-family:monospace;color:#dc2626;"><h2>Preview Error</h2><pre>' + escapeHtml(res.error || 'Unknown error') + '</pre></body></html>';
+                    return;
+                }
+                frame.srcdoc = res.html;
+            })
+            .catch(function () {
+                frame.srcdoc = '<html><body style="padding:2rem;color:#dc2626;"><h2>Preview Error</h2><p>Failed to load preview.</p></body></html>';
+            });
+    }
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+            updatePreview();
+            this.classList.add('animate-spin');
+            setTimeout(function () { this.classList.remove('animate-spin'); }.bind(this), 600);
+        });
+    }
+
+    var timer = null;
+    function onEditorChange() {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(updatePreview, 800);
+    }
+
+    var editor = document.getElementById('content');
+    if (editor) {
+        editor.addEventListener('input', onEditorChange);
+    }
+
+    if (frame) {
+        frame.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100%;font-family:system-ui;color:#9ca3af;">Loading preview...</body></html>';
+        updatePreview();
+    }
+})();
+</script>
 {% endblock %}

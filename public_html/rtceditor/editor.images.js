@@ -133,7 +133,7 @@
             const src = this.escapeHtml(String(imageUrl));
             const altText = this.escapeHtml(options.alt || 'Image');
             const style = this.escapeHtml(buildImageStyle(options.width, options.height));
-            const figureHtml = `<figure contenteditable="false"><img src="${src}" alt="${altText}" style="${style}"><figcaption contenteditable="true">Caption</figcaption></figure><p><br></p>`;
+            const figureHtml = `<figure contenteditable="false"><img src="${src}" alt="${altText}" style="${style}" loading="lazy"><figcaption contenteditable="true">Caption</figcaption></figure><p><br></p>`;
 
             try {
                 this.restoreSelection();

@@ -578,10 +578,16 @@ ToolRegistry::register('get_user_stats', function (array $args, ?mysqli $mysqli)
     $result = $mysqli->query("SELECT COUNT(*) as new_week FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
     $stats['new_users_week'] = (int)($result->fetch_assoc()['new_week'] ?? 0);
 
-    // Users by role
+    // Users by role (from the normalized user_roles -> roles mapping)
     $roles = [];
-    $result = $mysqli->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
-    while ($row = $result->fetch_assoc()) $roles[$row['role']] = (int)$row['count'];
+    $result = $mysqli->query("SELECT r.name AS role_name, COUNT(*) AS count
+        FROM users u
+        INNER JOIN user_roles ur ON ur.user_id = u.id
+        INNER JOIN roles r ON r.id = ur.role_id AND r.deleted_at IS NULL
+        GROUP BY r.name");
+    while ($row = $result->fetch_assoc()) {
+        $roles[$row['role_name']] = (int)($row['count'] ?? 0);
+    }
     $stats['users_by_role'] = $roles;
 
     return $stats;

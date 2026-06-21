@@ -1,409 +1,328 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Support Us – Help Keep {{ app_settings.site_name|default('BroxBhai') }} Running{% endblock %}
+{% block title %}{{ t('Support Us') }} - Help Keep {{ app_settings.site_name|default('BroxBhai') }} Running{% endblock %}
+
 {% set breadcrumbs = [
-  { label: 'Support Us', url: '/donate', icon: 'heart-pulse' }
+ { label: 'Support Us', url: '/donate', icon: 'heart-pulse' }
 ] %}
 
-{% block extra_styles %}
-<style>
-  .donate-hero {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
-    color: #fff; position: relative; overflow: hidden;
-  }
-  .donate-hero::after {
-    content:''; position:absolute; inset:0;
-    background: radial-gradient(circle at 80% 20%, rgba(251,191,36,.22) 0%, transparent 55%);
-    pointer-events: none;
-  }
-  .donate-hero .pos-rel { position:relative; z-index:1; }
-  .support-stat {
-    text-align:center; padding:1.4rem 1rem;
-    background:rgba(255,255,255,.06); border-radius:1rem;
-    border:1px solid rgba(255,255,255,.12);
-  }
-  .support-stat .big { font-size:2rem; font-weight:800; color:#fbbf24; line-height:1; }
-  .support-stat .lbl  { font-size:.85rem; opacity:.8; margin-top:.4rem; }
-  .method-card {
-    border:2px solid transparent; border-radius:1.25rem;
-    cursor:pointer; transition:all .2s;
-  }
-  .method-card:hover   { transform:translateY(-3px); }
-  .method-card.active  { border-color:#4338ca; box-shadow:0 0 0 3px rgba(67,56,202,.18); }
-  .quick-amount-group button {
-    transition:all .15s; border:2px solid rgba(99,102,241,.2);
-    background:rgba(99,102,241,.06); color:#4338ca; font-weight:700;
-    border-radius:.75rem; padding:.6rem 1.4rem; width:100%;
-  }
-  .quick-amount-group button:hover,
-  .quick-amount-group button:focus {
-    background:rgba(99,102,241,.14); border-color:#4338ca;
-  }
-  .bkash-number-display {
-    font-size:1.5rem; font-weight:700; letter-spacing:.2em;
-    border:2px dashed #e53e3e; border-radius:.6rem; padding:.5rem 1rem;
-    color:#c53030; background:#fff5f5; text-align:center; cursor:pointer;
-    user-select:all;
-  }
-  .note-para { font-size:.85rem; color:#6b7280; margin-top:.4rem; }
-  .guidance-panel {
-    background:#f9f5ff; border:1px solid #e0d7fe; border-radius:.75rem;
-    padding:1rem 1.25rem;
-  }
-  .guidance-step { display:flex; align-items:flex-start; gap:.6rem; margin-bottom:.6rem; }
-  .guidance-step:last-child { margin-bottom:0; }
-  .step-badge {
-    flex-shrink:0; width:1.75rem; height:1.75rem;
-    background:#6366f1; color:#fff;
-    border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:.8rem;
-  }
-  .recent-donor {
-    display:flex; align-items:center; gap:.7rem;
-    padding:.7rem 1rem; background:#f8fafc; border-radius:.75rem; margin-bottom:.5rem;
-  }
-  .donor-avatar {
-    width:2.4rem; height:2.4rem;
-    background:linear-gradient(135deg,#6366f1,#8b5cf6);
-    color:#fff; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:.85rem; flex-shrink:0;
-  }
-  .recent-donor .amt { font-weight:700; color:#059669; margin-left:auto; white-space:nowrap; }
-  .icon-circle { display:flex; align-items:center; justify-content:center; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="page-donate">
-
-  <section class="donate-hero py-5 mb-5">
-    <div class="container donate-hero pos-rel">
-      <div class="row align-items-center">
-        <div class="col-lg-7">
-          <h1 class="display-5 fw-bold mb-3">
-            <i class="bi bi-heart-fill me-2 text-warning"></i>Support Our Mission
-          </h1>
-          <p class="lead mb-4 opacity-90">
-            Your contribution keeps {{ app_settings.site_name|default('BroxBhai') }} free, accurate,
-            and available for everyone. Every donation helps cover server costs and keeps us creating.
-          </p>
-          <a href="#donate-form" class="btn btn-warning btn-lg fw-bold rounded-pill px-5">
-            <i class="bi bi-heart me-2"></i>Donate Now
-          </a>
-        </div>
-        <div class="col-lg-5 text-center mt-4 mt-lg-0">
-          <div class="support-stat bg-white bg-opacity-10 rounded-4 p-4 border border-white border-opacity-20">
-            <div class="big">৳{{ donation_total|default(0)|number_format(0) }}</div>
-            <div class="lbl">Total Raised</div>
-            <hr class="border-white border-opacity-20 my-3">
-            {% set goal = (settings.donation_goal_monthly|default(0)|default(0)) %}
-            <div class="big">৳{{ goal|number_format(0) }}</div>
-            <div class="lbl">Monthly Goal</div>
-            <div class="mt-3">
-              {% set pct = goal > 0 ? (donation_total|default(0) / goal) * 100 : 0 %}
-              <div class="progress" style="height:6px;background:rgba(255,255,255,.2)">
-                <div class="progress-bar bg-warning" style="width:{{ pct > 100 ? 100 : pct|round }}%"></div>
-              </div>
-              <small class="opacity-75">{{ pct|round }}% of monthly goal</small>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="public-static-page py-6 md:py-10">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="hero-section mb-6 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+   <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+      <i class="lucide lucide-heart h-3.5 w-3.5" aria-hidden="true"></i>
+      {{ t('Support our mission') }}
+     </div>
+     <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">Help keep {{ app_settings.site_name|default('BroxBhai') }} running</h1>
+     <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+      {{ t('Your contribution keeps the platform free, accurate, and available for everyone.') }}
+     </p>
+     <a href="#donate-form" class="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-[0_14px_35px_rgba(251,191,36,0.25)] transition hover:-translate-y-0.5 hover:bg-amber-300">
+      <i class="lucide lucide-gift h-4 w-4" aria-hidden="true"></i>
+      {{ t('Donate now') }}
+     </a>
     </div>
+    <div class="rounded-[1.75rem] border border-white/15 bg-white/10 px-5 py-4 text-center shadow-[0_20px_50px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+     <div class="text-xs font-semibold uppercase tracking-[0.2em] text-white/75" data-i18n="Raised">{{ t('Raised') }}</div>
+     <div class="mt-2 text-3xl font-bold">à§³{{ donation_total|default(0)|number_format(0) }}</div>
+     {% set goal = settings.donation_goal_monthly|default(0) %}
+     {% set pct = goal > 0 ? (donation_total|default(0) / goal) * 100 : 0 %}
+     <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
+      <div class="h-full rounded-full bg-amber-400" style="width:{{ pct > 100 ? 100 : pct|round }}%"></div>
+     </div>
+     <div class="mt-2 text-sm text-white/75">{{ pct|round }}% {{ t('of monthly goal') }}</div>
+    </div>
+   </div>
   </section>
 
-  <div class="container py-2 pb-5">
+  <div class="grid gap-4 md:grid-cols-3 mb-6">
+   <div class="stat-card text-center">
+    <i class="lucide lucide-users mx-auto mb-2 h-7 w-7 text-indigo-600" aria-hidden="true"></i>
+    <div class="text-2xl font-bold text-slate-900">{{ donation_count|default(0)|number_format }}</div>
+    <div class="text-sm text-slate-500" data-i18n="Contributors">{{ t('Contributors') }}</div>
+   </div>
+   <div class="stat-card text-center">
+    <i class="lucide lucide-book-open mx-auto mb-2 h-7 w-7 text-emerald-600" aria-hidden="true"></i>
+    <div class="text-2xl font-bold text-slate-900">{{ settings.total_posts|default(0)|number_format }}</div>
+    <div class="text-sm text-slate-500" data-i18n="Articles Published">{{ t('Articles Published') }}</div>
+   </div>
+   <div class="stat-card text-center">
+    <i class="lucide lucide-smartphone mx-auto mb-2 h-7 w-7 text-amber-600" aria-hidden="true"></i>
+    <div class="text-2xl font-bold text-slate-900">{{ settings.total_mobiles|default(0)|number_format }}</div>
+    <div class="text-sm text-slate-500" data-i18n="Phone Reviews">{{ t('Phone Reviews') }}</div>
+   </div>
+  </div>
 
-    {# ── Quick Stats ── #}
-    <div class="row g-3 mb-5">
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-3 p-4 text-center">
-          <i class="bi bi-people-fill text-primary fs-3 mb-2"></i>
-          <h3 class="h5 fw-bold mb-0">{{ donation_count|default(0)|number_format }}</h3>
-          <small class="text-muted">Contributors</small>
-        </div>
+  {% if success %}
+  <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="alert">
+   <i class="lucide lucide-check-circle mr-2" aria-hidden="true"></i>{{ success }}
+  </div>
+  {% endif %}
+  {% if server_error %}
+  <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+   <i class="lucide lucide-alert-triangle mr-2" aria-hidden="true"></i>{{ server_error }}
+  </div>
+  {% endif %}
+  {% if errors %}
+  <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700" role="alert">
+   <ul class="list-disc space-y-1 pl-5">
+    {% for err in errors %}
+    <li>{{ err }}</li>
+    {% endfor %}
+   </ul>
+  </div>
+  {% endif %}
+
+  <div class="grid gap-6 lg:grid-cols-12" id="donate-form">
+   <div class="lg:col-span-7">
+    <div class="surface-card">
+     <h2 class="text-2xl font-bold text-slate-900" data-i18n="Make a donation">{{ t('Make a donation') }}</h2>
+     <p class="mt-2 text-sm text-slate-600">{{ t('Choose an amount and payment method that works for you.') }}</p>
+
+     <form method="POST" action="/donate" novalidate class="mt-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="grid gap-4 sm:grid-cols-2">
+       <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700"><span data-i18n="Your Name">{{ t('Your Name') }}</span> <span class="text-red-600">*</span></label>
+        <input type="text" name="donor_name" value="{{ old.donor_name ?? '' }}" required>
+       </div>
+       <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Email (optional)">{{ t('Email (optional)') }}</label>
+        <input type="email" name="donor_email" value="{{ old.donor_email ?? '' }}" placeholder="you@example.com">
+       </div>
       </div>
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-3 p-4 text-center">
-          <i class="bi bi-newspaper text-success fs-3 mb-2"></i>
-          <h3 class="h5 fw-bold mb-0">{{ settings.total_posts|default(0)|number_format }}</h3>
-          <small class="text-muted">Articles Published</small>
-        </div>
+
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700"><span data-i18n="Phone Number">{{ t('Phone Number') }}</span> <span class="text-red-600">*</span></label>
+       <input type="tel" name="donor_phone" value="{{ old.donor_phone ?? '' }}" placeholder="01XXXXXXXXX" required>
       </div>
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-3 p-4 text-center">
-          <i class="bi bi-phone-fill text-warning fs-3 mb-2"></i>
-          <h3 class="h5 fw-bold mb-0">{{ settings.total_mobiles|default(0)|number_format }}</h3>
-          <small class="text-muted">Phone Reviews</small>
-        </div>
+
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700"><span data-i18n="Amount (BDT)">{{ t('Amount (BDT)') }}</span> <span class="text-red-600">*</span></label>
+       <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
+        {% for amt in [50, 100, 200, 500, 1000, 2000] %}
+        <button type="button" class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700 transition hover:border-indigo-500 hover:bg-indigo-100" data-amount="{{ amt }}">
+         {{ amt }}
+        </button>
+        {% endfor %}
+       </div>
+       <input type="number" id="amount-input" name="donation_amount" min="1" step="1" value="{{ old.donation_amount ?? '' }}" placeholder="Or enter a custom amount" class="mt-3">
       </div>
+
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700"><span data-i18n="Payment Method">{{ t('Payment Method') }}</span> <span class="text-red-600">*</span></label>
+       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" id="method-selector">
+        <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="bkash">
+         <div class="text-sm font-semibold text-slate-900">bKash</div>
+         <div class="text-xs text-slate-500">{{ t('Mobile payment') }}</div>
+         <input type="radio" name="donation_method" value="bkash" hidden>
+        </button>
+        <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="nagad">
+         <div class="text-sm font-semibold text-slate-900">Nagad</div>
+         <div class="text-xs text-slate-500">{{ t('Mobile payment') }}</div>
+         <input type="radio" name="donation_method" value="nagad" hidden>
+        </button>
+        <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="stripe">
+         <div class="text-sm font-semibold text-slate-900" data-i18n="Card">{{ t('Card') }}</div>
+         <div class="text-xs text-slate-500">Visa / Mastercard</div>
+         <input type="radio" name="donation_method" value="stripe" hidden>
+        </button>
+        <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="handcash">
+         <div class="text-sm font-semibold text-slate-900">Direct</div>
+         <div class="text-xs text-slate-500" data-i18n="Cash support">{{ t('Cash support') }}</div>
+         <input type="radio" name="donation_method" value="handcash" hidden>
+        </button>
+       </div>
+      </div>
+
+      <div id="bkash-panel" class="hidden rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4">
+       <h3 class="text-base font-bold text-slate-900" data-i18n="bKash donation">{{ t('bKash donation') }}</h3>
+       <p class="mt-2 text-sm text-slate-600">Send <strong id="bkash-amt-label">à§³500</strong> to:</p>
+       <div id="bkash-num" class="mt-3 cursor-pointer rounded-2xl border border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-[0.2em] text-rose-700" data-bkash="{{ settings.donation_bkash_number|default('') }}" title="Tap to copy">
+        {% if settings.donation_bkash_number|default('') %}
+        {{ settings.donation_bkash_number }}
+        {% else %}
+        — Not configured —
+        {% endif %}
+       </div>
+       {% if not settings.donation_bkash_number|default('') %}
+       <p class="mt-2 text-sm text-red-600">bKash number is not configured. Please contact the site admin.</p>
+       {% endif %}
+       <div class="mt-4 space-y-2 text-sm text-slate-600">
+        <p class="flex gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span> {{ t('Send money to the number above.') }}</p>
+        <p class="flex gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span> {{ t('Copy the TrxID from your payment message.') }}</p>
+        <p class="flex gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">3</span> {{ t('Paste the TrxID below and submit this form.') }}</p>
+       </div>
+       <div class="mt-4">
+        <label class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="bKash Transaction ID (TrxID)">{{ t('bKash Transaction ID (TrxID)') }}</label>
+        <input type="text" id="bkash-trxid-input" name="bkash_trxid" placeholder="e.g. CID7K8LMNOP9QRS2">
+       </div>
+      </div>
+
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Add a Note (optional)">{{ t('Add a Note (optional)') }}</label>
+       <textarea name="donor_note" rows="3" placeholder="Leave a message...">{{ old.donor_note ?? '' }}</textarea>
+      </div>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+       <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+       {{ t('Donate') }} — ৳<span id="submit-amt">{{ old.donation_amount|default('0') }}</span>
+      </button>
+     </form>
+    </div>
+   </div>
+
+   <aside class="lg:col-span-5 space-y-4">
+    {% if settings.donation_goals_html|default('') %}
+    <div class="info-card">
+     <h3 class="text-lg font-bold text-slate-900" data-i18n="Where your donation goes">{{ t('Where your donation goes') }}</h3>
+     <div class="mt-3 text-sm text-slate-600">{{ settings.donation_goals_html|raw }}</div>
+     <div class="mt-4">
+      <div class="flex items-center justify-between text-sm text-slate-600">
+       <span data-i18n="Monthly goal">{{ t('Monthly goal') }}</span>
+       <span>à§³{{ goal|number_format }}</span>
+      </div>
+      <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+       <div class="h-full rounded-full bg-indigo-600" style="width:{{ pct > 100 ? 100 : pct|round }}%"></div>
+      </div>
+     </div>
+    </div>
+    {% endif %}
+
+    <div class="support-card">
+     <h3 class="text-lg font-bold text-slate-900" data-i18n="Recent supporters">{{ t('Recent supporters') }}</h3>
+     <div class="mt-4 space-y-3">
+      {% if recent_donations %}
+      {% for donation in recent_donations %}
+      <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+       <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 font-bold text-white">
+        {{ (donation.donor_name ?? '?')|slice(0,1)|upper }}
+       </div>
+       <div class="min-w-0">
+        <div class="truncate text-sm font-semibold text-slate-900">{{ donation.donor_name }}</div>
+        <div class="text-xs text-slate-500">{{ donation.method|capitalize }}</div>
+       </div>
+       <div class="ml-auto text-sm font-bold text-emerald-600">à§³{{ donation.amount|number_format(0) }}</div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+       <i class="lucide lucide-gift mx-auto mb-2 h-6 w-6 text-slate-400" aria-hidden="true"></i>
+       {{ t('Be the first to support us!') }}
+      </div>
+      {% endif %}
+     </div>
     </div>
 
-    {% if success %}
-      <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endif %}
-    {% if server_error %}
-      <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ server_error }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endif %}
-    {% if errors %}
-      <div class="alert alert-warning alert-dismissible fade show rounded-3 mb-4" role="alert">
-        <ul class="mb-0">{% for err in errors %}<li>{{ err }}</li>{% endfor %}</ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endif %}
-
-    <div class="row g-4" id="donate-form">
-      {# ── LEFT: FORM ── #}
-      <div class="col-lg-7">
-        <div class="card border-0 shadow-sm rounded-4 p-4 p-lg-5">
-          <h3 class="h4 fw-bold mb-4">
-            <i class="bi bi-gift-fill text-danger me-2"></i>Make a Donation
-          </h3>
-          <form method="POST" action="/donate" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Your Name <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="donor_name"
-                     value="{{ old.donor_name ?? '' }}" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Email (optional)</label>
-              <input type="email" class="form-control" name="donor_email"
-                     value="{{ old.donor_email ?? '' }}">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
-              <input type="tel" class="form-control" name="donor_phone"
-                     value="{{ old.donor_phone ?? '' }}" required placeholder="01XXXXXXXXX">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Amount (BDT) <span class="text-danger">*</span></label>
-              <div class="row g-2 quick-amount-group mb-2">
-                {% for amt in [50, 100, 200, 500, 1000, 2000] %}
-                <div class="col-4 col-sm-2">
-                  <button type="button" class="w-100"
-                          onclick="setAmount(this)">{{ amt }}</button>
-                </div>
-                {% endfor %}
-              </div>
-              <input type="number" id="amount-input" class="form-control fw-bold"
-                     name="donation_amount" min="1" step="1"
-                     value="{{ old.donation_amount ?? '' }}"
-                     placeholder="Or enter a custom amount" required>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Payment Method <span class="text-danger">*</span></label>
-              <div class="row g-2" id="method-selector">
-                <div class="col-6 col-md-3">
-                  <div class="method-card card h-100 p-2 text-center"
-                       data-method="bkash" onclick="selectMethod(this)">
-                    <div class="method-icon"><span style="font-weight:900;color:#e53e3e">bK</span></div>
-                    <span class="fw-bold d-block mt-1 small">bKash</span>
-                    <input type="radio" name="donation_method" value="bkash" hidden>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3">
-                  <div class="method-card card h-100 p-2 text-center"
-                       data-method="nagad" onclick="selectMethod(this)">
-                    <div class="method-icon"><span style="font-weight:900;color:#d97706">N</span></div>
-                    <span class="fw-bold d-block mt-1 small">Nagad</span>
-                    <input type="radio" name="donation_method" value="nagad" hidden>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3">
-                  <div class="method-card card h-100 p-2 text-center"
-                       data-method="stripe" onclick="selectMethod(this)">
-                    <div class="method-icon"><i class="bi bi-credit-card-2-front text-primary"></i></div>
-                    <span class="fw-bold d-block mt-1 small">Card</span>
-                    <input type="radio" name="donation_method" value="stripe" hidden>
-                  </div>
-                </div>
-                <div class="col-6 col-md-3">
-                  <div class="method-card card h-100 p-2 text-center"
-                       data-method="handcash" onclick="selectMethod(this)">
-                    <div class="method-icon"><i class="bi bi-cash-coin text-success"></i></div>
-                    <span class="fw-bold d-block mt-1 small">Direct</span>
-                    <input type="radio" name="donation_method" value="handcash" hidden>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {# bKash guidance #}
-            <div id="bkash-panel" class="guidance-panel mb-3 d-none">
-              <h5 class="ft-bold"><i class="bi bi-telephone-outbound me-2 text-danger"></i>bKash Donation</h5>
-              <p class="note-para mt-2">Send <strong id="bkash-amt-label">৳500</strong> to:</p>
-              <span class="bkash-number-display" id="bkash-num"
-                    data-bkash="{{ settings.donation_bkash_number|default('') }}"
-                    title="Tap to copy">
-                {% if settings.donation_bkash_number|default('') %}
-                  {{ settings.donation_bkash_number }}
-                {% else %}— Not configured —{% endif %}
-              </span>
-              {% if not settings.donation_bkash_number|default('') %}
-                <small class="text-danger d-block mt-2">
-                  bKash number is not configured. Please contact the site admin.
-                </small>
-              {% endif %}
-              <div class="guidance-step mt-3">
-                <span class="step-badge">1</span>
-                <span>Open bKash &#8594; Send Money to the number above.</span>
-              </div>
-              <div class="guidance-step">
-                <span class="step-badge">2</span>
-                <span>Enter <strong id="step-amt">৳500</strong> and complete the payment.</span>
-              </div>
-              <div class="guidance-step">
-                <span class="step-badge">3</span>
-                <span>Copy the bKash Transaction ID (TrxID) from your message.</span>
-              </div>
-              <div class="guidance-step">
-                <span class="step-badge">4</span>
-                <span>Paste the TrxID in the field below and submit this form.</span>
-              </div>
-              <div class="mb-3 mt-3">
-                <label class="form-label fw-semibold">bKash Transaction ID (TrxID) <span class="text-danger">*</span></label>
-                <input type="text" id="bkash-trxid-input" class="form-control font-monospace"
-                       name="bkash_trxid" placeholder="e.g. CID7K8LMNOP9QRS2">
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Add a Note (optional)</label>
-              <textarea class="form-control" name="donor_note" rows="2"
-                        placeholder="Leave a message…">{{ old.donor_note ?? '' }}</textarea>
-            </div>
-
-            <button type="submit"
-                    class="btn btn-primary btn-lg w-100 rounded-pill fw-bold">
-              <i class="bi bi-send-fill me-2"></i>Donate — ৳<span id="submit-amt">{{ old.donation_amount|default('0') }}</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {# ── RIGHT SIDEBAR ── #}
-      <div class="col-lg-5">
-        <div class="flex-column gap-3 d-flex">
-
-          {% if settings.donation_goals_html|default('') %}
-          <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h5 class="fw-bold"><i class="bi bi-bullseye text-primary me-2"></i>Where Your Donation Goes</h5>
-            {{ settings.donation_goals_html|raw }}
-            <div class="mt-3">
-              <strong>Monthly Goal:</strong> ৳{{ goal|number_format }}
-              <div class="progress mt-1">
-                <div class="progress-bar bg-primary"
-                     style="width:{{ (pct > 100 ? 100 : pct)|round }}%"></div>
-              </div>
-              <small class="text-muted">
-                ৳{{ donation_total|default(0)|number_format(0) }} donated of ৳{{ goal|number_format }}
-              </small>
-            </div>
-          </div>
-          {% endif %}
-
-          <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-people text-success me-2"></i>Recent Supporters</h5>
-            {% if recent_donations %}
-              {% for d in recent_donations %}
-              <div class="recent-donor">
-                <div class="donor-avatar">{{ (d.donor_name ?? '?')|slice(0,1)|upper }}</div>
-                <div>
-                  <div class="fw-semibold small mb-0">{{ d.donor_name }}</div>
-                  <small class="text-muted mb-0">{{ d.method|capitalize }}</small>
-                </div>
-                <span class="amt fw-bold">৳{{ d.amount|number_format(0) }}</span>
-              </div>
-              {% endfor %}
-            {% else %}
-              <div class="text-center py-3 text-muted">
-                <i class="bi bi-gift fs-4 d-block mb-2"></i>
-                <small>Be the first to support us!</small>
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
-            <h5 class="fw-bold"><i class="bi bi-megaphone-fill text-danger me-2"></i>Corporate Sponsorship</h5>
-            <p class="small text-muted mb-3">
-              Reach thousands of tech &amp; mobile lovers. <a href="/advertise" class="fw-bold text-primary">Advertise with us &rarr;</a>
-            </p>
-            <a href="/advertise" class="btn btn-outline-danger btn-sm rounded-pill">Advertise</a>
-          </div>
-
-        </div>
-      </div>
-
-    </div><!-- /row -->
-  </div><!-- /container -->
-</div><!-- /page-donate -->
+    <div class="support-card">
+     <h3 class="text-lg font-bold text-slate-900" data-i18n="Corporate sponsorship">{{ t('Corporate sponsorship') }}</h3>
+     <p class="mt-2 text-sm leading-7 text-slate-600">Reach thousands of tech and mobile lovers with a featured sponsorship.</p>
+     <a href="/advertise" class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+      <i class="lucide lucide-megaphone h-4 w-4" aria-hidden="true"></i>
+      {{ t('Advertise with us') }}
+     </a>
+    </div>
+   </aside>
+  </div>
+ </div>
+</div>
 
 <script>
-  // ── Quick-amount pick ──
-  function setAmount(btn) {
-    const v = btn.textContent.trim();
-    document.getElementById('amount-input').value = v;
-    document.querySelectorAll('.quick-amount-group button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    syncLabels(parseFloat(v));
-  }
-  document.getElementById('amount-input').addEventListener('input', function () {
-    syncLabels(parseFloat(this.value) || 0);
+(function () {
+ const amountInput = document.getElementById('amount-input');
+ const submitAmount = document.getElementById('submit-amt');
+ const bkashPanel = document.getElementById('bkash-panel');
+ const bkashNumber = document.getElementById('bkash-num');
+ const bkashAmountLabel = document.getElementById('bkash-amt-label');
+ const bkashTrxInput = document.getElementById('bkash-trxid-input');
+ const form = document.querySelector('form[action="/donate"]');
+ const methods = document.querySelectorAll('.donation-method');
+ const quickAmountButtons = document.querySelectorAll('[data-amount]');
+
+ let selectedMethod = '';
+
+ function formatAmount(amount) {
+  const numericAmount = Number(amount) || 0;
+  return `à§³${numericAmount.toLocaleString()}`;
+ }
+
+ function syncLabels(amount) {
+  const label = formatAmount(amount);
+  if (submitAmount) submitAmount.textContent = Number(amount) || 0;
+  if (bkashAmountLabel) bkashAmountLabel.textContent = label;
+ }
+
+ function setMethod(methodButton) {
+  methods.forEach((button) => button.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500'));
+  methodButton.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500');
+  const radio = methodButton.querySelector('input[type="radio"]');
+  if (radio) radio.checked = true;
+  selectedMethod = methodButton.dataset.method;
+  if (bkashPanel) bkashPanel.classList.toggle('hidden', selectedMethod !== 'bkash');
+}
+
+ quickAmountButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+   const amount = button.dataset.amount;
+   if (amountInput) amountInput.value = amount;
+   syncLabels(amount);
   });
+ });
 
-  // ── Method selector ──
-  function selectMethod(card) {
-    card.closest('#method-selector').querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    card.querySelector('input').checked = true;
-    const m = card.dataset.method;
-    document.getElementById('bkash-panel').classList.toggle('d-none', m !== 'bkash');
-  }
+ methods.forEach((button) => {
+  button.addEventListener('click', () => setMethod(button));
+ });
 
-  // ── Live label sync ──
-  function syncLabels(amt) {
-    const fmt = '৳' + (Number.isFinite(amt) ? amt.toLocaleString() : '0');
-    const el = document.getElementById('bkash-amt-label');
-    const se = document.getElementById('step-amt');
-    const su = document.getElementById('submit-amt');
-    if (el) el.textContent = fmt;
-    if (se) se.textContent = fmt;
-    if (su) su.textContent = fmt;
-  }
+ if (amountInput) {
+  amountInput.addEventListener('input', () => syncLabels(amountInput.value));
+  syncLabels(amountInput.value || 0);
+ }
 
-  // ── Validation before submit ──
-  document.querySelector('form').addEventListener('submit', function (e) {
-    const amt    = parseFloat(document.getElementById('amount-input').value || '0');
-    const method = document.querySelector('input[name="donation_method"]:checked');
-    if (amt <= 0)          { alert('Please enter a valid donation amount.');                      e.preventDefault(); }
-    if (!method || !method.value) { alert('Please select a payment method.');                       e.preventDefault(); }
-    if (method && method.value === 'bkash') {
-      if (!document.getElementById('bkash-trxid-input').value.trim()) {
-        alert('Please enter the bKash Transaction ID.');
-        e.preventDefault();
-      }
-    }
+ if (bkashNumber) {
+  bkashNumber.addEventListener('click', async () => {
+   const number = bkashNumber.dataset.bkash;
+   if (!number) return;
+   try {
+    await navigator.clipboard.writeText(number);
+    const original = bkashNumber.textContent;
+    bkashNumber.textContent = 'Copied!';
+    setTimeout(() => {
+     bkashNumber.textContent = original;
+    }, 1500);
+   } catch (error) {
+    console.error('Unable to copy bKash number', error);
+   }
   });
+ }
 
-  // ── Copy bKash number on tap ──
-  document.getElementById('bkash-num')?.addEventListener('click', function () {
-    const num = this.dataset.bkash;
-    if (!num) return;
-    navigator.clipboard.writeText(num).then(() => {
-      const orig = this.textContent;
-      this.textContent = 'Copied!';
-      setTimeout(() => { this.textContent = orig; }, 1800);
-    });
+ if (form) {
+  form.addEventListener('submit', (event) => {
+   const amount = parseFloat(amountInput?.value || '0');
+   const method = selectedMethod || (document.querySelector('input[name="donation_method"]:checked')?.value || '');
+
+   if (!amount || amount <= 0) {
+    alert('Please enter a valid donation amount.');
+    event.preventDefault();
+    return;
+   }
+
+   if (!method) {
+    alert('Please select a payment method.');
+    event.preventDefault();
+    return;
+   }
+
+   if (method === 'bkash' && bkashTrxInput && !bkashTrxInput.value.trim()) {
+    alert('Please enter the bKash Transaction ID.');
+    event.preventDefault();
+   }
   });
+ }
+})();
 </script>
 {% endblock %}
+

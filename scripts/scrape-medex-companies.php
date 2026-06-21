@@ -15,6 +15,8 @@ if (PHP_SAPI !== 'cli') {
 set_time_limit(0);
 ini_set('memory_limit', '512M');
 
+require_once __DIR__ . '/medex-cloudflare-helper.php';
+
 function getUploadsBaseDir(): string
 {
     $uploads = realpath(__DIR__ . '/../public_html/uploads');
@@ -35,20 +37,7 @@ function getMedexUploadsDir(): string
 
 function fetchPage(string $url): string|false
 {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-    $html = curl_exec($ch);
-    if (curl_errno($ch)) {
-        error_log('cURL error: ' . curl_error($ch));
-        return false;
-    }
-    curl_close($ch);
-    return $html;
+    return medex_fetch_page($url, 3);
 }
 
 function parseMainPage(string $html): array
@@ -237,10 +226,10 @@ for ($p = 1; $p <= $totalPages; $p++) {
 }
 
 // Output JSON
+$jsonOutput = json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 echo "\nOutputting results...\n";
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+echo $jsonOutput . "\n";
 
 $outputPath = getMedexUploadsDir() . '/medex_herbal_companies.json';
-file_put_contents($outputPath, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-echo "\nData saved to {$outputPath}\n";
+file_put_contents($outputPath, $jsonOutput);
+echo "Data saved to {$outputPath}\n";

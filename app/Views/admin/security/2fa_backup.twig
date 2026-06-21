@@ -1,211 +1,164 @@
-{% extends "admin/layout.twig" %}
+{% extends"admin/layout.twig" %}
 {% block title %}Backup Codes - Two-Factor Authentication{% endblock %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <!-- Header -->
-        <div class="admin-panel-card border-0 shadow-sm mb-4">
-          <div class="card-body bg-gradient p-4 inl-a-0042">
-            <h1 class="text-white mb-2">
-              <i class="bi bi-shield-lock"></i> Backup Codes
-            </h1>
-            <p class="text-white-50 mb-0">Save your recovery codes for emergency access</p>
-          </div>
-        </div>
-        <!-- Warning Alert -->
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="bi bi-exclamation-triangle-fill mt-1 me-3 fs-5"></i>
-            <div>
-              <strong class="d-block mb-2">Important!</strong>
-              <p class="mb-0">
-                These codes will only be displayed once. Save them in a secure location immediately.
-                You'll need these codes if you lose access to your authenticator app.
-              </p>
-            </div>
-          </div>
-        </div>
-        <!-- Codes Display Card -->
-        <div class="admin-panel-card border-2 border-warning shadow-sm mb-4">
-          <div class="card-header bg-light border-warning">
-            <h5 class="mb-0">
-              <i class="bi bi-file-text"></i> Your Backup Codes
-            </h5>
-          </div>
-          <div class="card-body p-4">
-            <p class="text-muted small mb-3">
-              <i class="bi bi-info-circle"></i> Each code can be used only once for authentication
-            </p>
-            <!-- Codes Container -->
-            <div class="backup-codes-container mb-4 inl-a-0043">
-              <div class="row g-3">
-                {% for code in backup_codes %}
-                  <div class="col-md-6">
-                    <div class="code-box p-3 bg-white border rounded inl-a-0044">
-                      <code class="d-block fw-bold inl-a-0045">
-                        {{ code }}
-                      </code>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-            <!-- Action Buttons -->
-            <div class="row gap-2 mb-4">
-              <div class="col-md-6">
-                <button type="button"
-                        class="modern-btn modern-btn-info w-100"
-                        onclick="copyAllBackupCodes(this)">
-                  <i class="bi bi-files"></i> Copy All Codes
-                </button>
-              </div>
-              <div class="col-md-6">
-                <button type="button"
-                        class="modern-btn modern-btn-secondary w-100"
-                        onclick="window.print()">
-                  <i class="bi bi-printer"></i> Print Codes
-                </button>
-              </div>
-            </div>
-            <hr>
-            <!-- Storage Tips -->
-            <div class="admin-panel-card bg-light border-0 mb-4">
-              <div class="card-header bg-info text-white">
-                <h6 class="mb-0">
-                  <i class="bi bi-lock"></i> Safe Storage Recommendations
-                </h6>
-              </div>
-              <div class="admin-panel-card-body">
-                <p class="small mb-3">Recommended ways to save these codes:</p>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border border-success">
-                      <p class="mb-1">
-                        <strong class="text-success">✓ Good</strong>
-                      </p>
-                      <small>
-                        <ul class="mb-0 ps-3">
-                          <li>Password-protected encrypted file</li>
-                          <li>Printed and stored securely</li>
-                          <li>Password manager</li>
-                        </ul>
-                      </small>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border border-danger">
-                      <p class="mb-1">
-                        <strong class="text-danger">✗ Avoid</strong>
-                      </p>
-                      <small>
-                        <ul class="mb-0 ps-3">
-                          <li>Plain text files</li>
-                          <li>Cloud storage (unencrypted)</li>
-                          <li>Sharing via email</li>
-                        </ul>
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- How to Use -->
-            <div class="admin-panel-card bg-light border-0 mb-4">
-              <div class="card-header bg-success text-white">
-                <h6 class="mb-0">
-                  <i class="bi bi-question-circle"></i> How to Use These Codes
-                </h6>
-              </div>
-              <div class="admin-panel-card-body">
-                <p class="small mb-3">If you lose access to your authenticator app:</p>
-                <ol class="small">
-                  <li class="mb-2">Go to the login page</li>
-                  <li class="mb-2">Enter your email and password</li>
-                  <li class="mb-2">When asked for a 2FA code, use one of your backup codes instead</li>
-                  <li class="mb-2">After logging in, set up a new authenticator</li>
-                  <li>Generate new backup codes</li>
-                </ol>
-                <div class="alert alert-warning small mb-0 mt-3">
-                  <strong><i class="bi bi-exclamation-circle"></i> Remember:</strong> Each backup code can only be used once!
-                </div>
-              </div>
-            </div>
-            <!-- Regenerate Modal Trigger -->
-            <div class="alert alert-info" role="alert">
-              <strong><i class="bi bi-lightbulb"></i> Tip:</strong>
-              If you've used some codes or want to regenerate them for security, you can create new ones below.
-            </div>
-          </div>
-        </div>
-        <!-- Regenerate Button -->
-        <div class="admin-panel-card border-0 shadow-sm">
-          <div class="card-body p-4">
-            <h6 class="card-title mb-3">
-              <i class="bi bi-arrow-repeat"></i> Regenerate Backup Codes
-            </h6>
-            <p class="text-muted small mb-3">Generate a new set of backup codes. Your old codes will no longer be valid.</p>
-            <button type="button"
-                    class="modern-btn modern-btn-warning"
-                    data-bs-toggle="modal"
-                    data-bs-target="#regenerateModal">
-              <i class="bi bi-arrow-repeat"></i> Generate New Codes
-            </button>
-          </div>
-        </div>
-        <!-- Back Button -->
-        <div class="mt-4">
-          <a href="/admin/security/2fa" class="modern-btn modern-btn-white">
-            <i class="bi bi-arrow-left"></i> Back to 2FA Settings
-          </a>
-        </div>
-      </div>
-    </div>
+<div class="space-y-6">
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-amber-600 via-amber-700 to-yellow-800 p-6 text-white shadow-2xl shadow-amber-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-yellow-300/20 blur-3xl"></div>
   </div>
-  <!-- Regenerate Modal -->
-  <div class="modal fade"
-       id="regenerateModal"
-       tabindex="-1"
-       aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title text-theme-strong">
-            <i class="bi bi-arrow-repeat"></i> Generate New Backup Codes
-          </h5>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-warning" role="alert">
-            <strong>Warning:</strong> Your current backup codes will be invalidated. Make sure to save the new codes before closing this page.
-          </div>
-          <form id="regenerateForm">
-            <div class="mb-3">
-              <label for="password" class="form-label">Confirm Your Password</label>
-              <input type="password"
-                     class="form-control"
-                     id="password"
-                     name="password"
-                     required
-                     placeholder="Enter your password">
-              <small class="text-muted d-block mt-1">We need your password to confirm this important action</small>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button"
-                  class="modern-btn modern-btn-secondary"
-                  data-bs-dismiss="modal">Cancel</button>
-          <button type="button"
-                  class="modern-btn modern-btn-warning"
-                  onclick="regenerateBackupCodes(this)">
-            <i class="bi bi-arrow-repeat"></i> Generate New Codes
-          </button>
-        </div>
-      </div>
-    </div>
+  <div class="relative flex items-center gap-3">
+   <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+    <i class="lucide lucide-shield w-6 h-6"></i>
+   </div>
+   <div>
+    <h1 class="text-xl font-black tracking-tight sm:text-2xl">Backup Codes</h1>
+    <p class="mt-1 text-sm text-amber-200/80">Save your recovery codes for emergency access</p>
+   </div>
   </div>
+ </div>
+
+ {# Warning Alert #}
+ <div class="scroll-fade-in rounded-lg border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900 shadow-sm" role="alert">
+  <div class="flex items-start gap-3">
+   <i class="lucide lucide-alert-triangle mt-0.5 w-5 h-5"></i>
+   <div>
+    <strong class="block mb-1">Important!</strong>
+    <p class="m-0">These codes will only be displayed once. Save them in a secure location immediately. You'll need these codes if you lose access to your authenticator app.</p>
+   </div>
+  </div>
+ </div>
+
+ {# Backup Codes Card #}
+ <div class="scroll-fade-in overflow-hidden rounded-xl border-2 border-amber-200/60 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-amber-100 bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100 text-amber-600">
+    <i class="lucide lucide-file-text w-3.5 h-3.5"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Your Backup Codes</h2>
+    <p class="text-xs text-slate-500 m-0">Each code can be used only once for authentication</p>
+   </div>
+  </div>
+  <div class="p-5">
+   <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {% for code in backup_codes %}
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
+     <code class="font-mono text-sm font-bold tracking-wider text-slate-900">{{ code }}</code>
+    </div>
+    {% endfor %}
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <button type="button" data-action="copyAllBackupCodes" data-id="this" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 hover:-translate-y-0.5">
+     <i class="lucide lucide-files w-3.5 h-3.5"></i> Copy All Codes
+    </button>
+    <button type="button" data-action="window.print" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">
+     <i class="lucide lucide-printer w-3.5 h-3.5"></i> Print Codes
+    </button>
+   </div>
+  </div>
+ </div>
+
+ {# Storage Tips #}
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-sky-50/50 to-cyan-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 text-sky-600">
+    <i class="lucide lucide-lock w-3.5 h-3.5"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Safe Storage Recommendations</h2>
+   </div>
+  </div>
+  <div class="p-5">
+   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm">
+     <strong class="text-emerald-700">✓ Good</strong>
+     <ul class="m-0 mt-1 space-y-0.5 text-xs text-slate-600 ps-3">
+      <li>Password-protected encrypted file</li>
+      <li>Printed and stored securely</li>
+      <li>Password manager</li>
+     </ul>
+    </div>
+    <div class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm">
+     <strong class="text-rose-700">✗ Avoid</strong>
+     <ul class="m-0 mt-1 space-y-0.5 text-xs text-slate-600 ps-3">
+      <li>Plain text files</li>
+      <li>Cloud storage (unencrypted)</li>
+      <li>Sharing via email</li>
+     </ul>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ {# How to Use #}
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+    <i class="lucide lucide-help-circle w-3.5 h-3.5"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">How to Use These Codes</h2>
+   </div>
+  </div>
+  <div class="p-5">
+   <p class="text-sm text-slate-600 mb-3">If you lose access to your authenticator app:</p>
+   <ol class="text-sm text-slate-600 space-y-1.5">
+    <li>Go to the login page</li>
+    <li>Enter your email and password</li>
+    <li>When asked for a 2FA code, use one of your backup codes instead</li>
+    <li>After logging in, set up a new authenticator</li>
+    <li>Generate new backup codes</li>
+   </ol>
+   <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <strong><i class="lucide lucide-alert-circle"></i> Remember:</strong> Each backup code can only be used once!
+   </div>
+  </div>
+ </div>
+
+ {# Back Button #}
+ <div class="flex items-center justify-between gap-3">
+  <a href="/admin/security/2fa" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:-translate-y-0.5">
+   <i class="lucide lucide-arrow-left" w-3.5 h-3.5></i> Back to 2FA Settings
+  </a>
+  <button type="button" data-brox-toggle="modal" data-brox-target="#regenerateModal" class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2.5 text-xs font-semibold text-black shadow-sm transition-all hover:bg-amber-600 hover:-translate-y-0.5">
+   <i class="lucide lucide-repeat" w-3.5 h-3.5></i> Generate New Codes
+  </button>
+ </div>
+</div>
+
+{# Regenerate Modal #}
+<div class="fixed inset-0 z-50 hidden items-center justify-center p-4" id="regenerateModal" data-brox-modal="true">
+ <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" data-brox-dismiss="modal" aria-hidden="true"></div>
+ <div class="relative w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl">
+  <div class="border-b border-slate-100 bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-4">
+   <div class="flex items-center justify-between">
+    <h3 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+     <i class="lucide lucide-repeat w-4 h-4"></i> Generate New Backup Codes
+    </h3>
+    <button type="button" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" data-brox-dismiss="modal" aria-label="Close">
+     <i class="lucide lucide-x w-4 h-4"></i>
+    </button>
+   </div>
+  </div>
+  <div class="p-6">
+   <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 mb-4" role="alert">
+    <strong>Warning:</strong> Your current backup codes will be invalidated. Make sure to save the new codes before closing this page.
+   </div>
+   <form id="regenerateForm">
+    <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">Confirm Your Password</label>
+    <input type="password" id="password" name="password" required placeholder="Enter your password"
+     class="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
+    <small class="text-xs text-slate-500 block mt-1">We need your password to confirm this important action</small>
+   </form>
+  </div>
+  <div class="border-t border-slate-100 bg-slate-50/50 px-6 py-3 flex items-center justify-end gap-2">
+   <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95" data-brox-dismiss="modal">Cancel</button>
+   <button type="button" data-action="regenerateBackupCodes" data-id="this" class="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]">
+    <i class="lucide lucide-repeat w-4 h-4"></i> Generate New Codes
+   </button>
+  </div>
+ </div>
+</div>
 {% endblock %}

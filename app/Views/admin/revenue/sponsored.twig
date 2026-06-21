@@ -1,84 +1,45 @@
-{% extends 'admin/layout.twig' %}
-
-{% block title %}Sponsored Posts – Admin | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/admin/dashboard">Admin</a></li>
-<li class="breadcrumb-item"><a href="/admin/revenue">Revenue</a></li>
-<li class="breadcrumb-item active" aria-current="page">Sponsored Posts</li>
-{% endblock %}
-
-{% block page_content %}
-<div class="dashboard-page">
-
-  <div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">
-        <i class="bi bi-award-fill text-warning me-2"></i>Sponsored / Promoted Posts
-      </h5>
+{% extends "admin/layout.twig" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-award w-5 h-5 text-white"></i></div>
+                <div><p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Revenue</p><h1 class="text-xl font-bold text-white">Sponsored Content</h1><p class="text-sm text-white/60 mt-0.5">Manage sponsored posts and partnerships.</p></div>
+            </div>
+            <div class="flex gap-2"><a href="/admin/revenue" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150"><i class="lucide lucide-arrow-left w-4 h-4"></i> Back</a></div>
+        </div>
     </div>
-    <div class="card-body p-4">
-      <p class="text-muted small mb-0">
-        Sponsored posts carry a visible label on both the front-end and the admin panel.
-        Revenue from sponsorships is tracked per post.
-      </p>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0"><i class="lucide lucide-award w-4 h-4 text-indigo-600 dark:text-indigo-400"></i></div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Sponsored Posts</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead><tr class="border-b border-slate-100 dark:border-slate-800">
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Title</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Sponsor</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Amount</th>
+                    <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600">Status</th>
+                </tr></thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% if sponsored is defined and sponsored|length > 0 %}
+                        {% for s in sponsored %}
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+                            <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{{ s.title }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ s.sponsor_name }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white tabular-nums">{{ s.amount }}</td>
+                            <td class="px-4 py-3">{% if s.is_active %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><span class="w-1 h-1 rounded-full bg-emerald-500"></span> Active</span>{% else %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"><span class="w-1 h-1 rounded-full bg-slate-400"></span> Inactive</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="4" class="px-4 py-16"><div class="flex flex-col items-center justify-center text-center"><div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><i class="lucide lucide-award w-7 h-7 text-slate-400 dark:text-slate-600"></i></div><h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No sponsored content</h3><p class="text-sm text-slate-400 dark:text-slate-600 max-w-xs">Sponsored posts will appear here.</p></div></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
-
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white border-0 py-3">
-      <h5 class="mb-0 fw-bold">Existing Sponsorships</h5>
-    </div>
-    <div class="card-body p-0 table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead class="table-light"><tr>
-          <th class="px-4">ID</th>
-          <th>Post</th>
-          <th>Sponsor</th>
-          <th>Label Type</th>
-          <th>Paid (BDT)</th>
-          <th>Payment Status</th>
-          <th>From</th>
-          <th>Until</th>
-          <th class="px-4">Actions</th>
-        </tr></thead>
-        <tbody>
-        {% for sp in sponsored %}
-          {% set ps = sp.payment_status %}
-          {% set psc = ps == 'paid' ? 'bg-success-subtle text-success'
-                   : ps == 'pending' ? 'bg-warning-subtle text-warning'
-                   : 'bg-secondary-subtle text-secondary' %}
-          <tr>
-            <td class="px-4"><span class="badge bg-secondary">#{{ sp.id }}</span></td>
-            <td>
-              <a href="/posts/{{ sp.post_id }}/{{ sp.post_slug|url_encode }}" target="_blank" class="fw-semibold text-decoration-none">
-                {{ sp.post_title|default('Post #' ~ sp.post_id) }}
-                <i class="bi bi-box-arrow-up-right small text-muted"></i>
-              </a>
-            </td>
-            <td class="fw-semibold">{{ sp.sponsor_name }}</td>
-            <td>
-              <span class="badge" style="background:{{ sp.background_color ?? '#fffbeb' }};color:{{ sp.label_color ?? '#92400e' }};">
-                {{ sp.label_text ?? 'Sponsored' }}
-              </span>
-            </td>
-            <td class="fw-bold">৳{{ (sp.paid_amount ?? 0)|number_format(2) }}</td>
-            <td><span class="badge {{ psc }}">{{ ps|capitalize }}</span></td>
-            <td>{{ sp.sponsored_from ?? '—' }}</td>
-            <td>{{ sp.sponsored_until ?? '—' }}</td>
-            <td class="px-4 text-end">
-              <button class="btn btn-sm btn-outline-danger rounded-pill">Remove</button>
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="9" class="text-center py-5 text-muted">
-            <i class="bi bi-award fs-3 d-block mb-2"></i>No sponsored posts yet.
-          </td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
 </div>
 {% endblock %}

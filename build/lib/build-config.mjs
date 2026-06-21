@@ -23,7 +23,7 @@ export function getProjectDirs() {
         jsAssets: path.join(rootDir, 'public_html', 'assets', 'js'),
         cssAssets: path.join(rootDir, 'public_html', 'assets', 'css'),
         firebaseAssets: path.join(rootDir, 'public_html', 'assets', 'firebase'),
-        aiAssets: path.join(rootDir, 'public_html', 'assets', 'ai-assistant'),
+        aiAssets: path.join(rootDir, 'public_html', 'assets', 'ai', 'ai-assistant'),
     };
 }
 
@@ -79,13 +79,39 @@ export function getAppEntryPoints() {
         script: path.join(jsDir, 'script.js'),
         admin: path.join(jsDir, 'admin.js'),
         'app-config': path.join(jsDir, 'app-config.js'),
-        'bootstrap-lite': path.join(jsDir, 'bootstrap-lite.js'),
         'sweetalert2-handler': path.join(jsDir, 'sweetalert2-handler.js'),
         'theme-manager': path.join(jsDir, 'theme-manager.js'),
-        datepicker: path.join(jsDir, 'datepicker.js'),
-        activity: path.join(jsDir, 'activity.js'),
+        'datepicker': path.join(dirs.assets, 'datepicker', 'datepicker.js'),
+        'activity': path.join(jsDir, 'activity.js'),
         'auth/login': path.join(jsDir, 'auth', 'login.js'),
         'auth/register': path.join(jsDir, 'auth', 'register.js'),
+        'brox-i18n': path.join(jsDir, 'brox-i18n.js'),
+        'brox-ui': path.join(jsDir, 'brox-ui.js'),
+
+        // Standalone feature scripts (converted from IIFE to ES modules)
+        'medex-details-page': path.join(jsDir, 'medex-details-page.js'),
+        'medex-route-fetch': path.join(jsDir, 'medex-route-fetch.js'),
+        'medex-brand-page': path.join(jsDir, 'medex-brand-page.js'),
+        'ramadan-2026': path.join(jsDir, 'ramadan-2026.js'),
+        'calculator': path.join(jsDir, 'calculator.js'),
+        'bangla-converter': path.join(jsDir, 'bangla-converter.js'),
+        'cv-admin': path.join(jsDir, 'cv-admin.js'),
+        'cv-builder': path.join(jsDir, 'cv-builder.js'),
+        'cv-marketplace': path.join(jsDir, 'cv-marketplace.js'),
+        'cv-template-upload': path.join(jsDir, 'cv-template-upload.js'),
+        'ai-system-admin': path.join(jsDir, 'ai-system-admin.js'),
+        'admin-bulk-article-writer': path.join(jsDir, 'admin-bulk-article-writer.js'),
+        'admin-article-writer': path.join(jsDir, 'admin-article-writer.js'),
+        'admin-article-writer-stream': path.join(jsDir, 'admin-article-writer-stream.js'),
+        'lucide-compat': path.join(jsDir, 'lucide-compat.js'),
+        'lucide-svg': path.join(jsDir, 'lucide-svg.js'),
+        'assistant-shell': path.join(jsDir, 'assistant-shell.js'),
+        'assistant-runtime': path.join(jsDir, 'assistant-runtime.js'),
+        'feed-discovery': path.join(jsDir, 'feed-discovery.js'),
+        'analytics-dashboard': path.join(jsDir, 'analytics-dashboard.js'),
+        'account-settings-shared': path.join(jsDir, 'account-settings-shared.js'),
+        'linked-emails': path.join(jsDir, 'linked-emails.js'),
+        'photo-studio/editor': path.join(jsDir, 'photo-studio', 'editor.js'),
     };
 }
 
@@ -94,11 +120,11 @@ export function getAppEntryPoints() {
  */
 export function getCSSEntryPoints() {
     const dirs = getProjectDirs();
-    const cssDir = dirs.cssAssets;
+    const cssDistDir = path.join(dirs.cssAssets, 'dist');
 
     return {
-        'public-bundle': path.join(cssDir, 'public-bundle.css'),
-        'admin-bundle': path.join(cssDir, 'admin-bundle.css'),
+        'tailwind-public': path.join(cssDistDir, 'tailwind-public.css'),
+        'tailwind-admin': path.join(cssDistDir, 'tailwind-admin.css'),
     };
 }
 

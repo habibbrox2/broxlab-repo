@@ -353,6 +353,7 @@ class HomeModel
         return $rows;
     }
 
+
     // --------------------- NEW FUNCTIONS ---------------------
 
     // Get contents by tag

@@ -15,21 +15,21 @@ const isDev = process.argv.includes('--dev');
 const isWatch = process.argv.includes('--watch');
 const hasSourceMap = process.argv.includes('--sourcemap=external');
 
-const aiDir = path.join(rootDir, 'public_html', 'ai');
+const aiDir = path.join(rootDir, 'public_html', 'assets', 'ai');
 const outDir = path.join(aiDir, 'dist');
 
 const jsEntryPoints = {
-    assistant: path.join(aiDir, 'js', 'assistant.js'),
     'ai-admin': path.join(aiDir, 'js', 'ai-admin.js'),
     'ai-chat-manager': path.join(aiDir, 'js', 'ai-chat-manager.js'),
     'ai-knowledge-manager': path.join(aiDir, 'js', 'ai-knowledge-manager.js'),
 };
 
-const cssEntryPoint = path.join(aiDir, 'css', 'ai-style.css');
+// NOTE: CSS migrated to pure Tailwind utilities in Twig templates
+// assistant-ui.css is no longer built; see build/tailwind.config.js for AI design tokens
 
 const commonJsOptions = {
     bundle: true,
-    format: 'iife',
+    format: 'esm',
     platform: 'browser',
     target: ['es2020'],
     minify: !isDev,
@@ -37,19 +37,8 @@ const commonJsOptions = {
     outdir: outDir,
     entryNames: '[name]',
     logLevel: 'info',
-};
-
-const cssOptions = {
-    bundle: true,
-    platform: 'browser',
-    minify: !isDev,
-    sourcemap: hasSourceMap ? 'external' : isWatch ? true : false,
-    loader: {
-        '.css': 'css',
-    },
-    outdir: outDir,
-    entryNames: 'ai-style',
-    logLevel: 'info',
+    legalComments: 'none',
+    drop: ['debugger'],
 };
 
 function ensureOutputDir() {
@@ -59,16 +48,10 @@ function ensureOutputDir() {
 async function buildOnce() {
     ensureOutputDir();
 
-    await Promise.all([
-        esbuild.build({
-            ...commonJsOptions,
-            entryPoints: jsEntryPoints,
-        }),
-        esbuild.build({
-            ...cssOptions,
-            entryPoints: [cssEntryPoint],
-        }),
-    ]);
+    await esbuild.build({
+        ...commonJsOptions,
+        entryPoints: jsEntryPoints,
+    });
 
     console.log(`[ai] build complete -> ${outDir}`);
 }
@@ -76,18 +59,12 @@ async function buildOnce() {
 async function watch() {
     ensureOutputDir();
 
-    const [jsContext, cssContext] = await Promise.all([
-        esbuild.context({
-            ...commonJsOptions,
-            entryPoints: jsEntryPoints,
-        }),
-        esbuild.context({
-            ...cssOptions,
-            entryPoints: [cssEntryPoint],
-        }),
-    ]);
+    const jsContext = await esbuild.context({
+        ...commonJsOptions,
+        entryPoints: jsEntryPoints,
+    });
 
-    await Promise.all([jsContext.watch(), cssContext.watch()]);
+    await jsContext.watch();
     console.log('[ai] watching for changes...');
 }
 

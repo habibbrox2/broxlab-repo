@@ -1,85 +1,102 @@
 {% extends "admin/layout.twig" %}
+{% block title %}Edit Permission{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col">
-        <h1 class="h3 mb-0">
-          <a href="/admin/permissions" class="text-decoration-none text-theme-strong">
-            <i class="bi bi-key me-2"></i>Permissions
-          </a>
-          <span class="text-muted">/</span>
-          <span>Edit: <code>{{ permission.name }}</code></span>
-        </h1>
-      </div>
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-key-edit w-5 h-5 text-white"></i>
     </div>
-    <div class="row">
-      <div class="col-lg-5 mx-auto">
-        <div class="admin-panel-card border-0 shadow-sm">
-          <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0">Permission Details</h5>
-          </div>
-          <div class="admin-panel-card-body">
-            <form method="POST" action="/admin/permissions/{{ permission.id }}/update">
-              <div class="mb-3">
-                <label for="name" class="form-label">Permission Name *</label>
-                <input type="text"
-                       class="form-control"
-                       id="name"
-                       name="name"
-                       value="{{ permission.name }}"
-                       placeholder="e.g., post.create"
-                       required>
-                <small class="text-muted">Format: module.action</small>
-              </div>
-              <div class="mb-3">
-                <label for="module" class="form-label">Module *</label>
-                <div class="input-group">
-                  <input type="text"
-                         class="form-control"
-                         id="module"
-                         name="module"
-                         value="{{ permission.module }}"
-                         placeholder="e.g., post"
-                         list="modulesList"
-                         required>
-                  <datalist id="modulesList">
-                    {% for module in modules %}<option value="{{ module }}">{% endfor %}
-                    </datalist>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label for="description" class="form-label">Description</label>
-                  <textarea class="form-control"
-                            id="description"
-                            name="description"
-                            rows="3"
-                            placeholder="What does this permission allow?">{{ permission.description }}</textarea>
-                </div>
-                <div class="alert alert-light border">
-                  <small>
-                    <strong>Created:</strong> {{ permission.created_at|date("M d, Y H:i") }}
-                    <br>
-                    <strong>Updated:</strong>
-                    {% if permission.updated_at %}
-                      {{ permission.updated_at|date("M d, Y H:i") }}
-                    {% else %}
-                      Never
-                    {% endif %}
-                  </small>
-                </div>
-                <div class="d-flex gap-2">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle me-2"></i>Update Permission
-                  </button>
-                  <a href="/admin/permissions" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-circle me-2"></i>Cancel
-                  </a>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Access Control</p>
+     <h1 class="text-xl font-bold text-white">Edit: <code class="rounded-lg bg-white/10 px-2 py-0.5 text-base">{{ permission.name }}</code></h1>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">Update the permission module, description, and metadata.</p>
     </div>
-  {% endblock %}
+   </div>
+   <div class="flex gap-2">
+    <a href="/admin/permissions" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Permissions
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Form Card ── #}
+ <div class="max-w-3xl overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+   <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+    <i class="lucide lucide-key w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+   </div>
+   <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Permission Details</h3>
+  </div>
+  <div class="p-5">
+   <form method="POST" action="/admin/permissions/{{ permission.id }}/update">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="mb-4">
+     <label for="name" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+      Permission Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+     </label>
+     <div class="relative">
+      <i class="lucide lucide-code w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text"
+       class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
+       id="name" name="name" value="{{ permission.name }}" placeholder="e.g., post.create" required>
+     </div>
+    </div>
+
+    <div class="mb-4">
+     <label for="module" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
+      Module <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+     </label>
+     <div class="relative">
+      <i class="lucide lucide-folder w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text"
+       class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600"
+       id="module" name="module" value="{{ permission.module }}" placeholder="e.g., post" list="modulesList" required>
+      <datalist id="modulesList">
+       {% for module in modules %}<option value="{{ module }}">{% endfor %}
+      </datalist>
+     </div>
+    </div>
+
+    <div class="mb-4">
+     <label for="description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Description</label>
+     <textarea
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600 resize-y min-h-[80px]"
+      id="description" name="description" rows="3" placeholder="What does this permission allow?">{{ permission.description }}</textarea>
+    </div>
+
+    {# ── Metadata Display ── #}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 p-4">
+     <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+      <i class="lucide lucide-calendar w-4 h-4"></i>
+      <strong>Created:</strong>
+      <span>{{ permission.created_at|date('M d, Y H:i') }}</span>
+     </div>
+     <div class="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+      <i class="lucide lucide-clock w-4 h-4"></i>
+      <strong>Updated:</strong>
+      <span>{% if permission.updated_at %}{{ permission.updated_at|date('M d, Y H:i') }}{% else %}Never{% endif %}</span>
+     </div>
+    </div>
+
+    {# ── Actions ── #}
+    <div class="mt-5 flex flex-wrap gap-2">
+     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-check-circle w-4 h-4"></i> Update Permission
+     </button>
+     <a href="/admin/permissions" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+      <i class="lucide lucide-x w-4 h-4"></i> Cancel
+     </a>
+    </div>
+   </form>
+  </div>
+ </div>
+</div>
+{% endblock %}

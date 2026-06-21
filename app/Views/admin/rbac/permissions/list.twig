@@ -1,100 +1,110 @@
 {% extends "admin/layout.twig" %}
+{% block title %}Manage Permissions{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-key me-2"></i>
-        Manage Permissions
-      </div>
-      <div class="admin-page-subtitle">Permission management</div>
+<div class="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+ {# ── Page Header Banner ── #}
+ <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+  <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-key w-5 h-5 text-white"></i>
     </div>
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <h1 class="h3 mb-0">
-          <i class="bi bi-key me-2"></i>Manage Permissions
-        </h1>
-      </div>
-      <div class="col-md-4 text-end">
-        <a href="/admin/permissions/create"
-           class="modern-btn modern-btn-primary">
-          <i class="bi bi-plus-circle me-2"></i>Create New Permission
-        </a>
-      </div>
+    <div>
+     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Access Control</p>
+     <h1 class="text-xl font-bold text-white">Manage Permissions</h1>
+     <p class="text-sm text-white/60 mt-0.5 max-w-md">Search and maintain permission records.</p>
     </div>
-    <div class="admin-panel-card border-0 shadow-sm">
-      <div class="admin-panel-card-header bg-light border-bottom d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">All Permissions ({{ total }})</h5>
-        <input type="text"
-               class="form-control form-control-sm search-box-sm"
-               id="searchBox"
-               placeholder="Search permissions...">
-      </div>
-      <div class="admin-panel-card-body">
-        {% if permissions|length > 0 %}
-          <div class="table-responsive">
-            <table class="table table-stacked table-hover align-middle" id="permissionsTable">
-              <thead class="table-light">
-                <tr>
-                  <th>Permission Name</th>
-                  <th>Module</th>
-                  <th>Description</th>
-                  <th>Created</th>
-                  <th class="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for perm in permissions %}
-                  <tr class="permission-row">
-                    <td data-label="Permission Name">
-                      <code class="text-primary">{{ perm.name }}</code>
-                    </td>
-                    <td data-label="Module">
-                      <span class="badge bg-light text-surface-dark">{{ perm.module }}</span>
-                    </td>
-                    <td data-label="Description">
-                      <small class="text-muted">{{ perm.description|default("N/A") }}</small>
-                    </td>
-                    <td data-label="Created">
-                      <small class="text-muted">{{ perm.created_at|date("M d, Y") }}</small>
-                    </td>
-                    <td class="text-center" data-label="Actions">
-                      <a href="/admin/permissions/{{ perm.id }}"
-                         class="modern-btn btn-sm btn-primary-outline"
-                         title="View">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      <a href="/admin/permissions/{{ perm.id }}/edit"
-                         class="modern-btn btn-sm btn-outline-warning"
-                         title="Edit">
-                        <i class="bi bi-pencil"></i>
-                      </a>
-                      <form method="POST"
-                            action="/admin/permissions/{{ perm.id }}/delete"
-                            class="delete-btn-inline"
-                            onsubmit="return confirm('Delete this permission?')">
-                        <button type="submit"
-                                class="modern-btn btn-sm btn-danger-outline"
-                                title="Delete">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% else %}
-          <div class="alert alert-info text-center py-4">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>No permissions found.</strong> <a href="/admin/permissions/create">Create one now</a>
-          </div>
-        {% endif %}
-      </div>
-    </div>
+   </div>
+   <div class="flex gap-2">
+    <a href="/admin/permissions/create" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-plus w-4 h-4"></i> Create New Permission
+    </a>
+   </div>
   </div>
+ </div>
+
+ {# ── Table Card ── #}
+ <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+   <div class="flex items-center gap-3">
+    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+     <i class="lucide lucide-key w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+    </div>
+    <div>
+     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">All Permissions ({{ total }})</h3>
+     <p class="text-xs text-slate-500 dark:text-slate-400">Permission name, module, description, and actions</p>
+    </div>
+   </div>
+   <div class="w-full sm:max-w-xs">
+    <label class="sr-only" for="searchBox">Search permissions</label>
+    <div class="relative">
+     <i class="lucide lucide-search w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+     <input type="text" id="searchBox" placeholder="Search permissions…"
+      class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-9 pr-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 hover:border-slate-300 dark:hover:border-slate-600">
+    </div>
+   </div>
+  </div>
+
+  {% if permissions|length > 0 %}
+  <div class="overflow-x-auto">
+   <table class="w-full text-left">
+    <thead>
+     <tr class="border-b border-slate-100 dark:border-slate-800">
+      <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Permission Name</th>
+      <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Module</th>
+      <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Description</th>
+      <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Created</th>
+      <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap text-center">Actions</th>
+     </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+     {% for perm in permissions %}
+     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
+      <td class="px-4 py-3">
+       <code class="rounded-lg bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ perm.name }}</code>
+      </td>
+      <td class="px-4 py-3">
+       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{{ perm.module }}</span>
+      </td>
+      <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ perm.description|default('N/A') }}</td>
+      <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ perm.created_at|date('M d, Y') }}</td>
+      <td class="px-4 py-3 text-center">
+       <div class="flex items-center justify-center gap-1">
+        <a href="/admin/permissions/{{ perm.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="View">
+         <i class="lucide lucide-eye w-3.5 h-3.5"></i>
+        </a>
+        <a href="/admin/permissions/{{ perm.id }}/edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="Edit">
+         <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
+        </a>
+        <form method="POST" action="/admin/permissions/{{ perm.id }}/delete" class="inline" data-action="generic"Delete this permission?')">
+         <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+          <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
+         </button>
+        </form>
+       </div>
+      </td>
+     </tr>
+     {% endfor %}
+    </tbody>
+   </table>
+  </div>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+   <div class="flex flex-col items-center justify-center">
+    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+     <i class="lucide lucide-key w-7 h-7 text-slate-400 dark:text-slate-600"></i>
+    </div>
+    <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No permissions found</h3>
+    <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Create your first permission to get started.</p>
+    <a href="/admin/permissions/create" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+     <i class="lucide lucide-plus w-4 h-4"></i> Create Permission
+    </a>
+   </div>
+  </div>
+  {% endif %}
+ </div>
+</div>
 {% endblock %}
-
-

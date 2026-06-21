@@ -1,0 +1,23 @@
+{#
+ Assistant Config Macro
+ Encapsulates all AI assistant setup variables to reduce duplication.
+ Accepts `variant` (admin|public) and returns computed config values.
+#}
+
+{% macro is_admin(variant) %}{{ (variant|default('public')|lower == 'admin') }}{% endmacro %}
+
+{% macro role(variant) %}{{ variant|default('public')|lower }}{% endmacro %}
+
+{% macro wrapper_id(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'adminAiWrapper' : 'publicAssistantWrapper' }}{% endmacro %}
+
+{% macro root_id(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'adminAiShell' : 'publicAssistantChat' }}{% endmacro %}
+
+{% macro btn_id(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'adminAiBtn' : 'publicAssistantBtn' }}{% endmacro %}
+
+{% macro title_id(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'adminAiTitle' : 'publicAssistantTitle' }}{% endmacro %}
+
+{% macro root_label(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'Brox Admin Assistant' : 'Brox Assistant' }}{% endmacro %}
+
+{% macro prompt_placeholder(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'Type your message...' : 'Message Brox Assistant...' }}{% endmacro %}
+
+{% macro shell_width(variant) %}{{ (variant|default('public')|lower == 'admin') ? 'w-full sm:max-w-4xl' : 'w-full sm:max-w-[450px]' }}{% endmacro %}

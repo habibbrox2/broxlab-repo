@@ -1,0 +1,64 @@
+{#
+  Template Preview Card Component
+  
+  Props:
+  - template: template object with name, description, gradient, icon, preview_html, category
+  - can_use: boolean, whether user can use this template
+#}
+
+<div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full group">
+  {# Template Preview #}
+  <div class="h-64 overflow-hidden bg-gradient-to-br {{ template.gradient_class|default('from-gray-100 to-gray-200') }} relative flex items-center justify-center">
+    {% if template.preview_html %}
+      <div class="absolute inset-0 scale-50 origin-top-left pointer-events-none opacity-70">
+        {{ template.preview_html|raw }}
+      </div>
+    {% else %}
+      <div class="text-center text-white/50">
+        <i class="lucide-{{ template.icon|default('file') }} text-6xl mb-2"></i>
+        <p class="text-sm">Preview</p>
+      </div>
+    {% endif %}
+    
+    {# Badge #}
+    <div class="absolute top-3 right-3">
+      <span class="inline-block bg-white/90 backdrop-blur text-gray-800 text-xs font-semibold px-3 py-1 rounded-full">
+        {{ template.category|default('Template') }}
+      </span>
+    </div>
+  </div>
+
+  {# Card Body #}
+  <div class="p-6 flex flex-col flex-grow">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ template.name }}</h3>
+    <p class="text-sm text-gray-600 mb-3 flex-grow">{{ template.description }}</p>
+    
+    {# Features #}
+    {% if template.features %}
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for feature in template.features|slice(0, 3) %}
+          <span class="inline-block bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded">
+            {{ feature }}
+          </span>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {# Best For #}
+    {% if template.best_for %}
+      <p class="text-xs text-gray-500 mb-4 italic">
+        <i class="lucide-target text-xs mr-1"></i>{{ template.best_for }}
+      </p>
+    {% endif %}
+
+    {# Action Buttons #}
+    <div class="flex gap-3">
+      <button class="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors template-preview-btn" data-template="{{ template.slug }}">
+        <i class="lucide-eye text-sm mr-1"></i>Preview
+      </button>
+      <a href="/cv-builder/new?template={{ template.slug }}" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:shadow-lg hover:scale-105 transition-all text-center">
+        <i class="lucide-plus text-sm mr-1"></i>Use
+      </a>
+    </div>
+  </div>
+</div>

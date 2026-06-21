@@ -19,21 +19,39 @@ const CONFIG = {
       budgets: {
         'admin.js': 300 * 1024, // 300KB
         'script.js': 50 * 1024, // 50KB
-        'bootstrap-lite.js': 20 * 1024, // 20KB
         'activity.js': 15 * 1024, // 15KB
         'sweetalert2-handler.js': 15 * 1024, // 15KB
         'theme-manager.js': 5 * 1024, // 5KB
         'app-config.js': 2 * 1024, // 2KB
+        // Standalone feature scripts (converted from IIFE)
+        'medex-scraper.js': 15 * 1024,
+        'medex-autocollect.js': 10 * 1024,
+        'medex-details-page.js': 40 * 1024,
+        'medex-route-fetch.js': 60 * 1024,
+        'medex-brand-page.js': 25 * 1024,
+        'medex-collector-ui.js': 25 * 1024,
+        'ramadan-2026.js': 25 * 1024,
+        'calculator.js': 25 * 1024,
+        'bangla-converter.js': 15 * 1024,
+        'cv-admin.js': 15 * 1024,
+        'ai-system-admin.js': 40 * 1024,
+        'admin-bulk-article-writer.js': 25 * 1024,
+        'admin-article-writer.js': 60 * 1024,
+        'admin-article-writer-stream.js': 40 * 1024,
+        'lucide-compat.js': 5 * 1024,
+        'lucide-svg.js': 10 * 1024,
+        'feed-discovery.js': 60 * 1024,
+        'photo-studio/editor.js': 100 * 1024,
       },
-      totalBudget: 400 * 1024, // 400KB total
+      totalBudget: 1000 * 1024, // 1MB total (includes new standalone scripts)
     },
     {
       path: 'public_html/assets/css/dist',
       budgets: {
-        'public-bundle.css': 200 * 1024, // 200KB
-        'admin-bundle.css': 180 * 1024, // 180KB
+        'tailwind-public.css': 260 * 1024, // 260KB
+        'tailwind-admin.css': 260 * 1024, // 260KB
       },
-      totalBudget: 350 * 1024, // 350KB total
+      totalBudget: 700 * 1024, // 700KB total
     },
     {
       path: 'public_html/assets/firebase/v2/dist',

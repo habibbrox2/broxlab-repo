@@ -1,17 +1,6 @@
 /* exported setTool, rotateImage, flipImage, applyFilter, applyAllFilters, resetFilters, undo, redo, zoomIn, zoomOut, resetZoom, bgRemove, downloadImage, openPrintSheetModal, closePrintSheetModal, generatePrintSheet, deleteCurrentImage, toggleToolsPanel, preparePrintReady, fitToGuide, centerSubject, clearBackgroundLayer, setBackgroundColor, toggleGuides, applyCrop */
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
-
-async function parseJsonResponse(response) {
-  const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { success: false, error: 'Invalid server response', };
-  }
-}
+import { parseJsonResponse, getCsrfToken } from '../shared/utils.js';
 
 function createBlobFromCanvas(canvas, type = 'image/png', quality = 0.92) {
   return new Promise((resolve, reject) => {
@@ -1514,7 +1503,7 @@ class PhotoStudio {
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'tray-item-remove';
-      removeButton.innerHTML = '<i class="bi bi-x"></i>';
+      removeButton.innerHTML = '<i class="lucide lucide-x" style="width:1rem;height:1rem;"></i>';
       removeButton.addEventListener('click', (event) => {
         event.stopPropagation();
         void this.deleteTrayImage(index);
@@ -1527,7 +1516,7 @@ class PhotoStudio {
 
   async deleteTrayImage(index) {
     const imageMeta = this.trayImages[index];
-    if (!imageMeta || !window.confirm('Delete this image from the tray?')) {
+    if (!imageMeta || !(await window.showConfirm('Delete this image from the tray?'))) {
       return;
     }
 
@@ -1763,7 +1752,7 @@ class PhotoStudio {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+    toast.innerHTML = `<i class="lucide lucide-${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'} mr-2" style="width:1rem;height:1rem;"></i> ${message}`;
     container.appendChild(toast);
     window.setTimeout(() => toast.remove(), 3200);
   }
@@ -1802,4 +1791,46 @@ document.addEventListener('DOMContentLoaded', () => {
   window.setBackgroundColor = (color) => window.studioInstance.setBackgroundColor(color);
   window.toggleGuides = () => window.studioInstance.toggleGuides();
   window.applyCrop = () => void window.studioInstance.applyRectCrop();
+
+  // Event delegation — replaces all inline onclick handlers from the Twig template
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+
+    switch (action) {
+      case 'undo': window.undo(); break;
+      case 'redo': window.redo(); break;
+      case 'trigger-upload':
+        document.getElementById('imageUploadInput')?.click();
+        break;
+      case 'prepare-print-ready': window.preparePrintReady(); break;
+      case 'download-image': window.downloadImage(); break;
+      case 'open-print-sheet': window.openPrintSheetModal(); break;
+      case 'toggle-guides': window.toggleGuides(); break;
+      case 'fit-to-guide': window.fitToGuide(); break;
+      case 'center-subject': window.centerSubject(); break;
+      case 'delete-current-image': window.deleteCurrentImage(); break;
+      case 'bg-remove': window.bgRemove(); break;
+      case 'set-tool': window.setTool(target.dataset.tool); break;
+      case 'zoom-out': window.zoomOut(); break;
+      case 'zoom-in': window.zoomIn(); break;
+      case 'reset-zoom': window.resetZoom(); break;
+      case 'rotate-image': window.rotateImage(); break;
+      case 'flip-image': window.flipImage(target.dataset.direction); break;
+      case 'apply-crop': window.applyCrop(); break;
+      case 'apply-all-filters': window.applyAllFilters(); break;
+      case 'reset-filters': window.resetFilters(); break;
+      case 'clear-bg-layer': window.clearBackgroundLayer(); break;
+      case 'set-bg-color-from-picker':
+        window.setBackgroundColor(document.getElementById('backgroundColorPicker').value);
+        break;
+      case 'close-print-sheet': window.closePrintSheetModal(); break;
+      case 'generate-print-sheet': window.generatePrintSheet(); break;
+    }
+  });
 });
+
+// ES module export (window compat already set up above)
+export { PhotoStudio };
+export default PhotoStudio;

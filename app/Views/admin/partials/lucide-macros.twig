@@ -1,0 +1,111 @@
+{#
+  Lucide Icon Component Macros
+  
+  Usage examples:
+  {{ icon_badge('file-text', 'indigo', 'Total Records', 'Total', '256') }}
+  {{ icon_button('plus', 'Create Template', '', 'bg-indigo-600 text-white hover:bg-indigo-700') }}
+  {{ icon_pill('check-circle', 'emerald', 'Active') }}
+#}
+
+{# Icon with background circle and label #}
+{% macro icon_badge(icon_name, color, label, badge_text, value) %}
+  <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-{{ color }}-200 hover:shadow-md">
+    <div class="mb-4 flex items-center justify-between">
+      <div class="rounded-lg bg-{{ color }}-100 p-3 text-{{ color }}-600">
+        <i class="lucide lucide-{{ icon_name }} text-xl"></i>
+      </div>
+      {% if badge_text %}
+        <span class="text-xs font-semibold text-{{ color }}-600 bg-{{ color }}-50 px-2.5 py-1 rounded-full">{{ badge_text }}</span>
+      {% endif %}
+    </div>
+    {% if value %}
+      <div class="text-3xl font-bold text-slate-900">{{ value }}</div>
+    {% endif %}
+    <p class="mt-1 text-sm text-slate-600">{{ label }}</p>
+  </div>
+{% endmacro %}
+
+{# Icon button with optional tooltip #}
+{% macro icon_button(icon_name, label, tooltip, classes) %}
+  <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition {{ classes }}" {% if tooltip %}title="{{ tooltip }}"{% endif %}>
+    <i class="lucide lucide-{{ icon_name }} text-base"></i>
+    <span>{{ label }}</span>
+  </button>
+{% endmacro %}
+
+{# Icon pill badge (inline label with icon) #}
+{% macro icon_pill(icon_name, color, text) %}
+  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-{{ color }}-100 text-{{ color }}-800">
+    <i class="lucide lucide-{{ icon_name }} text-sm"></i>
+    {{ text }}
+  </span>
+{% endmacro %}
+
+{# Icon with text link #}
+{% macro icon_link(icon_name, text, href, color, external) %}
+  <a href="{{ href }}" class="inline-flex items-center gap-2 text-{{ color }}-600 hover:text-{{ color }}-700 hover:underline" {% if external %}target="_blank" rel="noopener noreferrer"{% endif %}>
+    <i class="lucide lucide-{{ icon_name }} text-base"></i>
+    <span>{{ text }}</span>
+  </a>
+{% endmacro %}
+
+{# Icon with title/subtitle (header style) #}
+{% macro icon_header(icon_name, title, subtitle) %}
+  <div class="flex items-start gap-3">
+    <div class="rounded-lg bg-indigo-100 p-2.5 text-indigo-600 mt-0.5">
+      <i class="lucide lucide-{{ icon_name }} text-lg"></i>
+    </div>
+    <div class="flex-1">
+      <h3 class="font-semibold text-slate-900">{{ title }}</h3>
+      {% if subtitle %}
+        <p class="text-sm text-slate-600 mt-0.5">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+
+{# Icon action row (for bulk actions) #}
+{% macro icon_action_row(icon_name, label, count, color) %}
+  <div class="flex items-center justify-between rounded-lg border border-{{ color }}-200 bg-{{ color }}-50 px-4 py-3">
+    <div class="flex items-center gap-2">
+      <i class="lucide lucide-{{ icon_name }} text-{{ color }}-600 text-lg"></i>
+      <span class="font-medium text-{{ color }}-900">{{ label }}</span>
+      <span class="text-sm text-{{ color }}-700 bg-{{ color }}-100 px-2.5 py-0.5 rounded-full">{{ count }}</span>
+    </div>
+  </div>
+{% endmacro %}
+
+{# Icon with section divider #}
+{% macro icon_section_header(icon_name, title, color) %}
+  <div class="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-transparent px-6 py-4 mb-6">
+    <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+      <i class="lucide lucide-{{ icon_name }} text-base text-{{ color }}-600"></i>
+      {{ title }}
+    </h3>
+  </div>
+{% endmacro %}
+
+{# Icon status indicator #}
+{% macro icon_status(icon_name, status, color) %}
+  <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-{{ color }}-50 text-{{ color }}-700 border border-{{ color }}-200">
+    <i class="lucide lucide-{{ icon_name }} text-sm"></i>
+    {{ status }}
+  </span>
+{% endmacro %}
+
+{# Icon empty state #}
+{% macro icon_empty_state(icon_name, title, description, action_text, action_href) %}
+  <div class="px-8 py-12 text-center">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+      <i class="lucide lucide-{{ icon_name }} text-2xl text-slate-400"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 mb-2">{{ title }}</h3>
+    <p class="text-slate-600 mb-6 max-w-md mx-auto">{{ description }}</p>
+    {% if action_text and action_href %}
+      <a href="{{ action_href }}" class="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition">
+        <i class="lucide lucide-{{ action_text.split(':')[0] }} text-base"></i>
+        {{ action_text.split(':')[1]|default(action_text) }}
+      </a>
+    {% endif %}
+  </div>
+{% endmacro %}

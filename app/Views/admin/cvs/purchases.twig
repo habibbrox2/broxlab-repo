@@ -1,0 +1,116 @@
+{% extends 'admin/layout.twig' %}
+{% block title %}{{ page_title|default('Premium Template Purchases') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <i class="lucide lucide-crown mr-2 text-amber-500" style="display:inline-block;width:1.5rem;height:1.5rem;"></i>
+        Premium Template Purchases
+      </h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage bKash/Nagad premium template purchases</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Total</div>
+    </div>
+    <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl shadow-sm border border-amber-200 dark:border-amber-700 p-4">
+      <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ stats.pending }}</div>
+      <div class="text-xs text-amber-500 dark:text-amber-300">Pending</div>
+    </div>
+    <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl shadow-sm border border-emerald-200 dark:border-emerald-700 p-4">
+      <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.completed }}</div>
+      <div class="text-xs text-emerald-500 dark:text-emerald-300">Completed</div>
+    </div>
+    <div class="bg-red-50 dark:bg-red-900/20 rounded-xl shadow-sm border border-red-200 dark:border-red-700 p-4">
+      <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ stats.cancelled }}</div>
+      <div class="text-xs text-red-500 dark:text-red-300">Cancelled</div>
+    </div>
+    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-700 p-4">
+      <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.refunded }}</div>
+      <div class="text-xs text-purple-500 dark:text-purple-300">Refunded</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <form method="GET" action="/admin/cv-purchases" class="flex flex-wrap gap-3 items-end">
+      <div class="flex-1 min-w-[200px]">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+        <input type="text" name="search" value="{{ filters.search|e('html_attr') }}" placeholder="Name, email, trxID, template..."
+               class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+      </div>
+      <div class="w-40">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+        <select name="status" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+          <option value="">All statuses</option>
+          <option value="pending" {{ filters.status == 'pending' ? 'selected' : '' }}>Pending</option>
+          <option value="completed" {{ filters.status == 'completed' ? 'selected' : '' }}>Completed</option>
+          <option value="cancelled" {{ filters.status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+          <option value="refunded" {{ filters.status == 'refunded' ? 'selected' : '' }}>Refunded</option>
+        </select>
+      </div>
+      <div class="w-32">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Per page</label>
+        <select name="limit" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+          <option value="20" {{ limit == 20 ? 'selected' : '' }}>20</option>
+          <option value="50" {{ limit == 50 ? 'selected' : '' }}>50</option>
+          <option value="100" {{ limit == 100 ? 'selected' : '' }}>100</option>
+        </select>
+      </div>
+      <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+        <i class="lucide lucide-filter" style="display:inline-block;width:1em;height:1em;"></i> Filter
+      </button>
+      {% if filters.search or filters.status %}
+      <a href="/admin/cv-purchases" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+        Clear
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900/50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Template</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Method</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">TrxID</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% if purchases|length == 0 %}
+          <tr>
+            <td colspan="10" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+              <i class="lucide lucide-inbox" style="display:inline-block;width:2rem;height:2rem;margin-bottom:0.5rem;"></i>
+              <div class="text-sm">No purchases found</div>
+              {% if filters.search or filters.status %}
+              <a href="/admin/cv-purchases" class="text-indigo-600 hover:text-indigo-800 text-sm mt-1 inline-block">Clear filters</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% for p in purchases %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">#{{ p.id }}</td>
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ p.first_name ? p.first_name ~ ' ' ~ p.last_name : p.username }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ p.email }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                <i class="

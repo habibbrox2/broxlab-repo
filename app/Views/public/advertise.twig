@@ -1,227 +1,198 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Advertise With {{ app_settings.site_name|default('BroxBhai') }} - Reach Tech Enthusiasts{% endblock %}
+{% block title %}{{ t('Advertise With {site_name}', {site_name: app_settings.site_name|default('BroxBhai')}) }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Advertise', url: '/advertise', icon: 'megaphone' }
+ { label: 'Advertise', url: '/advertise', icon: 'megaphone' }
 ] %}
 
 {% block content %}
-<div class="page-advertise public-static-page">
-  <section class="hero-section public-page-hero public-hero--advertise position-relative py-5 mb-4 overflow-hidden">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-white mb-3">
-            <i class="bi bi-megaphone-fill me-2"></i>Advertise With Us
-          </h1>
-          <p class="lead text-white-50 fs-5 mb-0">
-            Reach thousands of tech enthusiasts and mobile lovers every day.
-          </p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="public-hero-icon" aria-hidden="true">
-            <i class="bi bi-graph-up-arrow"></i>
-          </div>
-        </div>
-      </div>
+<div class="public-static-page py-6 md:py-10">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="hero-section mb-6 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+   <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+      <i class="lucide lucide-megaphone h-3.5 w-3.5" aria-hidden="true"></i>
+      {{ t('Advertising') }}
+     </div>
+     <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{{ t('Advertise with us') }}</h1>
+     <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+      {{ t('Reach tech enthusiasts, mobile shoppers, and gadget lovers on {site_name}.', {site_name: app_settings.site_name|default('BroxBhai')}) }}
+     </p>
+     <a href="#inquiry-form" class="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+      <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+      {{ t('Get Started') }}
+     </a>
     </div>
-    <div class="public-hero-pattern" aria-hidden="true"></div>
+    <div class="public-hero-icon" aria-hidden="true">
+     <i class="lucide lucide-trending-up"></i>
+    </div>
+   </div>
   </section>
 
-  <div class="container py-4 py-lg-5">
-    <div class="row align-items-center mb-5 g-4">
-      <div class="col-lg-6">
-        <h2 class="h3 fw-bold mb-3">Why Advertise With Us?</h2>
-        <p class="lead text-muted mb-4">
-          Reach thousands of tech enthusiasts, mobile shoppers, and gadget lovers on
-          {{ app_settings.site_name|default('BroxBhai') }}.
-        </p>
+  <div class="grid gap-6 lg:grid-cols-12">
+   <section class="surface-card lg:col-span-7">
+    <h2 class="text-2xl font-bold text-slate-900">{{ t('Why advertise with {site_name}?', {site_name: app_settings.site_name|default('BroxBhai')}) }}</h2>
+    <p class="mt-3 text-sm leading-7 text-slate-600">
+     {{ t('Connect with readers who actively compare devices, follow tech updates, and explore digital services.') }}
+    </p>
 
-        <h3 class="h5 fw-bold mb-3">Why Choose {{ app_settings.site_name|default('BroxBhai') }}?</h3>
-        <ul class="list-unstyled advertise-check-list mb-4">
-          <li class="advertise-check-item"><strong>Large Audience:</strong> Connect with {{ stats.total_users }} active members.</li>
-          <li class="advertise-check-item"><strong>Engaged Community:</strong> Thousands of comments and discussions.</li>
-          <li class="advertise-check-item"><strong>Quality Content:</strong> {{ stats.total_posts }} published posts and reviews.</li>
-          <li class="advertise-check-item"><strong>Mobile Focused:</strong> Perfect for tech and mobile products.</li>
-          <li class="advertise-check-item"><strong>Flexible Options:</strong> Banner ads, sponsored posts, and more.</li>
-        </ul>
-
-        <a href="#inquiry-form" class="btn btn-primary btn-lg">Get Started</a>
+    <div class="mt-6 grid gap-3">
+     {% for point in [
+      { icon: 'users', title: t('Large Audience'), text: t('Connect with {count} active members.', {count: stats.total_users}) },
+      { icon: 'messages-square', title: t('Engaged Community'), text: t('Reach readers participating in comments and discussions.') },
+      { icon: 'newspaper', title: t('Quality Content'), text: t('{count} published posts and reviews.', {count: stats.total_posts}) },
+      { icon: 'smartphone', title: t('Mobile Focused'), text: t('Ideal for tech, mobile, telecom, and digital service campaigns.') },
+      { icon: 'layout-dashboard', title: t('Flexible Options'), text: t('Banner ads, sponsored articles, newsletter sponsorships, and more.') }
+     ] %}
+     <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+       <i class="lucide lucide-{{ point.icon }} h-4 w-4" aria-hidden="true"></i>
       </div>
-
-      <div class="col-lg-6">
-        <div class="card public-surface-card border-0 p-4 p-lg-5 h-100">
-          <h3 class="h5 fw-bold mb-4">Our Reach</h3>
-          <div class="row text-center g-3">
-            <div class="col-6">
-              <h4 class="counter mb-1" data-target="{{ stats.total_posts }}">0</h4>
-              <small class="text-muted">Articles</small>
-            </div>
-            <div class="col-6">
-              <h4 class="counter mb-1" data-target="{{ stats.total_users }}">0</h4>
-              <small class="text-muted">Members</small>
-            </div>
-            <div class="col-6">
-              <h4 class="counter mb-1" data-target="{{ stats.total_mobiles }}">0</h4>
-              <small class="text-muted">Reviews</small>
-            </div>
-            <div class="col-6">
-              <h4 class="counter mb-1" data-target="{{ stats.total_comments }}">0</h4>
-              <small class="text-muted">Discussions</small>
-            </div>
-          </div>
-        </div>
+      <div>
+       <h3 class="text-sm font-bold text-slate-900">{{ point.title }}</h3>
+       <p class="mt-1 text-sm text-slate-600">{{ point.text }}</p>
       </div>
+     </div>
+     {% endfor %}
     </div>
+   </section>
 
-    <div class="row mb-5" id="inquiry-form">
-      <div class="col-lg-8 mx-auto">
-        <div class="card public-surface-card border-0">
-          <div class="card-body p-4 p-lg-5">
-            <h4 class="card-title fw-bold mb-4">Advertising Inquiry Form</h4>
-
-            {% if success %}
-              <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ success }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>
-            {% endif %}
-
-            {% if errors %}
-              <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <ul class="mb-0">
-                  {% for error in errors %}
-                    <li>{{ error }}</li>
-                  {% endfor %}
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>
-            {% endif %}
-
-            <form method="POST" action="/advertise">
-              <div class="mb-3">
-                <label for="name" class="form-label">Your Name *</label>
-                <input type="text"
-                       class="form-control"
-                       id="name"
-                       name="name"
-                       value="{{ old.name ?? '' }}"
-                       required>
-              </div>
-
-              <div class="mb-3">
-                <label for="email" class="form-label">Email Address *</label>
-                <input type="email"
-                       class="form-control"
-                       id="email"
-                       name="email"
-                       value="{{ old.email ?? '' }}"
-                       required>
-              </div>
-
-              <div class="mb-3">
-                <label for="company" class="form-label">Company Name *</label>
-                <input type="text"
-                       class="form-control"
-                       id="company"
-                       name="company"
-                       value="{{ old.company ?? '' }}"
-                       required>
-              </div>
-
-              <div class="mb-3">
-                <label for="budget" class="form-label">Budget Range *</label>
-                <select class="form-select" id="budget" name="budget" required>
-                  <option value="">-- Select Budget --</option>
-                  <option value="under-5k" {% if old.budget == 'under-5k' %}selected{% endif %}>Under 5,000 BDT</option>
-                  <option value="5k-10k" {% if old.budget == '5k-10k' %}selected{% endif %}>5,000 - 10,000 BDT</option>
-                  <option value="10k-25k" {% if old.budget == '10k-25k' %}selected{% endif %}>10,000 - 25,000 BDT</option>
-                  <option value="25k-50k" {% if old.budget == '25k-50k' %}selected{% endif %}>25,000 - 50,000 BDT</option>
-                  <option value="50k+" {% if old.budget == '50k+' %}selected{% endif %}>50,000+ BDT</option>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="message" class="form-label">Your Message *</label>
-                <textarea class="form-control"
-                          id="message"
-                          name="message"
-                          rows="5"
-                          required>{{ old.message ?? '' }}</textarea>
-                <small class="text-muted">Tell us about your advertising goals and interests.</small>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-lg w-100">Submit Inquiry</button>
-            </form>
-          </div>
-        </div>
-      </div>
+   <aside class="lg:col-span-5">
+    <div class="stats-cards">
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_posts }}">0</h3>       <p class="text-sm text-slate-500">{{ t('Articles') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_users }}">0</h3>
+      <p class="text-sm text-slate-500">{{ t('Members') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_mobiles }}">0</h3>
+      <p class="text-sm text-slate-500">{{ t('Reviews') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_comments }}">0</h3>
+      <p class="text-sm text-slate-500">{{ t('Discussions') }}</p>
+     </div>
     </div>
-
-    <div class="row mb-4 g-4">
-      <div class="col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h5 class="fw-bold mb-3"><i class="bi bi-layout-text-window-reverse me-2"></i>Available Ad Spaces</h5>
-            <ul class="list-unstyled mb-0 advertise-list">
-              <li>Homepage Banner (Above the fold)</li>
-              <li>Sidebar Advertisement</li>
-              <li>Sponsored Articles</li>
-              <li>Category Page Banners</li>
-              <li>Newsletter Sponsorship</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="card public-surface-card border-0 h-100">
-          <div class="card-body">
-            <h5 class="fw-bold mb-3"><i class="bi bi-patch-question me-2"></i>Frequently Asked Questions</h5>
-            <ul class="list-unstyled mb-0 advertise-faq-list">
-              <li><strong>Q:</strong> What targeting options are available?</li>
-              <li><strong>A:</strong> Category, tag, and audience demographic targeting.</li>
-              <li><strong>Q:</strong> Can I track performance?</li>
-              <li><strong>A:</strong> Yes, detailed analytics and reporting are available.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+   </aside>
   </div>
+
+  <section id="inquiry-form" class="mt-6">
+   <div class="mx-auto max-w-3xl">
+    <div class="surface-card">
+     <h2 class="text-2xl font-bold text-slate-900">{{ t('Advertising inquiry') }}</h2>
+     <p class="mt-2 text-sm text-slate-600">{{ t('Tell us about your campaign goals and we will respond with suitable options.') }}</p>
+
+     {% if success %}
+     <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="alert">
+      {{ success }}
+     </div>
+     {% endif %}
+
+     {% if errors %}
+     <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <ul class="list-disc space-y-1 pl-5">
+       {% for error in errors %}
+       <li>{{ error }}</li>
+       {% endfor %}
+      </ul>
+     </div>
+     {% endif %}
+
+     <form method="POST" action="/advertise" class="mt-6">
+      <div class="grid gap-4 sm:grid-cols-2">
+       <div>
+        <label for="name" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Your Name') }} *</label>
+        <input type="text" id="name" name="name" value="{{ old.name ?? '' }}" required>
+       </div>
+       <div>
+        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Email Address') }} *</label>
+        <input type="email" id="email" name="email" value="{{ old.email ?? '' }}" required>
+       </div>
+      </div>
+
+      <div>        <label for="company" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Company Name') }} *</label>
+       <input type="text" id="company" name="company" value="{{ old.company ?? '' }}" required>
+      </div>
+
+      <div>        <label for="budget" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Budget Range') }} *</label>
+       <select id="budget" name="budget" required>
+        <option value="">{{ t('Select Budget') }}</option>
+        <option value="under-5k" {% if old.budget == 'under-5k' %}selected{% endif %}>Under 5,000 BDT</option>
+        <option value="5k-10k" {% if old.budget == '5k-10k' %}selected{% endif %}>5,000 - 10,000 BDT</option>
+        <option value="10k-25k" {% if old.budget == '10k-25k' %}selected{% endif %}>10,000 - 25,000 BDT</option>
+        <option value="25k-50k" {% if old.budget == '25k-50k' %}selected{% endif %}>25,000 - 50,000 BDT</option>
+        <option value="50k+" {% if old.budget == '50k+' %}selected{% endif %}>50,000+ BDT</option>
+       </select>
+      </div>
+
+      <div>        <label for="message" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Your Message') }} *</label>
+       <textarea id="message" name="message" rows="6" required>{{ old.message ?? '' }}</textarea>
+       <p class="mt-2 text-xs text-slate-500">{{ t('Tell us about your advertising goals and interests.') }}</p>
+      </div>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+       <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+       {{ t('Submit Inquiry') }}
+      </button>
+     </form>
+    </div>
+   </div>
+  </section>
+
+  <div class="mt-6 grid gap-4 md:grid-cols-2">
+   <div class="info-card">
+    <h3 class="text-lg font-bold text-slate-900"><i class="lucide lucide-columns mr-2 text-indigo-600" aria-hidden="true"></i>{{ t('Available Ad Spaces') }}</h3>
+    <ul class="mt-4 space-y-2 text-sm text-slate-600">
+     <li>{{ t('Homepage Banner') }}</li>
+     <li>{{ t('Sidebar Advertisement') }}</li>
+     <li>{{ t('Sponsored Articles') }}</li>
+     <li>{{ t('Category Page Banners') }}</li>
+     <li>{{ t('Newsletter Sponsorship') }}</li>
+    </ul>
+   </div>
+
+   <div class="support-card">
+    <h3 class="text-lg font-bold text-slate-900"><i class="lucide lucide-help-circle mr-2 text-indigo-600" aria-hidden="true"></i>{{ t('Campaign Support') }}</h3>
+    <p class="mt-4 text-sm leading-7 text-slate-600">
+     {{ t('Category, tag, and audience-focused placements are available. Reporting and campaign guidance can be arranged for sponsored packages.') }}
+    </p>
+   </div>
+  </div>
+ </div>
 </div>
 
 <script>
 function animateCounter(element, target, duration = 2000) {
-    const start = 0;
-    const increment = target / (duration / 16);
-    let current = start;
-
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-            element.textContent = target;
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current);
-        }
-    }, 16);
+ const increment = target / (duration / 16);
+ let current = 0;
+ const timer = setInterval(() => {
+  current += increment;
+  if (current >= target) {
+   element.textContent = target.toLocaleString();
+   clearInterval(timer);
+  } else {
+   element.textContent = Math.floor(current).toLocaleString();
+  }
+ }, 16);
 }
 
-const counters = document.querySelectorAll('.counter');
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting && !entry.target.dataset.animated) {
-            const target = parseInt(entry.target.dataset.target, 10);
-            animateCounter(entry.target, target);
-            entry.target.dataset.animated = 'true';
-            observer.unobserve(entry.target);
-        }
-    });
+document.querySelectorAll('.counter').forEach((counter) => {
+ const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+   if (entry.isIntersecting && !entry.target.dataset.animated) {
+    const target = parseInt(entry.target.dataset.target, 10);
+    animateCounter(entry.target, Number.isNaN(target) ? 0 : target);
+    entry.target.dataset.animated = 'true';
+    observer.unobserve(entry.target);
+   }
+  });
+ });
+ observer.observe(counter);
 });
-
-counters.forEach(counter => observer.observe(counter));
 </script>
-
 {% endblock %}
+

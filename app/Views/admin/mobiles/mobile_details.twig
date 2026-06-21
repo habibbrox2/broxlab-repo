@@ -1,87 +1,62 @@
-{% extends 'admin/layout.twig' %}
-{% block title %}{{ mobile.brand_name }} {{ mobile.model_name }}{% endblock %}
-{% set breadcrumbs = auto_admin_breadcrumbs() %}
+{% extends "admin/layout.twig" %}
 {% block content %}
-  <div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="admin-page-header mb-4">
-      <div class="admin-page-title">
-        <i class="bi bi-phone me-2"></i>
-        Device Details
-      </div>
-      <div class="admin-page-subtitle">Mobile device information</div>
-    </div>
-    <!-- Mobile Header -->
-    <div class="admin-panel-card   mb-4">
-      <div class="admin-panel-card-header d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">
-          <i class="bi bi-phone me-2"></i>{{ mobile.brand_name }} {{ mobile.model_name }}
-        </h4>
-        <div class="d-flex gap-2">
-          <a href="/admin/mobiles/update?id={{ mobile.id }}"
-             class="modern-btn modern-btn-primary btn-sm">
-            <i class="bi bi-pencil-square me-1"></i> Edit
-          </a>
-          <a href="/admin/mobiles/delete?id={{ mobile.id }}"
-             class="modern-btn modern-btn-primary btn-sm">
-            <i class="bi bi-trash me-1"></i> Delete
-          </a>
-          <a href="/admin/mobiles/all" class="modern-btn btn-light btn-sm">
-            <i class="bi bi-arrow-left-circle me-1"></i> Back
-          </a>
-        </div>
-      </div>
-      <div class="admin-panel-card-body">
-        <p>
-          <strong><i class="bi bi-calendar me-1"></i>Release Date:</strong> {{ mobile.release_date }}
-        </p>
-        <p>
-          <strong><i class="bi bi-toggle-on me-1"></i>Status:</strong> {{ mobile.status }}
-        </p>
-        <p>
-          <strong><i class="bi bi-currency-dollar me-1"></i>Official Price:</strong> {{ mobile.official_price | currency }}
-          <br>
-          <strong><i class="bi bi-currency-dollar me-1"></i>Unofficial Price:</strong> {{ mobile.unofficial_price | currency }}
-        </p>
-      </div>
-    </div>
-    <!-- Specifications -->
-    <div class="admin-panel-card   mb-4">
-      <div class="admin-panel-card-header">
-        <h5 class="mb-0">
-          <i class="bi bi-list me-2"></i>Specifications
-        </h5>
-      </div>
-      <div class="admin-panel-card-body">
-        <ul class="list-group list-group-flush">
-          {% for spec in specifications %}
-            <li class="list-group-item">
-              <strong>{{ spec.spec_key }}:</strong> {{ spec.spec_value }}
-            </li>
-          {% else %}
-            <li class="list-group-item text-muted text-center">No specifications available.</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-    <!-- Images Gallery -->
-    {% if images is defined and images|length > 0 %}
-      <div class="admin-panel-card   mb-4">
-        <div class="admin-panel-card-header">
-          <h5 class="mb-0">
-            <i class="bi bi-image-fill me-2"></i>Images
-          </h5>
-        </div>
-        <div class="admin-panel-card-body d-flex flex-wrap gap-3">
-          {% for image in images %}
-            <div class="admin-panel-card">
-              <img src="{{ image.image_url }}"
-                   alt="{{ mobile.brand_name }} {{ mobile.model_name }}"
-                   class="img-fluid ">
+<div class="px-4 sm:px-6 lg:px-8 py-5">
+    <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 text-white shadow-xl shadow-slate-900/20">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+        <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-smartphone w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Devices</p>
+                    <h1 class="text-xl font-bold text-white">{{ mobile.brand }} {{ mobile.model }}</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Device details and specifications.</p>
+                </div>
             </div>
-          {% endfor %}
+            <div class="flex gap-2">
+                <a href="/admin/mobiles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-arrow-left w-4 h-4"></i> Back
+                </a>
+                <a href="/admin/mobiles/edit/{{ mobile.id }}" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                    <i class="lucide lucide-pencil w-4 h-4"></i> Edit
+                </a>
+            </div>
         </div>
-      </div>
-    {% endif %}
-  </div>
+    </div>
+    <div class="max-w-2xl">
+        <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+            <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Device Information</h3>
+            </div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">ID</p>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ mobile.id }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Brand</p>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ mobile.brand }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Model</p>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ mobile.model }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">OS Version</p>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ mobile.os_version ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Added</p>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ mobile.created_at|date('d M Y H:i') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

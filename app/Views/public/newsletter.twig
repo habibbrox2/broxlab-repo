@@ -1,174 +1,158 @@
 {% extends 'layout.twig' %}
 
-{% block title %}Newsletter Subscription - Stay Updated | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+{% block title %}{{ t('Newsletter') }} - {{ t('Stay Updated') }} | {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
 
 {% set breadcrumbs = [
-  { label: 'Newsletter', url: '/newsletter', icon: 'envelope' }
+ { label: 'Newsletter', url: '/newsletter', icon: 'envelope' }
 ] %}
 
 {% block content %}
-<div class="page-newsletter public-static-page">
-  <section class="hero-section public-page-hero public-hero--newsletter position-relative py-5 mb-4 overflow-hidden">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-          <h1 class="display-4 fw-bold text-white mb-3">
-            <i class="bi bi-envelope-paper-fill me-2"></i>Stay Updated
-          </h1>
-          <p class="lead text-white-50 fs-5 mb-0">
-            Subscribe for the latest tech news, reviews, and exclusive updates.
-          </p>
-        </div>
-        <div class="col-lg-4 text-center">
-          <div class="public-hero-icon" aria-hidden="true">
-            <i class="bi bi-newspaper"></i>
-          </div>
-        </div>
-      </div>
+<div class="public-static-page py-6 md:py-10">
+ <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section class="hero-section mb-6 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white">
+   <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-3xl">
+     <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+      <i class="lucide lucide-mail h-3.5 w-3.5" aria-hidden="true"></i>
+      {{ t('Newsletter') }}
+     </div>
+     <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl" data-i18n="Stay updated">{{ t('Stay updated') }}</h1>
+     <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+      {{ t('Subscribe for the latest tech news, reviews, and exclusive updates.') }}
+     </p>
     </div>
-    <div class="public-hero-pattern" aria-hidden="true"></div>
+    <div class="public-hero-icon" aria-hidden="true">
+     <i class="lucide lucide-book-open"></i>
+    </div>
+   </div>
   </section>
 
-  <div class="container py-4 py-lg-5">
-    <div class="row align-items-start g-4">
-      <div class="col-lg-6">
-        <h2 class="h4 fw-bold mb-3">Never Miss an Update</h2>
-        <p class="text-muted mb-4">
-          Get new posts, important releases, and selected highlights directly in your inbox.
-        </p>
+  <div class="grid gap-6 lg:grid-cols-12">
+   <div class="lg:col-span-6">
+    <div class="surface-card">
+     <h2 class="text-2xl font-bold text-slate-900" data-i18n="Never miss an update">{{ t('Never miss an update') }}</h2>
+     <p class="mt-2 text-sm leading-7 text-slate-600">{{ t('Get new posts, important releases, and selected highlights directly in your inbox.') }}</p>
 
-        {% if success %}
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endif %}
+     {% if success %}
+     <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="alert">
+      <i class="lucide lucide-check-circle mr-2" aria-hidden="true"></i>{{ success }}
+     </div>
+     {% endif %}
 
-        {% if error %}
-          <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endif %}
+     {% if error %}
+     <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <i class="lucide lucide-alert-triangle mr-2" aria-hidden="true"></i>{{ error }}
+     </div>
+     {% endif %}
 
-        <form id="newsletter-form" class="newsletter-form public-surface-card" method="POST" action="/newsletter/subscribe">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <div class="mb-3">
-            <input type="text"
-                   class="form-control form-control-lg rounded-3"
-                   name="name"
-                   placeholder="Your Name"
-                   required>
-          </div>
-          <div class="input-group mb-3">
-            <input type="email"
-                   class="form-control form-control-lg rounded-3"
-                   name="email"
-                   placeholder="your.email@example.com"
-                   required>
-            <button class="btn btn-primary btn-lg rounded-3" type="submit">
-              <i class="bi bi-send-fill me-2"></i>Subscribe
-            </button>
-          </div>
-
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" name="preferences" value="weekly" id="weekly">
-            <label class="form-check-label" for="weekly">
-              Send me weekly digest
-            </label>
-          </div>
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" name="preferences" value="updates" id="updates">
-            <label class="form-check-label" for="updates">
-              Notify me about new updates
-            </label>
-          </div>
-
-          <small class="text-muted d-block mt-3">
-            We respect your privacy. Unsubscribe at any time.
-          </small>
-        </form>
+     <form id="newsletter-form" class="mt-6 space-y-4" method="POST" action="/newsletter/subscribe">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700" for="name" data-i18n="Your Name">{{ t('Your Name') }}</label>
+       <input id="name" type="text" name="name" placeholder="Your Name" required>
+      </div>
+      <div>
+       <label class="mb-2 block text-sm font-semibold text-slate-700" for="email" data-i18n="Email">{{ t('Email') }}</label>
+       <div class="flex items-center rounded-lg border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 bg-white">
+        <input id="email" type="email" name="email" placeholder="your.email@example.com" required class="w-full border-0 px-3 py-2.5 text-sm focus:outline-none bg-white">
+        <button class="shrink-0 inline-flex items-center justify-center gap-2 bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 border-l border-indigo-500" type="submit">
+         <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+         {{ t('Subscribe') }}
+        </button>
+       </div>
       </div>
 
-      <div class="col-lg-6">
-        <div class="stats-cards">
-          <div class="card public-surface-card border-0 mb-3">
-            <div class="card-body text-center p-4">
-              <h3 class="counter mb-1" data-target="{{ stats.total_posts }}">0</h3>
-              <p class="text-muted mb-0">Published Posts</p>
-            </div>
-          </div>
-          <div class="card public-surface-card border-0 mb-3">
-            <div class="card-body text-center p-4">
-              <h3 class="counter mb-1" data-target="{{ stats.total_users }}">0</h3>
-              <p class="text-muted mb-0">Active Members</p>
-            </div>
-          </div>
-          <div class="card public-surface-card border-0 mb-3">
-            <div class="card-body text-center p-4">
-              <h3 class="counter mb-1" data-target="{{ stats.total_mobiles }}">0</h3>
-              <p class="text-muted mb-0">Mobile Devices</p>
-            </div>
-          </div>
-        </div>
+      <div class="space-y-3">
+       <label class="flex items-start gap-2 text-sm text-slate-700" for="weekly">
+        <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="preferences" value="weekly" id="weekly">
+        {{ t('Send me weekly digest') }}
+       </label>
+       <label class="flex items-start gap-2 text-sm text-slate-700" for="updates">
+        <input class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" type="checkbox" name="preferences" value="updates" id="updates">
+        {{ t('Notify me about new updates') }}
+       </label>
       </div>
+
+      <p class="text-xs text-slate-500">{{ t('We respect your privacy. Unsubscribe at any time.') }}</p>
+     </form>
     </div>
+   </div>
+
+   <div class="lg:col-span-6">
+    <div class="stats-cards">
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_posts }}">0</h3>
+      <p class="text-sm text-slate-500" data-i18n="Published Posts">{{ t('Published Posts') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_users }}">0</h3>
+      <p class="text-sm text-slate-500" data-i18n="Active Members">{{ t('Active Members') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_mobiles }}">0</h3>
+      <p class="text-sm text-slate-500" data-i18n="Mobile Devices">{{ t('Mobile Devices') }}</p>
+     </div>
+     <div>
+      <h3 class="counter mb-1 text-3xl font-bold text-slate-900" data-target="{{ stats.total_comments|default(0) }}">0</h3>
+      <p class="text-sm text-slate-500" data-i18n="Community Comments">{{ t('Community Comments') }}</p>
+     </div>
+    </div>
+   </div>
   </div>
+ </div>
 </div>
 
 <script>
 document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+ e.preventDefault();
+ const form = e.currentTarget;
+ const formData = new FormData(form);
 
-    try {
-        const response = await fetch('/newsletter/subscribe', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
+ try {
+  const response = await fetch('/newsletter/subscribe', {
+   method: 'POST',
+   body: formData
+  });
+  const data = await response.json();
 
-        if (data.success) {
-            showMessage(data.message || 'Successfully subscribed to our newsletter', 'success');
-            form.reset();
-        } else {
-            showMessage(data.error || 'An error occurred', 'error');
-        }
-    } catch (err) {
-        showMessage('Error: ' + err.message, 'error');
-    }
+  if (data.success) {
+   showMessage(data.message || 'Successfully subscribed to our newsletter', 'success');
+   form.reset();
+  } else {
+   showMessage(data.error || 'An error occurred', 'error');
+  }
+ } catch (error) {
+  showMessage('Error: ' + error.message, 'error');
+ }
 });
 
 function animateCounter(element, target, duration = 2000) {
-    const start = 0;
-    const increment = target / (duration / 16);
-    let current = start;
-
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-            element.textContent = target;
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current);
-        }
-    }, 16);
+ const increment = target / (duration / 16);
+ let current = 0;
+ const timer = setInterval(() => {
+  current += increment;
+  if (current >= target) {
+   element.textContent = target.toLocaleString();
+   clearInterval(timer);
+  } else {
+   element.textContent = Math.floor(current).toLocaleString();
+  }
+ }, 16);
 }
 
-const counters = document.querySelectorAll('.counter');
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting && !entry.target.dataset.animated) {
-            const target = parseInt(entry.target.dataset.target, 10);
-            animateCounter(entry.target, target);
-            entry.target.dataset.animated = 'true';
-            observer.unobserve(entry.target);
-        }
-    });
+document.querySelectorAll('.counter').forEach((counter) => {
+ const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+   if (entry.isIntersecting && !entry.target.dataset.animated) {
+    const target = parseInt(entry.target.dataset.target, 10);
+    animateCounter(entry.target, Number.isNaN(target) ? 0 : target);
+    entry.target.dataset.animated = 'true';
+    observer.unobserve(entry.target);
+   }
+  });
+ });
+ observer.observe(counter);
 });
-
-counters.forEach(counter => observer.observe(counter));
 </script>
-
 {% endblock %}
+

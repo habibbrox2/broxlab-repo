@@ -32,21 +32,21 @@ export class AccountConflictHandler {
     const email = escapeHtml(conflictData.email || 'your email');
 
     const modalHTML = `
-            <div class="modal fade show" id="accountConflictModal" tabindex="-1" role="dialog" aria-labelledby="accountConflictTitle" aria-hidden="true">
+            <div class="modal show" id="accountConflictModal" tabindex="-1" role="dialog" aria-labelledby="accountConflictTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                         <div class="modal-header border-bottom-0">
                             <h5 class="modal-title" id="accountConflictTitle">
-                                <i class="bi bi-exclamation-triangle text-warning"></i> Account Already Exists
+                                <i class="bi icon-alert-triangle text-warning"></i> Account Already Exists
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-brox-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p class="text-muted mb-3">
                                 An account with email <strong>${email}</strong> already exists.
                             </p>
                             <div class="alert alert-info mb-3">
-                                <i class="bi bi-info-circle"></i>
+                                <i class="bi icon-info"></i>
                                 <strong>This account uses ${this.getProviderName(existingProvider)} for sign-in.</strong>
                             </div>
                             <p class="mb-3">
@@ -54,17 +54,17 @@ export class AccountConflictHandler {
                             </p>
                         </div>
                         <div class="modal-footer border-top-0 gap-2">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="bi bi-x"></i> Cancel
+                            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-300 transition-colors" data-brox-dismiss="modal">
+                                <i class="bi icon-x"></i> Cancel
                             </button>
-                            <button type="button" class="btn btn-primary" id="signInWithExistingBtn">
-                                <i class="bi bi-box-arrow-in-right"></i> Sign in with ${this.getProviderName(existingProvider)}
+                            <button type="button" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors" id="signInWithExistingBtn">
+                                <i class="bi icon-log-in"></i> Sign in with ${this.getProviderName(existingProvider)}
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-backdrop fade show"></div>
+            <div class="modal-backdrop"></div>
         `;
 
     this.container.innerHTML = modalHTML;
@@ -80,7 +80,7 @@ export class AccountConflictHandler {
     // Show modal
     const modalElement = document.getElementById('accountConflictModal');
     if (modalElement) {
-      modalElement.addEventListener('hidden.bs.modal', () => {
+      modalElement.addEventListener('brox:hidden', () => {
         this.cleanup();
       });
     }
@@ -94,8 +94,8 @@ export class AccountConflictHandler {
      */
   displayModal() {
     const modalElement = document.getElementById('accountConflictModal');
-    if (modalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modal = new bootstrap.Modal(modalElement);
+    if (modalElement && typeof broxUI !== 'undefined' && broxUI.Modal) {
+      const modal = new broxUI.Modal(modalElement);
       modal.show();
     } else if (modalElement) {
       // Fallback if Bootstrap is not available

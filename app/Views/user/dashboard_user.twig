@@ -1,251 +1,592 @@
 {# ============================
-FILE: templates/dashboard_user.twig
+FILE: templates/dashboard_user.twig — Polished User Dashboard
+Modern, clean design with gradient accents, hover effects, and animations
 ============================ #}
 {% extends "layout.twig" %}
 {% import "_macros/dashboard_macros.twig" as ui %}
 {% block title %}User Dashboard{% endblock %}
 {% block content %}
-  <div class="container-fluid py-3">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-      <div class="d-flex align-items-center gap-3">
-        <img src="{{ user.photo_url|default("/assets/profile-placeholder.png") }}"
-             class="rounded-circle"
-             width="60"
-             height="60"
-             alt="Profile">
-        <div>
-          <h1 class="h3 mb-1">Hello, {{ user.full_name|default(user.username|title) }}</h1>
-          <div class="text-muted">Track your applications and updates</div>
+
+{# ── Profile Header ── #}
+<div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-900 p-6 text-white shadow-2xl shadow-indigo-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+    <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-violet-300/20 blur-3xl"></div>
+  </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <div class="relative shrink-0">
+        <img src="{{ user.photo_url|default('/assets/profile-placeholder.png') }}"
+             class="h-16 w-16 rounded-full border-2 border-white/20 object-cover shadow-lg ring-2 ring-white/10 sm:h-20 sm:w-20"
+             width="80" height="80"
+             alt="Profile"
+             loading="lazy">
+        <div class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-900 bg-emerald-500 shadow-sm" aria-label="Online">
+          <i class="lucide lucide-check h-2.5 w-2.5 text-white"></i>
         </div>
       </div>
       <div>
-        <a href="/applications/new" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New Application</a>
+        <h1 class="text-xl font-black tracking-tight sm:text-2xl">Hello, {{ user.full_name|default(user.username|title) }}</h1>
+        <p class="mt-1 text-sm text-indigo-200/80">Track your applications and updates</p>
+        {% if user.email %}
+          <p class="mt-0.5 text-xs text-indigo-300/60">{{ user.email }}</p>
+        {% endif %}
       </div>
     </div>
-    <div class="mb-4 d-flex flex-wrap gap-2">
-      <a href="/cv" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-file-earmark-text me-1"></i>My CVs
+    <div class="flex flex-wrap gap-2">
+      <a href="/cv-builder"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-file-text h-4 w-4"></i>
+        My CVs
       </a>
-      <a href="/user/settings" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-gear me-1"></i>Settings
+      <a href="/user/settings"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-settings h-4 w-4"></i>
+        Settings
       </a>
-      <a href="/logout" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-box-arrow-right me-1"></i>Logout
+      <a href="/logout"
+         class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-red-400/30 hover:-translate-y-0.5 active:scale-[0.97]">
+        <i class="lucide lucide-log-out h-4 w-4"></i>
+        Logout
       </a>
     </div>
-    {# User Roles & Permissions Alert #}
-    {% if user_roles and user_roles|length > 0 %}
-      <div class="alert alert-info alert-dismissible fade show rounded-4 mb-4"
-           role="alert">
-        <div class="d-flex align-items-start justify-content-between">
-          <div>
-            <h6 class="alert-heading mb-2">
-              <i class="bi bi-badge-check me-2"></i>Your Role(s)
-            </h6>
-            <div class="d-flex flex-wrap gap-2">
-              {% for role in user_roles %}
-                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">
-                  <i class="bi bi-shield-check me-1"></i>{{ role.name|replace({"_": " "}) |title }}
-                </span>
-              {% endfor %}
-            </div>
-          </div>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="alert"
-                  aria-label="Close"></button>
+  </div>
+</div>
+
+{# ── Guest CV Auto-Claimed Notification ── #}
+{% if guest_cvs_claimed is defined and guest_cvs_claimed > 0 %}
+<div id="guest-claimed-notification" class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 p-4 flex items-start gap-3 animate-fade-in">
+  <div id="claimed-timer-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-400/60 rounded-b-2xl" style="width:100%;transition:width 8s linear;"></div>
+  <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+    <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2">
+      <h3 class="font-bold text-emerald-800 text-sm">Your Guest CVs Have Been Claimed!</h3>
+      <span id="claimed-countdown" class="text-[10px] font-semibold text-emerald-500/70 tabular-nums flex-shrink-0">8s</span>
+    </div>
+    <p class="text-xs text-emerald-700 mt-0.5">
+      {{ guest_cvs_claimed }} guest CV(s) have been transferred to your account. You can now edit, export, and manage them in <a href="/cv-builder" class="font-semibold text-emerald-800 underline hover:text-emerald-900">CV Builder</a>.
+    </p>
+  </div>
+  <button type="button" id="dismiss-claimed-notification" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100 transition-colors">
+    <i data-lucide="x" class="w-4 h-4"></i>
+  </button>
+</div>
+{% endif %}
+
+{# ── User Roles Alert ── #}
+{% if user_roles and user_roles|length > 0 %}
+<div class="scroll-fade-in mb-6 overflow-hidden rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50/80 to-sky-50/80 p-4 shadow-sm" role="alert">
+  <div class="flex items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+        <i class="lucide lucide-shield-check h-5 w-5"></i>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-indigo-900">Your Roles</p>
+        <div class="mt-1.5 flex flex-wrap gap-1.5">
+          {% for role in user_roles %}
+          <span class="inline-flex items-center gap-1 rounded-full border border-indigo-200/60 bg-white px-2.5 py-0.5 text-xs font-medium text-indigo-700 shadow-sm">
+            <i class="lucide lucide-shield-check h-3 w-3"></i>
+            {{ role.name|replace({"_":""})|title }}
+          </span>
+          {% endfor %}
         </div>
       </div>
-    {% endif %}
-    {# Personal Stats #}
-    <div class="row g-3 mb-4 dashboard-stats">
-      <div class="col-12 col-sm-6 col-xl-3">
-        <a href="/cv" class="text-decoration-none">
-          <div class="card border-0 shadow-sm rounded-4 h-100 card-hover">
-            <div class="card-body">
-              <div class="text-muted">
-                <i class="bi bi-file-earmark-text me-1"></i> My CVs
-              </div>
-              <div class="fs-3 fw-bold">{{ mystats.cvs|default(0) }}</div>
-            </div>
+    </div>
+    <button type="button"
+      class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-indigo-400 transition-all duration-150 hover:bg-indigo-100 hover:text-indigo-700"
+      data-brox-dismiss="alert" aria-label="Close">
+      <i class="lucide lucide-x h-4 w-4"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{# ── Personal Stats ── #}
+<div class="scroll-fade-in mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+  <a href="/cv-builder" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">My CVs</span>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
+          <i class="lucide lucide-file-text h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.cvs|default(0) }}</div>
+    </div>
+  </a>
+  <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 to-violet-400"></div>
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Applications</span>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 transition-colors duration-200 hover:bg-violet-100">
+          <i class="lucide lucide-layers h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.total|default(0) }}</div>
+    </div>
+  </div>
+  <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending</span>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors duration-200 hover:bg-amber-100">
+          <i class="lucide lucide-history h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.pending|default(0) }}</div>
+    </div>
+  </div>
+  <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved</span>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors duration-200 hover:bg-emerald-100">
+          <i class="lucide lucide-check-circle h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.approved|default(0) }}</div>
+    </div>
+  </div>
+  <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-rose-500 to-rose-400"></div>
+    <div class="p-4">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Rejected</span>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition-colors duration-200 hover:bg-rose-100">
+          <i class="lucide lucide-x-circle h-4 w-4"></i>
+        </div>
+      </div>
+      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.rejected|default(0) }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Main Grid: Applications + Sidebar ── #}
+<div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+  {# ── Recent Applications (Left / 2 cols) ── #}
+  <div class="scroll-fade-in xl:col-span-2">
+    <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <i class="lucide lucide-file-text h-4.5 w-4.5"></i>
           </div>
+          <div>
+            <h5 class="text-sm font-bold text-slate-900">My Recent Applications</h5>
+            <p class="text-xs text-slate-500">Your latest submitted applications</p>
+          </div>
+        </div>
+        <a href="/applications" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition-all duration-200 hover:bg-indigo-100 hover:-translate-y-0.5">
+          View all
+          <i class="lucide lucide-arrow-right h-3.5 w-3.5"></i>
         </a>
       </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body">
-            <div class="text-muted">
-              <i class="bi bi-file-earmark-text me-1"></i> Total Applications
-            </div>
-            <div class="fs-3 fw-bold">{{ mystats.total|default(0) }}</div>
+      <div>
+        {% if my_applications is not empty %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50/50">
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Type</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Updated</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for app in my_applications %}
+              <tr class="transition-colors duration-150 hover:bg-indigo-50/30">
+                <td class="px-5 py-3.5">
+                  <span class="font-mono text-xs font-semibold text-slate-900">#{{ app.id }}</span>
+                </td>
+                <td class="whitespace-nowrap px-5 py-3.5 text-sm font-medium text-slate-700">{{ app.certificate_type|title }}</td>
+                <td class="px-5 py-3.5">{{ ui.status_badge(app.status) }}</td>
+                <td class="whitespace-nowrap px-5 py-3.5 text-xs text-slate-500">{{ app.updated_at|date("d M, Y h:i A") }}</td>
+                <td class="px-5 py-3.5 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <a href="/applications/{{ app.id }}"
+                       class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:-translate-y-0.5">
+                      <i class="lucide lucide-eye h-3.5 w-3.5"></i>
+                      View
+                    </a>
+                    {% if app.status == 'pending' %}
+                    <a href="/applications/{{ app.id }}/edit"
+                       class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:-translate-y-0.5">
+                      <i class="lucide lucide-pencil h-3.5 w-3.5"></i>
+                      Update
+                    </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="px-5 py-8">
+          <div class="flex flex-col items-center justify-center gap-3 text-center">
+            <i class="lucide lucide-file-text text-3xl text-slate-300"></i>
+            <div class="text-sm font-semibold text-slate-700">No applications yet</div>
+            <div class="text-xs text-slate-500">Start by creating a new application.</div>
+            <a href="/applications/new" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 mt-1">
+              New Application
+            </a>
           </div>
         </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body">
-            <div class="text-muted">
-              <i class="bi bi-clock-history me-1"></i> Pending
-            </div>
-            <div class="fs-3 fw-bold">{{ mystats.pending|default(0) }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body">
-            <div class="text-muted">
-              <i class="bi bi-check-circle me-1"></i> Approved
-            </div>
-            <div class="fs-3 fw-bold">{{ mystats.approved|default(0) }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-          <div class="card-body">
-            <div class="text-muted">
-              <i class="bi bi-x-circle me-1"></i> Rejected
-            </div>
-            <div class="fs-3 fw-bold">{{ mystats.rejected|default(0) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row g-4">
-      <div class="col-12 col-xxl-8">
-        <div class="card border-0 shadow-sm rounded-4">
-          <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
-            <h5 class="mb-0">My Recent Applications</h5>
-            <a href="/applications" class="btn btn-sm btn-outline-primary">View all</a>
-          </div>
-          <div class="card-body p-0">
-            {% if my_applications is not empty %}
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th>ID</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Updated</th>
-                      <th class="text-end">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for app in my_applications %}
-                      <tr>
-                        <td>#{{ app.id }}</td>
-                        <td class="text-nowrap">{{ app.certificate_type|title }}</td>
-                        <td>{{ ui.status_badge(app.status) }}</td>
-                        <td class="text-muted small">{{ app.updated_at|date("d M, Y h:i A") }}</td>
-                        <td class="text-end">
-                          <a href="/applications/{{ app.id }}"
-                             class="btn btn-sm btn-outline-secondary">View</a>
-                          {% if app.status == 'pending' %}
-                            <a href="/applications/{{ app.id }}/edit" class="btn btn-sm btn-primary">Update</a>
-                          {% endif %}
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="p-4">{{ ui.empty_state('No applications yet', 'Start by creating a new application.') }}</div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-xxl-4">
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-          <div class="card-header bg-white border-0 py-3">
-            <h6 class="mb-0">Profile Completion</h6>
-          </div>
-          <div class="card-body">
-            {% set pct = profile.completeness|default(0) %}
-            <div class="progress mb-2 progress-sm">
-              <div class="progress-bar"
-                   role="progressbar"
-                   style="width: {{ pct }}%"
-                   aria-valuenow="{{ pct }}"
-                   aria-valuemin="0"
-                   aria-valuemax="100"></div>
-            </div>
-            <div class="small text-muted">{{ pct }}% complete</div>
-            <div class="d-grid gap-2 mt-3">
-              {% if profile.needs_photo %}
-                <a href="/profile" class="btn btn-outline-secondary btn-sm">Add Profile Photo</a>
-              {% endif %}
-              {% if profile.needs_phone %}<a href="/profile" class="btn btn-outline-secondary btn-sm">Verify Phone</a>{% endif %}
-            </div>
-          </div>
-        </div>
-        <!-- Services Card -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-          <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-              <i class="bi bi-award-fill me-2 text-warning"></i> Services
-            </h6>
-            <span class="badge bg-primary rounded-pill">Quick Access</span>
-          </div>
-          <div class="card-body">
-            <p class="small text-muted mb-3">Explore and apply for exclusive services tailored to your needs.</p>
-            <div class="d-grid gap-2">
-              <a href="/services" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-search me-1"></i> Browse Services
-              </a>
-              <a href="/services/my-applications" class="btn btn-outline-info btn-sm">
-                <i class="bi bi-clipboard-check me-1"></i> My Applications
-              </a>
-            </div>
-          </div>
-        </div>
-        <!-- Security Card -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-          <div class="card-header bg-white border-0 py-3">
-            <h6 class="mb-0">
-              <i class="bi bi-shield-check me-2"></i> Account Security
-            </h6>
-          </div>
-          <div class="card-body">
-            <p class="small text-muted mb-3">Enhance your account security with two-factor authentication.</p>
-            <div class="d-grid gap-2">
-              <a href="/user/security/2fa" class="btn btn-outline-success btn-sm">
-                <i class="bi bi-shield-lock me-1"></i> Manage 2FA
-              </a>
-              <a href="/profile/password" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-key me-1"></i> Change Password
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="card border-0 shadow-sm rounded-4">
-          <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Notices</h6>
-            <a href="/notices" class="small">View all</a>
-          </div>
-          <div class="card-body">
-            {% if notices is not empty %}
-              <ul class="list-unstyled mb-0">
-                {% for n in notices %}
-                  <li class="mb-3">
-                    <div class="fw-semibold">{{ n.title }}</div>
-                    <div class="text-muted small">{{ n.published_at|date("d M, Y") }}</div>
-                    <div class="small">{{ n.excerpt }}</div>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              {{ ui.empty_state('No notices', 'Announcements from the office will appear here.') }}
-            {% endif %}
-          </div>
-        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+
+  {# ── Sidebar (Right / 1 col) ── #}
+  <div class="space-y-5">
+    {# Profile Completion #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
+          <i class="lucide lucide-user-check h-4.5 w-4.5"></i>
+        </div>
+        <h6 class="text-sm font-bold text-slate-900">Profile Completion</h6>
+      </div>
+      <div class="p-5">
+        {% set pct = profile.completeness|default(0) %}
+        <div class="mb-1 flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-500">Progress</span>
+          <span class="text-sm font-black text-slate-900">{{ pct }}%</span>
+        </div>
+        <div class="h-2.5 overflow-hidden rounded-full bg-slate-100">
+          <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700 ease-out"
+               role="progressbar"
+               style="width: {{ pct }}%"
+               aria-valuenow="{{ pct }}"
+               aria-valuemin="0"
+               aria-valuemax="100"></div>
+        </div>
+        <div class="mt-4 flex flex-col gap-2">
+          {% if profile.needs_photo %}
+          <a href="/profile"
+             class="group inline-flex items-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-3 py-2 text-xs font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:-translate-y-0.5">
+            <i class="lucide lucide-camera h-4 w-4 text-amber-500 transition-transform group-hover:scale-110"></i>
+            Add Profile Photo
+          </a>
+          {% endif %}
+          {% if profile.needs_phone %}
+          <a href="/profile"
+             class="group inline-flex items-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-3 py-2 text-xs font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:-translate-y-0.5">
+            <i class="lucide lucide-smartphone h-4 w-4 text-amber-500 transition-transform group-hover:scale-110"></i>
+            Verify Phone
+          </a>
+          {% endif %}
+          {% if not profile.needs_photo and not profile.needs_phone %}
+          <div class="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+            <i class="lucide lucide-check-circle h-4 w-4 text-emerald-500"></i>
+            Profile is complete
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Services #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm">
+          <i class="lucide lucide-award h-4.5 w-4.5"></i>
+        </div>
+        <div>
+          <h6 class="text-sm font-bold text-slate-900">Services</h6>
+          <p class="text-xs text-slate-500">Quick Access</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <p class="mb-4 text-xs leading-relaxed text-slate-500">Explore and apply for exclusive services tailored to your needs.</p>
+        <div class="flex flex-col gap-2">
+          <a href="/services"
+             class="group inline-flex items-center gap-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-2.5 text-xs font-semibold text-indigo-700 transition-all duration-200 hover:bg-indigo-100 hover:-translate-y-0.5">
+            <div class="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 text-indigo-600 transition-transform group-hover:scale-110">
+              <i class="lucide lucide-search h-3.5 w-3.5"></i>
+            </div>
+            Browse Services
+            <i class="lucide lucide-arrow-right ml-auto h-3.5 w-3.5 text-indigo-400 transition-transform group-hover:translate-x-0.5"></i>
+          </a>
+          <a href="/services/my-applications"
+             class="group inline-flex items-center gap-2.5 rounded-lg border border-cyan-100 bg-cyan-50/50 px-4 py-2.5 text-xs font-semibold text-cyan-700 transition-all duration-200 hover:bg-cyan-100 hover:-translate-y-0.5">
+            <div class="flex h-7 w-7 items-center justify-center rounded-md bg-cyan-100 text-cyan-600 transition-transform group-hover:scale-110">
+              <i class="lucide lucide-clipboard-check h-3.5 w-3.5"></i>
+            </div>
+            My Applications
+            <i class="lucide lucide-arrow-right ml-auto h-3.5 w-3.5 text-cyan-400 transition-transform group-hover:translate-x-0.5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# Account Security #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-sm">
+          <i class="lucide lucide-shield-check h-4.5 w-4.5"></i>
+        </div>
+        <h6 class="text-sm font-bold text-slate-900">Account Security</h6>
+      </div>
+      <div class="p-5">
+        <p class="mb-4 text-xs leading-relaxed text-slate-500">Enhance your account security with two-factor authentication and strong passwords.</p>
+        <div class="flex flex-col gap-2">
+          <a href="/user/security/2fa"
+             class="group inline-flex items-center gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50 px-4 py-2.5 text-xs font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:-translate-y-0.5">
+            <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 transition-transform group-hover:scale-110">
+              <i class="lucide lucide-shield h-3.5 w-3.5"></i>
+            </div>
+            Manage 2FA
+            <i class="lucide lucide-arrow-right ml-auto h-3.5 w-3.5 text-emerald-400 transition-transform group-hover:translate-x-0.5"></i>
+          </a>
+          <a href="/profile/password"
+             class="group inline-flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:-translate-y-0.5">
+            <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-transform group-hover:scale-110">
+              <i class="lucide lucide-key h-3.5 w-3.5"></i>
+            </div>
+            Change Password
+            <i class="lucide lucide-arrow-right ml-auto h-3.5 w-3.5 text-slate-400 transition-transform group-hover:translate-x-0.5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# Notices #}
+    <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md">
+      <div class="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-sm">
+            <i class="lucide lucide-megaphone h-4.5 w-4.5"></i>
+          </div>
+          <h6 class="text-sm font-bold text-slate-900">Notices</h6>
+        </div>
+        <a href="/notices" class="text-xs font-semibold text-indigo-600 transition-colors hover:text-indigo-800">View all</a>
+      </div>
+      <div class="p-5">
+        {% if notices is not empty %}
+        <ul class="m-0 list-none space-y-3 p-0">
+          {% for n in notices %}
+          <li class="group cursor-pointer rounded-lg border border-transparent p-2.5 transition-all duration-200 hover:border-slate-100 hover:bg-slate-50">
+            <div class="flex items-start gap-2.5">
+              <div class="mt-0.5 flex h-2 w-2 shrink-0 rounded-full bg-indigo-500"></div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-slate-900 group-hover:text-indigo-600">{{ n.title }}</div>
+                <div class="mt-0.5 text-xs text-slate-500">{{ n.published_at|date("d M, Y") }}</div>
+                {% if n.excerpt %}
+                <div class="mt-1 text-xs leading-relaxed text-slate-400 line-clamp-2">{{ n.excerpt }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="py-4">
+          <div class="flex flex-col items-center justify-center gap-3 text-center">
+            <i class="lucide lucide-megaphone text-3xl text-slate-300"></i>
+            <div class="text-sm font-semibold text-slate-700">No notices</div>
+            <div class="text-xs text-slate-500">Announcements from the office will appear here.</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Recent Activity Timeline ── #}
+<div class="scroll-fade-in mt-6">
+  <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
+          <i class="lucide lucide-activity h-4.5 w-4.5"></i>
+        </div>
+        <div>
+          <h5 class="text-sm font-bold text-slate-900">Recent Activity</h5>
+          <p class="text-xs text-slate-500">Your latest updates and notifications</p>
+        </div>
+      </div>
+    </div>
+    <div class="p-5">
+      {% if recent_activity is not empty %}
+      <div class="relative">
+        {# Timeline vertical line #}
+        <div class="absolute left-[13px] top-0 h-full w-0.5 bg-gradient-to-b from-indigo-200 via-violet-200 to-sky-200"></div>
+        <ul class="m-0 list-none space-y-0 p-0">
+          {% for item in recent_activity %}
+          {% set icon = item.icon|default('bell') %}
+          {% set color = item.color|default('indigo') %}
+          {% set bg_map = {'indigo': 'bg-indigo-100 text-indigo-600', 'violet': 'bg-violet-100 text-violet-600', 'sky': 'bg-sky-100 text-sky-600', 'amber': 'bg-amber-100 text-amber-600', 'emerald': 'bg-emerald-100 text-emerald-600', 'rose': 'bg-rose-100 text-rose-600', 'slate': 'bg-slate-100 text-slate-600'} %}
+          <li class="group relative flex gap-4 pb-5 last:pb-0">
+            {# Timeline icon node #}
+            <div class="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full {{ bg_map[color]|default(bg_map.indigo) }} shadow-sm ring-2 ring-white transition-transform duration-200 group-hover:scale-110">
+              <i class="lucide lucide-{{ icon }} h-3.5 w-3.5"></i>
+            </div>
+            {# Content #}
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors duration-150">
+                    {% if item.url %}
+                    <a href="{{ item.url }}" class="no-underline text-inherit hover:text-inherit">{{ item.title }}</a>
+                    {% else %}
+                    {{ item.title }}
+                    {% endif %}
+                  </p>
+                  {% if item.description %}
+                  <p class="mt-0.5 text-xs leading-relaxed text-slate-500 line-clamp-2">{{ item.description }}</p>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="mt-1 flex items-center gap-1.5">
+                <i class="lucide lucide-clock h-3 w-3 text-slate-400"></i>
+                <span class="text-xs text-slate-400">{{ item.time|date("d M, Y h:i A") }}</span>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% else %}
+      <div class="flex flex-col items-center justify-center py-8 text-center">
+        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+          <i class="lucide lucide-activity h-6 w-6 text-slate-400"></i>
+        </div>
+        <p class="mt-3 text-sm font-semibold text-slate-900">No recent activity</p>
+        <p class="mt-1 text-xs text-slate-500">Your timeline will show updates as you use the platform.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease;
+}
+</style>
+
 {% block scripts %}
-  {{ parent() }}
-  <script>// You can add user-specific interactions here if needed</script>
+{{ parent() }}
+
+{# ─── Guest CV Claimed Notification Auto-Dismiss Timer ─── #}
+<script>
+(function() {
+  var notif = document.getElementById('guest-claimed-notification');
+  if (!notif) return;
+
+  var timerBar = document.getElementById('claimed-timer-bar');
+  var countdownEl = document.getElementById('claimed-countdown');
+  var dismissBtn = document.getElementById('dismiss-claimed-notification');
+  var dismissTimer = null;
+  var countdownInterval = null;
+  var remainingSeconds = 8;
+  var isDismissing = false;
+
+  function dismissNotif() {
+    if (isDismissing) return;
+    isDismissing = true;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    notif.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    notif.style.opacity = '0';
+    notif.style.transform = 'translateY(-10px)';
+    setTimeout(function() { notif.style.display = 'none'; }, 300);
+  }
+
+  function updateCountdown() {
+    if (remainingSeconds <= 0) return;
+    countdownEl.textContent = remainingSeconds + 's';
+  }
+
+  // Start timer bar shrink
+  if (timerBar) {
+    requestAnimationFrame(function() {
+      timerBar.style.width = '0%';
+    });
+  }
+
+  countdownInterval = setInterval(function() {
+    remainingSeconds--;
+    if (remainingSeconds <= 0) {
+      clearInterval(countdownInterval);
+      countdownEl.textContent = '0s';
+    } else {
+      updateCountdown();
+    }
+  }, 1000);
+
+  dismissTimer = setTimeout(dismissNotif, 8000);
+
+  // Pause on hover
+  notif.addEventListener('mouseenter', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+    if (timerBar) {
+      timerBar.style.transition = 'none';
+      timerBar.style.width = timerBar.offsetWidth + 'px';
+    }
+    countdownEl.textContent = '\u2714';
+  });
+
+  // Resume on mouse leave
+  notif.addEventListener('mouseleave', function() {
+    if (isDismissing) return;
+    clearTimeout(dismissTimer);
+    clearInterval(countdownInterval);
+
+    if (timerBar) {
+      var currentWidth = parseFloat(timerBar.style.width) || 0;
+      var parentWidth = timerBar.parentElement ? timerBar.parentElement.offsetWidth : 1;
+      var fraction = Math.max(0, Math.min(1, currentWidth / parentWidth));
+      var remainingMs = Math.round(fraction * 8000);
+      remainingSeconds = Math.round(remainingMs / 1000);
+
+      timerBar.style.transition = 'width ' + remainingMs + 'ms linear';
+      requestAnimationFrame(function() {
+        timerBar.style.width = '0%';
+      });
+    } else {
+      remainingSeconds = 8;
+    }
+
+    updateCountdown();
+    countdownInterval = setInterval(function() {
+      remainingSeconds--;
+      if (remainingSeconds <= 0) {
+        clearInterval(countdownInterval);
+        countdownEl.textContent = '0s';
+      } else {
+        updateCountdown();
+      }
+    }, 1000);
+
+    dismissTimer = setTimeout(dismissNotif, remainingMs > 0 ? remainingMs : 8000);
+  });
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissNotif();
+    });
+  }
+})();
+</script>
 {% endblock %}

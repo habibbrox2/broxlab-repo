@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 1) . '/vendor/autoload.php';
@@ -8,25 +9,25 @@ require_once dirname(__DIR__, 1) . '/app/Helpers/LanguageHelper.php';
 require_once dirname(__DIR__, 1) . '/app/Models/UserModel.php';
 require_once dirname(__DIR__, 1) . '/app/Models/AppSettings.php';
 require_once __DIR__ . '/Functions.php';
-require_once __DIR__ . '/TwigHelper.php';
+require_once dirname(__DIR__, 1) . '/app/Helpers/TwigHelper.php';
 require_once __DIR__ . '/RteCacheConfig.php';
 
 // ============================================================
 // ENVIRONMENT HELPERS
 // ============================================================
-// Moved to Config/TwigHelper.php
+// Moved to app/Helpers/TwigHelper.php
 
 // ============================================================
 // FLASH MESSAGE HANDLER
 // ============================================================
 
-// getFlash is defined in Config/TwigHelper.php
+// getFlash is defined in app/Helpers/TwigHelper.php
 
 // ============================================================
 // USER LOADER
 // ============================================================
 
-// loadUser is defined in Config/TwigHelper.php
+// loadUser is defined in app/Helpers/TwigHelper.php
 
 // ============================================================
 // TWIG INITIALIZATION
@@ -107,6 +108,16 @@ function initializeTwig(mysqli $mysqli, ?array &$session, string $configUrl): \T
 // ============================================================
 // INITIALIZE APP SETTINGS MODEL
 // ============================================================
+
+if (!isset($mysqli) || !$mysqli instanceof mysqli) {
+    logError('Database connection is not available for Twig initialization', 'CRITICAL', [
+        'provided_type' => isset($mysqli) ? gettype($mysqli) : 'undefined',
+        'file' => __FILE__,
+        'line' => __LINE__,
+    ]);
+    renderError(500, 'Database connection is unavailable');
+    exit;
+}
 
 $settingsModel = new AppSettings($mysqli);
 

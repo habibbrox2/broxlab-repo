@@ -1,191 +1,254 @@
 {% extends "layout.twig" %}
-{% import '_macros/flash.twig' as flash_macros %}
+{% set suppress_layout_flash = true %}
 {% block title %}Confirm Your Email - {{ app_settings.site_name|default("BroxBhai") }}{% endblock %}
 {% block content %}
-  <div class="auth-page auth-page-shell">
-    <div class="auth-shell auth-shell-md">
-      <div class="auth-card auth-card--shell">
-        <div class="auth-card-header auth-shell-header text-center">
-          <div class="auth-shell-icon text-white mb-2">
-            <i class="bi bi-shield-check"></i>
-          </div>
-          <h2 class="auth-shell-title mb-2">Verify Your Email</h2>
-          {% if email %}
-            <p class="auth-shell-subtitle mb-0">
-              Complete verification for <strong>{{ email }}</strong>
-            </p>
-          {% else %}
-            <p class="auth-shell-subtitle mb-0">We'll send a verification link to your email address.</p>
-          {% endif %}
+<div class="relative isolate overflow-hidden bg-slate-50 py-10 sm:py-14">
+  <div class="pointer-events-none absolute inset-0 -z-10">
+    <div class="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl"></div>
+    <div class="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl"></div>
+  </div>
+
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div class="grid items-stretch gap-6 lg:grid-cols-2">
+      {# ── Sidebar with info ── #}
+      <aside class="relative hidden overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 p-8 text-white shadow-2xl shadow-slate-950/20 lg:flex lg:flex-col lg:justify-between">
+        <div class="absolute inset-0 opacity-20" aria-hidden="true">
+          <div class="absolute -top-16 right-0 h-48 w-48 rounded-full bg-white/10 blur-3xl"></div>
+          <div class="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-indigo-300/10 blur-3xl"></div>
         </div>
-        <div class="auth-card-body auth-shell-body">
-            {% if error %}{{ flash_macros.render_flash({ message: error, type: 'danger' }) }}{% endif %}
-            {% if success %}{{ flash_macros.render_flash({ message: success, type: 'success' }) }}{% endif %}
-            
-            <!-- One-time Verification Info -->
-            <div class="alert alert-info mb-4" role="alert">
-              <div class="d-flex">
-                <i class="bi bi-info-circle-fill me-2 mt-1"></i>
-                <div>
-                  <strong>One-time Verification</strong>
-                  <p class="mb-0 small">After verifying your email once, you'll be able to log in to your account.</p>
-                </div>
+        <div class="relative space-y-6">
+          <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-indigo-100 backdrop-blur">
+            <i class="lucide lucide-shield-check h-3.5 w-3.5"></i>
+            Verify Email
+          </div>
+          <div class="space-y-3">
+            <h1 class="text-4xl font-black tracking-tight text-white">Verify once, access everything.</h1>
+            <p class="max-w-xl text-sm leading-6 text-slate-300">
+              We'll send a verification link to your email address. Click it to activate your account.
+            </p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+              <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-cyan-200">
+                <i class="lucide lucide-check-circle h-5 w-5"></i>
               </div>
+              <p class="text-sm font-semibold text-white">One-time only</p>
+              <p class="mt-1 text-xs leading-5 text-slate-300">Verify your email once and you're good to go.</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+              <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-violet-200">
+                <i class="lucide lucide-zap h-5 w-5"></i>
+              </div>
+              <p class="text-sm font-semibold text-white">Quick process</p>
+              <p class="mt-1 text-xs leading-5 text-slate-300">Takes less than a minute to complete.</p>
+            </div>
+          </div>
+        </div>
+        <div class="relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-indigo-200">
+            <i class="lucide lucide-clock h-6 w-6"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-white">24-hour expiry</p>
+            <p class="text-xs text-slate-300">Verification links expire after 24 hours. Request a new one anytime.</p>
+          </div>
+        </div>
+      </aside>
+
+      {# ── Main form card ── #}
+      <section class="scroll-fade-in overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_80px_-30px_rgba(15,23,42,0.25)]">
+        <div class="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-5 sm:px-8 sm:py-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.26em] text-indigo-700">
+                <i class="lucide lucide-mail h-3.5 w-3.5"></i>
+                Verify Email
+              </div>
+              <h2 class="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                {% if email %}
+                  Verify your email
+                {% else %}
+                  Enter your email
+                {% endif %}
+              </h2>
+              <p class="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                {% if email %}
+                  Complete verification for <strong class="text-slate-800">{{ email }}</strong>
+                {% else %}
+                  We'll send a verification link to your email address.
+                {% endif %}
+              </p>
+            </div>
+            <div class="hidden sm:flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600/10 text-indigo-600">
+              <i class="lucide lucide-mail-check h-6 w-6"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-6 sm:px-8 sm:py-8">
+          {% if error %}
+          <div class="mb-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <i class="lucide lucide-alert-circle mt-0.5 h-4 w-4 shrink-0"></i>
+            <span>{{ error }}</span>
+          </div>
+          {% endif %}
+          {% if success %}
+          <div class="mb-4 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="alert">
+            <i class="lucide lucide-check-circle mt-0.5 h-4 w-4 shrink-0"></i>
+            <span>{{ success }}</span>
+          </div>
+          {% endif %}
+
+          <div class="mb-4 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700" role="alert">
+            <i class="lucide lucide-info mt-0.5 h-4 w-4 shrink-0"></i>
+            <div>
+              <strong class="block font-semibold text-sky-800">One-time Verification</strong>
+              <p class="mb-0 mt-1 text-xs text-sky-600">After verifying your email once, you'll be able to log in to your account.</p>
+            </div>
+          </div>
+
+          <form method="POST" action="/resend-verification-email" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="mb-5 space-y-1.5">
+              <label for="email" class="block text-sm font-semibold text-slate-700">Email Address</label>
+              <div class="relative">
+                <i class="lucide lucide-mail absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none"></i>
+                <input type="email"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-11 py-3.5 text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+                  id="email"
+                  name="email"
+                  value="{{ email or old_email or '' }}"
+                  placeholder="Enter your email address"
+                  {% if email %}readonly{% else %}required{% endif %}>
+              </div>
+              <p class="text-xs text-slate-500">
+                {% if email %}
+                  <i class="lucide lucide-check-circle text-emerald-600 mr-1"></i>This is the email from your login. A verification link will be sent here.
+                {% else %}
+                  Enter the email address associated with your account.
+                {% endif %}
+              </p>
             </div>
 
-            <form method="POST" action="/resend-verification-email" novalidate>
-              <!-- CSRF Token -->
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <!-- Email Field -->
-              <div class="mb-4">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email"
-                       class="form-control form-control-lg"
-                       id="email"
-                       name="email"
-                       value="{{ email or old_email or '' }}"
-                       placeholder="Enter your email address"
-                       {% if email %}readonly{% else %}required{% endif %}>
-                <div class="form-text">
-                  {% if email %}
-                    <i class="bi bi-check-circle text-success me-1"></i>
-                    This is the email from your login. A verification link will be sent here.
-                  {% else %}
-                    Enter the email address associated with your account.
-                  {% endif %}
-                </div>
-                <div class="invalid-feedback">Please provide a valid email.</div>
-              </div>
-              <!-- Submit Button -->
-              <button type="submit" class="btn btn-primary w-100 mb-3 btn-lg">
-                <span id="btnText">
-                  {% if email %}
-                    Send Verification Email
-                  {% else %}
-                    Send Verification Email
-                  {% endif %}
-                </span>
-                <span id="spinner"
-                      class="spinner-border spinner-border-sm ms-2 auth-hidden"
-                      role="status"
-                      aria-hidden="true"></span>
-              </button>
-            </form>
-            
-            <!-- Fallback Token Display (if email failed) -->
-            {% if show_fallback_token and verification_token %}
-            <div class="alert alert-warning mt-4" role="alert">
-              <div class="mb-3">
-                <h6 class="alert-heading mb-2">
-                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                  Email Not Received?
-                </h6>
-                <p class="mb-3 small">
-                  If you haven't received a verification email, you can verify your email directly using the token below:
-                </p>
-              </div>
-              
-              <div class="mb-3 p-3 bg-light rounded">
-                <div class="mb-2">
-                  <small class="text-muted d-block mb-1">Your Verification Token:</small>
-                  <code style="font-size: 14px; word-break: break-all; display: block;">{{ verification_token }}</code>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToken(event)">
-                  <i class="bi bi-clipboard me-1"></i> Copy Token
-                </button>
-              </div>
-              
-              <ol class="small mb-0 ps-3">
-                <li>Copy the token above</li>
-                <li>Click "Already have a verification token?" link below</li>
-                <li>Paste the token in the verification form</li>
-                <li>Click "Verify Email"</li>
-              </ol>
+            <button type="submit"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 active:scale-[0.98]">
+              <i class="lucide lucide-send h-5 w-5"></i>
+              Send Verification Email
+            </button>
+          </form>
+
+          {# Fallback Token Display #}
+          {% if show_fallback_token and verification_token %}
+          <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4" role="alert">
+            <h6 class="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800">
+              <i class="lucide lucide-alert-triangle h-4 w-4"></i>
+              Email Not Received?
+            </h6>
+            <p class="mb-3 text-xs leading-5 text-amber-700">
+              If you haven't received a verification email, you can verify your email directly using the token below:
+            </p>
+            <div class="mb-3 rounded-xl border border-amber-200 bg-white p-3">
+              <small class="mb-1 block text-xs text-slate-500">Your Verification Token:</small>
+              <code class="block break-all text-sm font-bold text-slate-800">{{ verification_token }}</code>
             </div>
-            {% endif %}
-            
-            <!-- Divider -->
-            <hr class="my-4">
-            <!-- Help Links -->
-            <div class="auth-footer">
-              <p class="mb-2">
-                Already have a verification token?
-                <a href="/verify-email" class="text-primary fw-bold">Verify here</a>
-              </p>
-              <p class="mb-2">
-                Need to login? <a href="/login" class="text-primary fw-bold">Login</a>
-              </p>
-              <p class="mb-0">
-                Don't have an account? <a href="/register" class="text-primary fw-bold">Register</a>
-              </p>
-            </div>
+            <button type="button"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm transition hover:bg-amber-50"
+              data-action="copyToken" data-id="event">
+              <i class="lucide lucide-clipboard h-3.5 w-3.5"></i> Copy Token
+            </button>
+            <ol class="mt-3 space-y-1 pl-4 text-xs text-amber-700">
+              <li>Copy the token above</li>
+              <li>Click "Already have a verification token?" link below</li>
+              <li>Paste the token in the verification form</li>
+              <li>Click "Verify Email"</li>
+            </ol>
+          </div>
+          {% endif %}
+
+          <hr class="my-6 border-slate-200">
+
+          <div class="space-y-3 text-center text-sm">
+            <p>
+              Already have a verification token?
+              <a href="/verify-email" class="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700">
+                Verify here
+                <i class="lucide lucide-arrow-right h-4 w-4"></i>
+              </a>
+            </p>
+            <p>
+              Need to login?
+              <a href="/login" class="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700">
+                Login
+                <i class="lucide lucide-arrow-right h-4 w-4"></i>
+              </a>
+            </p>
+            <p>
+              Don't have an account?
+              <a href="/register" class="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700">
+                Register
+                <i class="lucide lucide-arrow-right h-4 w-4"></i>
+              </a>
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="auth-shell-notes">
-        <div class="alert alert-success auth-shell-note" role="alert">
-          <h6 class="alert-heading">
-            <i class="bi bi-check-circle-fill me-2"></i>After Verification
-          </h6>
-          <ul class="mb-0 ps-3 small">
-            <li>✓ Your email will be verified (one-time only)</li>
-            <li>✓ You'll be able to log in immediately</li>
-            <li>✓ You won't need to verify again</li>
-            <li>✓ Your account will be fully activated</li>
-          </ul>
-        </div>
-        
-        <div class="alert alert-info auth-shell-note" role="alert">
-          <h6 class="alert-heading">
-            <i class="bi bi-info-circle-fill me-2"></i>How It Works
-          </h6>
-          <ol class="mb-0 ps-3 small">
-            <li>We'll send a verification link to <strong>{{ email or 'your email' }}</strong></li>
-            <li>Click the link in your email (or copy the token)</li>
-            <li>Enter the token to complete verification</li>
-            <li>You're done! Log in to your account</li>
-          </ol>
-        </div>
-        
-        <!-- Security Note -->
-        <div class="alert alert-warning auth-shell-note" role="alert">
-          <small>
-            <strong>⏳ Security:</strong> Verification links expire after 24 hours.
-            If your link expires, you can request a new one here.
-          </small>
-        </div>
-      </div>
+      </section>
     </div>
   </div>
 
-  <script>
-    function copyToken(event) {
-      const tokenElement = document.querySelector('code');
-      if (!tokenElement) {
-        alert('Token not found on page');
-        return;
-      }
-      
-      const token = tokenElement.textContent.trim();
-      if (!token) {
-        alert('No token to copy');
-        return;
-      }
-      
-      navigator.clipboard.writeText(token).then(() => {
-        const btn = event.target.closest('button');
-        if (btn) {
-          const originalText = btn.innerHTML;
-          btn.innerHTML = '<i class="bi bi-check me-1"></i> Copied!';
-          btn.disabled = true;
-          setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-          }, 2000);
-        }
-      }).catch((err) => {
-        console.error('Copy failed:', err);
-        alert('Failed to copy token. Please copy manually.');
-      });
+  {# Info cards below form on mobile #}
+  <div class="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4" role="alert">
+      <h6 class="mb-2 flex items-center gap-2 text-sm font-bold text-emerald-800">
+        <i class="lucide lucide-check-circle h-4 w-4"></i>After Verification
+      </h6>
+      <ul class="mb-0 pl-4 text-xs leading-5 text-emerald-700">
+        <li>✓ Your email will be verified (one-time only)</li>
+        <li>✓ You'll be able to log in immediately</li>
+        <li>✓ Your account will be fully activated</li>
+      </ul>
+    </div>
+    <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4" role="alert">
+      <h6 class="mb-2 flex items-center gap-2 text-sm font-bold text-sky-800">
+        <i class="lucide lucide-info h-4 w-4"></i>How It Works
+      </h6>
+      <ol class="mb-0 pl-4 text-xs leading-5 text-sky-700">
+        <li>We'll send a verification link to your email</li>
+        <li>Click the link (or copy the token)</li>
+        <li>Enter the token to complete verification</li>
+        <li>You're done! Log in to your account</li>
+      </ol>
+    </div>
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4" role="alert">
+      <small class="text-xs leading-5 text-amber-700">
+        <strong>⏳ Security:</strong> Verification links expire after 24 hours. If your link expires, you can request a new one here.
+      </small>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyToken(event) {
+  const tokenElement = document.querySelector('code');
+  if (!tokenElement) return;
+
+  const token = tokenElement.textContent.trim();
+  if (!token) return;
+
+  navigator.clipboard.writeText(token).then(() => {
+    const btn = event.target.closest('button');
+    if (btn) {
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="lucide lucide-check mr-1"></i> Copied!';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 2000);
     }
-  </script>
+  }).catch(() => {
+    window.showMessage('Failed to copy token. Please copy manually.', 'danger');
+  });
+}
+</script>
 {% endblock %}

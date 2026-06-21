@@ -60,7 +60,7 @@ class CvVersionModel
 
         // Get sections
         $stmt = $this->mysqli->prepare(
-            "SELECT * FROM cv_sections WHERE cv_id = ? ORDER BY `order`"
+            "SELECT * FROM cv_sections WHERE cv_id = ? ORDER BY `sort_order`"
         );
         $stmt->bind_param('i', $cvId);
         $stmt->execute();
@@ -69,7 +69,7 @@ class CvVersionModel
         while ($row = $result->fetch_assoc()) {
             // Get items for each section
             $stmt2 = $this->mysqli->prepare(
-                "SELECT * FROM cv_items WHERE section_id = ? ORDER BY `order`"
+                "SELECT * FROM cv_items WHERE section_id = ? ORDER BY `sort_order`"
             );
             $stmt2->bind_param('i', $row['id']);
             $stmt2->execute();
@@ -183,21 +183,23 @@ class CvVersionModel
             // Restore sections and items
             foreach ($data['sections'] as $section) {
                 $stmt = $this->mysqli->prepare(
-                    "INSERT INTO cv_sections (cv_id, section_type, title, `order`, is_visible) 
+                    "INSERT INTO cv_sections (cv_id, section_type, title, `sort_order`, is_visible) 
                      VALUES (?, ?, ?, ?, ?)"
                 );
                 $isVisible = $section['is_visible'] ?? 1;
-                $stmt->bind_param('issii', $cvId, $section['section_type'], $section['title'], $section['order'], $isVisible);
+                $orderValue = $section['sort_order'] ?? $section['order'] ?? 0;
+                $stmt->bind_param('issii', $cvId, $section['section_type'], $section['title'], $orderValue, $isVisible);
                 $stmt->execute();
                 $sectionId = $this->mysqli->insert_id;
 
                 foreach ($section['items'] as $item) {
                     $contentJson = json_encode($item['content']);
                     $stmt = $this->mysqli->prepare(
-                        "INSERT INTO cv_items (section_id, item_type, content_json, `order`) 
+                        "INSERT INTO cv_items (section_id, item_type, content_json, `sort_order`) 
                          VALUES (?, ?, ?, ?)"
                     );
-                    $stmt->bind_param('issi', $sectionId, $item['item_type'], $contentJson, $item['order']);
+                    $orderValue = $item['sort_order'] ?? $item['order'] ?? 0;
+                    $stmt->bind_param('issi', $sectionId, $item['item_type'], $contentJson, $orderValue);
                     $stmt->execute();
                 }
             }

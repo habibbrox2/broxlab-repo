@@ -1,28 +1,62 @@
 {% extends "admin/layout.twig" %}
-
+{% block title %}Tag Details{% endblock %}
+{% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Tag Details</h1>
-    <div class="d-flex gap-2">
-      <a href="/admin/tags/edit/{{ tag.id }}" class="btn btn-primary btn-sm">Edit</a>
-      <a href="/admin/tags" class="btn btn-outline-secondary btn-sm">Back</a>
-    </div>
-  </div>
+<div class="w-full px-4 sm:px-6 py-4">
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="text-muted small">Name</div>
-          <div class="fw-semibold">{{ tag.name|default('N/A') }}</div>
-        </div>
-        <div class="col-md-6">
-          <div class="text-muted small">Slug</div>
-          <div class="fw-semibold">{{ tag.slug|default('N/A') }}</div>
-        </div>
-      </div>
-    </div>
+ {# ── Gradient Page Header ── #}
+ <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-900 via-purple-900 to-slate-900 p-6 text-white shadow-2xl shadow-violet-900/20 sm:p-8">
+  <div class="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+   <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+   <div class="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-purple-300/20 blur-3xl"></div>
   </div>
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur shadow-sm ring-1 ring-white/10">
+     <i class="lucide lucide-tag text-xl"></i>
+    </div>
+    <div>
+     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Tag Details</h1>
+     <p class="mt-1 text-sm text-violet-200/80">{{ tag.name|default('N/A') }}</p>
+    </div>
+   </div>
+   <div class="flex flex-wrap gap-2">
+    <a href="/admin/tags/edit/{{ tag.id }}" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-pencil w-3.5 h-3.5"></i> Edit
+    </a>
+    <a href="/admin/tags" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur transition-all duration-200 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97]">
+     <i class="lucide lucide-arrow-left w-3.5 h-3.5"></i> Back
+    </a>
+   </div>
+  </div>
+ </div>
+
+ {# ── Details Card ── #}
+ <div class="scroll-fade-in overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+  <div class="flex items-center gap-2.5 border-b border-slate-100 bg-gradient-to-r from-violet-50/50 to-fuchsia-50/50 px-5 py-4">
+   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-violet-100 text-violet-600">     <i class="lucide lucide-info w-4 h-4"></i>
+   </div>
+   <div>
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-900">Tag Information</h2>
+    <p class="text-xs text-slate-500">Basic details for this tag</p>
+   </div>
+  </div>
+  <div class="p-5">
+   <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    <div class="space-y-1">
+     <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500">Name</dt>
+     <dd class="text-sm font-semibold text-slate-900 flex items-center gap-1.5">       <i class="lucide lucide-bookmark text-violet-500 w-4 h-4"></i>
+      {{ tag.name|default('N/A') }}
+     </dd>
+    </div>
+    <div class="space-y-1">
+     <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500">Slug</dt>
+     <dd class="text-sm font-medium text-slate-900">
+      <code class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ tag.slug|default('N/A') }}</code>
+     </dd>
+    </div>
+   </dl>
+  </div>
+ </div>
 </div>
 {% endblock %}
