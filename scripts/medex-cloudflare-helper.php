@@ -245,14 +245,11 @@ function medex_get_cf_clearance_cookie_header(string $url): string|false
         $cookies = medex_request_cookies($tryUrl);
         if ($cookies !== false && !empty($cookies)) {
             medex_save_browser_cookies($cookies);
-            if (medex_has_cf_clearance($cookies)) {
-                return medex_build_cookie_header($cookies);
-            }
             return medex_build_cookie_header($cookies);
         }
     }
 
-    return false;
+    return '';
 }
 
 function medex_curl_request(string $url, ?string $cookieHeader = null): array

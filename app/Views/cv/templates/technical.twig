@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>{{ cv.title }}</title>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+ <style>
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+   body { font-family: 'Inter', -apple-system, sans-serif; font-size: 10pt; line-height: 1.5; color: #334155; background: #fff; }
+   .cv-container { max-width: 210mm; margin: 0 auto; display: grid; grid-template-columns: 240px 1fr; min-height: 297mm; }
+
+   /* ── Sidebar ── */
+   .cv-sidebar { background: #0F172A; color: #E2E8F0; padding: 18mm 14mm; display: flex; flex-direction: column; gap: 18px; }
+   .cv-sidebar .photo-wrapper { text-align: center; margin-bottom: 4px; }
+   .cv-sidebar .photo { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #0F766E; background: #1E293B; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+   .cv-sidebar .photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+   .cv-sidebar .photo-placeholder { font-family: 'Fira Code', monospace; font-size: 1.5rem; color: #0F766E; font-weight: 500; }
+   .cv-sidebar .name { font-size: 16pt; font-weight: 700; color: #F8FAFC; text-align: center; margin-bottom: 2px; }
+   .cv-sidebar .job-title { font-size: 8.5pt; color: #0F766E; font-weight: 500; text-align: center; margin-bottom: 8px; }
+   .cv-sidebar .contact-item { display: flex; align-items: center; gap: 6px; font-size: 8pt; color: #94A3B8; margin-bottom: 4px; }
+   .cv-sidebar .contact-item .label { color: #64748B; min-width: 14px; }
+
+   .sidebar-section { margin-top: 2px; }
+   .sidebar-title { font-family: 'Fira Code', monospace; font-size: 8pt; font-weight: 500; color: #0F766E; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; border-bottom: 1px solid #1E293B; padding-bottom: 3px; }
+
+   /* ── Skill tags in sidebar ── */
+   .tech-stack { display: flex; flex-wrap: wrap; gap: 4px; }
+   .tech-tag { font-family: 'Fira Code', monospace; font-size: 7.5pt; padding: 2px 7px; border-radius: 3px; background: #1E293B; color: #94A3B8; border: 1px solid #334155; }
+   .tech-tag.beginner { background: #1E293B; color: #6B7280; }
+   .tech-tag.intermediate { background: #1E293B; color: #0F766E; border-color: #0F766E; }
+   .tech-tag.advanced { background: #0F766E; color: #F8FAFC; border-color: #0F766E; }
+   .tech-tag.expert { background: #0F766E; color: #F8FAFC; border-color: #0F766E; font-weight: 500; }
+
+   .sidebar-divider { border: none; border-top: 1px solid #1E293B; margin: 4px 0; }
+   .sidebar-text { font-size: 8pt; color: #94A3B8; line-height: 1.6; }
+   .lang-item { font-size: 8pt; color: #94A3B8; margin-bottom: 2px; }
+   .lang-item .name { color: #E2E8F0; }
+   .lang-item .proficiency { color: #64748B; }
+
+   /* ── Main Content ── */
+   .cv-main { padding: 18mm 16mm; }
+   .cv-section { margin-bottom: 16px; page-break-inside: avoid; }
+   .section-title { font-family: 'Fira Code', monospace; font-size: 10pt; font-weight: 600; color: #0F172A; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 2px solid #0F766E; display: inline-block; }
+   .section-subtitle { font-family: 'Fira Code', monospace; font-size: 7pt; color: #0F766E; font-weight: 400; }
+
+   /* ── Experience ── */
+   .cv-item { margin-bottom: 12px; page-break-inside: avoid; }
+   .item-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+   .item-title { font-weight: 600; color: #0F172A; font-size: 10.5pt; }
+   .item-subtitle { font-weight: 400; color: #0F766E; }
+   .item-date { font-family: 'Fira Code', monospace; font-size: 7.5pt; color: #94A3B8; white-space: nowrap; }
+   .item-location { font-size: 8pt; color: #94A3B8; margin-bottom: 3px; }
+   .item-description { font-size: 9pt; color: #475569; margin-top: 2px; line-height: 1.55; }
+   .item-description ul { margin-left: 16px; margin-top: 2px; padding-left: 0; list-style: none; }
+   .item-description li { margin-bottom: 2px; position: relative; padding-left: 14px; }
+   .item-description li::before { content: '>'; position: absolute; left: 0; color: #0F766E; font-family: 'Fira Code', monospace; font-weight: 500; }
+
+   /* ── Tech stack badges per item ── */
+   .item-stack { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+   .item-stack-tag { font-family: 'Fira Code', monospace; font-size: 7pt; padding: 1px 6px; border-radius: 2px; background: #F1F5F9; color: #0F766E; border: 1px solid #CBD5E1; }
+
+   /* ── Projects ── */
+   .project-card { margin-bottom: 10px; padding: 8px 10px; border: 1px solid #E2E8F0; border-radius: 4px; background: #F8FAFC; page-break-inside: avoid; }
+   .project-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+   .project-name { font-weight: 600; color: #0F172A; font-size: 10pt; }
+   .project-date { font-family: 'Fira Code', monospace; font-size: 7.5pt; color: #94A3B8; }
+   .project-description { font-size: 9pt; color: #475569; margin-top: 2px; line-height: 1.5; }
+   .project-stack { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+
+   /* ── Education ── */
+   .edu-item { margin-bottom: 8px; page-break-inside: avoid; }
+   .edu-header { display: flex; justify-content: space-between; align-items: baseline; }
+   .edu-degree { font-weight: 600; color: #0F172A; font-size: 10pt; }
+   .edu-institution { color: #0F766E; }
+   .edu-date { font-family: 'Fira Code', monospace; font-size: 7.5pt; color: #94A3B8; }
+   .edu-detail { font-size: 9pt; color: #64748B; }
+
+   /* ── Summary ── */
+   .summary-text { font-size: 9.5pt; line-height: 1.6; color: #475569; padding: 6px 8px; border-left: 3px solid #0F766E; background: #F8FAFC; border-radius: 2px; }
+
+   /* ── Certifications ── */
+   .cert-item { margin-bottom: 6px; page-break-inside: avoid; }
+   .cert-header { display: flex; justify-content: space-between; align-items: baseline; }
+   .cert-name { font-weight: 500; color: #0F172A; font-size: 9.5pt; }
+   .cert-date { font-family: 'Fira Code', monospace; font-size: 7.5pt; color: #94A3B8; }
+   .cert-issuer { font-size: 8.5pt; color: #64748B; }
+
+   /* ── References ── */
+   .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+   .ref-card { padding: 6px 8px; border: 1px solid #E2E8F0; border-radius: 4px; background: #F8FAFC; }
+   .ref-name { font-weight: 600; color: #0F172A; font-size: 9.5pt; }
+   .ref-detail { font-size: 8.5pt; color: #64748B; }
+
+   /* ── Social Links ── */
+   .social-links { font-size: 8.5pt; }
+   .social-links a { color: #0F766E; text-decoration: none; }
+   .social-links a:hover { text-decoration: underline; }
+
+   /* ── Print ── */
+   @media print {
+     body { font-size: 9pt; }
+     .cv-container { min-height: auto; }
+     .cv-sidebar { background: #0F172A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .cv-sidebar .photo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .tech-tag.advanced, .tech-tag.expert { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .project-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .summary-text { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .ref-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+     .cv-section { page-break-inside: avoid; }
+     .cv-item { page-break-inside: avoid; }
+     .project-card { page-break-inside: avoid; }
+     .item-stack-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   }
+ </style>
+</head>
+<body>
+<div class="cv-container">
+  <aside class="cv-sidebar">
+    {% set photo_url = cv.profile_photo|default('') %}
+    <div class="photo-wrapper">
+      {% if photo_url %}
+      <div class="photo"><img src="{{ photo_url }}" alt="{{ cv.title }}" /></div>
+      {% else %}
+      <div class="photo"><span class="photo-placeholder">{{ (cv.title|first)|default('?')|upper }}</span></div>
+      {% endif %}
+    </div>
+    <div class="name">{{ cv.title }}</div>
+
+    {# Job title from summary #}
+    {% for section in sections %}
+      {% if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          {% if item.content.job_title %}<div class="job-title">{{ item.content.job_title }}</div>{% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    {# Contact info from summary #}
+    {% for section in sections %}
+      {% if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          {% if item.content.email %}<div class="contact-item"><span class="label">@</span> {{ item.content.email }}</div>{% endif %}
+          {% if item.content.phone %}<div class="contact-item"><span class="label">#</span> {{ item.content.phone }}</div>{% endif %}
+          {% if item.content.address %}<div class="contact-item"><span class="label">@</span> {{ item.content.address }}</div>{% endif %}
+          {% if item.content.website %}<div class="contact-item"><span class="label">~</span> {{ item.content.website }}</div>{% endif %}
+          {% if item.content.linkedin %}<div class="contact-item"><span class="label">in</span> {{ item.content.linkedin }}</div>{% endif %}
+          {% if item.content.github %}<div class="contact-item"><span class="label">gh</span> {{ item.content.github }}</div>{% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    <hr class="sidebar-divider">
+
+    {# Skills in sidebar #}
+    {% for section in sections %}
+      {% if section.section_type == 'skills' %}
+        <div class="sidebar-section">
+          <div class="sidebar-title">// Tech Stack</div>
+          <div class="tech-stack">
+            {% for item in section.items %}
+              {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+              {% for s in skills_list %}
+                {% set level = (loop.parent.index % 4 == 0) ? 'expert' : ((loop.parent.index % 4 == 1) ? 'advanced' : ((loop.parent.index % 4 == 2) ? 'intermediate' : 'beginner')) %}
+                <span class="tech-tag {{ level }}">{{ s }}</span>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {# Languages #}
+    {% for section in sections %}
+      {% if section.section_type == 'languages' %}
+        <div class="sidebar-section">
+          <div class="sidebar-title">// Languages</div>
+          {% for item in section.items %}
+            <div class="lang-item"><span class="name">{{ item.content.name }}</span> <span class="proficiency">({{ item.content.proficiency|default('') }})</span></div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {# Social Links in sidebar #}
+    {% for section in sections %}
+      {% if section.section_type == 'social_links' %}
+        <div class="sidebar-section">
+          <div class="sidebar-title">// Links</div>
+          <div class="social-links">
+          {% for item in section.items %}
+            <div style="font-size:8pt;color:#94A3B8;margin-bottom:2px;">{{ item.content.platform }}: {{ item.content.url }}</div>
+          {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    {# Certifications in sidebar #}
+    {% for section in sections %}
+      {% if section.section_type == 'certifications' %}
+        <div class="sidebar-section">
+          <div class="sidebar-title">// Certs</div>
+          {% for item in section.items %}
+            <div style="font-size:7.5pt;color:#94A3B8;margin-bottom:4px;">
+              <div style="color:#E2E8F0;font-weight:500;">{{ item.content.name }}</div>
+              {% if item.content.issuer %}<div>{{ item.content.issuer }}{% if item.content.date %} &middot; {{ item.content.date }}{% endif %}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </aside>
+
+  {# ── Main Content ── #}
+  <main class="cv-main">
+
+    {# Summary #}
+    {% for section in sections %}
+      {% if section.section_type == 'summary' %}
+        <section class="cv-section">
+          {% for item in section.items %}
+            {% if item.content.text or item.content.summary %}
+            <div class="summary-text">{{ item.content.text|default(item.content.summary|default('')) }}</div>
+            {% endif %}
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Experience #}
+    {% for section in sections %}
+      {% if section.section_type == 'experience' %}
+        <section class="cv-section">
+          <div class="section-title"># Experience <span class="section-subtitle">// work history</span></div>
+          {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-header">
+              <div>
+                <span class="item-title">{{ item.content.position|default('Position') }}</span>
+                {% if item.content.company %}<span class="item-subtitle"> @ {{ item.content.company }}</span>{% endif %}
+              </div>
+              <span class="item-date">{{ item.content.start_date|default('') }} .. {{ item.content.end_date|default('Present') }}</span>
+            </div>
+            {% if item.content.location %}<div class="item-location">{{ item.content.location }}</div>{% endif %}
+            {% if item.content.description %}<div class="item-description">{{ item.content.description|nl2br }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Education #}
+    {% for section in sections %}
+      {% if section.section_type == 'education' %}
+        <section class="cv-section">
+          <div class="section-title"># Education <span class="section-subtitle">// academic background</span></div>
+          {% for item in section.items %}
+          <div class="edu-item">
+            <div class="edu-header">
+              <div><span class="edu-degree">{{ item.content.degree|default('Degree') }}{% if item.content.field %} in {{ item.content.field }}{% endif %}</span> <span class="edu-institution">&mdash; {{ item.content.institution|default('') }}</span></div>
+              <span class="edu-date">{{ item.content.start_date|default('') }} .. {{ item.content.end_date|default('') }}</span>
+            </div>
+            {% if item.content.gpa %}<div class="edu-detail">GPA: {{ item.content.gpa }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Projects #}
+    {% for section in sections %}
+      {% if section.section_type == 'projects' %}
+        <section class="cv-section">
+          <div class="section-title"># Projects <span class="section-subtitle">// featured work</span></div>
+          {% for item in section.items %}
+          <div class="project-card">
+            <div class="project-header">
+              <span class="project-name">{{ item.content.name|default('Project') }}</span>
+              {% if item.content.date %}<span class="project-date">{{ item.content.date }}</span>{% endif %}
+            </div>
+            {% if item.content.description %}<div class="project-description">{{ item.content.description|nl2br }}</div>{% endif %}
+            {# Note: builder data doesn't include per-project tech stacks yet — feature is forward-looking #}
+            {% if item.content.technologies or item.content.tech_stack or item.content.stack %}
+              {% set stack = item.content.technologies|default(item.content.tech_stack|default(item.content.stack|default(''))|split(', ')) %}
+              {% if stack is iterable and stack|length > 0 %}
+              <div class="project-stack">
+                {% for tech in stack %}
+                  {% if tech is not empty %}<span class="item-stack-tag">{{ tech }}</span>{% endif %}
+                {% endfor %}
+              </div>
+              {% endif %}
+            {% endif %}
+          </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Certifications in sidebar only - not duplicated here #}
+
+    {# References #}
+    {% for section in sections %}
+      {% if section.section_type == 'references' %}
+        <section class="cv-section">
+          <div class="section-title"># References</div>
+          <div class="ref-grid">
+          {% for item in section.items %}
+            <div class="ref-card">
+              <div class="ref-name">{{ item.content.name }}</div>
+              <div class="ref-detail">{{ item.content.title|default('') }}{% if item.content.company %} &mdash; {{ item.content.company }}{% endif %}</div>
+            </div>
+          {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Custom Sections #}
+    {% for section in sections %}
+      {% if section.section_type == 'custom_sections' %}
+        <section class="cv-section">
+          <div class="section-title"># {{ section.title }}</div>
+          {% for item in section.items %}
+          <div class="cv-item">
+            <div class="item-title">{{ item.content.title|default(item.content.name|default('')) }}</div>
+            {% if item.content.description or item.content.content %}<div class="item-description">{{ (item.content.description|default(item.content.content|default('')))|nl2br }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    {# Skills, languages, social links handled in sidebar - not duplicated here #}
+  </main>
+</div>
+</body>
+</html>

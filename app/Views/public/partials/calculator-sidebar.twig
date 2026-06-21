@@ -9,7 +9,7 @@
 
  <div class="flex flex-col calculator-nav">
  <a href="/calculators"
- class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 {% if current_type is not defined or == 'all' %}bg-slate-900 text-white hover:bg-slate-800 hover:text-white{% endif %}">
+ class="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 {% if current_type is not defined or current_type == 'all' %}bg-slate-900 text-white hover:bg-slate-800 hover:text-white{% endif %}">
  <div class="flex items-center justify-between">
  <div>
  <div class="font-semibold">{{ current_lang == 'bn' ? 'সমস্ত ক্যালকুলেটর' : 'All Calculators' }}</div>

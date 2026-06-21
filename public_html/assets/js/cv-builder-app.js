@@ -47,51 +47,71 @@ function collectStepData(stepId) {
     case 'personal':
       return { full_name: val('bld-field-full_name'), job_title: val('bld-field-job_title'), email: val('bld-field-email'), phone: val('bld-field-phone'), date_of_birth: val('bld-field-dob'), nationality: val('bld-field-nationality'), gender: val('bld-field-gender'), address: val('bld-field-address'), website: val('bld-field-website'), linkedin: val('bld-field-linkedin'), github: val('bld-field-github'), twitter: val('bld-field-twitter'), national_id_no: val('bld-field-national_id_no'), passport_no: val('bld-field-passport_no'), birth_certificate_no: val('bld-field-birth_certificate_no'), religion: val('bld-field-religion'), };
     case 'professional': {
-    // Collect experience
-      const exps = [];
-      const expCards = document.querySelectorAll('#bld-experience-list .bld-entry-card');
-      for (let ei = 0; ei < expCards.length; ei++) {
-        exps.push({ company: qval(expCards[ei], '.exp-company'), position: qval(expCards[ei], '.exp-position'), location: qval(expCards[ei], '.exp-location'), start_date: qval(expCards[ei], '.exp-start_date'), end_date: qval(expCards[ei], '.exp-end_date'), is_current: qchecked(expCards[ei], '.exp-current'), responsibilities: qval(expCards[ei], '.exp-responsibilities'), });
+      // Only read from DOM when cards are in editing mode (have input fields).
+      // Collapsed cards display data as text, not inputs — reading from them
+      // would return empty strings and overwrite the prefilled STATE.data values.
+      const hasExpInputs = document.querySelector('#bld-experience-list .exp-company');
+      if (hasExpInputs) {
+        const exps = [];
+        const expCards = document.querySelectorAll('#bld-experience-list .bld-entry-card');
+        for (let ei = 0; ei < expCards.length; ei++) {
+          exps.push({ company: qval(expCards[ei], '.exp-company'), position: qval(expCards[ei], '.exp-position'), location: qval(expCards[ei], '.exp-location'), start_date: qval(expCards[ei], '.exp-start_date'), end_date: qval(expCards[ei], '.exp-end_date'), is_current: qchecked(expCards[ei], '.exp-current'), responsibilities: qval(expCards[ei], '.exp-responsibilities'), });
+        }
+        STATE.data.experience = exps;
       }
-      STATE.data.experience = exps;
-      // Collect education
-      const eds = [];
-      const eduCards = document.querySelectorAll('#bld-education-list .bld-entry-card');
-      for (let edi = 0; edi < eduCards.length; edi++) {
-        eds.push({ institution: qval(eduCards[edi], '.edu-institution'), degree: qval(eduCards[edi], '.edu-degree'), field: qval(eduCards[edi], '.edu-field'), year: qval(eduCards[edi], '.edu-year'), });
+      const hasEduInputs = document.querySelector('#bld-education-list .edu-institution');
+      if (hasEduInputs) {
+        const eds = [];
+        const eduCards = document.querySelectorAll('#bld-education-list .bld-entry-card');
+        for (let edi = 0; edi < eduCards.length; edi++) {
+          eds.push({ institution: qval(eduCards[edi], '.edu-institution'), degree: qval(eduCards[edi], '.edu-degree'), field: qval(eduCards[edi], '.edu-field'), year: qval(eduCards[edi], '.edu-year'), });
+        }
+        STATE.data.education = eds;
       }
-      STATE.data.education = eds;
-      // Collect skills
+      // Skills are always in tag form (not entry cards with edit/collapse toggle)
       STATE.data.skills = { technical: collectSkills('technical'), soft: collectSkills('soft'), };
-      // Collect languages
-      const langs = [];
-      const langCards = document.querySelectorAll('#bld-languages-list .bld-entry-card');
-      for (let li = 0; li < langCards.length; li++) {
-        langs.push({ name: qval(langCards[li], '.lang-name'), proficiency: qval(langCards[li], '.lang-proficiency'), });
+      const hasLangInputs = document.querySelector('#bld-languages-list .lang-name');
+      if (hasLangInputs) {
+        const langs = [];
+        const langCards = document.querySelectorAll('#bld-languages-list .bld-entry-card');
+        for (let li = 0; li < langCards.length; li++) {
+          langs.push({ name: qval(langCards[li], '.lang-name'), proficiency: qval(langCards[li], '.lang-proficiency'), });
+        }
+        STATE.data.languages = langs;
       }
-      STATE.data.languages = langs;
       return { _combined: true, };
     }
     case 'extras': {
-    // Collect all three sub-sections at once
-      const links = [];
-      const linkCards = document.querySelectorAll('#bld-social-links-list .bld-entry-card');
-      for (let li = 0; li < linkCards.length; li++) {
-        links.push({ platform: qval(linkCards[li], '.link-platform'), url: qval(linkCards[li], '.link-url'), });
+      // Only read from DOM when cards are in editing mode (have input fields).
+      // Collapsed cards display data as text — reading from them would return
+      // empty strings and overwrite the prefilled STATE.data values.
+      const hasLinkInputs = document.querySelector('#bld-social-links-list .link-url');
+      if (hasLinkInputs) {
+        const links = [];
+        const linkCards = document.querySelectorAll('#bld-social-links-list .bld-entry-card');
+        for (let li = 0; li < linkCards.length; li++) {
+          links.push({ platform: qval(linkCards[li], '.link-platform'), url: qval(linkCards[li], '.link-url'), });
+        }
+        STATE.data.social_links = links;
       }
-      STATE.data.social_links = links;
-      const secs = [];
-      const secCards = document.querySelectorAll('#bld-custom-sections-list .bld-entry-card');
-      for (let si = 0; si < secCards.length; si++) {
-        secs.push({ title: qval(secCards[si], '.custom-title'), content: qval(secCards[si], '.custom-content'), });
+      const hasSecInputs = document.querySelector('#bld-custom-sections-list .custom-title');
+      if (hasSecInputs) {
+        const secs = [];
+        const secCards = document.querySelectorAll('#bld-custom-sections-list .bld-entry-card');
+        for (let si = 0; si < secCards.length; si++) {
+          secs.push({ title: qval(secCards[si], '.custom-title'), content: qval(secCards[si], '.custom-content'), });
+        }
+        STATE.data.custom_sections = secs;
       }
-      STATE.data.custom_sections = secs;
-      const refs = [];
-      const refCards = document.querySelectorAll('#bld-references-list .bld-entry-card');
-      for (let ri = 0; ri < refCards.length; ri++) {
-        refs.push({ name: qval(refCards[ri], '.ref-name'), title: qval(refCards[ri], '.ref-title'), email: qval(refCards[ri], '.ref-email'), phone: qval(refCards[ri], '.ref-phone'), });
+      const hasRefInputs = document.querySelector('#bld-references-list .ref-name');
+      if (hasRefInputs) {
+        const refs = [];
+        const refCards = document.querySelectorAll('#bld-references-list .bld-entry-card');
+        for (let ri = 0; ri < refCards.length; ri++) {
+          refs.push({ name: qval(refCards[ri], '.ref-name'), title: qval(refCards[ri], '.ref-title'), email: qval(refCards[ri], '.ref-email'), phone: qval(refCards[ri], '.ref-phone'), });
+        }
+        STATE.data.references = refs;
       }
-      STATE.data.references = refs;
       return { _combined: true, };
     }
   }
@@ -171,7 +191,7 @@ function saveBuilderData(silent) {
   const stepData = STATE.data[stepId] || {};
   const payload = { step: stepId, data: stepData, all_data: STATE.data, };
   // First save to the standard builder_data JSON
-  fetch(`/ api / cv / builder / ${ STATE.cvId }/step`, {
+  fetch(`/api/cv/builder/${STATE.cvId}/step`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
     body: JSON.stringify(payload),
@@ -181,9 +201,9 @@ function saveBuilderData(silent) {
       if (!res.success) return;
       // Refresh preview if open after successful save
       refreshReviewPreviewIfOpen();
-      // If on personal step, also save to the structured cv_personal_info table
+      // If on personal step, also save to the structured cv_infos table
       if (stepId === 'personal') {
-        savePersonalInfo(stepData, silent);
+        saveCvInfos(stepData, silent);
       } else if (!silent) {
         showAutoSaveIndicator();
       }
@@ -192,8 +212,8 @@ function saveBuilderData(silent) {
     .finally(() => { STATE.isSaving = false; });
 }
 
-function savePersonalInfo(data, silent) {
-  fetch(`/api/cv/${ STATE.cvId }/personal-info`, {
+function saveCvInfos(data, silent) {
+  fetch(`/api/cv/${ STATE.cvId }/infos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
     body: JSON.stringify(data),
@@ -226,7 +246,7 @@ function completeBuilder() {
   STATE.data._template = STATE.selectedTemplate;
   // Save personal info to the structured table before completing
   if (STATE.data.personal) {
-    savePersonalInfo(STATE.data.personal, true);
+    saveCvInfos(STATE.data.personal, true);
   }
   const nextBtn = document.getElementById('bld-btn-next');
   if (nextBtn) { nextBtn.disabled = true; nextBtn.innerHTML = '<i class="lucide lucide-hourglass" style="width:1em;height:1em;"></i> Finalizing...'; }

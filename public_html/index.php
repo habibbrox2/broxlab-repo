@@ -277,7 +277,7 @@ function requireAllPhpFiles(string $dir): void
 // ============================================================================
 require_once BASE_PATH . 'Config/Db.php';
 require_once BASE_PATH . 'Config/Twig.php';
-require_once BASE_PATH . 'app/Routes/Router.php';
+require_once BASE_PATH . 'app/Router/Router.php';
 
 /** @var mysqli $mysqli */
 
@@ -489,12 +489,9 @@ foreach ($controllerFiles as $controller) {
     require_once $controller;
 }
 
-$routeFiles = glob(BASE_PATH . 'app/Routes/*.php') ?: [];
-foreach ($routeFiles as $routeFile) {
-    if (basename($routeFile) !== 'Router.php') {
-        require_once $routeFile;
-    }
-}
+// Routes are now registered in their respective controller files.
+// The app/Router directory only contains the Router class.
+// No separate route files to load.
 
 // ============================================================================
 // Register Routes from Controllers

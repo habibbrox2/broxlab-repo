@@ -14,13 +14,13 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 
 ## Project Map
 
-This project uses MVC with 50 Controllers, 51 Models, 25 Helpers, 244 Views, and 74 SQL schema files.
+This project uses MVC with 44 Controllers, 51 Models, 25 Helpers, 244 Views, and 74 SQL schema files.
 
 | Layer | Location | Role |
 |-------|----------|------|
 | **Bootstrap** | `public_html/index.php` | Static file serving, Composer autoload, app bootstrap |
 | **Router** | `app/Routes/Router.php` | Custom regex router |
-| **Controllers** | `app/Controllers/*.php` | 50 controllers with embedded routes + middleware |
+| **Controllers** | `app/Controllers/*.php` | 44 controllers with embedded routes + middleware |
 | **Models** | `app/Models/*.php` | 51 models using Mysqli prepared statements |
 | **Services** | `app/Services/` | Business logic |
 | **Helpers** | `app/Helpers/*.php` | 25 shared utilities (purify, email, logging, etc.) |
@@ -39,8 +39,6 @@ This project uses MVC with 50 Controllers, 51 Models, 25 Helpers, 244 Views, and
 | Controller | Key Responsibility |
 |------------|---------------------|
 | `ActivityController.php` | User activity tracking |
-| `AdminCvPersonalInfoController.php` | Admin CV personal info CRUD |
-| `AdminCvTemplatesController.php` | Admin CV template management |
 | `AdminLogsController.php` | Admin log viewer |
 | `AdminNotificationTemplateController.php` | Notification template admin |
 | `AdminSecurityController.php` | Admin security settings |

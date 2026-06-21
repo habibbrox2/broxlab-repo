@@ -13,7 +13,7 @@ function initMedexMotion() {
       entry.target.classList.add('visible');
       io.unobserve(entry.target);
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0.12, });
 
   targets.forEach((target) => {
     target.classList.add('scroll-fade-in');

@@ -60,9 +60,6 @@ const BUDGETS = [
   { key: 'public_html/assets/js/dist/admin-article-writer.js',        maxBytes: 16_000, label: 'admin-article-writer.js' },
   { key: 'public_html/assets/js/dist/admin-bulk-article-writer.js',   maxBytes: 12_000, label: 'admin-bulk-article-writer.js' },
   { key: 'public_html/assets/js/dist/bangla-converter.js',             maxBytes: 4_000,  label: 'bangla-converter.js' },
-  { key: 'public_html/assets/js/dist/cv-admin.js',                    maxBytes: 12_000, label: 'cv-admin.js' },
-  { key: 'public_html/assets/js/dist/cv-marketplace.js',              maxBytes: 5_000,  label: 'cv-marketplace.js' },
-  { key: 'public_html/assets/js/dist/cv-template-upload.js',          maxBytes: 6_000,  label: 'cv-template-upload.js' },
   { key: 'public_html/assets/js/dist/medex-brand-page.js',            maxBytes: 3_000,  label: 'medex-brand-page.js' },
   { key: 'public_html/assets/js/dist/medex-details-page.js',          maxBytes: 7_000,  label: 'medex-details-page.js' },
 

@@ -105,7 +105,7 @@ function parse_command_line_arguments(array &$options): void
         } elseif (strpos($arg, "--limit=") === 0) {
             $options["limit"] = (int)substr($arg, 7);
         } elseif (strpos($arg, "--brands-limit=") === 0) {
-            $options["brands_limit"] = (int)substr($arg, 14);
+            $options["brands_limit"] = (int)substr($arg, 15);
         } elseif (strpos($arg, "--output=") === 0) {
             $value = substr($arg, 8);
             $value = trim($value, " \t\n\r\0\x0B\"'");
@@ -114,7 +114,7 @@ function parse_command_line_arguments(array &$options): void
             }
             $options["output"] = $value;
         } elseif (strpos($arg, "--rate=") === 0) {
-            $options["rate"] = (float)substr($arg, 6);
+            $options["rate"] = (float)substr($arg, 7);
         } elseif ($arg === "--resume") {
             $options["resume"] = true;
         }
@@ -417,12 +417,18 @@ function extract_all_brand_links(string $html, string $baseUrl): array
         }
         $href = $node->getAttribute("href");
         $nameNode = $xpath->query(".//h3", $node)->item(0);
-        $name = $nameNode ? trim($nameNode->textContent) : "";
+        if (!$nameNode) {
+            $nameNode = $xpath->query(".//div[contains(@class, 'data-row-top')]", $node)->item(0);
+        }
+        $name = $nameNode ? trim($nameNode->textContent) : clean_text($node->textContent);
         $genericNode = $xpath->query('.//span[contains(@class,"text-muted")]', $node)->item(0);
         if (!$genericNode) {
             $genericNode = $xpath->query('.//div[contains(@class,"text-muted")]', $node)->item(0);
         }
-        $generic = $genericNode ? trim($genericNode->textContent) : "";
+        if (!$genericNode) {
+            $genericNode = $xpath->query(".//*[not(contains(@class, 'data-row-top')) and not(self::h3)]", $node)->item(1);
+        }
+        $generic = $genericNode ? trim($genericNode->textContent) : '';
 
         if ($href && $name) {
             $links[] = [

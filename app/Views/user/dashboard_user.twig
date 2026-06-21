@@ -106,18 +106,7 @@ Modern, clean design with gradient accents, hover effects, and animations
 
 {# ── Personal Stats ── #}
 <div class="scroll-fade-in mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-  <a href="/cv-builder" class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md no-underline">
-    <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
-    <div class="p-4">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">My CVs</span>
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors duration-200 group-hover:bg-indigo-100">
-          <i class="lucide lucide-file-text h-4 w-4"></i>
-        </div>
-      </div>
-      <div class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ mystats.cvs|default(0) }}</div>
-    </div>
-  </a>
+
   <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
     <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 to-violet-400"></div>
     <div class="p-4">
@@ -472,6 +461,9 @@ Modern, clean design with gradient accents, hover effects, and animations
 </div>
 {% endblock %}
 
+{% block scripts %}
+{{ parent() }}
+
 <style>
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -481,9 +473,6 @@ Modern, clean design with gradient accents, hover effects, and animations
   animation: fadeIn 0.4s ease;
 }
 </style>
-
-{% block scripts %}
-{{ parent() }}
 
 {# ─── Guest CV Claimed Notification Auto-Dismiss Timer ─── #}
 <script>

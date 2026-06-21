@@ -67,23 +67,19 @@
     {% endif %}
     <div class="cv-header-text">
       <h1 class="cv-name">{{ cv.title }}</h1>
-      {% for section in sections %}
-        {% if section.section_type == 'summary' %}
-          {% for item in section.items %}
-            {% if item.content.job_title %}<div class="cv-job-title">{{ item.content.job_title }}</div>{% endif %}
-          {% endfor %}
-        {% endif %}
+      {% for section in sections if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          {% if item.content.job_title %}<div class="cv-job-title">{{ item.content.job_title }}</div>{% endif %}
+        {% endfor %}
       {% endfor %}
       <div class="cv-contact">
-        {% for section in sections %}
-          {% if section.section_type == 'summary' %}
+        {% for section in sections if section.section_type == 'summary' %}
           {% for item in section.items %}
             {% if item.content.email %}<span class="contact-item">&#9993; {{ item.content.email }}</span>{% endif %}
             {% if item.content.phone %}<span class="contact-item">&#128222; {{ item.content.phone }}</span>{% endif %}
             {% if item.content.location %}<span class="contact-item">&#128205; {{ item.content.location }}</span>{% endif %}
           {% endfor %}
-        {% endif %}
-      {% endfor %}
+        {% endfor %}
       </div>
     </div>
   </header>

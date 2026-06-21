@@ -696,20 +696,23 @@ $router->post('/admin/cv-purchases/{id}/confirm', ['middleware' => ['auth', 'adm
 $router->post('/admin/cv-purchases/{id}/cancel', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvPurchaseCancel']);
 
 // ════════════════════════════════════════════════════════════
-// ADMIN: CV PERSONAL INFO MANAGEMENT (full CRUD)
+// ADMIN: CV INFOS MANAGEMENT (full CRUD)
 // ════════════════════════════════════════════════════════════
 
-$router->get('/admin/cv-personal-info', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoList']);
-$router->get('/admin/cv-personal-info/create', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoCreateForm']);
-$router->post('/admin/cv-personal-info', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoStore']);
-$router->get('/admin/cv-personal-info/view/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoView']);
-$router->get('/admin/cv-personal-info/edit/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoEditForm']);
-$router->post('/admin/cv-personal-info/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoUpdate']);
-$router->post('/admin/cv-personal-info/{id}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvPersonalInfoController', 'adminCvPersonalInfoDelete']);
+$router->get('/admin/cv-infos', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvInfosList']);
+$router->get('/admin/cv-infos/create', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvInfosCreateForm']);
+$router->post('/admin/cv-infos', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvInfosStore']);
+$router->get('/admin/cv-infos/view/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvInfosView']);
+$router->get('/admin/cv-infos/edit/{id}', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvInfosEditForm']);
+$router->post('/admin/cv-infos/{id}', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvInfosUpdate']);
+$router->post('/admin/cv-infos/{id}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvInfosDelete']);
 
 // ════════════════════════════════════════════════════════════
 // ADMIN: CV TEMPLATE VIEW (by slug)
 // ════════════════════════════════════════════════════════════
+
+$router->get('/admin/cv-templates/tutorial', ['middleware' => ['auth', 'admin_only']], ['AdminCvController', 'adminCvTemplateTutorial']);
+$router->post('/admin/cv-templates/preview-content', ['middleware' => ['auth', 'admin_only', 'csrf']], ['AdminCvController', 'adminCvTemplatePreviewContent']);
 
 $router->get('/admin/cv-templates/view/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) {
     global $twig;
@@ -720,7 +723,7 @@ $router->get('/admin/cv-templates/view/{slug}', ['middleware' => ['auth', 'admin
         echo $twig->render('admin/error.twig', ['error' => 'Template not found', 'page_title' => 'Error', 'current_page' => 'cv-templates']);
         exit;
     }
-    echo $twig->render('admin/cv-templates/view.twig', [
+    echo $twig->render('admin/cv/templates/view.twig', [
         'template' => $template, 'template_slug' => $slug,
         'page_title' => 'Template: ' . ($template['name'] ?? ucfirst($slug)),
         'current_page' => 'cv-templates',
