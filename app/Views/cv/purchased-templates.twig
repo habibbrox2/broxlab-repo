@@ -87,7 +87,7 @@
               <div class="flex items-center pr-4 gap-2">
                 {% if p.status == 'completed' %}
                   {% set usage_count = template_usage[p.template_slug]|default(0) %}
-                  <a href="/cv-builder/new?template={{ p.template_slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 text-xs font-semibold border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 whitespace-nowrap">
+                  <a href="/cv-builder/infos?template={{ p.template_slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 text-xs font-semibold border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 whitespace-nowrap">
                     <i data-lucide="plus" class="w-3 h-3"></i>
                     New CV
                   </a>

@@ -576,8 +576,8 @@ class CvProfileService
             $score += $this::COMPLETION_WEIGHTS['contact'];
         }
 
-        // Summary — we check if profile has summary data
-        // (stored in builder_data or an additional field; for now check title)
+        // Summary — we check if profile has summary data.
+        // The title remains the fallback signal until a dedicated summary column exists.
         // Future: add summary_text column to cv_profiles
 
         // Education
@@ -788,200 +788,7 @@ class CvProfileService
         return $stmt->execute();
     }
 
-    // ========================================================================
-    //  WRITE-THROUGH BRIDGE: migrateFromBuilderData
-    // ========================================================================
-
-    /**
-     * Migrate data from the old builder_data JSON format into normalized V3 child tables.
-     * Creates a cv_profiles entry linked to the old cvs.id if one doesn't exist.
-     *
-     * This is the core of the write-through bridge: old routes write to builder_data
-     * and normalized old tables; this method copies the data into V3 tables so
-     * CvRendererService can consume it.
-     *
-     * @param int    $cvId        Old cvs.id
-     * @param int    $userId      User ID
-     * @param array  $builderData The decoded builder_data JSON
-     * @param string $template    The template slug (e.g. 'modern')
-     * @return int|null The cv_profiles.id on success, or null on failure
-     */
-    public function migrateFromBuilderData(int $cvId, int $userId, array $builderData, string $template = 'modern'): ?int
-    {
-        // 1. Check if a profile already exists for this cv_id
-        $stmt = $this->mysqli->prepare("SELECT id FROM cv_profiles WHERE cv_id = ? LIMIT 1");
-        $stmt->bind_param('i', $cvId);
-        $stmt->execute();
-        $existing = $stmt->get_result()->fetch_assoc();
-
-        if ($existing) {
-            $profileId = (int)$existing['id'];
-            // Clear existing child data for re-import
-            foreach (self::CHILD_TABLES as $table) {
-                $this->mysqli->query("DELETE FROM {$table} WHERE profile_id = {$profileId}");
-            }
-        } else {
-            // Create title from builder_data personal info
-            $title = $builderData['personal']['full_name'] ?? 'My CV';
-            $title = (trim($title) !== '') ? $title . "'s CV" : 'My CV';
-
-            $profileId = $this->create($userId, $title, $template, $cvId);
-            if (!$profileId) {
-                return null;
-            }
-        }
-
-        // 2. Save professional summary to cv_profiles
-        $summary = $builderData['summary']['professional_summary'] ?? $builderData['personal']['professional_summary'] ?? '';
-        if ($summary !== '') {
-            $stmt = $this->mysqli->prepare("UPDATE cv_profiles SET professional_summary = ? WHERE id = ?");
-            $stmt->bind_param('si', $summary, $profileId);
-            $stmt->execute();
-        }
-
-        // 3. Migrate experiences
-        $experiences = $builderData['experience'] ?? [];
-        foreach ($experiences as $exp) {
-            if (!empty($exp['company'])) {
-                $this->addExperience($profileId, [
-                    'company' => $exp['company'] ?? '',
-                    'position' => $exp['position'] ?? '',
-                    'location' => $exp['location'] ?? '',
-                    'start_date' => $exp['start_date'] ?? '',
-                    'end_date' => $exp['end_date'] ?? '',
-                    'is_current' => !empty($exp['is_current']) ? 1 : 0,
-                    'description' => $exp['responsibilities'] ?? $exp['description'] ?? '',
-                ]);
-            }
-        }
-
-        // 4. Migrate education
-        $educations = $builderData['education'] ?? [];
-        foreach ($educations as $edu) {
-            if (!empty($edu['institution'])) {
-                $this->addEducation($profileId, [
-                    'institution' => $edu['institution'] ?? '',
-                    'degree' => $edu['degree'] ?? '',
-                    'field' => $edu['field'] ?? '',
-                    'start_date' => $edu['start_year'] ?? $edu['start_date'] ?? '',
-                    'end_date' => $edu['end_year'] ?? $edu['end_date'] ?? '',
-                    'gpa' => $edu['gpa'] ?? '',
-                ]);
-            }
-        }
-
-        // 5. Migrate skills
-        $techSkills = $builderData['skills']['technical'] ?? [];
-        $softSkills = $builderData['skills']['soft'] ?? [];
-        foreach ((array)$techSkills as $skill) {
-            $name = is_string($skill) ? trim($skill) : '';
-            if ($name !== '') {
-                $this->addSkill($profileId, 'technical', $name);
-            }
-        }
-        foreach ((array)$softSkills as $skill) {
-            $name = is_string($skill) ? trim($skill) : '';
-            if ($name !== '') {
-                $this->addSkill($profileId, 'soft', $name);
-            }
-        }
-
-        // 6. Migrate languages
-        $languages = $builderData['languages'] ?? [];
-        foreach ($languages as $lang) {
-            if (!empty($lang['name'])) {
-                $this->addLanguage($profileId, $lang['name'], $lang['proficiency'] ?? 'intermediate');
-            }
-        }
-
-        // 7. Migrate certifications
-        $certificates = $builderData['certificates'] ?? [];
-        foreach ($certificates as $cert) {
-            if (!empty($cert['name'])) {
-                $this->addCertification($profileId, [
-                    'name' => $cert['name'] ?? '',
-                    'organization' => $cert['organization'] ?? $cert['issuer'] ?? '',
-                    'date' => $cert['issue_date'] ?? $cert['date'] ?? '',
-                ]);
-            }
-        }
-
-        // 8. Migrate projects
-        $projects = $builderData['projects'] ?? [];
-        foreach ($projects as $proj) {
-            if (!empty($proj['name'])) {
-                $this->addProject($profileId, [
-                    'name' => $proj['name'] ?? '',
-                    'description' => $proj['description'] ?? '',
-                    'technologies' => $proj['technologies'] ?? '',
-                    'url' => $proj['url'] ?? '',
-                ]);
-            }
-        }
-
-        // 9. Migrate references
-        $references = $builderData['references'] ?? [];
-        foreach ($references as $ref) {
-            if (!empty($ref['name'])) {
-                $this->addReference($profileId, [
-                    'name' => $ref['name'] ?? '',
-                    'title' => $ref['title'] ?? '',
-                    'email' => $ref['email'] ?? '',
-                    'phone' => $ref['phone'] ?? '',
-                    'company' => $ref['company'] ?? '',
-                ]);
-            }
-        }
-
-        // 10. Migrate custom sections
-        $customSections = $builderData['custom_sections'] ?? [];
-        foreach ($customSections as $cs) {
-            if (!empty($cs['title'])) {
-                $this->addCustomSection($profileId, [
-                    'title' => $cs['title'] ?? '',
-                    'content' => $cs['content'] ?? '',
-                ]);
-            }
-        }
-
-        // 11. Migrate social links
-        $socialLinks = $builderData['social_links'] ?? [];
-        foreach ($socialLinks as $sl) {
-            if (!empty($sl['url'])) {
-                $this->addSocialLink($profileId, $sl['platform'] ?? '', $sl['url'] ?? '');
-            }
-        }
-
-        // 12. Calculate completion score
-        $this->calculateCompletionScore($profileId);
-
-        // 13. Set active template
-        if ($template !== 'modern') {
-            $templateId = $this->resolveTemplateId($template);
-            if ($templateId !== null) {
-                $this->setActiveTemplate($profileId, $userId, $templateId);
-            }
-        }
-
-        if (function_exists('logActivity')) {
-            logActivity("CV Data Migrated to V3", "cv_profile", $profileId, [
-                'cv_id' => $cvId,
-                'sections' => array_keys(array_filter([
-                    'experience' => !empty($experiences),
-                    'education' => !empty($educations),
-                    'skills' => !empty($techSkills) || !empty($softSkills),
-                    'languages' => !empty($languages),
-                    'certificates' => !empty($certificates),
-                    'projects' => !empty($projects),
-                    'references' => !empty($references),
-                ])),
-            ], 'success');
-        }
-
-        return $profileId;
-    }
-
-    /**
+        /**
      * Find the V3 profile ID linked to an old cvs.id.
      */
     public function getProfileIdByCvId(int $cvId): ?int
@@ -991,5 +798,376 @@ class CvProfileService
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         return $row ? (int)$row['id'] : null;
+    }
+
+    // ========================================================================
+    //  V3 DATA CONVERSION (bridge replacement)
+    //  These methods replace the old monolithic builder payload storage.
+    //  Instead of reading/writing JSON, we read/write V3 normalized tables.
+    // ========================================================================
+
+    /**
+     * Convert V3 normalized tables data into the structured payload expected
+     * by the frontend JS builder (window.__bldData).
+     *
+     * @param int $profileId The cv_profiles.id
+     * @return array Builder-data-format associative array
+     */
+    public function getV3DataAsBuilderData(int $profileId): array
+    {
+        $profile = $this->getById($profileId);
+        if (!$profile) {
+            return [];
+        }
+
+        // Get full V3 data
+        $full = $this->getFullCvData($profileId);
+
+        // Build the structured payload
+        $builderData = [];
+
+        // Personal info — from cv_profiles title
+        $builderData['personal'] = [
+            'full_name' => $profile['title'] ?? '',
+            'job_title' => '',
+            'email' => '',
+            'phone' => '',
+            'address' => '',
+            'website' => '',
+            'linkedin' => '',
+            'github' => '',
+            'date_of_birth' => '',
+            'nationality' => '',
+            'driving_license' => '',
+            'portfolio' => '',
+        ];
+        // Override from social links
+        foreach (($full['social_links'] ?? []) as $link) {
+            $platform = $link['platform'] ?? '';
+            $url = $link['url'] ?? '';
+            switch ($platform) {
+                case 'linkedin': $builderData['personal']['linkedin'] = $url; break;
+                case 'github':   $builderData['personal']['github'] = $url; break;
+                case 'website':
+                case 'portfolio': $builderData['personal']['portfolio'] = $url; break;
+            }
+        }
+
+        // Summary
+        $builderData['summary'] = [
+            'professional_summary' => $profile['professional_summary'] ?? '',
+            'career_objective' => '',
+        ];
+
+        // Experiences
+        $builderData['experience'] = [];
+        foreach (($full['experiences'] ?? []) as $exp) {
+            $builderData['experience'][] = [
+                'company' => $exp['company'] ?? '',
+                'position' => $exp['position'] ?? '',
+                'location' => $exp['location'] ?? '',
+                'start_date' => $exp['start_date'] ?? '',
+                'end_date' => $exp['end_date'] ?? '',
+                'is_current' => !empty($exp['is_current']),
+                'responsibilities' => $exp['description'] ?? '',
+                'description' => $exp['description'] ?? '',
+            ];
+        }
+
+        // Education
+        $builderData['education'] = [];
+        foreach (($full['educations'] ?? []) as $edu) {
+            $builderData['education'][] = [
+                'institution' => $edu['institution'] ?? '',
+                'degree' => $edu['degree'] ?? '',
+                'field' => $edu['field'] ?? '',
+                'start_date' => $edu['start_date'] ?? '',
+                'end_date' => $edu['end_date'] ?? '',
+                'start_year' => $edu['start_date'] ?? '',
+                'end_year' => $edu['end_date'] ?? '',
+                'gpa' => $edu['gpa'] ?? '',
+            ];
+        }
+
+        // Skills (grouped by category)
+        $builderData['skills'] = ['technical' => [], 'soft' => []];
+        foreach (($full['skills'] ?? []) as $skill) {
+            $cat = $skill['category'] ?? 'technical';
+            if (!isset($builderData['skills'][$cat])) {
+                $builderData['skills'][$cat] = [];
+            }
+            $builderData['skills'][$cat][] = $skill['name'] ?? '';
+        }
+
+        // Languages
+        $builderData['languages'] = [];
+        foreach (($full['languages'] ?? []) as $lang) {
+            $builderData['languages'][] = [
+                'name' => $lang['name'] ?? '',
+                'proficiency' => $lang['proficiency'] ?? 'intermediate',
+            ];
+        }
+
+        // Certifications
+        $builderData['certificates'] = [];
+        foreach (($full['certifications'] ?? []) as $cert) {
+            $builderData['certificates'][] = [
+                'name' => $cert['name'] ?? '',
+                'organization' => $cert['organization'] ?? '',
+                'date' => $cert['date'] ?? '',
+            ];
+        }
+
+        // Projects
+        $builderData['projects'] = [];
+        foreach (($full['projects'] ?? []) as $proj) {
+            $builderData['projects'][] = [
+                'name' => $proj['name'] ?? '',
+                'description' => $proj['description'] ?? '',
+                'technologies' => $proj['technologies'] ?? '',
+                'url' => $proj['url'] ?? '',
+            ];
+        }
+
+        // References
+        $builderData['references'] = [];
+        foreach (($full['references'] ?? []) as $ref) {
+            $builderData['references'][] = [
+                'name' => $ref['name'] ?? '',
+                'title' => $ref['title'] ?? '',
+                'email' => $ref['email'] ?? '',
+                'phone' => $ref['phone'] ?? '',
+                'company' => $ref['company'] ?? '',
+                'organization' => $ref['company'] ?? '',
+            ];
+        }
+
+        // Custom sections
+        $builderData['custom_sections'] = [];
+        foreach (($full['custom_sections'] ?? []) as $cs) {
+            $builderData['custom_sections'][] = [
+                'title' => $cs['title'] ?? '',
+                'content' => $cs['content'] ?? '',
+                'items' => [['content' => $cs['content'] ?? '']],
+                'is_visible' => 1,
+            ];
+        }
+
+        // Social links
+        $builderData['social_links'] = [];
+        foreach (($full['social_links'] ?? []) as $sl) {
+            $builderData['social_links'][] = [
+                'platform' => $sl['platform'] ?? '',
+                'url' => $sl['url'] ?? '',
+            ];
+        }
+
+        return $builderData;
+    }
+
+    /**
+     * Save an individual builder step from the wizard into V3 normalized tables.
+     * Replaces the old approach of writing step data into a single blob field.
+     *
+     * @param int    $profileId The cv_profiles.id
+     * @param string $step      The step name (personal, summary, experience, education, skills, languages, etc.)
+     * @param array  $data      The step data from the builder wizard
+     * @return bool Success
+     */
+    public function saveBuilderStepToV3(int $profileId, string $step, array $data): bool
+    {
+        $profile = $this->getById($profileId);
+        if (!$profile) {
+            return false;
+        }
+
+        switch ($step) {
+            case 'personal':
+                // Update profile title from personal info
+                if (!empty($data['full_name'])) {
+                    $this->update($profileId, ['title' => $data['full_name']]);
+                }
+                // Social links from personal section
+                $socialMap = ['linkedin', 'github', 'website', 'portfolio'];
+                $existingLinks = $this->getSocialLinks($profileId);
+                $existingPlatforms = [];
+                foreach ($existingLinks as $l) {
+                    $existingPlatforms[$l['platform']] = $l;
+                }
+                foreach ($socialMap as $platform) {
+                    $url = $data[$platform] ?? '';
+                    if ($url !== '' && !isset($existingPlatforms[$platform])) {
+                        $this->addSocialLink($profileId, $platform, $url);
+                    }
+                }
+                return true;
+
+            case 'summary':
+                $summary = $data['professional_summary'] ?? $data['career_objective'] ?? '';
+                if ($summary !== '') {
+                    return $this->update($profileId, ['professional_summary' => $summary]);
+                }
+                return true;
+
+            case 'experience':
+                // Clear existing experiences and re-import
+                $existing = $this->getExperiences($profileId);
+                foreach ($existing as $e) {
+                    $this->deleteExperience((int)$e['id']);
+                }
+                foreach ($data as $exp) {
+                    if (is_array($exp) && !empty($exp['company'])) {
+                        $this->addExperience($profileId, [
+                            'company' => $exp['company'] ?? '',
+                            'position' => $exp['position'] ?? '',
+                            'location' => $exp['location'] ?? '',
+                            'start_date' => $exp['start_date'] ?? '',
+                            'end_date' => $exp['end_date'] ?? '',
+                            'is_current' => !empty($exp['is_current']) ? 1 : 0,
+                            'description' => $exp['responsibilities'] ?? $exp['description'] ?? '',
+                        ]);
+                    }
+                }
+                return true;
+
+            case 'education':
+                $existing = $this->getEducations($profileId);
+                foreach ($existing as $e) {
+                    $this->deleteEducation((int)$e['id']);
+                }
+                foreach ($data as $edu) {
+                    if (is_array($edu) && !empty($edu['institution'])) {
+                        $this->addEducation($profileId, [
+                            'institution' => $edu['institution'] ?? '',
+                            'degree' => $edu['degree'] ?? '',
+                            'field' => $edu['field'] ?? '',
+                            'start_date' => $edu['start_year'] ?? $edu['start_date'] ?? '',
+                            'end_date' => $edu['end_year'] ?? $edu['end_date'] ?? '',
+                            'gpa' => $edu['gpa'] ?? '',
+                        ]);
+                    }
+                }
+                return true;
+
+            case 'skills':
+                // Data format: data.technical (array) and data.soft (array)
+                // Or: data = ['technical' => [...], 'soft' => [...]]
+                $existing = $this->getSkills($profileId);
+                foreach ($existing as $s) {
+                    $this->deleteSkill((int)$s['id']);
+                }
+                $techSkills = $data['technical'] ?? (is_array($data) && !isset($data['technical']) && !isset($data['soft']) ? $data : []);
+                $softSkills = $data['soft'] ?? [];
+                foreach ((array)$techSkills as $skill) {
+                    $name = is_string($skill) ? trim($skill) : '';
+                    if ($name !== '') {
+                        $this->addSkill($profileId, 'technical', $name);
+                    }
+                }
+                foreach ((array)$softSkills as $skill) {
+                    $name = is_string($skill) ? trim($skill) : '';
+                    if ($name !== '') {
+                        $this->addSkill($profileId, 'soft', $name);
+                    }
+                }
+                return true;
+
+            case 'languages':
+                $existing = $this->getLanguages($profileId);
+                foreach ($existing as $l) {
+                    $this->deleteLanguage((int)$l['id']);
+                }
+                foreach ($data as $lang) {
+                    if (is_array($lang) && !empty($lang['name'])) {
+                        $this->addLanguage($profileId, $lang['name'], $lang['proficiency'] ?? 'intermediate');
+                    }
+                }
+                return true;
+
+            case 'social_links':
+                $existing = $this->getSocialLinks($profileId);
+                foreach ($existing as $l) {
+                    $this->deleteSocialLink((int)$l['id']);
+                }
+                foreach ($data as $link) {
+                    if (is_array($link) && !empty($link['url'])) {
+                        $this->addSocialLink($profileId, $link['platform'] ?? '', $link['url'] ?? '');
+                    }
+                }
+                return true;
+
+            case 'custom_sections':
+                $existing = $this->getCustomSections($profileId);
+                foreach ($existing as $cs) {
+                    $this->deleteCustomSection((int)$cs['id']);
+                }
+                foreach ($data as $cs) {
+                    if (is_array($cs) && !empty($cs['title'])) {
+                        $this->addCustomSection($profileId, [
+                            'title' => $cs['title'],
+                            'content' => $cs['content'] ?? '',
+                        ]);
+                    }
+                }
+                return true;
+
+            case 'references':
+                $existing = $this->getReferences($profileId);
+                foreach ($existing as $r) {
+                    $this->deleteReference((int)$r['id']);
+                }
+                foreach ($data as $ref) {
+                    if (is_array($ref) && !empty($ref['name'])) {
+                        $this->addReference($profileId, [
+                            'name' => $ref['name'],
+                            'title' => $ref['title'] ?? '',
+                            'email' => $ref['email'] ?? '',
+                            'phone' => $ref['phone'] ?? '',
+                            'company' => $ref['company'] ?? '',
+                        ]);
+                    }
+                }
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Save all builder data at once (complete builder data) into V3 tables.
+     * Clears existing child data and re-imports everything.
+     *
+     * @param int   $profileId The cv_profiles.id
+     * @param array $allData   Complete structured payload array
+     * @return bool Success
+     */
+    public function saveAllBuilderDataToV3(int $profileId, array $allData): bool
+    {
+        $success = true;
+
+        // Personal
+        $personal = $allData['personal'] ?? [];
+        if (!empty($personal['full_name'])) {
+            $success = $this->update($profileId, ['title' => $personal['full_name']]) && $success;
+        }
+
+        // Summary
+        $summary = $allData['summary']['professional_summary'] ?? $allData['summary']['career_objective'] ?? '';
+        if ($summary !== '') {
+            $success = $this->update($profileId, ['professional_summary' => $summary]) && $success;
+        }
+
+        // Save each section
+        $allData['_profile_title_updated'] = true;
+        $sections = ['experience', 'education', 'skills', 'languages', 'social_links', 'custom_sections', 'references'];
+        foreach ($sections as $step) {
+            $sectionData = $allData[$step] ?? [];
+            if (!empty($sectionData)) {
+                $success = $this->saveBuilderStepToV3($profileId, $step, $sectionData) && $success;
+            }
+        }
+
+        return $success;
     }
 }

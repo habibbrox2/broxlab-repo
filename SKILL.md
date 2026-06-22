@@ -47,7 +47,7 @@ license: Complete terms in LICENSE.txt
 - Skip validation: `npm run validate`
 
 ### Prompts/Agents
-- Edit files in `system/prompts/`, `.kilo/`, `.ai/`
+- Edit files in `system/prompts/`
 - Reference `CORE_RULES.md` instead of duplicating content
 - Keep files concise and linked to core documentation
 
@@ -100,8 +100,7 @@ Individual checks:
 - **Minimal rules:** [`CORE_RULES.md`](CORE_RULES.md)
 - **Architecture & patterns:** [`AGENTS.md`](AGENTS.md)
 - **Project overview:** [`README.md`](README.md)
-- **Backend workflow:** [`.ai/backend-tasks.skill.md`](.ai/backend-tasks.skill.md)
-- **Frontend workflow:** [`.ai/frontend-tasks.skill.md`](.ai/frontend-tasks.skill.md)
+
 - **Prompt templates:** [`system/prompts/`](system/prompts/)
 
 ### Quick Commands

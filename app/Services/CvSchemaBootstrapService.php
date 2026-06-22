@@ -62,7 +62,13 @@ CREATE TABLE IF NOT EXISTS `cv_infos` (
     `title` VARCHAR(255) NOT NULL DEFAULT 'My CV',
     `template` VARCHAR(50) NOT NULL DEFAULT 'modern',
     `professional_status` VARCHAR(100) DEFAULT NULL,
-    `builder_data` LONGTEXT DEFAULT NULL,
+    `experience_json` JSON DEFAULT NULL COMMENT 'Work experience entries',
+    `education_json` JSON DEFAULT NULL COMMENT 'Education entries',
+    `skills_json` JSON DEFAULT NULL COMMENT 'Skills entries',
+    `languages_json` JSON DEFAULT NULL COMMENT 'Languages entries',
+    `social_links_json` JSON DEFAULT NULL COMMENT 'Social links entries',
+    `custom_sections_json` JSON DEFAULT NULL COMMENT 'Custom section entries',
+    `references_json` JSON DEFAULT NULL COMMENT 'Reference entries',
     `profile_photo` VARCHAR(500) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `view_count` INT(11) NOT NULL DEFAULT 0,
@@ -79,8 +85,16 @@ CREATE TABLE IF NOT EXISTS `cv_infos` (
     INDEX `idx_is_active` (`is_active`),
     INDEX `idx_deleted_at` (`deleted_at`),
     CONSTRAINT `fk_cv_infos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Single CV table — personal info + CV metadata + builder_data'
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Single CV table — personal info + CV metadata + JSON section columns'
 SQL);
+
+        $this->ensureColumnExists('cv_infos', 'experience_json', "JSON DEFAULT NULL COMMENT 'Work experience entries'");
+        $this->ensureColumnExists('cv_infos', 'education_json', "JSON DEFAULT NULL COMMENT 'Education entries'");
+        $this->ensureColumnExists('cv_infos', 'skills_json', "JSON DEFAULT NULL COMMENT 'Skills entries'");
+        $this->ensureColumnExists('cv_infos', 'languages_json', "JSON DEFAULT NULL COMMENT 'Languages entries'");
+        $this->ensureColumnExists('cv_infos', 'social_links_json', "JSON DEFAULT NULL COMMENT 'Social links entries'");
+        $this->ensureColumnExists('cv_infos', 'custom_sections_json', "JSON DEFAULT NULL COMMENT 'Custom section entries'");
+        $this->ensureColumnExists('cv_infos', 'references_json', "JSON DEFAULT NULL COMMENT 'Reference entries'");
     }
 
     private function runSql(string $sql): void
@@ -88,5 +102,28 @@ SQL);
         if (!$this->mysqli->query($sql)) {
             throw new RuntimeException($this->mysqli->error ?: 'Unknown CV schema error');
         }
+    }
+
+    private function ensureColumnExists(string $table, string $column, string $definition): void
+    {
+        $tableSql = $this->mysqli->real_escape_string($table);
+        $columnSql = $this->mysqli->real_escape_string($column);
+
+        $sql = "SELECT COUNT(*) AS cnt
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = '{$tableSql}'
+                  AND COLUMN_NAME = '{$columnSql}'";
+        $result = $this->mysqli->query($sql);
+        if (!$result) {
+            throw new RuntimeException($this->mysqli->error ?: 'Failed to inspect CV schema');
+        }
+
+        $row = $result->fetch_assoc();
+        if ((int)($row['cnt'] ?? 0) > 0) {
+            return;
+        }
+
+        $this->runSql("ALTER TABLE `{$tableSql}` ADD COLUMN `{$columnSql}` {$definition}");
     }
 }

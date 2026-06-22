@@ -982,6 +982,37 @@ if (!function_exists('isUserAuthenticated')) {
 }
 
 /**
+ * Require authentication or redirect to login
+ * Returns user ID if authenticated, redirects and exits if not
+ * 
+ * @return int User ID
+ */
+if (!function_exists('requireAuth')) {
+    function requireAuth(): int
+    {
+        if (!AuthManager::isUserAuthenticated()) {
+            $currentPath = strtolower((string)(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'));
+            $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? ''));
+            $isApiRequest = (strpos($currentPath, '/api/') === 0)
+                || (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest')
+                || (strpos($accept, 'application/json') !== false);
+
+            if ($isApiRequest) {
+                http_response_code(401);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Not authenticated']);
+                exit;
+            }
+
+            showMessage('Please log in.', 'danger');
+            redirectToLoginWithReturn();
+        }
+
+        return AuthManager::getCurrentUserId() ?? 0;
+    }
+}
+
+/**
  * Get current authenticated user ID (alias of getCurrentUserId)
  * For backward compatibility and alternate naming
  * Alias to AuthManager::getUserId()

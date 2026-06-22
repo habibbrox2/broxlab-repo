@@ -159,9 +159,19 @@
           <div class="sidebar-title">// Tech Stack</div>
           <div class="tech-stack">
             {% for item in section.items %}
-              {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+              {% set skills_list = item.content.skills|default([]) %}
+              {% if skills_list is empty and item.content.name %}
+                {% set skills_list = [item.content.name] %}
+              {% endif %}
               {% for s in skills_list %}
-                {% set level = (loop.parent.index % 4 == 0) ? 'expert' : ((loop.parent.index % 4 == 1) ? 'advanced' : ((loop.parent.index % 4 == 2) ? 'intermediate' : 'beginner')) %}
+                {% set level = 'beginner' %}
+                {% if loop.parent.index % 4 == 0 %}
+                  {% set level = 'expert' %}
+                {% elseif loop.parent.index % 4 == 1 %}
+                  {% set level = 'advanced' %}
+                {% elseif loop.parent.index % 4 == 2 %}
+                  {% set level = 'intermediate' %}
+                {% endif %}
                 <span class="tech-tag {{ level }}">{{ s }}</span>
               {% endfor %}
             {% endfor %}

@@ -12,21 +12,21 @@
 
 ## Code Structure
 
-This project uses MVC with 50 Controllers, 51 Models, 25 Helpers, 244 Views, and 74 SQL schema files.
+This project uses MVC with 50 Controllers, 44 Models, 26 Helpers, 261 Views, and 82 SQL schema files.
 
 | Layer | Path | Count | Purpose |
 |-------|------|-------|---------|
-| Routes | `app/Routes/Router.php` | 1 | Custom regex router, middleware-aware |
-| Controllers | `app/Controllers/*.php` | 50 | HTTP handlers + middleware |
-| Models | `app/Models/*.php` | 51 | Database access (Mysqli, prepared statements) |
-| Services | `app/Services/` | — | Business logic |
-| Helpers | `app/Helpers/*.php` | 25 | Shared utilities |
-| Views | `app/Views/` | 244 | Twig templates |
-| Middleware | `app/Middleware/` | 2+ | Auth, CSRF, rate limit |
+| Router | `app/Router/Router.php` | 1 | Custom regex router, middleware-aware |
+| Controllers | `app/Controllers/*.php` | 50 | Procedural route handlers (closures) + middleware |
+| Models | `app/Models/*.php` | 44 | Database access (Mysqli, prepared statements) |
+| Services | `app/Services/` | 14 | Business logic |
+| Helpers | `app/Helpers/*.php` | 26 | Shared utilities |
+| Views | `app/Views/` | 261 | Twig templates |
+| Middleware | `app/Middleware/` | 2 | Auth, CSRF, rate limit |
 | Modules | `app/Modules/` | 2 | PdfTools, AISystem |
-| Config | `Config/` | 8 | Twig, DB, uploads, constants |
-| Database | `Database/*.sql` | 74 | One SQL file per table |
-| Frontend | `public_html/assets/{js,css}/` | 108 JS | Source files (never edit `dist/`) |
+| Config | `Config/` | 9 | Twig, DB, uploads, constants |
+| Database | `Database/*.sql` | 82 | One SQL file per table |
+| Frontend | `public_html/assets/{js,css}/` | 108+ JS | Source files (never edit `dist/`) |
 | RTE | `public_html/rtceditor/` | 16 JS | Source files + esbuild bundle |
 
 ## Workflow

@@ -151,24 +151,102 @@ export function createCvBuilderRenderers(deps) {
 
   function renderReviewStep() {
     const templates = window.__bldTemplates || ['modern', 'minimal', 'ats', 'professional',];
+    const templateLabels = {
+      modern: 'Modern',
+      minimal: 'Minimal',
+      ats: 'ATS',
+      professional: 'Professional',
+      creative: 'Creative',
+      classic: 'Classic',
+      technical: 'Technical',
+      executive: 'Executive',
+    };
     let html = '<div class="bld-step-header">' +
       '<div class="bld-step-number"><i class="lucide lucide-eye" style="width:1em;height:1em;"></i> Final Step</div>' +
       '<h2 class="bld-step-title">Live Preview &amp; Finish</h2>' +
-      '<p class="bld-step-desc">Preview your CV in the selected template and finalize.</p></div>';
+      '<p class="bld-step-desc">Preview your CV in a template, apply the one you want, and download the finished PDF.</p></div>';
 
-    html += '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;justify-content:center;">';
+    // Template-specific gradient backgrounds for card thumbnails
+    const templateGradients = {
+      modern: 'linear-gradient(135deg, #4f46e5, #7c3aed)' ,
+      minimal: 'linear-gradient(135deg, #334155, #64748b)',
+      ats: 'linear-gradient(135deg, #065f46, #10b981)',
+      professional: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+      creative: 'linear-gradient(135deg, #ec4899, #f97316)',
+      classic: 'linear-gradient(135deg, #1b2a4a, #374151)',
+      technical: 'linear-gradient(135deg, #0f172a, #0f766e)',
+      executive: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+    };
+    // Template layout icons for card thumbnails
+    const templateIcons = {
+      modern: '⚙',
+      minimal: '↔',
+      ats: '⚑',
+      professional: '✔',
+      creative: '✨',
+      classic: '⚐',
+      technical: '⚙',
+      executive: '♛',
+    };
+    html += '<div class="bld-template-grid">';
     for (let ti = 0; ti < templates.length; ti++) {
       const tmpl = templates[ti];
       const isSelected = STATE.selectedTemplate === tmpl;
-      html += `<button class="bld-template-pill${ isSelected ? ' selected' : '' }" data-action="select-template" data-template="${ tmpl }">${tmpl.charAt(0).toUpperCase()}${tmpl.slice(1)}</button>`;
+      const label = templateLabels[tmpl] || (tmpl.charAt(0).toUpperCase() + tmpl.slice(1));
+      const gradient = templateGradients[tmpl] || 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+      const icon = templateIcons[tmpl] || '⚙';
+      const nameFirst = (STATE.data.personal && STATE.data.personal.full_name
+        ? STATE.data.personal.full_name : 'Alex Morgan').charAt(0).toUpperCase() || 'A';
+      html += `<div class="bld-template-card${ isSelected ? ' selected' : '' }" data-template="${ tmpl }">` +
+        `<div class="bld-template-card-preview" style="background: ${ gradient };">` +
+        `<div class="bld-template-card-badge">${ isSelected ? 'Default' : 'Template' }</div>` +
+        `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">` +
+        `<span style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:0.9rem;">${ icon }</span>` +
+        `<div class="bld-template-card-name">${ label }</div></div>` +
+        `<div class="bld-template-card-slug">${ tmpl }</div>` +
+        `<div style="margin-top:0.5rem;font-size:0.65rem;opacity:0.6;">${ escHtml(nameFirst) }'s CV</div>` +
+        '</div>' +
+        '<div class="bld-template-card-actions">' +
+        `<button type="button" class="bld-template-btn bld-template-btn-preview" data-action="open-template-preview" data-template="${ tmpl }">Preview</button>` +
+        `<button type="button" class="bld-template-btn bld-template-btn-apply${ isSelected ? ' is-active' : '' }" data-action="select-template" data-template="${ tmpl }">${ isSelected ? 'Applied' : 'Apply as Default' }</button>` +
+        '</div></div>';
     }
     html += '</div>';
-    html += '<div style="position:relative;border:2px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#f3f4f6;">';
-    html += '<div id="bld-preview-loading" style="display:flex;align-items:center;justify-content:center;padding:4rem;flex-direction:column;gap:1rem;color:#9ca3af;">';
-    html += '<div style="width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;"></div>';
-    html += '<span style="font-size:0.9rem;font-weight:500;">Loading preview...</span></div>';
-    html += '<iframe id="bld-preview-iframe" style="width:100%;min-height:600px;border:none;display:none;" sandbox="allow-scripts allow-same-origin" title="CV Preview" loading="lazy"></iframe>';
-    html += '</div>';
+    html += '<div class="bld-review-note">Click <strong>Preview</strong> on any template to inspect the full CV before applying it.</div>';
+    html += '<div id="bld-download-wrap" class="bld-download-wrap" style="display:none;">' +
+      '<a id="bld-download-link" href="#" class="bld-download-btn" target="_blank" rel="noopener">' +
+      '<i class="lucide lucide-download" style="width:1em;height:1em;"></i> Download PDF' +
+      '</a>' +
+      '</div>';
+    html += '<div id="bld-template-modal" class="bld-template-modal" aria-hidden="true" hidden>' +
+      '<div class="bld-template-modal-backdrop" data-action="close-template-preview"></div>' +
+      '<div class="bld-template-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bld-template-modal-title">' +
+        '<div class="bld-template-modal-head">' +
+          '<div>' +
+            '<div class="bld-template-modal-kicker">Template Preview</div>' +
+            '<h3 id="bld-template-modal-title" class="bld-template-modal-title">Preview</h3>' +
+          '</div>' +
+          '<div style="display:flex;gap:0.5rem;align-items:center;">' +
+            '<button type="button" class="bld-template-btn bld-template-btn-preview" data-action="download-preview-template" style="font-size:0.75rem;padding:0.4rem 0.8rem;" title="Download this template as PDF">Download</button>' +
+            '<button type="button" class="bld-template-modal-close" data-action="close-template-preview" aria-label="Close preview"><i class="lucide lucide-x"></i></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="bld-template-modal-body">' +
+          '<div id="bld-preview-loading" class="bld-preview-loading">' +
+            '<div class="bld-spinner"></div>' +
+            '<span>Loading preview with your data...</span>' +
+          '</div>' +
+          '<iframe id="bld-preview-iframe" class="bld-preview-iframe" sandbox="allow-scripts allow-same-origin" title="CV Template Preview"></iframe>' +
+          '<div id="bld-preview-mockup" class="bld-preview-mockup" aria-live="polite" style="display:none;"></div>' +
+        '</div>' +
+        '<div class="bld-template-modal-actions">' +
+          '<button type="button" class="bld-template-btn bld-template-btn-secondary" data-action="close-template-preview">Close</button>' +
+          '<button type="button" class="bld-template-btn bld-template-btn-primary" data-action="select-preview-template">Apply as Default</button>' +
+          '<a id="bld-template-download-link" class="bld-template-btn bld-template-btn-download" href="#" target="_blank" rel="noopener" style="display:none;">Download PDF</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div id="bld-toast" class="bld-toast" style="display:none;"></div>';
     return html;
   }
 

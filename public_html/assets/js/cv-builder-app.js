@@ -7,6 +7,7 @@ const STATE = {
   csrf: '',
   selectedTemplate: 'modern',
   profilePhoto: '',
+  previewTemplate: '',
   isSaving: false,
   isUploading: false,
   saveTimer: null,
@@ -18,6 +19,7 @@ const STEPS = [
   { id: 'personal', title: 'Personal Information', icon: 'user', desc: 'Tell us about yourself', },
   { id: 'professional', title: 'Professional Details', icon: 'briefcase', desc: 'Experience, education, skills & languages', },
   { id: 'extras', title: 'Social, Sections & References', icon: 'share-2', desc: 'Social links, custom sections & references', },
+  { id: 'review', title: 'Review & Finish', icon: 'eye', desc: 'Preview, apply template & download', },
 ];
 
 const { renderStepContent, renderSkillTags, } = createCvBuilderRenderers({ STATE, STEPS, escHtml, });
@@ -190,7 +192,7 @@ function saveBuilderData(silent) {
   const stepId = STEPS[STATE.currentStep].id;
   const stepData = STATE.data[stepId] || {};
   const payload = { step: stepId, data: stepData, all_data: STATE.data, };
-  // First save to the standard builder_data JSON
+  // Save the current step to the structured JSON columns
   fetch(`/api/cv/builder/${STATE.cvId}/step`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
@@ -473,23 +475,131 @@ window.bldSelectTemplate = function (tmpl) {
   for (let i = 0; i < pills.length; i++) {
     pills[i].classList.toggle('selected', pills[i].textContent.trim().toLowerCase() === tmpl);
   }
-  // Reload preview if on review step
-  if (STEPS[STATE.currentStep] && STEPS[STATE.currentStep].id === 'review') {
-    loadPreviewIframe();
+  const cards = document.querySelectorAll('.bld-template-card');
+  for (let i = 0; i < cards.length; i++) {
+    const cardTmpl = cards[i].getAttribute('data-template');
+    cards[i].classList.toggle('selected', cardTmpl === STATE.selectedTemplate);
+    const btn = cards[i].querySelector('.bld-template-btn-apply');
+    if (btn) {
+      const isSelected = cardTmpl === STATE.selectedTemplate;
+      btn.textContent = isSelected ? 'Applied' : 'Apply as Default';
+      btn.classList.toggle('is-active', isSelected);
+    }
+  }
+  const downloadWrap = document.getElementById('bld-download-wrap');
+  const downloadLink = document.getElementById('bld-download-link');
+  if (downloadWrap && downloadLink) {
+    downloadLink.href = `/cv-builder/${ STATE.cvId }/export/pdf?template=${ encodeURIComponent(tmpl) }`;
+    downloadWrap.style.display = 'block';
+  }
+  const modalDownloadLink = document.getElementById('bld-template-download-link');
+  if (modalDownloadLink) {
+    modalDownloadLink.href = `/cv-builder/${ STATE.cvId }/export/pdf?template=${ encodeURIComponent(tmpl) }`;
+    modalDownloadLink.style.display = 'inline-flex';
+  }
+  // Refresh live preview in modal if open
+  const iframe = document.getElementById('bld-preview-iframe');
+  if (iframe && iframe.dataset.templateSlug) {
+    loadLivePreview(iframe.dataset.templateSlug);
   }
 };
 
-function loadPreviewIframe() {
-  const loading = document.getElementById('bld-preview-loading');
+window.bldOpenTemplatePreview = function (tmpl) {
+  STATE.previewTemplate = tmpl;
+  const labels = {
+    modern: 'Modern Professional',
+    minimal: 'Minimal Elegant',
+    ats: 'ATS Optimized',
+    professional: 'Classic Professional',
+    creative: 'Creative Portfolio',
+    classic: 'Classic Traditional',
+    technical: 'Technical Engineer',
+    executive: 'Executive Elite',
+  };
+  const modal = document.getElementById('bld-template-modal');
+  const title = document.getElementById('bld-template-modal-title');
+  if (title) {
+    title.textContent = labels[tmpl] || (tmpl.charAt(0).toUpperCase() + tmpl.slice(1));
+  }
+  if (modal) {
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('is-open');
+  }
+  // Show loading, then load the live preview iframe
+  const mockup = document.getElementById('bld-preview-mockup');
   const iframe = document.getElementById('bld-preview-iframe');
-  if (!loading || !iframe) return;
-  loading.style.display = 'flex';
-  iframe.style.display = 'none';
-  iframe.src = `/api/cv/${ STATE.cvId }/preview?template=${ encodeURIComponent(STATE.selectedTemplate) }&t=${ Date.now()}`;
+  const loading = document.getElementById('bld-preview-loading');
+  if (mockup) mockup.innerHTML = '';
+  if (loading) loading.style.display = 'flex';
+  if (iframe) iframe.style.display = 'none';
+  loadLivePreview(tmpl);
+};
+
+window.bldCloseTemplatePreview = function () {
+  const modal = document.getElementById('bld-template-modal');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  modal.classList.remove('is-open');
+  // Unload iframe to stop requests
+  const iframe = document.getElementById('bld-preview-iframe');
+  if (iframe) {
+    iframe.src = 'about:blank';
+    iframe.style.display = 'none';
+    delete iframe.dataset.templateSlug;
+  }
+};
+
+window.bldApplyPreviewTemplate = function () {
+  if (!STATE.previewTemplate) return;
+  window.bldSelectTemplate(STATE.previewTemplate);
+  const downloadLink = document.getElementById('bld-template-download-link');
+  if (downloadLink) {
+    downloadLink.href = `/cv-builder/${ STATE.cvId }/export/pdf?template=${ encodeURIComponent(STATE.previewTemplate) }`;
+    downloadLink.style.display = 'inline-flex';
+  }
+  // Show toast notification
+  const toast = document.getElementById('bld-toast');
+  if (toast) {
+    toast.textContent = 'Template applied: ' + (STATE.previewTemplate.charAt(0).toUpperCase() + STATE.previewTemplate.slice(1));
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 2500);
+  }
+};
+
+function loadLivePreview(templateSlug) {
+  const tmpl = templateSlug || STATE.selectedTemplate || 'modern';
+  const iframe = document.getElementById('bld-preview-iframe');
+  const loading = document.getElementById('bld-preview-loading');
+  const mockup = document.getElementById('bld-preview-mockup');
+  if (!iframe) return;
+  // Set handlers BEFORE setting src to avoid race condition
   iframe.onload = function () {
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
     iframe.style.display = 'block';
   };
+  iframe.onerror = function () {
+    if (loading) loading.style.display = 'none';
+    if (mockup) {
+      mockup.innerHTML = '<p style="text-align:center;padding:2rem;color:#6b7280;">Could not load live preview.</p>';
+      mockup.style.display = 'block';
+    }
+  };
+  // Set the template slug on the iframe for reference
+  iframe.dataset.templateSlug = tmpl;
+  // Load with user's actual CV data via the server-side preview endpoint
+  const previewUrl = '/api/cv/' + STATE.cvId + '/preview?template=' + encodeURIComponent(tmpl) + '&t=' + Date.now();
+  iframe.src = previewUrl;
+}
+
+function loadPreviewIframe() {
+  const currentStep = STEPS[STATE.currentStep];
+  if (currentStep && currentStep.id === 'review') {
+    // On review step, load the iframe for the selected template
+    const tmpl = STATE.previewTemplate || STATE.selectedTemplate;
+    loadLivePreview(tmpl);
+  }
 }
 
 // Drag-and-drop photo upload support
@@ -682,6 +792,18 @@ function setupEventDelegation() {
     'edit-entry': (e, t) => window.bldEditEntry(t.dataset.section, parseInt(t.dataset.idx, 10)),
     'edit-skill': (e, t) => window.bldEditSkill(t.dataset.category, parseInt(t.dataset.idx, 10)),
     'remove-skill': (e, t) => { e.stopPropagation(); window.bldRemoveSkill(t.dataset.category, parseInt(t.dataset.idx, 10)); },
+    'open-template-preview': (e, t) => {
+      const tmpl = t.dataset.template;
+      window.bldOpenTemplatePreview(tmpl);
+    },
+    'close-template-preview': () => window.bldCloseTemplatePreview(),
+    'select-preview-template': () => window.bldApplyPreviewTemplate(),
+    'download-preview-template': (e, t) => {
+      // Trigger PDF download for the previewed template
+      if (STATE.previewTemplate) {
+        window.open('/cv-builder/' + STATE.cvId + '/export/pdf?template=' + encodeURIComponent(STATE.previewTemplate), '_blank');
+      }
+    },
   });
 
   // Keydown delegation for skill inputs (scoped to step content)

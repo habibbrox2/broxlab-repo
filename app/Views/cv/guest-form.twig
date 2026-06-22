@@ -98,7 +98,7 @@
 
 <script type="module" src="/assets/js/dist/cv-builder.js?v={{ random() }}"></script>
 <script>
-window.__bldData = {{ builder_data|json_encode|raw }};
+window.__bldData = {{ builder_state|json_encode|raw }};
 window.__bldCvId = {{ cv_id|raw }};
 window.__bldCsrf = '{{ csrf_token|default('') }}';
 window.__bldJobPositions = {{ job_positions|json_encode|raw }};

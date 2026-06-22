@@ -7,6 +7,37 @@ purpose: Single source of truth for BroxLab dev rules—referenced by all agents
 
 > All agents must read and follow this file. Other files reference it, not duplicate it.
 
+## Controller Architecture
+
+**Controllers are NOT classes.** Each controller file contains procedural route definitions:
+
+```php
+<?php
+// app/Controllers/FeatureController.php
+
+/** @var Router $router */
+/** @var \Twig\Environment $twig */
+require_once __DIR__ . '/../Models/FeatureModel.php';
+
+$model = new FeatureModel($mysqli);
+
+// Procedural route style: routes are closures, not class methods
+$router->get('/features', function () use ($twig, $model) {
+    $features = $model->getAll();
+    echo $twig->render('features/list.twig', ['features' => $features]);
+});
+
+$router->post('/api/features', ['middleware' => ['auth']], function () use ($model) {
+    header('Content-Type: application/json');
+    // Handle POST
+});
+```
+
+- **Each file = one feature area** (e.g., `PostsController.php` handles all post routes)
+- **No class definition** — routes are closures passed to `$router->get()`, `$router->post()`, etc.
+- **Middleware in route definition**: `['middleware' => ['auth', 'csrf']]`
+- **Models required at top** of controller file
+
 ## Essential Rules
 
 ### PHP & SQL
@@ -35,21 +66,21 @@ purpose: Single source of truth for BroxLab dev rules—referenced by all agents
 - Tests: `npm run test:run`
 - Asset check: `npm run check:assets`
 
-## Project Structure (50 Controllers, 51 Models, 25 Helpers, 244 Views, 74 SQL)
+## Project Structure (50 Controllers, 44 Models, 26 Helpers, 261 Views, 82 SQL)
 
 | Layer | Location | Count | Purpose |
 |-------|----------|-------|---------|
-| Routes | `app/Routes/Router.php` | 1 | Custom regex router, middleware-aware |
-| Controllers | `app/Controllers/*.php` | 50 | HTTP handlers |
-| Models | `app/Models/*.php` | 51 | Database access (Mysqli, prepared statements) |
-| Services | `app/Services/` | — | Business logic orchestration |
-| Helpers | `app/Helpers/*.php` | 25 | Shared utilities (purify, email, logging, etc.) |
-| Middleware | `app/Middleware/` | 2+ | Auth, CSRF, rate limit |
-| Views | `app/Views/` | 244 | Twig templates by area |
+| Routes | `app/Router/Router.php` | 1 | Custom regex router, middleware-aware |
+| Controllers | `app/Controllers/*.php` | 50 | Procedural route handlers (closures, not classes) + middleware |
+| Models | `app/Models/*.php` | 44 | Database access (Mysqli, prepared statements) |
+| Services | `app/Services/` | 14 | Business logic orchestration |
+| Helpers | `app/Helpers/*.php` | 26 | Shared utilities (purify, email, logging, etc.) |
+| Middleware | `app/Middleware/` | 2 | Auth, CSRF, rate limit |
+| Views | `app/Views/` | 261 | Twig templates by area |
 | Modules | `app/Modules/` | 2 | PdfTools, AISystem (layers) |
-| Config | `Config/` | 8 | Twig, DB, uploads, constants |
-| Database | `Database/*.sql` | 74 | One SQL file per table; soft deletes universal |
-| Frontend | `public_html/assets/{js,css}/` | 108 JS | Source only; never edit `dist/` |
+| Config | `Config/` | 9 | Twig, DB, uploads, constants |
+| Database | `Database/*.sql` | 82 | One SQL file per table; soft deletes universal |
+| Frontend | `public_html/assets/{js,css}/` | 108+ JS | Source only; never edit `dist/` |
 | RTE | `public_html/rtceditor/` | 16 JS | Source files + esbuild bundle |
 | AI Prompts | `system/prompts/` | 8 | Model configs and templates |
 
@@ -127,6 +158,6 @@ document.getElementById('form').addEventListener('submit', (e) => {
 
 **For detailed context:** Read `README.md` → `AGENTS.md` → `copilot-instructions.md` (in that order)
 
-**For task-specific workflows:** See `.ai/` and `.kilo/` skill files
+**For task-specific workflows:** See `SKILL.md` for workflow guidance
 
 **For prompts/AI behavior:** See `system/prompts/`

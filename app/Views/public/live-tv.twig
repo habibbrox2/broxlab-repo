@@ -1,0 +1,1121 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ t('Live TV') }} - {{ app_settings.site_name|default('BroxBhai') }}{% endblock %}
+
+{% set breadcrumbs = [
+  { label: 'Live TV', url: '/live-tv', icon: 'tv' }
+] %}
+
+{% block extra_styles %}
+  <link rel="stylesheet" href="{{ asset('/assets/css/live-tv.css') }}?v={{ assets_version }}">
+{% endblock %}
+
+{% block content %}
+<div class="live-tv-page py-6 md:py-10">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {# Hero Section #}
+    <section class="hero-section mb-6 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+            <i class="lucide lucide-tv h-3.5 w-3.5" aria-hidden="true"></i>
+            {{ t('Live Streaming') }}
+          </div>
+          <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{{ t('Live TV Channels') }}</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">
+            {{ t('Watch your favorite TV channels live streaming directly from our platform.') }}
+          </p>
+        </div>
+        <div class="public-hero-icon" aria-hidden="true">
+          <i class="lucide lucide-play-circle"></i>
+        </div>
+      </div>
+    </section>
+
+    {# Main Content #}
+    <div class="grid gap-6 lg:grid-cols-12">
+      {# Video Player Section #}
+      <div class="lg:col-span-8">
+        <div class="surface-card p-4 md:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-slate-900">{{ t('Now Playing') }}</h2>
+            <span id="current-channel-name" class="text-sm text-slate-500">{{ t('Select a channel') }}</span>
+          </div>              {# HLS Video Player #}
+          <div class="video-player-wrapper">
+            <div class="video-player-container relative bg-black rounded-2xl overflow-hidden aspect-video group">
+              <video
+                id="live-tv-player"
+                class="w-full h-full"
+                autoplay
+                playsinline
+                preload="metadata"
+                poster=""
+                aria-label="{{ t('Live TV Player') }}">
+              </video>
+
+              {# Gradient overlays for controls fade #}
+              <div class="player-top-gradient pointer-events-none"></div>
+              <div class="player-bottom-gradient pointer-events-none"></div>
+
+              {# Play overlay (shown when autoplay is blocked) #}
+              <div id="play-overlay" class="hidden">
+                <div class="play-icon">
+                  <svg viewBox="0 0 24 24" aria-label="{{ t('Play') }}"><polygon points="5,3 19,12 5,21"/></svg>
+                </div>
+              </div>
+
+              {# Stalled/buffering indicator #}
+              <div id="stalled-indicator" class="hidden">
+                <i class="lucide lucide-loader-2 animate-spin mr-2"></i>
+                {{ t('Buffering...') }}
+              </div>
+
+              {# Loading Overlay #}
+              <div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/80 hidden z-30">
+                <div class="text-center">
+                  <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent mb-3"></div>
+                  <p class="text-white">{{ t('Loading stream...') }}</p>
+                </div>
+              </div>
+
+              {# Error Overlay #}
+              <div id="player-error" class="absolute inset-0 flex items-center justify-center bg-black/90 hidden z-30">
+                <div class="text-center p-6">
+                  <i class="lucide lucide-alert-circle text-5xl text-red-500 mb-3"></i>
+                  <p class="text-white text-lg font-semibold mb-1">{{ t('Stream unavailable') }}</p>
+                  <p class="text-white/70 text-sm mb-4">{{ t('Try another channel or retry.') }}</p>
+                  <button type="button" id="retry-btn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors">
+                    <i class="lucide lucide-refresh-cw mr-2"></i>
+                    {{ t('Retry') }}
+                  </button>
+                </div>
+              </div>
+
+              {# ── Custom Controls Overlay ── #}
+              <div id="player-controls-overlay" class="player-controls-overlay z-20">
+                {# Center play/pause big button #}
+                <button type="button" id="center-play-btn" class="center-play-btn" aria-label="{{ t('Play/Pause') }}">
+                  <svg class="play-icon-svg" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                  <svg class="pause-icon-svg hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+
+                {# Top bar: now playing + quality + stats #}
+                <div class="controls-top">
+                  <div class="controls-top-left">
+                    <span id="controls-channel-name" class="controls-channel-name text-sm font-semibold text-white/95 truncate">{{ t('Select a channel') }}</span>
+                  </div>
+                  <div class="controls-top-right">
+                    {# Stream stats toggle #}
+                    <button type="button" id="stats-toggle-btn" class="control-icon-btn" aria-label="{{ t('Stream stats') }}" title="{{ t('Stats') }}">
+                      <i class="lucide lucide-bar-chart-3 w-4 h-4"></i>
+                    </button>
+                    {# Quality selector #}
+                    <div class="quality-selector-wrapper">
+                      <button type="button" id="quality-btn" class="control-icon-btn" aria-label="{{ t('Quality') }}" title="{{ t('Quality') }}">
+                        <i class="lucide lucide-monitor w-4 h-4"></i>
+                        <span id="quality-label" class="text-[10px] ml-1 font-medium">Auto</span>
+                      </button>
+                      <div id="quality-menu" class="quality-menu hidden">
+                        <div class="quality-menu-header">{{ t('Quality') }}</div>
+                        <button type="button" class="quality-option active" data-level="-1">{{ t('Auto') }}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {# Bottom bar: playback controls + progress + time + volume + fullscreen #}
+                <div class="controls-bottom">
+                  {# Progress bar #}
+                  <div class="progress-bar-container">
+                    <div class="progress-track" id="progress-track">
+                      <div class="progress-buffer" id="progress-buffer"></div>
+                      <div class="progress-played" id="progress-played"></div>
+                      <div class="progress-thumb" id="progress-thumb"></div>
+                    </div>
+                  </div>
+
+                  <div class="controls-bottom-row">
+                    <div class="controls-bottom-left">
+                      {# Play/Pause #}
+                      <button type="button" id="play-pause-btn" class="control-icon-btn" aria-label="{{ t('Play/Pause') }}">
+                        <i class="lucide lucide-play w-4 h-4 play-icon-c"></i>
+                        <i class="lucide lucide-pause w-4 h-4 pause-icon-c hidden"></i>
+                      </button>
+
+                      {# Volume #}
+                      <div class="volume-control flex items-center gap-1.5">
+                        <button type="button" id="volume-btn" class="control-icon-btn" aria-label="{{ t('Mute') }}">
+                          <i class="lucide lucide-volume-2 w-4 h-4" id="volume-icon"></i>
+                        </button>
+                        <div class="volume-slider-container">
+                          <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="1" aria-label="{{ t('Volume') }}">
+                        </div>
+                      </div>
+
+                      {# Time display #}
+                      <span class="time-display" id="time-display">
+                        <span id="current-time">0:00</span>
+                        <span class="text-white/50"> / </span>
+                        <span id="duration-time">--:--</span>
+                      </span>
+
+                      {# Live badge #}
+                      <span id="live-badge" class="live-badge hidden">
+                        <span class="live-dot"></span>
+                        LIVE
+                      </span>
+                    </div>
+
+                    <div class="controls-bottom-right">
+                      {# Reload #}
+                      <button type="button" id="reload-btn-custom" class="control-icon-btn" aria-label="{{ t('Reload') }}" title="{{ t('Reload Stream') }}">
+                        <i class="lucide lucide-refresh-cw w-3.5 h-3.5"></i>
+                      </button>
+
+                      {# Picture-in-Picture #}
+                      <button type="button" id="pip-btn" class="control-icon-btn hidden" aria-label="{{ t('Picture in Picture') }}" title="{{ t('PiP') }}">
+                        <i class="lucide lucide-picture-in-picture-2 w-4 h-4"></i>
+                      </button>
+
+                      {# Fullscreen #}
+                      <button type="button" id="fullscreen-btn" class="control-icon-btn" aria-label="{{ t('Fullscreen') }}" title="{{ t('Fullscreen') }}">
+                        <i class="lucide lucide-maximize-2 w-4 h-4" id="fullscreen-icon"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {# Stream Stats Panel (toggle) #}
+              <div id="stats-panel" class="stats-panel hidden z-20">
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span class="stat-label">{{ t('Resolution') }}</span>
+                    <span id="stat-resolution" class="stat-value">--</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">{{ t('Bitrate') }}</span>
+                    <span id="stat-bitrate" class="stat-value">--</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">{{ t('Buffer') }}</span>
+                    <span id="stat-buffer" class="stat-value">--</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">{{ t('Dropped') }}</span>
+                    <span id="stat-dropped" class="stat-value">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# Player Controls Bar #}
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <button type="button" id="reload-btn" class="toolbar-btn">
+                <i class="lucide lucide-refresh-cw mr-2"></i>
+                {{ t('Reload Stream') }}
+              </button>
+              {# Sidebar toggle — visible only on mobile/tablet #}
+              <button type="button" id="sidebar-toggle" class="toolbar-btn lg:hidden" aria-label="{{ t('Toggle channel list') }}">
+                <i class="lucide lucide-list mr-2"></i>
+                <span id="sidebar-toggle-text">{{ t('Channels') }}</span>
+                <span id="sidebar-toggle-badge" class="ml-1.5 text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full">{{ channels|length }}</span>
+              </button>
+              <span class="text-xs text-slate-400 self-center ml-auto hidden sm:inline">{{ t('Hover player for controls') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Channel List Sidebar #}
+      <aside id="channel-sidebar" class="lg:col-span-4">
+        <div class="surface-card p-4 md:p-6">
+          <div id="sidebar-header" class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-900">{{ t('All Channels') }}</h3>
+            <div class="flex items-center gap-2">
+              <span id="channel-count" class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{{ channels|length }}</span>
+              <button type="button" id="sidebar-close" class="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all" aria-label="{{ t('Close') }}">
+                <i class="lucide lucide-x w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          {# Search #}
+          <div class="mb-3">
+            <div class="relative">
+              <i class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+              <input
+                type="text"
+                id="channel-search"
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                placeholder="{{ t('Search channels...') }}"
+                aria-label="{{ t('Search channels by name') }}">
+            </div>
+          </div>
+
+          {# Category Filter #}
+          <div class="mb-4">
+            <select id="category-filter" class="toolbar-select w-full" aria-label="{{ t('Filter channels by category') }}">
+              <option value="all">{{ t('All Categories') }}</option>
+              {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# Channel List #}
+          <div id="channel-list" class="channel-list max-h-[480px] overflow-y-auto">
+            {% for channel in channels %}
+            <button
+              type="button"
+              class="channel-item w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-all duration-200 channel-btn"
+              data-channel-id="{{ channel.id }}"
+              data-channel-name="{{ channel.name }}"
+              data-channel-url="{{ channel.proxy_url|default(channel.stream_url) }}"
+              data-channel-direct="{{ channel.stream_url }}"
+              data-channel-category="{{ channel.category }}"
+              aria-label="{{ t('Watch {name}', {name: channel.name}) }}">
+              <div class="channel-logo flex-shrink-0 w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
+                {% if channel.logo %}
+                  <img src="{{ channel.logo }}" alt="{{ channel.name }}" class="w-full h-full object-cover" loading="lazy" onerror="this.remove()">
+                {% else %}
+                  <i class="lucide lucide-tv text-xl text-slate-400"></i>
+                {% endif %}
+              </div>
+              <div class="flex-1 text-left min-w-0">
+                <div class="font-semibold text-sm text-slate-900 truncate">{{ channel.name }}</div>
+                <div class="text-[11px] text-slate-400">{{ channel.category }}</div>
+              </div>
+              <i class="lucide lucide-play-circle text-lg text-indigo-600 opacity-0 transition-opacity flex-shrink-0"></i>
+            </button>
+            {% else %}
+              <div class="text-center py-10">
+                <i class="lucide lucide-tv text-4xl text-slate-300 mb-3"></i>
+                <p class="text-slate-500">{{ t('No channels available') }}</p>
+                <p class="text-xs text-slate-400 mt-1">{{ t('Please try again later.') }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+{# Auto-play first channel if no channel selected #}
+{% if not selected_channel and channels|length > 0 %}
+  {% set first_channel = channels|first %}
+  <script id="autoplay-channel" type="application/json">{{ first_channel|json_encode|raw }}</script>
+{% endif %}
+
+{# HLS.js and player initialization #}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest" defer></script>
+<script>
+/**
+ * Live TV Player — Custom controls, HLS.js integration, keyboard shortcuts
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // ── DOM refs ──
+  const video = document.getElementById('live-tv-player');
+  const loadingOverlay = document.getElementById('player-loading');
+  const errorOverlay = document.getElementById('player-error');
+  const retryBtn = document.getElementById('retry-btn');
+  const channelList = document.getElementById('channel-list');
+  const categoryFilter = document.getElementById('category-filter');
+  const channelSearch = document.getElementById('channel-search');
+  const currentChannelName = document.getElementById('current-channel-name');
+  const reloadBtn = document.getElementById('reload-btn');
+  const channelCount = document.getElementById('channel-count');
+  const playOverlay = document.getElementById('play-overlay');
+  const stalledIndicator = document.getElementById('stalled-indicator');
+  const sidebar = document.getElementById('channel-sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebarClose = document.getElementById('sidebar-close');
+  const sidebarToggleText = document.getElementById('sidebar-toggle-text');
+  const sidebarToggleBadge = document.getElementById('sidebar-toggle-badge');
+
+  // ── Custom controls refs ──
+  const controlsOverlay = document.getElementById('player-controls-overlay');
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const centerPlayBtn = document.getElementById('center-play-btn');
+  const progressTrack = document.getElementById('progress-track');
+  const progressPlayed = document.getElementById('progress-played');
+  const progressBuffer = document.getElementById('progress-buffer');
+  const progressThumb = document.getElementById('progress-thumb');
+  const currentTimeEl = document.getElementById('current-time');
+  const durationTimeEl = document.getElementById('duration-time');
+  const volumeSlider = document.getElementById('volume-slider');
+  const volumeBtn = document.getElementById('volume-btn');
+  const volumeIcon = document.getElementById('volume-icon');
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
+  const fullscreenIcon = document.getElementById('fullscreen-icon');
+  const pipBtn = document.getElementById('pip-btn');
+  const qualityBtn = document.getElementById('quality-btn');
+  const qualityMenu = document.getElementById('quality-menu');
+  const qualityLabel = document.getElementById('quality-label');
+  const statsToggleBtn = document.getElementById('stats-toggle-btn');
+  const statsPanel = document.getElementById('stats-panel');
+  const statResolution = document.getElementById('stat-resolution');
+  const statBitrate = document.getElementById('stat-bitrate');
+  const statBuffer = document.getElementById('stat-buffer');
+  const statDropped = document.getElementById('stat-dropped');
+  const liveBadge = document.getElementById('live-badge');
+  const controlsChannelName = document.getElementById('controls-channel-name');
+  const reloadBtnCustom = document.getElementById('reload-btn-custom');
+
+  // ── State ──
+  let currentHls = null;
+  let currentChannelId = null;
+  let retryCount = 0;
+  let stalledTimer = null;
+  let playRequested = false;
+  let controlsTimer = null;
+  let statsInterval = null;
+  let isSeeking = false;
+  let isFullscreen = false;
+  const MAX_RETRIES = 2;
+
+  // ── Helpers ──
+  function formatTime(seconds) {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function findChannelBtn(channelId) {
+    return Array.from(channelList.querySelectorAll('.channel-btn')).find(
+      function(btn) { return btn.dataset.channelId === channelId; }
+    );
+  }
+
+  function updatePlayPauseIcons(isPlaying) {
+    document.querySelectorAll('.play-icon-c, .pause-icon-c, .play-icon-svg, .pause-icon-svg').forEach(function(el) {
+      el.classList.toggle('hidden', true);
+    });
+    if (isPlaying) {
+      document.querySelectorAll('.pause-icon-c, .pause-icon-svg').forEach(function(el) {
+        el.classList.remove('hidden');
+      });
+    } else {
+      document.querySelectorAll('.play-icon-c, .play-icon-svg').forEach(function(el) {
+        el.classList.remove('hidden');
+      });
+    }
+  }
+
+  function togglePlay() {
+    if (video.paused) {
+      video.play().catch(function(e) {
+        if (e.name === 'NotAllowedError') {
+          playOverlay.classList.remove('hidden');
+        }
+      });
+    } else {
+      video.pause();
+    }
+  }
+
+  // ── Show/hide controls overlay ──
+  function showControls() {
+    if (!controlsOverlay) return;
+    controlsOverlay.classList.remove('controls-hidden');
+    clearTimeout(controlsTimer);
+    if (!video.paused) {
+      controlsTimer = setTimeout(function() {
+        controlsOverlay.classList.add('controls-hidden');
+      }, 3000);
+    }
+  }
+
+  function hideControls() {
+    if (!controlsOverlay) return;
+    controlsOverlay.classList.add('controls-hidden');
+    clearTimeout(controlsTimer);
+    qualityMenu.classList.add('hidden');
+  }
+
+  // ── Update progress bar ──
+  function updateProgress() {
+    if (!video.duration || !video.buffered || !video.buffered.length) return;
+    const played = (video.currentTime / video.duration) * 100;
+    progressPlayed.style.width = Math.min(played, 100) + '%';
+    progressThumb.style.left = Math.min(played, 100) + '%';
+
+    // Buffered
+    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+    const bufferedPct = (bufferedEnd / video.duration) * 100;
+    progressBuffer.style.width = Math.min(bufferedPct, 100) + '%';
+  }
+
+  function formatBitrate(bps) {
+    if (!bps || bps <= 0) return '--';
+    if (bps < 1000000) return (bps / 1000).toFixed(0) + ' kbps';
+    return (bps / 1000000).toFixed(1) + ' Mbps';
+  }
+
+  // ── Update stats panel ──
+  function updateStats() {
+    if (statsPanel.classList.contains('hidden')) return;
+    if (!video.videoWidth) {
+      statResolution.textContent = '--';
+    } else {
+      statResolution.textContent = video.videoWidth + 'x' + video.videoHeight;
+    }
+    if (currentHls) {
+      const level = currentHls.currentLevel;
+      if (level >= 0 && currentHls.levels && currentHls.levels[level]) {
+        const l = currentHls.levels[level];
+        if (l.bitrate) statBitrate.textContent = formatBitrate(l.bitrate);
+        if (l.width && l.height) statResolution.textContent = l.width + 'x' + l.height;
+      }
+    }
+    // Buffer health
+    if (video.buffered && video.buffered.length > 0) {
+      const bufEnd = video.buffered.end(video.buffered.length - 1);
+      const diff = bufEnd - video.currentTime;
+      statBuffer.textContent = (diff > 0 ? diff.toFixed(1) : '0.0') + 's';
+    }
+    // Dropped frames
+    if (video.getVideoPlaybackQuality) {
+      try {
+        statDropped.textContent = video.getVideoPlaybackQuality().droppedVideoFrames || '0';
+      } catch(e) {}
+    }
+  }
+
+  // ── Build quality menu from HLS levels ──
+  function buildQualityMenu(hls) {
+    if (!qualityMenu) return;
+    // Keep auto option, remove others
+    qualityMenu.querySelectorAll('.quality-option:not([data-level="-1"])').forEach(function(el) { el.remove(); });
+    if (!hls || !hls.levels || hls.levels.length === 0) return;
+    hls.levels.forEach(function(level, idx) {
+      const label = level.name || (level.width && level.height ? level.width + 'x' + level.height : 'Level ' + idx);
+      const bitrateLabel = level.bitrate ? ' (' + formatBitrate(level.bitrate) + ')' : '';
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'quality-option';
+      option.dataset.level = idx;
+      option.textContent = label + bitrateLabel;
+      qualityMenu.appendChild(option);
+    });
+  }
+
+  // ── Set quality level ──
+  function setQuality(level) {
+    if (!currentHls) return;
+    currentHls.currentLevel = level;
+    qualityLabel.textContent = level === -1 ? 'Auto' : (currentHls.levels && currentHls.levels[level] ? (currentHls.levels[level].name || (currentHls.levels[level].width || '') + 'p') : level);
+    qualityMenu.querySelectorAll('.quality-option').forEach(function(el) {
+      el.classList.toggle('active', parseInt(el.dataset.level) === level);
+    });
+    qualityMenu.classList.add('hidden');
+  }
+
+  // ── Update volume icon ──
+  function updateVolumeIcon() {
+    if (!volumeIcon) return;
+    if (video.muted || video.volume === 0) {
+      volumeIcon.className = 'lucide lucide-volume-x w-4 h-4';
+    } else if (video.volume < 0.5) {
+      volumeIcon.className = 'lucide lucide-volume-1 w-4 h-4';
+    } else {
+      volumeIcon.className = 'lucide lucide-volume-2 w-4 h-4';
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // CORE: playChannel via HLS.js
+  // ════════════════════════════════════════════════════════════
+  function playChannel(channelId, channelName, streamUrl) {
+    if (currentHls) {
+      currentHls.destroy();
+      currentHls = null;
+    }
+    clearStalledTimer();
+    if (statsInterval) {
+      clearInterval(statsInterval);
+      statsInterval = null;
+    }
+
+    currentChannelId = channelId;
+    playRequested = false;
+    retryCount = 0;
+    currentChannelName.textContent = channelName;
+    if (controlsChannelName) controlsChannelName.textContent = channelName;
+    loadingOverlay.classList.remove('hidden');
+    errorOverlay.classList.add('hidden');
+    playOverlay.classList.add('hidden');
+    stalledIndicator.classList.add('hidden');
+    video.classList.remove('has-error');
+    video.src = '';
+
+    // Reset progress
+    progressPlayed.style.width = '0%';
+    progressThumb.style.left = '0%';
+    progressBuffer.style.width = '0%';
+    currentTimeEl.textContent = '0:00';
+    durationTimeEl.textContent = '--:--';
+    liveBadge.classList.add('hidden');
+
+    // Highlight selected channel
+    channelList.querySelectorAll('.channel-btn').forEach(function(btn) {
+      btn.classList.remove('bg-indigo-50', 'border-indigo-200', 'border');
+    });
+    const activeBtn = findChannelBtn(channelId);
+    if (activeBtn) {
+      activeBtn.classList.add('bg-indigo-50', 'border-indigo-200', 'border');
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Update URL without reloading
+    if (history.pushState) {
+      const newUrl = '/live-tv/' + encodeURIComponent(channelId);
+      history.pushState({ channel: channelId }, '', newUrl);
+    }
+
+    // Reset play/pause icons
+    updatePlayPauseIcons(false);
+
+    // Stalled indicator timer
+    stalledTimer = setTimeout(function() {
+      if (!loadingOverlay.classList.contains('hidden') || video.readyState < 3) {
+        stalledIndicator.classList.remove('hidden');
+      }
+    }, 8000);
+
+    // Attempt play helper
+    function attemptPlay() {
+      playRequested = true;
+      video.play().catch(function(e) {
+        if (e.name === 'NotAllowedError') {
+          playOverlay.classList.remove('hidden');
+        }
+      });
+    }
+
+    // Timeout after 25s
+    const loadTimeout = setTimeout(function() {
+      if (!loadingOverlay.classList.contains('hidden')) {
+        loadingOverlay.classList.add('hidden');
+        stalledIndicator.classList.add('hidden');
+        clearStalledTimer();
+        currentChannelName.textContent = 'Stream is taking a while...';
+        if (controlsChannelName) controlsChannelName.textContent = channelName + ' (slow)';
+      }
+    }, 25000);
+
+    // Native HLS fallback (Safari)
+    function tryNativeHls(url) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', function onMeta() {
+        video.removeEventListener('loadedmetadata', onMeta);
+        clearTimeout(loadTimeout);
+        loadingOverlay.classList.add('hidden');
+        stalledIndicator.classList.add('hidden');
+        clearStalledTimer();
+        attemptPlay();
+      });
+    }
+
+    if (typeof Hls === 'undefined') {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        tryNativeHls(streamUrl);
+      } else {
+        showError('HLS playback not supported in this browser.');
+      }
+      clearTimeout(loadTimeout);
+      return;
+    }
+
+    if (Hls.isSupported()) {
+      currentHls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        maxMaxBufferLength: 30,
+        backbufferLength: 15,
+        liveSyncDurationCount: 3,
+        fragLoadingTimeOut: 10000,
+        manifestLoadingTimeOut: 10000,
+      });
+
+      currentHls.loadSource(streamUrl);
+      currentHls.attachMedia(video);
+
+      currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+        clearTimeout(loadTimeout);
+        loadingOverlay.classList.add('hidden');
+        stalledIndicator.classList.add('hidden');
+        clearStalledTimer();
+        retryCount = 0;
+        buildQualityMenu(currentHls);
+        attemptPlay();
+      });
+
+      currentHls.on(Hls.Events.LEVEL_SWITCHED, function(e, data) {
+        if (data.level >= 0 && currentHls.levels && currentHls.levels[data.level]) {
+          const l = currentHls.levels[data.level];
+          qualityLabel.textContent = l.name || (l.width ? l.width + 'p' : 'Auto');
+        }
+      });
+
+      currentHls.on(Hls.Events.ERROR, function(event, data) {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                console.warn('[Live TV] HLS network error, retry ' + retryCount);
+                if (currentHls) currentHls.startLoad();
+                return;
+              }
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                console.warn('[Live TV] HLS media error, recovering...');
+                if (currentHls) currentHls.recoverMediaError();
+                return;
+              }
+              break;
+          }
+          showError('Failed to load stream.');
+        }
+      });
+
+      currentHls.on(Hls.Events.LEVEL_LOADED, function() {
+        loadingOverlay.classList.add('hidden');
+        stalledIndicator.classList.add('hidden');
+        clearStalledTimer();
+      });
+
+      currentHls.on(Hls.Events.FRAG_LOADED, function() {
+        loadingOverlay.classList.add('hidden');
+        stalledIndicator.classList.add('hidden');
+        clearStalledTimer();
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      tryNativeHls(streamUrl);
+    } else {
+      showError('HLS playback is not supported in your browser.');
+    }
+  }
+
+  function clearStalledTimer() {
+    if (stalledTimer) {
+      clearTimeout(stalledTimer);
+      stalledTimer = null;
+    }
+  }
+
+  function showError(message) {
+    loadingOverlay.classList.add('hidden');
+    errorOverlay.classList.remove('hidden');
+    video.classList.add('has-error');
+    console.error('[Live TV]', message);
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // VIDEO EVENT LISTENERS
+  // ════════════════════════════════════════════════════════════
+
+  video.addEventListener('play', function() {
+    updatePlayPauseIcons(true);
+    video.classList.remove('is-paused');
+    showControls();
+  });
+
+  video.addEventListener('pause', function() {
+    updatePlayPauseIcons(false);
+    video.classList.add('is-paused');
+    showControls(); // Keep controls visible when paused
+    clearTimeout(controlsTimer);
+  });
+
+  video.addEventListener('timeupdate', function() {
+    if (!isSeeking) updateProgress();
+    currentTimeEl.textContent = formatTime(video.currentTime);
+    // Remove is-paused if we were paused and now playing (e.g., via native controls)
+    if (!video.paused) video.classList.remove('is-paused');
+  });
+
+  video.addEventListener('loadedmetadata', function() {
+    durationTimeEl.textContent = formatTime(video.duration);
+    // Detect if live (very long duration or infinite)
+    if (!isFinite(video.duration) || video.duration === 0) {
+      liveBadge.classList.remove('hidden');
+    }
+  });
+
+  video.addEventListener('durationchange', function() {
+    durationTimeEl.textContent = formatTime(video.duration);
+    if (!isFinite(video.duration) || video.duration === 0) {
+      liveBadge.classList.remove('hidden');
+    }
+  });
+
+  video.addEventListener('waiting', function() {
+    stalledIndicator.classList.remove('hidden');
+    video.classList.remove('is-paused');
+  });
+
+  video.addEventListener('playing', function() {
+    stalledIndicator.classList.add('hidden');
+    loadingOverlay.classList.add('hidden');
+    clearStalledTimer();
+  });
+
+  video.addEventListener('canplay', function() {
+    loadingOverlay.classList.add('hidden');
+    stalledIndicator.classList.add('hidden');
+    clearStalledTimer();
+  });
+
+  // PiP support check
+  if (document.pictureInPictureEnabled && pipBtn) {
+    pipBtn.classList.remove('hidden');
+    pipBtn.addEventListener('click', function() {
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture().catch(function(e) {});
+      } else {
+        video.requestPictureInPicture().catch(function(e) {});
+      }
+    });
+    video.addEventListener('enterpictureinpicture', function() {
+      pipBtn.classList.add('text-indigo-400');
+    });
+    video.addEventListener('leavepictureinpicture', function() {
+      pipBtn.classList.remove('text-indigo-400');
+    });
+  }
+
+  // Fullscreen
+  function toggleFullscreen() {
+    const container = video.closest('.video-player-container');
+    if (!container) return;
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(function(e) {});
+    } else {
+      document.exitFullscreen().catch(function(e) {});
+    }
+  }
+
+  document.addEventListener('fullscreenchange', function() {
+    isFullscreen = !!document.fullscreenElement;
+    fullscreenIcon.className = isFullscreen ? 'lucide lucide-minimize-2 w-4 h-4' : 'lucide lucide-maximize-2 w-4 h-4';
+  });
+
+  // ════════════════════════════════════════════════════════════
+  // CUSTOM CONTROL EVENT LISTENERS
+  // ════════════════════════════════════════════════════════════
+
+  // Play/Pause
+  playPauseBtn.addEventListener('click', togglePlay);
+  centerPlayBtn.addEventListener('click', togglePlay);
+
+  // Volume
+  volumeSlider.addEventListener('input', function() {
+    video.volume = parseFloat(this.value);
+    video.muted = false;
+    updateVolumeIcon();
+  });
+
+  volumeBtn.addEventListener('click', function() {
+    video.muted = !video.muted;
+    updateVolumeIcon();
+    if (!video.muted) {
+      volumeSlider.value = video.volume;
+    }
+  });
+
+  video.addEventListener('volumechange', updateVolumeIcon);
+
+  // Progress bar seeking
+  progressTrack.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    isSeeking = true;
+    seekFromEvent(e);
+    function onMove(ev) { seekFromEvent(ev); }
+    function onUp() {
+      isSeeking = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Touch seek
+  progressTrack.addEventListener('touchstart', function(e) {
+    isSeeking = true;
+    seekFromEvent(e.touches[0]);
+  }, { passive: true });
+
+  progressTrack.addEventListener('touchmove', function(e) {
+    seekFromEvent(e.touches[0]);
+  }, { passive: true });
+
+  progressTrack.addEventListener('touchend', function() {
+    isSeeking = false;
+  });
+
+  function seekFromEvent(e) {
+    const rect = progressTrack.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const pct = Math.max(0, Math.min(1, x));
+    progressPlayed.style.width = (pct * 100) + '%';
+    progressThumb.style.left = (pct * 100) + '%';
+    if (video.duration && isFinite(video.duration) && video.duration > 0) {
+      video.currentTime = pct * video.duration;
+    }
+  }
+
+  // Fullscreen
+  fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+  // Quality menu toggle
+  qualityBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    qualityMenu.classList.toggle('hidden');
+  });
+
+  qualityMenu.addEventListener('click', function(e) {
+    const option = e.target.closest('.quality-option');
+    if (!option) return;
+    const level = parseInt(option.dataset.level);
+    if (!isNaN(level)) setQuality(level);
+  });
+
+  // Close quality menu on click outside
+  document.addEventListener('click', function() {
+    qualityMenu.classList.add('hidden');
+  });
+
+  // Stats toggle
+  statsToggleBtn.addEventListener('click', function() {
+    statsPanel.classList.toggle('hidden');
+    if (statsPanel.classList.contains('hidden')) {
+      if (statsInterval) {
+        clearInterval(statsInterval);
+        statsInterval = null;
+      }
+    } else {
+      updateStats();
+      if (statsInterval) clearInterval(statsInterval);
+      statsInterval = setInterval(updateStats, 1000);
+    }
+  });
+
+  // Custom reload
+  reloadBtnCustom.addEventListener('click', function() {
+    reloadBtn.click();
+  });
+
+  // ── Show/hide controls on mouse move ──
+  const playerContainer = video.closest('.video-player-container');
+  if (playerContainer) {
+    playerContainer.addEventListener('mousemove', function() {
+      if (errorOverlay && !errorOverlay.classList.contains('hidden')) return;
+      showControls();
+    });
+    playerContainer.addEventListener('mouseleave', function() {
+      if (!video.paused) hideControls();
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // KEYBOARD SHORTCUTS
+  // ════════════════════════════════════════════════════════════
+  document.addEventListener('keydown', function(e) {
+    // Don't hijack if typing in an input/select
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+    switch (e.key) {
+      case ' ':
+      case 'k':
+        e.preventDefault();
+        togglePlay();
+        break;
+      case 'f':
+        e.preventDefault();
+        toggleFullscreen();
+        break;
+      case 'm':
+        e.preventDefault();
+        video.muted = !video.muted;
+        updateVolumeIcon();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        video.currentTime = Math.max(0, video.currentTime - 10);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (isFinite(video.duration) && video.duration > 0) {
+          video.currentTime = Math.min(video.duration, video.currentTime + 10);
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        video.volume = Math.min(1, video.volume + 0.1);
+        video.muted = false;
+        volumeSlider.value = video.volume;
+        updateVolumeIcon();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        video.volume = Math.max(0, video.volume - 0.1);
+        volumeSlider.value = video.volume;
+        updateVolumeIcon();
+        break;
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════
+  // CHANNEL LIST EVENTS
+  // ════════════════════════════════════════════════════════════
+
+  channelList.addEventListener('click', function(e) {
+    const btn = e.target.closest('.channel-btn');
+    if (!btn) return;
+    const id = btn.dataset.channelId;
+    const name = btn.dataset.channelName;
+    let url = btn.dataset.channelUrl;
+    if (!url) url = btn.dataset.channelDirect;
+    if (id && url) playChannel(id, name, url);
+  });
+
+  // ── Category filter ──
+  categoryFilter.addEventListener('change', filterChannels);
+  channelSearch.addEventListener('input', filterChannels);
+
+  function filterChannels() {
+    const category = categoryFilter.value;
+    const query = channelSearch.value.toLowerCase().trim();
+    let visibleCount = 0;
+    channelList.querySelectorAll('.channel-btn').forEach(function(btn) {
+      const cat = btn.dataset.channelCategory || '';
+      const name = (btn.dataset.channelName || '').toLowerCase();
+      const matchesCategory = category === 'all' || cat === category;
+      const matchesSearch = query === '' || name.indexOf(query) !== -1;
+      const visible = matchesCategory && matchesSearch;
+      btn.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
+    });
+    let emptyState = channelList.querySelector('.empty-state');
+    if (visibleCount === 0 && channelList.querySelectorAll('.channel-btn').length > 0) {
+      if (!emptyState) {
+        emptyState = document.createElement('div');
+        emptyState.className = 'empty-state text-center py-10';
+        emptyState.innerHTML = '<i class="lucide lucide-search-x text-4xl text-slate-300 mb-3"></i><p class="text-slate-500">No channels found</p>';
+        channelList.appendChild(emptyState);
+      }
+      emptyState.classList.remove('hidden');
+    } else if (emptyState) {
+      emptyState.classList.add('hidden');
+    }
+    if (channelCount) channelCount.textContent = visibleCount;
+  }
+
+  // ── Reload button ──
+  reloadBtn.addEventListener('click', function() {
+    if (currentChannelId) {
+      const btn = findChannelBtn(currentChannelId);
+      if (btn) {
+        const url = btn.dataset.channelUrl || btn.dataset.channelDirect;
+        playChannel(currentChannelId, btn.dataset.channelName, url);
+      }
+    }
+  });
+
+  // ── Retry button ──
+  retryBtn.addEventListener('click', function() {
+    reloadBtn.click();
+  });
+
+  // ── Play overlay click to start playback ──
+  playOverlay.addEventListener('click', function() {
+    playOverlay.classList.add('hidden');
+    video.play().catch(function(e) {
+      console.warn('Play failed:', e);
+    });
+  });
+
+  // ── Auto-play if a channel was pre-selected ──
+  const autoplayData = document.getElementById('selected-channel-data') || document.getElementById('autoplay-channel');
+  if (autoplayData) {
+    try {
+      const channel = JSON.parse(autoplayData.textContent);
+      if (channel && channel.id && channel.name) {
+        const url = channel.proxy_url || channel.stream_url || channel.url;
+        if (url) playChannel(channel.id, channel.name, url);
+      }
+    } catch (e) {
+      console.warn('Failed to parse channel data:', e);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // SIDEBAR TOGGLE
+  // ════════════════════════════════════════════════════════════
+
+  function toggleSidebar(show) {
+    if (!sidebar) return;
+    if (show === undefined) {
+      sidebar.classList.toggle('sidebar-collapsed');
+    } else if (show) {
+      sidebar.classList.remove('sidebar-collapsed');
+    } else {
+      sidebar.classList.add('sidebar-collapsed');
+    }
+    updateSidebarToggleText();
+  }
+
+  function updateSidebarToggleText() {
+    if (!sidebar || !sidebarToggleText || !sidebarToggleBadge) return;
+    const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+    sidebarToggleText.textContent = isCollapsed ? '{{ t('Channels')|e('js') }}' : '{{ t('Hide')|e('js') }}';
+    sidebarToggleBadge.classList.toggle('hidden', !isCollapsed);
+  }
+
+  if (sidebarToggle) sidebarToggle.addEventListener('click', function() { toggleSidebar(); });
+  if (sidebarClose) sidebarClose.addEventListener('click', function() { toggleSidebar(false); });
+
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      if (window.innerWidth >= 1024 && sidebar) {
+        sidebar.classList.remove('sidebar-collapsed');
+        updateSidebarToggleText();
+      }
+    }, 150);
+  });
+
+  if (sidebar && window.innerWidth < 1024) {
+    sidebar.classList.add('sidebar-collapsed');
+    updateSidebarToggleText();
+  } else if (sidebar) {
+    sidebar.classList.remove('sidebar-collapsed');
+  }
+
+  // ── Handle browser back/forward ──
+  window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.channel && channelList) {
+      const btn = findChannelBtn(e.state.channel);
+      if (btn) btn.click();
+    }
+  });
+
+  // ── Init volume slider position ──
+  volumeSlider.value = video.volume;
+  updateVolumeIcon();
+});
+</script>
+
+{# Pass selected channel data for auto-play #}
+{% if selected_channel %}
+  <script id="selected-channel-data" type="application/json">{{ selected_channel|json_encode|raw }}</script>
+{% endif %}
+{% endblock %}
