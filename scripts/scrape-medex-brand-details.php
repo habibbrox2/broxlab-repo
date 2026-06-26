@@ -57,8 +57,6 @@ const SECTION_TITLES = [
     'storage'            => ['en' => 'Storage Conditions', 'bn' => 'সংরক্ষণ'],
 ];
 
-require_once __DIR__ . '/medex-cloudflare-helper.php';
-
 if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
     define('MEDEX_BRAND_PARSER_LOADED', true);
 
@@ -161,9 +159,8 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
         $strNode = $xpath->query('//div[@title="Strength"]')->item(0);
         $data['strength'] = $strNode ? clean_text($strNode->textContent) : '';
 
-        /** @var DOMElement|null $companyNode */
         $companyNode = $xpath->query('//div[@title="Manufactured by"]//a[contains(@class,"calm-link")]')->item(0);
-        if ($companyNode instanceof DOMElement) {
+        if ($companyNode) {
             $data['company']['name'] = clean_text($companyNode->textContent);
             $data['company']['url']  = ensure_absolute((string)$companyNode->getAttribute('href'));
         }
@@ -184,29 +181,17 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
 
         // Pack images
         foreach ($xpath->query('//a[contains(@class,"mp-trigger-g") or contains(@class,"mp-trigger-gdc")]') as $a) {
-            if (!($a instanceof DOMElement)) {
-                continue;
-            }
             $href = (string)$a->getAttribute('href');
-            if ($href && str_contains($href, '/storage/images/packaging/')) {
-                $data['pack_images'][] = ensure_absolute($href);
-            }
+            if ($href && str_contains($href, '/storage/images/packaging/')) $data['pack_images'][] = ensure_absolute($href);
             $img = $xpath->query('.//img[@data-src]', $a)->item(0);
-            if ($img instanceof DOMElement) {
+            if ($img) {
                 $src = (string)$img->getAttribute('data-src');
-                if ($src) {
-                    $data['pack_images'][] = ensure_absolute($src);
-                }
+                if ($src) $data['pack_images'][] = ensure_absolute($src);
             }
         }
         $data['pack_images'] = array_values(array_unique($data['pack_images']));
 
-        // Sections: dual-strategy extraction.
-        // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
-        //   (e.g., <div id="indications" class="ac"><div class="ac-body">...)
-        // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div
-        //   (e.g., <div id="indications">...</div><div class="ac-body">...)
-        // This handles both HTML structures used by MedEx.com.bd.
+        // Sections (robust: id div + following sibling .ac-body)
         $sectionIds = [
             'indications'        => 'indications',
             'mode_of_action'     => 'pharmacology',
@@ -227,20 +212,13 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
             $idDiv = $xpath->query('//div[@id="' . $domId . '"]')->item(0);
             $content = '';
             if ($idDiv) {
-                // Strategy 1: descendant .ac-body (preferred)
-                $acBody = $xpath->query('.//div[contains(@class,"ac-body")]', $idDiv)->item(0);
-                if ($acBody instanceof DOMElement) {
-                    $content = clean_text($acBody->textContent);
-                } else {
-                    // Strategy 2: following sibling .ac-body
-                    $next = $idDiv->nextSibling;
-                    while ($next) {
-                        if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
-                            $content = clean_text($next->textContent);
-                            break;
-                        }
-                        $next = $next->nextSibling;
+                $next = $idDiv->nextSibling;
+                while ($next) {
+                    if ($next instanceof DOMElement && str_contains($next->getAttribute('class'), 'ac-body')) {
+                        $content = clean_text($next->textContent);
+                        break;
                     }
+                    $next = $next->nextSibling;
                 }
             }
             $sections[$key] = $content;
@@ -252,7 +230,33 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
 
     function fetch_page(string $url, int $maxRetries = MAX_RETRIES): string|false
     {
-        return medex_fetch_page($url, $maxRetries);
+        $attempt = 0;
+        while ($attempt < $maxRetries) {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 8,
+                CURLOPT_CONNECTTIMEOUT => 20,
+                CURLOPT_TIMEOUT        => 45,
+                CURLOPT_USERAGENT      => USER_AGENT,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_HTTPHEADER     => [
+                    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language: en-US,en;q=0.9,bn;q=0.8',
+                    'Referer: https://medex.com.bd/',
+                ],
+            ]);
+            $resp = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($resp !== false && $code >= 200 && $code < 400) return $resp;
+            $attempt++;
+            if ($attempt < $maxRetries) sleep(min(5, $attempt * 2));
+        }
+        return false;
     }
 
     function normalize_brand_url(string $url): string

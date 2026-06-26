@@ -1,0 +1,61 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "provider": {
+    "ollama": {
+      "options": {
+        "apiKey": "93c0e348df324838a6ede84eb0a971ce.qHYfYYWt-aZkDoRSx-9jjW1q",
+        "baseURL": "https://ollama.govinpqms.online"
+      }
+    },
+    "openai-compatible": {
+      "options": {
+        "apiKey": "sk-oDKymVFKjZW2ttuQezbGfSVOKKgtQ3fZxH3cNtAwpJ2yr6Uz",
+        "baseURL": "https://agentrouter.org/v1"
+      }
+    }
+  },
+  "model": "kilo/kilo-auto/free",
+  "small_model": "kilo/inclusionai/ling-2.6-1t:free",
+  "agent": {
+    "ask": {
+      "model": "kilo/kilo-auto/free"
+    },
+    "code": {
+      "model": "kilo/x-ai/grok-code-fast-1:optimized:free"
+    }
+  },
+  "disabled_providers": [],
+  "experimental": {
+    "batch_tool": true,
+    "openTelemetry": true,
+    "codebase_search": true,
+    "continue_loop_on_deny": true,
+    "agent_manager_tool": true
+  },
+  "layout": "auto",
+  "share": "auto",
+  "instructions": [
+    "H:\\Web\\broxlab\\copilot-instructions.md",
+    "H:\\Web\\broxlab\\SKILL.md"
+  ],
+  "mcp": {
+    "context7": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "environment": {
+        "DEFAULT_MINIMUM_TOKENS": "{{DEFAULT_MINIMUM_TOKENS}}"
+      }
+    },
+    "time": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "mcp-server-time"
+      ]
+    }
+  }
+}

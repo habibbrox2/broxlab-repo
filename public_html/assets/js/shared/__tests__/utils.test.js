@@ -12,7 +12,7 @@ import {
   formatDateLabel,
   debounce,
   throttle,
-  uniqueId
+  uniqueId,
 } from '../utils.js';
 
 // =============================================================================
@@ -76,7 +76,7 @@ describe('escapeHtml', () => {
 
   it('should handle objects by converting to string', () => {
     expect(escapeHtml({})).toBe('[object Object]');
-    expect(escapeHtml({ foo: 'bar', })).toBe('[object Object]');
+    expect(escapeHtml({ foo: 'bar' })).toBe('[object Object]');
   });
 
   it('should not double-escape already escaped entities', () => {
@@ -92,7 +92,7 @@ describe('escapeHtml', () => {
 // =============================================================================
 describe('parseJson', () => {
   it('should parse valid JSON string', () => {
-    expect(parseJson('{"a":1}')).toEqual({ a: 1, });
+    expect(parseJson('{"a":1}')).toEqual({ a: 1 });
   });
 
   it('should return fallback for invalid JSON', () => {
@@ -107,7 +107,7 @@ describe('parseJson', () => {
   });
 
   it('should parse arrays', () => {
-    expect(parseJson('[1,2,3]')).toEqual([1, 2, 3,]);
+    expect(parseJson('[1,2,3]')).toEqual([1, 2, 3]);
   });
 
   it('should parse primitive JSON values', () => {
@@ -284,7 +284,7 @@ describe('debounce', () => {
   it('should preserve the `this` context', () => {
     const fn = vi.fn();
     const debounced = debounce(fn, 100);
-    const context = { value: 42, };
+    const context = { value: 42 };
 
     debounced.call(context);
     vi.advanceTimersByTime(100);
@@ -382,7 +382,7 @@ describe('throttle', () => {
   it('should preserve the `this` context', () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
-    const context = { value: 99, };
+    const context = { value: 99 };
 
     throttled.call(context);
     expect(fn.mock.instances[0]).toBe(context);

@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
- {% for page in pages %}
- <url>
- <loc>{{ (base_url()|trim('/', 'right')) ~ page.loc }}</loc>
- <lastmod>{{ page.lastmod|default('now'|date('Y-m-d')) }}</lastmod>
- <changefreq>{{ page.changefreq|default('monthly') }}</changefreq>
- <priority>{{ page.priority|default(0.7) }}</priority>
- </url>
- {% endfor %}
+  {% for page in pages %}
+  <url>
+    <loc>{{ (base_url()|trim('/', 'right')) ~ page.loc }}</loc>
+    <lastmod>{{ page.lastmod|default('now'|date('Y-m-d')) }}</lastmod>
+    <changefreq>{{ page.changefreq|default('monthly') }}</changefreq>
+    <priority>{{ page.priority|default(0.7) }}</priority>
+  </url>
+  {% endfor %}
 </urlset>
-

@@ -1413,10 +1413,10 @@ class ContentModel
     {
         $offset = ($page - 1) * $limit;
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
-        $allowedSorts = ['id', 'name'];
+        $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'name';
 
-        $sql = "SELECT id, name, slug FROM tags WHERE 1=1";
+        $sql = "SELECT id, name, slug, created_at, updated_at FROM tags WHERE 1=1";
         $params = [];
         $types = '';
 
