@@ -16,15 +16,6 @@ function sanitizeCssColor(color, fallback = '#0d6efd') {
   return fallback;
 }
 
-function sanitizeCssColor(color, fallback = '#0d6efd') {
-  if (typeof color !== 'string') return fallback;
-  const value = color.trim();
-  if (!value) return fallback;
-  if (/^#[0-9A-Fa-f]{3,8}$/.test(value)) return value;
-  if (/^[a-zA-Z]+$/.test(value)) return value;
-  return fallback;
-}
-
 function normalizeAlertType(type) {
   if (!type) return 'info';
   if (type === 'error') return 'danger';

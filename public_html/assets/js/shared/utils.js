@@ -144,6 +144,36 @@ export function throttle(fn, limit = 300) {
 }
 
 /**
+ * Append asset version query parameter for cache busting.
+ * Checks for a meta tag or data attribute; returns path unchanged if unavailable.
+ * @param {string} path - Asset path
+ * @returns {string} Versioned path
+ */
+export function withAssetVersion(path) {
+  if (typeof path !== 'string') return path;
+  try {
+    const version =
+      document.querySelector('meta[name="asset-version"]')?.content ||
+      document.documentElement.dataset.assetVersion;
+    if (version) return `${path}?v=${version}`;
+  } catch {}
+  return path;
+}
+
+/**
+ * Parse JSON from a fetch Response, throwing on HTTP errors.
+ * @param {Response} response - Fetch response object
+ * @returns {Promise<*>} Parsed JSON data
+ */
+export async function parseJsonResponse(response) {
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`HTTP ${response.status}: ${text.slice(0, 200)}`);
+  }
+  return response.json();
+}
+
+/**
  * Create a DOM element from an HTML string safely.
  * @param {string} html - HTML string
  * @returns {DocumentFragment}
@@ -161,4 +191,8 @@ export function createElement(html) {
  */
 export function uniqueId(prefix = 'uid') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+if (typeof window !== 'undefined') {
+  window.withAssetVersion = withAssetVersion;
 }
