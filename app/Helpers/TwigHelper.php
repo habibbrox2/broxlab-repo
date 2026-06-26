@@ -756,6 +756,22 @@ if (!function_exists("registerTwigHelpers")) {
             return nl2br($text);
         }, ['is_safe' => ['html']]));
 
+        // English digits to Bangla digits filter
+        $twig->addFilter(new \Twig\TwigFilter('bn', function ($value) {
+            if ($value === null || $value === '') {
+                return $value;
+            }
+            return enToBnDigits((string) $value);
+        }));
+
+        // Bangla digits to English digits filter
+        $twig->addFilter(new \Twig\TwigFilter('en', function ($value) {
+            if ($value === null || $value === '') {
+                return $value;
+            }
+            return bnToEnDigits((string) $value);
+        }));
+
         // Excerpt filter (smart truncation at word boundary)
         $twig->addFilter(new \Twig\TwigFilter('excerpt', function ($text, $length = 150, $suffix = '...') {
             if (strlen($text) <= $length) {

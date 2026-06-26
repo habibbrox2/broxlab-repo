@@ -486,9 +486,13 @@
               {'name': 'Permissions', 'icon': 'lucide-shield',   'url': '/admin/permissions', 'key': 'permissions'}
             ]
           },
-          {
+{
             'label': 'Extras',
             'items': [
+              {'name': 'Kharij', 'icon': 'lucide-file-text', 'key': 'kharij', 'children': [
+                {'name': 'All Records', 'url': '/admin/kharij',        'key': 'kharij-list'},
+                {'name': 'Create',     'url': '/admin/kharij/create', 'key': 'kharij-create'}
+              ]},
               {'name': 'Mobiles', 'icon': 'lucide-smartphone', 'key': 'mobiles', 'children': [
                 {'name': 'All Mobiles', 'url': '/admin/mobiles/all',    'key': 'mobiles-list'},
                 {'name': 'Add Mobile',  'url': '/admin/mobiles/insert', 'key': 'add-mobile'}

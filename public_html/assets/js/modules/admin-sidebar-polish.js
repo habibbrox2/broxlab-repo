@@ -383,33 +383,82 @@ export function initSidebarPolish() {
   // ========== ACTIVE LINK HIGHLIGHTING ==========
   function updateActiveLink() {
     const currentPath = window.location.pathname;
-    const sidebarLinks = sidebar.querySelectorAll('a[href]');
-    let activeSubmenuFound = null;
 
-    // First, close ALL submenus
+    // Collect all interactive sidebar elements
+    const sidebarLinks = sidebar.querySelectorAll('a[href]');
+    const sidebarToggles = sidebar.querySelectorAll('[data-menu-toggle]');
+
+    // Close all submenus for clean state
     closeAllSubmenus();
+
+    // Strip all active states
+    sidebarLinks.forEach((link) => {
+      link.classList.remove('active');
+      link.removeAttribute('aria-current');
+    });
+    sidebarToggles.forEach((toggle) => {
+      toggle.classList.remove('active');
+    });
+
+    let matchedSubmenu = null;
 
     sidebarLinks.forEach((link) => {
       const href = link.getAttribute('href');
-      if (href === currentPath || currentPath.startsWith(`${href}/`)) {
-        link.classList.add('active');
-        link.setAttribute('aria-current', 'page');
+      if (!href || href === '#') return;
 
-        // Expand parent submenu if link is in submenu (only open first one found)
-        const submenuParent = link.closest('.sidebar-submenu');
-        if (submenuParent && !activeSubmenuFound) {
-          const parentToggle = submenuParent.previousElementSibling;
-          if (parentToggle && parentToggle.hasAttribute('data-menu-toggle')) {
+      try {
+        // Extract pathname from href (handles query strings like ?status=pending)
+        const linkPath = new URL(href, window.location.origin).pathname;
+
+        // Exact match or child-path match (e.g. /admin/posts/create matches /admin/posts)
+        const isExact = linkPath === currentPath;
+        const isPrefix = linkPath !== '/' && linkPath !== '' && currentPath.startsWith(linkPath + '/');
+
+        if (isExact || isPrefix) {
+          link.classList.add('active');
+          link.setAttribute('aria-current', 'page');
+
+          // Expand parent submenu and activate parent toggle
+          const submenuParent = link.closest('.sidebar-submenu');
+          if (submenuParent) {
             submenuParent.classList.add('open');
-            parentToggle.setAttribute('aria-expanded', 'true');
-            activeSubmenuFound = submenuParent;
+            const parentToggle = submenuParent.previousElementSibling;
+            if (parentToggle && parentToggle.hasAttribute('data-menu-toggle')) {
+              parentToggle.setAttribute('aria-expanded', 'true');
+              parentToggle.classList.add('active');
+              matchedSubmenu = submenuParent;
+            }
           }
         }
-      } else {
-        link.classList.remove('active');
-        link.removeAttribute('aria-current');
+      } catch (e) {
+        // Invalid URL, skip
       }
     });
+
+    // If no child matched but we have a direct parent path,
+    // activate parent toggle buttons whose submenu contains the current path
+    if (!matchedSubmenu) {
+      sidebarToggles.forEach((toggle) => {
+        const submenuId = toggle.getAttribute('data-menu-toggle');
+        const submenu = document.getElementById(submenuId);
+        if (!submenu) return;
+
+        const childLinks = submenu.querySelectorAll('a[href]');
+        for (const child of childLinks) {
+          const href = child.getAttribute('href');
+          if (!href || href === '#') continue;
+          try {
+            const childPath = new URL(href, window.location.origin).pathname;
+            if (childPath === currentPath || currentPath.startsWith(childPath + '/')) {
+              toggle.classList.add('active');
+              submenu.classList.add('open');
+              toggle.setAttribute('aria-expanded', 'true');
+              break;
+            }
+          } catch (e) { /* skip invalid URLs */ }
+        }
+      });
+    }
   }
 
   // ========== PUBLIC API ==========

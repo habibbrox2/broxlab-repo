@@ -1,0 +1,847 @@
+{% extends 'admin/layout.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  .kharij-section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .kharij-field-group { position: relative; }
+  .kharij-field-group .field-icon {
+    position: absolute;
+    left: 12px;
+    top: 38px;
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+  }
+  .kharij-field-group input:focus ~ .field-icon,
+  .kharij-field-group textarea:focus ~ .field-icon,
+  .kharij-field-group select:focus ~ .field-icon { color: #6366f1; }
+  .kharij-field-group input,
+  .kharij-field-group textarea,
+  .kharij-field-group select { padding-left: 2.5rem; }
+  .kharij-card { transition: box-shadow 0.2s, transform 0.2s; }
+  .kharij-card:hover { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+  .scroll-fade-in.visible { opacity: 1; transform: translateY(0); }
+  .scroll-fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Land Calculator Panel */
+  .land-calc-panel {
+    display: none;
+    margin-top: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+  .land-calc-panel.open {
+    display: block;
+  }
+  .land-calc-panel .calc-header {
+    background: #f1f5f9;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+  }
+  .land-calc-panel .calc-body {
+    padding: 14px 16px;
+  }
+  .calc-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .calc-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    min-width: 60px;
+  }
+  .calc-input {
+    flex: 1;
+    min-width: 100px;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .calc-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  .calc-select {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13px;
+    background: white;
+    outline: none;
+    cursor: pointer;
+  }
+  .calc-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .calc-btn-primary {
+    background: #6366f1;
+    color: white;
+  }
+  .calc-btn-primary:hover {
+    background: #4f46e5;
+  }
+  .calc-btn-success {
+    background: #10b981;
+    color: white;
+  }
+  .calc-btn-success:hover {
+    background: #059669;
+  }
+  .calc-result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    margin-top: 8px;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .calc-result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 12px;
+  }
+  .calc-result-item span:first-child {
+    color: #64748b;
+  }
+  .calc-result-item strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .calc-result-item.highlight {
+    background: #ecfdf5;
+    border-radius: 6px;
+    padding: 3px 8px;
+    margin: 0 -8px;
+  }
+  .calc-divider {
+    border: 0;
+    border-top: 1px dashed #d1d5db;
+    margin: 10px 0;
+  }
+</style>
+<div class="admin-page" data-admin-dir>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Page Header -->
+    <div class="scroll-fade-in" style="transition-delay: 0s;">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{ title }}</h1>
+          <p class="mt-1 text-sm text-slate-500">খতিয়ান নং: <strong>{{ data.khata_number|default('') }}</strong> — মালিক:
+            {% if data.owners is defined and data.owners|length > 0 %}
+              {{ data.owners[0].name|default('') }}{% if data.owners|length > 1 %} (+{{ (data.owners|length - 1) }} জন){% endif %}
+            {% else %}
+              {{ data.owner_name|default('') }}
+            {% endif %}
+          </p>
+        </div>
+        <span class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          রেকর্ড #{{ record.id }}
+        </span>
+      </div>
+    </div>
+
+    <form action="/admin/kharij/update/{{ record.id }}" method="POST" id="kharijForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="space-y-5">
+
+        <!-- ১. মূল পরিচিতি ও অবস্থান -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.05s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-indigo-100 text-indigo-600">📍</div>
+              <div>
+                <h5 class="text-base font-bold text-slate-900">মূল পরিচিতি ও অবস্থান</h5>
+                <p class="text-xs text-slate-500 mt-0.5">জমির অবস্থান ও আনুষঙ্গিক তথ্য</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div class="kharij-field-group">
+                <label for="khata_number" class="block text-sm font-semibold text-slate-700 mb-1.5">খতিয়ান নম্বর <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="khata_number" id="khata_number" value="{{ data.khata_number|default('') }}" required placeholder="যেমন: ৮৮২">
+                <span class="field-icon">#</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="mouza" class="block text-sm font-semibold text-slate-700 mb-1.5">মৌজা <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="mouza" id="mouza" value="{{ data.mouza|default('') }}" required placeholder="জমিটি যে মৌজায় অবস্থিত">
+                <span class="field-icon">🏘</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="jl_number" class="block text-sm font-semibold text-slate-700 mb-1.5">জে.এল. নম্বর</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="jl_number" id="jl_number" value="{{ data.jl_number|default('') }}" placeholder="Jurisdiction List নম্বর">
+                <span class="field-icon">📋</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="upazila" class="block text-sm font-semibold text-slate-700 mb-1.5">উপজেলা/থানা <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="upazila" id="upazila" value="{{ data.upazila|default('') }}" required placeholder="প্রশাসনিক উপজেলা">
+                <span class="field-icon">🏛</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="district" class="block text-sm font-semibold text-slate-700 mb-1.5">জেলা <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="district" id="district" value="{{ data.district|default('') }}" required placeholder="জমির প্রশাসনিক জেলা">
+                <span class="field-icon">🗺</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ২. মালিক ও অংশীদারদের বিবরণ (ডায়নামিক মালিক ব্যবস্থা) -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.1s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-emerald-100 text-emerald-600">👥</div>
+              <div class="flex-1">
+                <h5 class="text-base font-bold text-slate-900">মালিক ও অংশীদারদের বিবরণ</h5>
+                <p class="text-xs text-slate-500 mt-0.5">একাধিক মালিক যোগ করতে "+ আরও মালিক" বাটন ব্যবহার করুন</p>
+              </div>
+              <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-3 py-1 rounded-full" id="owner-count-badge">{% if data.owners is defined and data.owners|length > 0 %}{{ data.owners|length }} জন মালিক{% else %}১ জন মালিক{% endif %}</span>
+            </div>
+          </div>
+          <div class="p-6" id="owners-container"
+            {% if data.owners is defined and data.owners|length > 0 %}
+            data-owners='{{ data.owners|json_encode|e("html_attr") }}'
+            {% endif %}
+          >
+            <!-- Owners are injected here by JavaScript -->
+          </div>
+          <div class="px-6 pb-6 flex items-center gap-3">
+            <button type="button" id="add-owner-btn" class="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 px-5 py-3 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:border-emerald-400 hover:bg-emerald-100/50 hover:text-emerald-800 active:scale-[0.97]">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              আরও মালিক যোগ করুন
+            </button>
+          </div>
+        </div>
+
+        <!-- ৩. জমির সুনির্দিষ্ট বিবরণ -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.15s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-amber-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-amber-100 text-amber-600">🌾</div>
+              <div>
+                <h5 class="text-base font-bold text-slate-900">জমির সুনির্দিষ্ট বিবরণ</h5>
+                <p class="text-xs text-slate-500 mt-0.5">প্লট নম্বর, শ্রেণী ও জমির পরিমাণ সংক্রান্ত তথ্য</p>
+              </div>
+              <button type="button" id="toggle-land-calc" class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:border-amber-300 active:scale-[0.97]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                ক্যালকুলেটর
+              </button>
+            </div>
+          </div>
+          <div class="p-6">
+
+            <!-- Land Calculator Panel (hidden by default) -->
+            <div class="land-calc-panel" id="land-calc-panel">
+              <div class="calc-header">🧮 জমির ক্যালকুলেটর</div>
+              <div class="calc-body">
+                <div class="calc-row">
+                  <label>রূপান্তর:</label>
+                  <input type="number" step="any" class="calc-input" id="calc-input-value" placeholder="মান লিখুন">
+                  <select class="calc-select" id="calc-input-unit">
+                    <option value="acre">একর</option>
+                    <option value="shottangsho" selected>শতাংশ</option>
+                    <option value="sqft">বর্গফুট</option>
+                  </select>
+                  <button type="button" class="calc-btn calc-btn-primary" id="calc-convert-btn">→ রূপান্তর</button>
+                </div>
+                <div id="calc-results" class="calc-result-grid">
+                  <div class="calc-result-item"><span>একর:</span><strong>—</strong></div>
+                  <div class="calc-result-item"><span>শতাংশ:</span><strong>—</strong></div>
+                  <div class="calc-result-item"><span>বর্গফুট:</span><strong>—</strong></div>
+                  <div class="calc-result-item"><span>কাঠা (৭২০ বর্গফুট):</span><strong>—</strong></div>
+                  <div class="calc-result-item"><span>বিঘা (৩৩ শতাংশ):</span><strong>—</strong></div>
+                  <div class="calc-result-item"><span>হেক্টর:</span><strong>—</strong></div>
+                </div>
+                <hr class="calc-divider">
+                <div class="calc-row">
+                  <label>দ্রুত গণনা:</label>
+                  <button type="button" class="calc-btn calc-btn-success" id="calc-auto-fill">স্বয়ংক্রিয় পূরণ</button>
+                  <span style="font-size:11px;color:#94a3b8;">ফর্মের তথ্য অনুযায়ী জমির পরিমাণ স্বয়ংক্রিয়ভাবে গণনা করে</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div class="kharij-field-group">
+                <label for="dag_number" class="block text-sm font-semibold text-slate-700 mb-1.5">দাগ/প্লট নম্বর <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dag_number" id="dag_number" value="{{ data.dag_number|default('0') }}" required placeholder="মৌজা ম্যাপ অনুযায়ী প্লট নম্বর">
+                <span class="field-icon">📍</span>
+              </div>
+              <div>
+                <label for="land_type" class="block text-sm font-semibold text-slate-700 mb-1.5">জমির শ্রেণী</label>
+                <div class="relative">
+                  <select class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 appearance-none" name="land_type" id="land_type">
+                    <option value="">-- নির্বাচন করুন --</option>
+                    <option value="নাল" {{ data.land_type == 'নাল' ? 'selected' : '' }}>নাল</option>
+                    <option value="ভিটা" {{ data.land_type == 'ভিটা' ? 'selected' : '' }}>ভিটা</option>
+                    <option value="দালান" {{ data.land_type == 'দালান' ? 'selected' : '' }}>দালান</option>
+                    <option value="ডোবা" {{ data.land_type == 'ডোবা' ? 'selected' : '' }}>ডোবা</option>
+                    <option value="বাগান" {{ data.land_type == 'বাগান' ? 'selected' : '' }}>বাগান</option>
+                    <option value="ধানি" {{ data.land_type == 'ধানি' ? 'selected' : '' }}>ধানি</option>
+                    <option value="পুকুর" {{ data.land_type == 'পুকুর' ? 'selected' : '' }}>পুকুর</option>
+                    <option value="অন্যান্য" {{ data.land_type == 'অন্যান্য' ? 'selected' : '' }}>অন্যান্য</option>
+                  </select>
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="kharij-field-group">
+                <label for="total_land_area" class="block text-sm font-semibold text-slate-700 mb-1.5">মোট জমির পরিমাণ (একর) <span class="text-rose-500">*</span></label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_land_area" id="total_land_area" value="{{ data.total_land_area|default('0') }}" required placeholder="একর/শতক/হেক্টরে">
+                <span class="field-icon">📐</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="dag_area_shottangsho" class="block text-sm font-semibold text-slate-700 mb-1.5">মোট জমির পরিমাণ (শতাংশ)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dag_area_shottangsho" id="dag_area_shottangsho" value="{{ data.dag_area_shottangsho|default('0') }}" placeholder="শতাংশে জমির পরিমাণ">
+                <span class="field-icon">📏</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="khash_area_shottangsho" class="block text-sm font-semibold text-slate-700 mb-1.5">অংশানুযায়ী জমি (শতাংশ)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="khash_area_shottangsho" id="khash_area_shottangsho" value="{{ data.khash_area_shottangsho|default('0') }}" placeholder="অংশানুযায়ী জমির শতাংশ">
+                <span class="field-icon">📏</span>
+              </div>
+              <div class="kharij-field-group sm:col-span-2">
+                <label for="inherited_area" class="block text-sm font-semibold text-slate-700 mb-1.5">মালিকের অংশের পরিমাণ</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="inherited_area" id="inherited_area" value="{{ data.inherited_area|default('0') }}" placeholder="নির্দিষ্ট মালিকের অংশের মোট পরিমাণ">
+                <span class="field-icon">📏</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="agriculture_area" class="block text-sm font-semibold text-slate-700 mb-1.5">কৃষি জমি (৫-ক)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="agriculture_area" id="agriculture_area" value="{{ data.agriculture_area|default('0') }}" placeholder="কৃষি জমির পরিমাণ">
+                <span class="field-icon">🌾</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="non_agriculture_area" class="block text-sm font-semibold text-slate-700 mb-1.5">অকৃষি জমি (৫-খ)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="non_agriculture_area" id="non_agriculture_area" value="{{ data.non_agriculture_area|default('0') }}" placeholder="অকৃষি জমির পরিমাণ">
+                <span class="field-icon">🏗️</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="total_dag_area" class="block text-sm font-semibold text-slate-700 mb-1.5">দাগের মোট জমি (একর) (৬-ক)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_dag_area" id="total_dag_area" value="{{ data.total_dag_area|default('0') }}" placeholder="একর">
+                <span class="field-icon">📐</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="single_area" class="block text-sm font-semibold text-slate-700 mb-1.5">খতিয়ানের অংশ (৭)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="single_area" id="single_area" value="{{ data.single_area|default('0') }}" placeholder="দাগের মধ্যে অত্র খতিয়ানের অংশ">
+                <span class="field-icon">📊</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="khash_area" class="block text-sm font-semibold text-slate-700 mb-1.5">অংশানুযায়ী জমি (একর) (৮-ক)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="khash_area" id="khash_area" value="{{ data.khash_area|default('0') }}" placeholder="অংশানুযায়ী জমি একর">
+                <span class="field-icon">📏</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ৪. রাজস্ব ও কর সংক্রান্ত তথ্য -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.2s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-sky-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-sky-100 text-sky-600">💰</div>
+              <div>
+                <h5 class="text-base font-bold text-slate-900">রাজস্ব ও কর সংক্রান্ত তথ্য</h5>
+                <p class="text-xs text-slate-500 mt-0.5">ভূমি উন্নয়ন কর, খাজনা ও অন্যান্য তথ্য</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div class="kharij-field-group">
+                <label for="land_development_tax" class="block text-sm font-semibold text-slate-700 mb-1.5">ভূমি উন্নয়ন কর/খাজনা</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="land_development_tax" id="land_development_tax" value="{{ data.land_development_tax|default('0') }}" placeholder="বার্ষিক কত টাকা খাজনা দিতে হবে">
+                <span class="field-icon">💵</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="total_dag_area_summary_acre" class="block text-sm font-semibold text-slate-700 mb-1.5">সারসংক্ষেপ মোট জমি (একর)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_dag_area_summary_acre" id="total_dag_area_summary_acre" value="{{ data.total_dag_area_summary_acre|default('0') }}" placeholder="০">
+                <span class="field-icon">📊</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="total_dag_area_summary_shottangsho" class="block text-sm font-semibold text-slate-700 mb-1.5">সারসংক্ষেপ মোট জমি (শতাংশ)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_dag_area_summary_shottangsho" id="total_dag_area_summary_shottangsho" value="{{ data.total_dag_area_summary_shottangsho|default('0') }}" placeholder="০">
+                <span class="field-icon">📊</span>
+              </div>
+              <!-- Hidden total_share for calculator -->
+              <input type="hidden" name="total_share" id="total_share" value="{{ data.total_share|default('1.000') }}">
+              <div class="kharij-field-group sm:col-span-2">
+                <label for="total_land_words" class="block text-sm font-semibold text-slate-700 mb-1.5">কথায় জমির পরিমাণ</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_land_words" id="total_land_words" value="{{ data.total_land_words|default('') }}" placeholder="যেমন: ০ একর ০ শতক ০ অনুস্বার ০০ লক্ষাংশ">
+                <span class="field-icon">📝</span>
+              </div>
+              <div>
+                <label for="remarks" class="block text-sm font-semibold text-slate-700 mb-1.5">মন্তব্য</label>
+                <textarea class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 resize-none" name="remarks" id="remarks" rows="2" placeholder="জমিটি কোনো বিশেষ শর্তে আছে কিনা">{{ data.remarks|default('') }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ৫. আবেদন সংক্রান্ত তথ্য -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.22s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-violet-100 text-violet-600">📋</div>
+              <div>
+                <h5 class="text-base font-bold text-slate-900">আবেদন সংক্রান্ত তথ্য</h5>
+                <p class="text-xs text-slate-500 mt-0.5">আবেদন নম্বর, তারিখ, মিউটেশন মামলা ও ডিসিআর</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div class="kharij-field-group">
+                <label for="application_no" class="block text-sm font-semibold text-slate-700 mb-1.5">আবেদন নম্বর</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="application_no" id="application_no" value="{{ data.application_no|default('') }}" placeholder="আবেদনের রেফারেন্স নম্বর">
+                <span class="field-icon">🔢</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="application_date" class="block text-sm font-semibold text-slate-700 mb-1.5">আবেদনের তারিখ</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="application_date" id="application_date" value="{{ data.application_date|default('') }}" placeholder="dd/mm/yyyy">
+                <span class="field-icon">📅</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="mutation_case_no" class="block text-sm font-semibold text-slate-700 mb-1.5">মিউটেশন মামলা নং</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="mutation_case_no" id="mutation_case_no" value="{{ data.mutation_case_no|default('') }}" placeholder="মিউটেশন মামলার নম্বর">
+                <span class="field-icon">⚖️</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="online_dcr_no" class="block text-sm font-semibold text-slate-700 mb-1.5">অনলাইন ডিসিআর নং</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="online_dcr_no" id="online_dcr_no" value="{{ data.online_dcr_no|default('') }}" placeholder="অনলাইন ডিসিআর নম্বর">
+                <span class="field-icon">🖥️</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="scroll-fade-in" style="transition-delay: 0.25s;">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 pb-4">
+            <p class="text-xs text-slate-400">
+              <span class="inline-flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                পরিবর্তন সংরক্ষণ করতে ফর্মটি জমা দিন
+              </span>
+            </p>
+            <div class="flex items-center gap-3">
+              <a href="/admin/kharij" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.97]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                বাতিল
+              </a>
+              <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-transparent bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/30 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-indigo-500/40">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                সংরক্ষণ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<script>
+(function() {
+  'use strict';
+
+  var OWNER_TEMPLATE = '\
+    <div class="owner-entry rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" data-owner-index="__INDEX__">\
+      <div class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">\
+        <span class="text-sm font-semibold text-slate-700 owner-number-badge">\u09AE\u09BE\u09B2\u09BF\u0995 #__DISPLAY__</span>\
+        <button type="button" class="remove-owner-btn inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.97]">\
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>\
+          \u09B8\u09B0\u09BE\u09A8\
+        </button>\
+      </div>\
+      <div class="p-5">\
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09A8\u09BE\u09AE <span class="text-rose-500">*</span></label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][name]" required placeholder="\u099C\u09AE\u09BF\u09B0 \u09AA\u09CD\u09B0\u0995\u09C3\u09A4 \u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09A8\u09BE\u09AE" data-owner-field="name">\
+            <span class="field-icon" style="top: 36px;">\uD83D\uDC64</span>\
+          </div>\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AA\u09BF\u09A4\u09BE/\u09B8\u09CD\u09AC\u09BE\u09AE\u09C0\u09B0 \u09A8\u09BE\u09AE</label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][father_or_husband_name]" placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09AA\u09BF\u09A4\u09BE \u09AC\u09BE \u09B8\u09CD\u09AC\u09BE\u09AE\u09C0\u09B0 \u09A8\u09BE\u09AE" data-owner-field="father_or_husband_name">\
+            <span class="field-icon" style="top: 36px;">\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67</span>\
+          </div>\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AE\u09BE\u09A4\u09BE\u09B0 \u09A8\u09BE\u09AE</label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][mothers_name]" placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09AE\u09BE\u09A4\u09BE\u09B0 \u09A8\u09BE\u09AE" data-owner-field="mothers_name">\
+            <span class="field-icon" style="top: 36px;">\uD83D\uDC69</span>\
+          </div>\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u099C\u09BE\u09A4\u09C0\u09AF\u09BC \u09AA\u09B0\u09BF\u099A\u09AF\u09BC\u09AA\u09A4\u09CD\u09B0 \u09A8\u0982</label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][nid_number]" placeholder="\u098F\u09A8\u0986\u0987\u09A1\u09BF \u09A8\u09AE\u09CD\u09AC\u09B0 (\u0990\u099B\u09BF\u0995\u09CD\u09AF)" data-owner-field="nid_number">\
+            <span class="field-icon" style="top: 36px;">\uD83E\uDEAA</span>\
+          </div>\
+          <div class="kharij-field-group sm:col-span-2">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09A0\u09BF\u0995\u09BE\u09A8\u09BE <span class="text-rose-500">*</span></label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][address]" required placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A0\u09BF\u0995\u09BE\u09A8\u09BE" data-owner-field="address">\
+            <span class="field-icon" style="top: 36px;">\uD83D\uDCCD</span>\
+          </div>\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u0985\u0982\u09B6 <span class="text-rose-500">*</span></label>\
+            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][share]" required placeholder="\u09AF\u09C7\u09AE\u09A8: \u09E7/\u09EA \u09AC\u09BE \u09EA \u0986\u09A8\u09BE" data-owner-field="share">\
+            <span class="field-icon" style="top: 36px;">\uD83E\uDDEE</span>\
+          </div>\
+        </div>\
+      </div>\
+    </div>\
+  ';
+
+  function updateBadge(count) {
+    var badge = document.getElementById('owner-count-badge');
+    if (badge) badge.textContent = count + " \u099C\u09A8 \u09AE\u09BE\u09B2\u09BF\u0995";
+  }
+
+  function reindexOwners() {
+    var entries = document.querySelectorAll('#owners-container .owner-entry');
+    entries.forEach(function(entry, idx) {
+      var displayNum = idx + 1;
+      entry.dataset.ownerIndex = idx;
+      var badge = entry.querySelector('.owner-number-badge');
+      if (badge) badge.textContent = "\u09AE\u09BE\u09B2\u09BF\u0995 #" + displayNum;
+      var inputs = entry.querySelectorAll('[name^="owners["]');
+      inputs.forEach(function(input) {
+        var fieldName = input.dataset.ownerField;
+        if (fieldName) {
+          input.name = 'owners[' + idx + '][' + fieldName + ']';
+          input.id = 'owner_' + idx + '_' + fieldName;
+        }
+      });
+    });
+    updateBadge(entries.length);
+  }
+
+  function createOwnerEntry(data) {
+    var container = document.getElementById('owners-container');
+    var entryCount = container.querySelectorAll('.owner-entry').length;
+    var html = OWNER_TEMPLATE
+      .replace(/__INDEX__/g, entryCount)
+      .replace(/__DISPLAY__/g, entryCount + 1);
+
+    var temp = document.createElement('div');
+    temp.innerHTML = html.trim();
+    var entry = temp.firstChild;
+
+    if (data) {
+      var fields = ['name', 'father_or_husband_name', 'mothers_name', 'nid_number', 'address', 'share'];
+      fields.forEach(function(f) {
+        if (data[f]) {
+          var input = entry.querySelector('[data-owner-field="' + f + '"]');
+          if (input) input.value = data[f];
+        }
+      });
+    }
+
+    container.appendChild(entry);
+    reindexOwners();
+  }
+
+  function init() {
+    var container = document.getElementById('owners-container');
+    if (!container) return;
+
+    // Check for pre-populated owners data (from data-owners attribute)
+    var ownersData = container.getAttribute('data-owners');
+    if (ownersData) {
+      try {
+        var owners = JSON.parse(ownersData);
+        if (Array.isArray(owners) && owners.length > 0) {
+          owners.forEach(function(owner) { createOwnerEntry(owner); });
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // Fallback: build from old single fields
+    var initialOwner = {};
+    var nameInput = document.querySelector('[name="owner_name"]');
+    if (nameInput && nameInput.value) initialOwner.name = nameInput.value;
+    var fatherInput = document.querySelector('[name="father_or_husband_name"]');
+    if (fatherInput && fatherInput.value) initialOwner.father_or_husband_name = fatherInput.value;
+    var motherInput = document.querySelector('[name="mothers_name"]');
+    if (motherInput && motherInput.value) initialOwner.mothers_name = motherInput.value;
+    var addressInput = document.querySelector('[name="owner_address"]');
+    if (addressInput && addressInput.value) initialOwner.address = addressInput.value;
+    var shareInput = document.querySelector('[name="share"]');
+    if (shareInput && shareInput.value) initialOwner.share = shareInput.value;
+    var nidInput = document.querySelector('[name="nid_number"]');
+    if (nidInput && nidInput.value) initialOwner.nid_number = nidInput.value;
+
+    // Remove old single fields
+    var oldFields = ['owner_name', 'father_or_husband_name', 'mothers_name', 'owner_address', 'share', 'nid_number'];
+    oldFields.forEach(function(f) {
+      var el = document.querySelector('[name="' + f + '"]');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+
+    // Fallback to Twig data
+    if (!initialOwner.name) {
+      initialOwner.name = '{{ data.owner_name|default("")|e("js") }}';
+      initialOwner.father_or_husband_name = '{{ data.father_or_husband_name|default("")|e("js") }}';
+      initialOwner.mothers_name = '{{ data.mothers_name|default("")|e("js") }}';
+      initialOwner.address = '{{ data.owner_address|default("")|e("js") }}';
+      initialOwner.share = '{{ data.share|default("")|e("js") }}';
+      initialOwner.nid_number = '{{ data.nid_number|default("")|e("js") }}';
+    }
+
+    createOwnerEntry(initialOwner);
+
+    var addBtn = document.getElementById('add-owner-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() { createOwnerEntry(null); });
+    }
+
+    container.addEventListener('click', function(e) {
+      var removeBtn = e.target.closest('.remove-owner-btn');
+      if (!removeBtn) return;
+      var entry = removeBtn.closest('.owner-entry');
+      if (entry) {
+        var count = container.querySelectorAll('.owner-entry').length;
+        if (count <= 1) {
+          alert('\u0985\u09A8\u09CD\u09A4\u09A4 \u098F\u0995\u099C\u09A8 \u09AE\u09BE\u09B2\u09BF\u0995 \u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7\u0964');
+          return;
+        }
+        if (confirm('\u098F\u0987 \u09AE\u09BE\u09B2\u09BF\u0995\u0995\u09C7 \u09B8\u09B0\u09BE\u09A4\u09C7 \u099A\u09BE\u09A8?')) {
+          entry.remove();
+          reindexOwners();
+        }
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+<script>
+/**
+ * Kharij Land Calculator — automatic unit conversion & field calculation
+ */
+(function() {
+  'use strict';
+
+  // Bangladeshi land unit constants
+  var SHOTTANGSHO_PER_ACRE = 100;
+  var SQFT_PER_SHOTTANGSHO = 435.6;
+  var SQFT_PER_ACRE = 43560;
+
+  // Convert Bengali digits (০-৯) to English digits (0-9)
+  function bnToEn(str) {
+    if (!str) return str;
+    // Unicode: ০=U+09E6, ১=U+09E7, ..., ৯=U+09EF
+    return str.replace(/[\u09E6-\u09EF]/g, function(m) {
+      return String.fromCharCode(m.charCodeAt(0) - 0x09E6 + 48);
+    });
+  }
+
+  // Parse a numeric value from an input field (handles Bengali & English digits)
+  function parseNum(val) {
+    if (!val || val === '') return NaN;
+    var cleaned = bnToEn(val).replace(/[^\d.]/g, '');
+    return parseFloat(cleaned);
+  }
+
+  // Format a number for display (remove trailing zeros after decimal)
+  function fmt(n) {
+    if (isNaN(n) || n === 0) return '0';
+    return n.toFixed(4).replace(/\.?0+$/, '');
+  }
+
+  // Auto-calculate dag_area_shottangsho from total_land_area
+  function calcLandArea() {
+    var tla = document.getElementById('total_land_area');
+    var das = document.getElementById('dag_area_shottangsho');
+    if (!tla || !das) return;
+    var acres = parseNum(tla.value);
+    if (!isNaN(acres) && acres > 0) {
+      das.value = fmt(acres * SHOTTANGSHO_PER_ACRE);
+    }
+  }
+
+  // Auto-calculate total_dag_area from agriculture + non_agriculture
+  function calcTotalDag() {
+    var agri = document.getElementById('agriculture_area');
+    var nonAgri = document.getElementById('non_agriculture_area');
+    var total = document.getElementById('total_dag_area');
+    if (!agri || !nonAgri || !total) return;
+    var a = parseNum(agri.value);
+    var na = parseNum(nonAgri.value);
+    if (!isNaN(a) && !isNaN(na)) {
+      total.value = fmt(a + na);
+    }
+  }
+
+  // Auto-calculate single_area from total_dag_area and total_share
+  function calcSingle() {
+    var dag = document.getElementById('total_dag_area');
+    var share = document.getElementById('total_share');
+    var single = document.getElementById('single_area');
+    if (!dag || !share || !single) return;
+    var d = parseNum(dag.value);
+    var s = parseNum(share.value);
+    if (!isNaN(d) && !isNaN(s) && s > 0) {
+      single.value = fmt(d / s);
+    }
+  }
+
+  // Auto-calculate khash_area and khash_area_shottangsho from single_area
+  function calcKhash() {
+    var single = document.getElementById('single_area');
+    var khash = document.getElementById('khash_area');
+    var khashStg = document.getElementById('khash_area_shottangsho');
+    if (!single || !khash || !khashStg) return;
+    var s = parseNum(single.value);
+    if (!isNaN(s) && s > 0) {
+      khash.value = fmt(s);
+      khashStg.value = fmt(s * SHOTTANGSHO_PER_ACRE);
+    }
+  }
+
+  // Auto-calculate summary fields
+  function calcSummary() {
+    var dagAcr = document.getElementById('total_dag_area_summary_acre');
+    var dagStg = document.getElementById('total_dag_area_summary_shottangsho');
+    var dag = document.getElementById('total_dag_area');
+    if (!dagAcr || !dagStg || !dag) return;
+    var d = parseNum(dag.value);
+    if (!isNaN(d) && d > 0) {
+      dagAcr.value = fmt(d);
+      dagStg.value = fmt(d * SHOTTANGSHO_PER_ACRE);
+    }
+  }
+
+  // Run all auto-calculations
+  function runAll() {
+    calcLandArea();
+    calcTotalDag();
+    calcSingle();
+    calcKhash();
+    calcSummary();
+  }
+
+  // Unit converter
+  function doConvert() {
+    var input = document.getElementById('calc-input-value');
+    var unit = document.getElementById('calc-input-unit');
+    var results = document.getElementById('calc-results');
+    if (!input || !unit || !results) return;
+
+    var val = parseFloat(input.value);
+    if (isNaN(val) || val <= 0) {
+      results.innerHTML = '<div class="calc-result-item" style="grid-column:1/-1;color:#94a3b8;">একটি বৈধ সংখ্যা লিখুন</div>';
+      return;
+    }
+
+    var acres, stg, sqft;
+    switch (unit.value) {
+      case 'acre': acres = val; stg = val * SHOTTANGSHO_PER_ACRE; sqft = val * SQFT_PER_ACRE; break;
+      case 'shottangsho': stg = val; acres = val / SHOTTANGSHO_PER_ACRE; sqft = val * SQFT_PER_SHOTTANGSHO; break;
+      case 'sqft': sqft = val; acres = val / SQFT_PER_ACRE; stg = val / SQFT_PER_SHOTTANGSHO; break;
+    }
+
+    results.innerHTML =
+      '<div class="calc-result-item"><span>একর:</span><strong>' + fmt(acres) + '</strong></div>' +
+      '<div class="calc-result-item"><span>শতাংশ:</span><strong>' + fmt(stg) + '</strong></div>' +
+      '<div class="calc-result-item"><span>বর্গফুট:</span><strong>' + Math.round(sqft).toLocaleString() + '</strong></div>' +
+      '<div class="calc-result-item"><span>কাঠা (৭২০ বর্গফুট):</span><strong>' + fmt(sqft / 720) + '</strong></div>' +
+      '<div class="calc-result-item"><span>বিঘা (৩৩ শতাংশ):</span><strong>' + fmt(stg / 33) + '</strong></div>' +
+      '<div class="calc-result-item"><span>হেক্টর:</span><strong>' + fmt(acres / 2.471) + '</strong></div>';
+  }
+
+  function init() {
+    var toggle = document.getElementById('toggle-land-calc');
+    var panel = document.getElementById('land-calc-panel');
+    if (toggle && panel) {
+      toggle.addEventListener('click', function() {
+        panel.classList.toggle('open');
+        toggle.classList.toggle('bg-amber-200');
+      });
+    }
+
+    // Auto-calc on input change
+    var fieldIds = ['total_land_area', 'dag_area_shottangsho', 'agriculture_area', 'non_agriculture_area', 'total_dag_area', 'total_share', 'single_area'];
+    fieldIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', runAll);
+        el.addEventListener('change', runAll);
+      }
+    });
+
+    // Convert button
+    var convertBtn = document.getElementById('calc-convert-btn');
+    if (convertBtn) {
+      convertBtn.addEventListener('click', doConvert);
+      var cvInput = document.getElementById('calc-input-value');
+      var cvUnit = document.getElementById('calc-input-unit');
+      if (cvInput) cvInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doConvert(); });
+    }
+
+    // Auto-fill button
+    var autoBtn = document.getElementById('calc-auto-fill');
+    if (autoBtn) {
+      autoBtn.addEventListener('click', runAll);
+    }
+
+    // Run initial calculation after a brief delay
+    setTimeout(runAll, 200);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+{% endblock %}

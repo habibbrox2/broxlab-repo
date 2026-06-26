@@ -80,7 +80,7 @@ if (!function_exists('mpdf_default_config')) {
     function mpdf_default_config(array $overrides = []): array
     {
         $tempDir = mpdf_temp_dir();
-        $fontPath = dirname(__DIR__, 1) . '/public_html/assets/fonts';
+        $fontPath = dirname(__DIR__, 2) . '/public_html/assets/fonts';
         $fontSolaiman = 'SolaimanLipi.ttf';
         $fontNikosh = 'Nikosh.ttf';
         $fontHelvetica = 'Helvetica.ttf';
@@ -115,6 +115,7 @@ if (!function_exists('mpdf_default_config')) {
             'fontDir' => is_dir($fontPath) ? array_merge($fontDirs, [$fontPath]) : $fontDirs,
             'fontdata' => $fontData + $customFontData,
             'default_font' => isset($customFontData['solaimanlipi']) ? 'solaimanlipi' : 'dejavusans',
+            'defaultFontSize' => 9.5,
             'margin_left' => 5,
             'margin_right' => 5,
             'margin_top' => 5,
