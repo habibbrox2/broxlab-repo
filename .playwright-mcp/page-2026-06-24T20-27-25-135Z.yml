@@ -1,0 +1,40 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "Logo" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=e7]
+        - link "Logo" [ref=e8] [cursor=pointer]:
+          - /url: /
+          - img "Logo" [ref=e9]
+      - generic [ref=e12]: বৃহস্পতিবার, ২5 জুন ২০২6
+  - table [ref=e19]:
+    - rowgroup [ref=e20]:
+      - row "খতিয়ান এর পূর্ণাঙ্গ তথ্য দেখতে হলে \"খতিয়ান ডাউনলোড\" বাটনে ক্লিক করে খতিয়ান ডাউনলোড করুন" [ref=e21]:
+        - cell "খতিয়ান এর পূর্ণাঙ্গ তথ্য দেখতে হলে \"খতিয়ান ডাউনলোড\" বাটনে ক্লিক করে খতিয়ান ডাউনলোড করুন" [ref=e22]
+      - row "ভূমি অফিস এর ঠিকানা" [ref=e23]:
+        - cell "ভূমি অফিস এর ঠিকানা" [ref=e24]
+        - cell [ref=e25]
+      - row "খতিয়ান নং" [ref=e26]:
+        - cell "খতিয়ান নং" [ref=e27]
+        - cell [ref=e28]
+      - row "আবেদন নম্বর" [ref=e29]:
+        - cell "আবেদন নম্বর" [ref=e30]
+        - cell [ref=e31]
+      - row "আবেদনের তারিখ" [ref=e32]:
+        - cell "আবেদনের তারিখ" [ref=e33]
+        - cell [ref=e34]
+      - row "মিউটেশন মামলা নং" [ref=e35]:
+        - cell "মিউটেশন মামলা নং" [ref=e36]
+        - cell [ref=e37]
+      - row "ডি সি আর নং" [ref=e38]:
+        - cell "ডি সি আর নং" [ref=e39]
+        - cell [ref=e40]
+      - row "মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা" [ref=e41]:
+        - cell "মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা" [ref=e42]
+        - cell [ref=e43]
+      - row "খতিয়ান ডাউনলোড" [ref=e44]:
+        - cell "খতিয়ান ডাউনলোড" [ref=e45]:
+          - link "খতিয়ান ডাউনলোড" [ref=e46] [cursor=pointer]:
+            - /url: /kharij/b73e7dfb/pdf?download=1

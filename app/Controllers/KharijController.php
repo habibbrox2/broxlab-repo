@@ -8,9 +8,13 @@
  *
  * Routes:
  *   Admin (auth + admin_only):
- *     GET  /admin/kharij              → List records
- *     GET  /admin/kharij/create        → Create form
- *     POST /admin/kharij/generate      → Generate PDF and save
+ *     GET  /admin/kharij                      → List records
+ *     GET  /admin/kharij/create                → Create form
+ *     POST /admin/kharij/generate              → Generate PDF and save
+ *     GET  /admin/kharij/edit/{id}           → Edit form
+ *     POST /admin/kharij/update/{id}         → Update record
+ *     POST /admin/kharij/delete/{id}         → Soft delete record
+ *     GET  /admin/kharij/image-download/{id} → Download first page as PNG
  *
  *   Public (no auth):
  *     GET /mutation-land/qr-vk/{hash}                      → Verify page
@@ -95,9 +99,9 @@ $kharijStreamPdf = function (array $data, bool $inline = true) use ($twig): void
     ');
 
     $filename = 'kharij-' . ($data['data']['khata_number'] ?? 'form') . '.pdf';
-    $filename = preg_replace('/[^a-zA-Z0-9_\-\\x{0980}-\\x{09FF}]/u', '_', $filename);
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.\\\\x{0980}-\\\\x{09FF}]/u', '_', $filename);
 
-    $mpdf->SetTitle('খারিজ ফর্ম - ' . ($data['data']['khata_number'] ?? ''));
+    $mpdf->SetTitle('খারিজ ফরম - ' . ($data['data']['khata_number'] ?? ''));
     $mpdf->SetAuthor('BroxLab Kharij System');
     $mpdf->SetSubject('খারিজ (হস্তান্তর) ডকুমেন্ট');
     $mpdf->WriteHTML(mpdf_optimize_html($html));
@@ -114,6 +118,78 @@ $kharijStreamPdf = function (array $data, bool $inline = true) use ($twig): void
     header('Cache-Control: max-age=0');
     header('Pragma: public');
     echo $pdfBinary;
+    exit;
+};
+
+// ============================================================
+// HELPER: Stream first page as PNG image
+// ============================================================
+
+$kharijStreamImage = function (array $data, int $dpi = 150) use ($twig): void {
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
+
+    $html = $twig->render('pdf/kharij-form.twig', $data);
+
+    $mpdf = mpdf_create_instance([
+        'format' => 'A4',
+        'orientation' => 'L',
+        'margin_left' => 10,
+        'margin_right' => 10,
+        'margin_top' => 6,
+        'margin_bottom' => 10,
+    ]);
+
+    if (!$mpdf) {
+        http_response_code(500);
+        echo 'Failed to initialize PDF engine';
+        exit;
+    }
+
+    mpdf_apply_runtime_optimizations($mpdf);
+
+    if (method_exists($mpdf, 'SetDefaultFontSize')) {
+        $mpdf->SetDefaultFontSize(9.5);
+    }
+
+    $watermarkPath = realpath(__DIR__ . '/../../public_html/assets/images/kharij/watermark.png');
+    if ($watermarkPath && is_file($watermarkPath) && method_exists($mpdf, 'SetWatermarkImage')) {
+        $mpdf->SetWatermarkImage($watermarkPath, 0.18, 172);
+        $mpdf->showWatermarkImage = true;
+        $mpdf->watermarkImgBehind = true;
+    }
+
+    $mpdf->SetTitle('খারিজ ফরম - ' . ($data['data']['khata_number'] ?? ''));
+    $mpdf->WriteHTML(mpdf_optimize_html($html));
+
+    $pdfBinary = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+
+    if (!$pdfBinary) {
+        http_response_code(500);
+        echo 'Failed to generate PDF content';
+        exit;
+    }
+
+    $imageBinary = pdf_to_image($pdfBinary, $dpi);
+
+    if (!$imageBinary) {
+        http_response_code(500);
+        echo 'Failed to convert PDF to image. Required: pdftoppm or ImageMagick.';
+        exit;
+    }
+
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+
+    $filename = 'kharij-' . ($data['data']['khata_number'] ?? 'form') . '.png';
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.\\\\x{0980}-\\\\x{09FF}]/u', '_', $filename);
+
+    header('Content-Type: image/png');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($imageBinary));
+    header('Cache-Control: max-age=0');
+    header('Pragma: public');
+    echo $imageBinary;
     exit;
 };
 
@@ -477,6 +553,40 @@ $router->get('/mutation-land/qr-vk/{hash}', function ($hash) use ($twig, $mysqli
         'page_title' => 'খারিজ যাচাইকরণ',
         'current_date_bn' => $currentDateBn,
     ]);
+    exit;
+});
+
+// ============================================================
+// ADMIN ROUTE: Download first page as PNG image
+// GET /admin/kharij/image-download/{id}
+// ============================================================
+
+$router->get('/admin/kharij/image-download/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijStreamImage) {
+    $kharijModel = new KharijModel($mysqli);
+    $id = (int)$id;
+    $record = $kharijModel->findById($id);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'Kharij record not found';
+        exit;
+    }
+
+    $data = $record['data'];
+    $qrDataUri = $kharijGenerateQr($record['hash'] ?? '');
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'images' => [
+            'sign_rezaul' => '/assets/images/kharij/sign-rezaul.png',
+            'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
+            'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
+            'organisation_seal' => '/assets/images/kharij/seal.png',
+            'red_seal' => '/assets/images/kharij/red-seal.png',
+        ],
+    ];
+
+    $kharijStreamImage($templateData, 150);
     exit;
 });
 

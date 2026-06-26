@@ -49,7 +49,7 @@ if (!function_exists('mpdf_temp_dir')) {
             $candidates[] = $configuredBase;
         }
         $candidates[] = $defaultBase;
-        $candidates[] = rtrim($systemBase, '\\/') . DIRECTORY_SEPARATOR . 'broxbhai-tmp';
+        $candidates[] = rtrim($systemBase, '\\/') . DIRECTORY_SEPARATOR . 'brox_pdf';
         $candidates[] = $systemBase;
 
         foreach ($candidates as $candidate) {
@@ -58,14 +58,12 @@ if (!function_exists('mpdf_temp_dir')) {
                 continue;
             }
 
-            // mPDF may create an internal "mpdf" subdirectory under tempDir.
             $mpdfInternalDir = rtrim($candidate, '\\/') . DIRECTORY_SEPARATOR . 'mpdf';
             if (mpdf_is_writable_dir($candidate) && mpdf_is_writable_dir($mpdfInternalDir)) {
                 return $candidate;
             }
         }
 
-        // Last fallback: try the application temp directory even if probes failed.
         return rtrim((string)$defaultBase, '\\/');
     }
 }
@@ -73,9 +71,6 @@ if (!function_exists('mpdf_temp_dir')) {
 if (!function_exists('mpdf_default_config')) {
     /**
      * Return default mPDF configuration with optional overrides.
-     *
-     * @param array<string,mixed> $overrides
-     * @return array<string,mixed>
      */
     function mpdf_default_config(array $overrides = []): array
     {
@@ -135,23 +130,13 @@ if (!function_exists('mpdf_optimize_html')) {
      */
     function mpdf_optimize_html(string $html): string
     {
-        // Remove non-conditional HTML comments.
         $optimized = preg_replace('/<!--(?!\\[if).*?-->/s', '', $html) ?? $html;
-
-        // Collapse whitespace between tags only (safe for content text/pre blocks).
         $optimized = preg_replace('/>\\s+</', '><', $optimized) ?? $optimized;
-
         return $optimized;
     }
 }
 
 if (!function_exists('mpdf_env_value')) {
-    /**
-     * Read env value with $_ENV/getenv fallback.
-     *
-     * @param mixed $default
-     * @return mixed
-     */
     function mpdf_env_value(string $key, $default = null)
     {
         if (array_key_exists($key, $_ENV) && $_ENV[$key] !== null && $_ENV[$key] !== '') {
@@ -170,9 +155,6 @@ if (!function_exists('mpdf_env_value')) {
 if (!function_exists('mpdf_output_destination')) {
     /**
      * Resolve mPDF output destination from options + .env.
-     *
-     * Env:
-     * - MPDF_OUTPUT_MODE=download|inline
      */
     function mpdf_output_destination(array $options = []): string
     {
@@ -196,11 +178,6 @@ if (!function_exists('mpdf_output_destination')) {
 }
 
 if (!function_exists('mpdf_create_instance')) {
-    /**
-     * Create an mPDF instance from shared config.
-     *
-     * @param array<string,mixed> $configOverrides
-     */
     function mpdf_create_instance(array $configOverrides = []): ?\Mpdf\Mpdf
     {
         if (!class_exists(\Mpdf\Mpdf::class)) {
@@ -221,9 +198,6 @@ if (!function_exists('mpdf_create_instance')) {
 }
 
 if (!function_exists('mpdf_apply_runtime_optimizations')) {
-    /**
-     * Apply runtime optimization flags on mPDF instance.
-     */
     function mpdf_apply_runtime_optimizations(\Mpdf\Mpdf $mpdf): void
     {
         if (method_exists($mpdf, 'SetCompression')) {
@@ -245,12 +219,6 @@ if (!function_exists('mpdf_apply_runtime_optimizations')) {
 if (!function_exists('mpdf_download_html')) {
     /**
      * Generate and download a PDF from HTML.
-     *
-     * @param array<string,mixed> $options Supports:
-     * - title: string
-     * - config: array<string,mixed>
-     * - optimize: bool (default true)
-     * - destination: 'I'|'D' (optional override)
      */
     function mpdf_download_html(string $html, string $filename, array $options = []): bool
     {
@@ -291,12 +259,6 @@ if (!function_exists('mpdf_download_html')) {
 if (!function_exists('mpdf_render_html_to_string')) {
     /**
      * Render HTML to PDF binary string (no direct output).
-     *
-     * @param array<string,mixed> $options Supports:
-     * - title: string
-     * - config: array<string,mixed>
-     * - optimize: bool (default true)
-     * @return string|null
      */
     function mpdf_render_html_to_string(string $html, array $options = []): ?string
     {
@@ -333,21 +295,6 @@ if (!function_exists('mpdf_render_html_to_string')) {
 }
 
 if (!function_exists('generatePdf')) {
-    /**
-     * Convenience wrapper for direct controller usage:
-     * generatePdf($htmlContent, "application_copy");
-     *
-     * @param array<string,mixed> $options Supports:
-     * - title: string
-     * - destination: 'I'|'D' (optional)
-     * - optimize: bool
-     * - config: array<string,mixed>
-     * - auto_exit: bool (default true)
-     * - clean_buffer_before_pdf: bool (default true)
-     * - flush_with_return: bool (default false, uses ob_get_flush)
-     * - fail_message: string
-     * - fail_status: int
-     */
     function generatePdf(string $htmlContent, string $filename = 'document', array $options = []): bool
     {
         $name = trim($filename);
@@ -358,7 +305,6 @@ if (!function_exists('generatePdf')) {
             $name .= '.pdf';
         }
 
-        // Allow URL query override: ?output=inline|download
         if (!isset($options['destination'])) {
             $output = strtolower(trim((string)($_GET['output'] ?? '')));
             if (in_array($output, ['inline', 'preview', 'i'], true)) {
@@ -372,7 +318,6 @@ if (!function_exists('generatePdf')) {
         $cleanBufferBeforePdf = !array_key_exists('clean_buffer_before_pdf', $options) || (bool)$options['clean_buffer_before_pdf'];
         $flushWithReturn = !empty($options['flush_with_return']);
 
-        // Ensure active buffer exists so we can safely manage/clean output before PDF headers.
         if (ob_get_level() === 0) {
             ob_start();
         }
@@ -395,7 +340,6 @@ if (!function_exists('generatePdf')) {
             if ($autoExit) {
                 if (ob_get_level() > 0) {
                     if ($flushWithReturn) {
-                        // Send buffer and close it, optionally returning sent data.
                         ob_get_flush();
                     } else {
                         ob_end_flush();
@@ -427,5 +371,69 @@ if (!function_exists('generatePdf')) {
         }
 
         return false;
+    }
+}
+
+if (!function_exists('pdf_to_image')) {
+    /**
+     * Convert PDF (binary) to PNG image (first page only).
+     * Uses pdftoppm if available, falls back to ImageMagick convert.
+     */
+    function pdf_to_image(string $pdfBinary, int $dpi = 150, int $quality = 90): ?string
+    {
+        $tempPdf = tempnam(sys_get_temp_dir(), 'kharij_img_');
+        if ($tempPdf === false) {
+            return null;
+        }
+        $pdfPath = $tempPdf . '.pdf';
+        rename($tempPdf, $pdfPath);
+
+        if (file_put_contents($pdfPath, $pdfBinary) === false) {
+            @unlink($pdfPath);
+            return null;
+        }
+
+        $tempImg = tempnam(sys_get_temp_dir(), 'kharij_img_out_');
+        if ($tempImg === false) {
+            @unlink($pdfPath);
+            return null;
+        }
+        $imgPath = $tempImg . '.png';
+        rename($tempImg, $imgPath);
+
+        $success = false;
+
+        if (function_exists('exec')) {
+            $cmd = sprintf('pdftoppm -png -r %d -f 1 -l 1 %s %s 2>&1', $dpi, escapeshellarg($pdfPath), escapeshellarg($tempImg));
+            @exec($cmd, $output, $returnVar);
+
+            if ($returnVar === 0) {
+                $firstPageImg = $tempImg . '-1.png';
+                if (file_exists($firstPageImg)) {
+                    $success = true;
+                    rename($firstPageImg, $imgPath);
+                }
+            }
+
+            if (!$success) {
+                $imagickCmd = sprintf('magick convert -density %d -quality %d %s[0] %s 2>&1', $dpi, $quality, escapeshellarg($pdfPath), escapeshellarg($imgPath));
+                @exec($imagickCmd, $output, $returnVar);
+                if ($returnVar === 0 && file_exists($imgPath)) {
+                    $success = true;
+                }
+            }
+        }
+
+        if (!$success) {
+            @unlink($pdfPath);
+            @unlink($imgPath);
+            return null;
+        }
+
+        $imageBinary = file_get_contents($imgPath);
+        @unlink($pdfPath);
+        @unlink($imgPath);
+
+        return $imageBinary ?: null;
     }
 }

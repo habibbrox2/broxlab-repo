@@ -1,0 +1,155 @@
+- application [active] [ref=e1]:
+  - text: 
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - navigation "Primary navigation" [ref=e5]:
+      - link "BroxLab" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e8]: 
+      - button "Toggle navigation menu" [ref=e9] [cursor=pointer]:
+        - img [ref=e10]
+      - text:    
+      - generic [ref=e12]:
+        - link "Login" [ref=e13] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e14]: 
+          - text: Login
+        - link "Join Now" [ref=e15] [cursor=pointer]:
+          - /url: /register
+          - generic [ref=e16]: 
+        - button "Switch to dark mode" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 
+          - text: 
+        - button "বাংলায় পরিবর্তন করুন" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+  - main [ref=e31]:
+    - generic [ref=e33]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e38]: Page Not Found
+          - generic [ref=e40]: "404"
+          - generic [ref=e42]: 
+        - generic [ref=e43]:
+          - heading "Page Not Found" [level=1] [ref=e44]
+          - paragraph [ref=e45]: 404 Not Found
+          - generic [ref=e46]:
+            - link " Go Home" [ref=e47] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e48]: 
+              - text: Go Home
+            - button " Go Back" [ref=e49] [cursor=pointer]:
+              - generic [ref=e50]: 
+              - text: Go Back
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Search
+          - paragraph [ref=e54]: Can't find what you're looking for?
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - generic: 
+              - textbox "Search" [ref=e57]:
+                - /placeholder: Search our website...
+            - button "Search" [ref=e58] [cursor=pointer]
+        - generic [ref=e59]:
+          - link " Home" [ref=e60] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e62]: 
+            - paragraph [ref=e63]: Home
+          - link " Contact" [ref=e64] [cursor=pointer]:
+            - /url: /contact
+            - generic [ref=e66]: 
+            - paragraph [ref=e67]: Contact
+          - link " About" [ref=e68] [cursor=pointer]:
+            - /url: /about-us
+            - generic [ref=e70]: 
+            - paragraph [ref=e71]: About
+          - link " Sitemap" [ref=e72] [cursor=pointer]:
+            - /url: /sitemap
+            - generic [ref=e74]: 
+            - paragraph [ref=e75]: Sitemap
+  - contentinfo [ref=e76]:
+    - generic [ref=e77]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic [ref=e81]: 
+            - text: About
+          - generic [ref=e82]:
+            - generic [ref=e83]: 
+            - text: BroxLab
+          - paragraph [ref=e84]: Your trusted source for mobile reviews, tech insights, and online services. Connect with us on social media for exclusive content and the latest updates.
+        - generic [ref=e85]:
+          - generic [ref=e86]: Quick Links
+          - navigation "Quick navigation" [ref=e87]:
+            - listitem [ref=e88]:
+              - link "About Us" [ref=e89] [cursor=pointer]:
+                - /url: /about-us
+                - generic [ref=e90]: 
+                - generic [ref=e91]: About Us
+            - listitem [ref=e92]:
+              - link "Contact" [ref=e93] [cursor=pointer]:
+                - /url: /contact
+                - generic [ref=e94]: 
+                - generic [ref=e95]: Contact
+            - listitem [ref=e96]:
+              - link "Newsletter" [ref=e97] [cursor=pointer]:
+                - /url: /newsletter
+                - generic [ref=e98]: 
+                - generic [ref=e99]: Newsletter
+            - listitem [ref=e100]:
+              - link "Advertise" [ref=e101] [cursor=pointer]:
+                - /url: /advertise
+                - generic [ref=e102]: 
+                - generic [ref=e103]: Advertise
+            - listitem [ref=e104]:
+              - link "FAQ" [ref=e105] [cursor=pointer]:
+                - /url: /faq
+                - generic [ref=e106]: 
+                - generic [ref=e107]: FAQ
+        - generic [ref=e108]:
+          - generic [ref=e109]: Legal
+          - navigation "Legal navigation" [ref=e110]:
+            - listitem [ref=e111]:
+              - link "Terms of Service" [ref=e112] [cursor=pointer]:
+                - /url: /terms
+                - generic [ref=e113]: 
+                - generic [ref=e114]: Terms of Service
+            - listitem [ref=e115]:
+              - link "Privacy Policy" [ref=e116] [cursor=pointer]:
+                - /url: /privacy
+                - generic [ref=e117]: 
+                - generic [ref=e118]: Privacy Policy
+            - listitem [ref=e119]:
+              - link "Sitemap" [ref=e120] [cursor=pointer]:
+                - /url: /sitemap
+                - generic [ref=e121]: 
+                - generic [ref=e122]: Sitemap
+            - listitem [ref=e123]:
+              - link "XML Sitemap" [ref=e124] [cursor=pointer]:
+                - /url: /sitemap.xml
+                - generic [ref=e125]: 
+                - generic [ref=e126]: XML Sitemap
+      - separator [ref=e127]
+      - generic [ref=e128]:
+        - paragraph [ref=e129]:
+          - text: © 2026
+          - strong [ref=e130]: BroxLab
+          - text: . All rights reserved. |
+          - link "hrhabib.admin@broxlab.online" [ref=e131] [cursor=pointer]:
+            - /url: mailto:hrhabib.admin@broxlab.online
+          - generic [ref=e132]: Designed for maximum performance & accessibility.
+        - generic [ref=e133]:
+          - img [ref=e134]
+          - generic [ref=e145]: Language
+          - button "Switch to Bangla" [ref=e146] [cursor=pointer]:
+            - img [ref=e147]
+            - generic [ref=e158]: English
+  - text:  
+  - progressbar "Page scroll progress"
+  - generic:
+    - generic:
+      - generic: Loading...
+  - generic:
+    - button "Open Chat" [ref=e159] [cursor=pointer]: 
+    - text:                      
