@@ -653,7 +653,7 @@
     <h3><i class="lucide lucide-zap" style="width:1em;height:1em;"></i> Quick Start — Select Your Profession</h3>
     <div class="mkt-quick-options">
       {% for pos in job_positions %}
-      <a href="/cv-builder/new?profession={{ pos.slug }}" class="mkt-quick-option">
+          <a href="/cv-builder/infos?profession={{ pos.slug }}" class="mkt-quick-option">
         <i class="lucide lucide-briefcase" style="width:1em;height:1em;"></i> {{ pos.title }}
       </a>
       {% endfor %}
@@ -808,9 +808,9 @@
             <i class="lucide lucide-credit-card" style="width:1em;height:1em;"></i> Buy
           </button>
           {% else %}
-          <a href="/cv-builder/new?template={{ slug }}" class="mkt-card-btn mkt-btn-select" style="text-decoration:none;">
+          <button type="button" class="mkt-card-btn mkt-btn-select" data-action="mkt-use-template" data-slug="{{ slug }}" style="text-decoration:none;">
             <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Use
-          </a>
+          </button>
           {% endif %}
         </div>
       </div>
@@ -995,6 +995,9 @@
           <i class="lucide lucide-maximize-2 w-3 h-3"></i>
           A4 Preview
         </span>
+        <span class="text-xs text-gray-500 hidden sm:inline">
+          If the CV template is previewed on the marketplace, default demo CV information will be sent to the template so it shows a completed CV preview with a full profile, contact details, experience, education, and skills.
+        </span>
       </div>
       <div class="flex items-center gap-2">
         <!-- Zoom controls -->
@@ -1047,9 +1050,9 @@
         <span>Scroll to navigate · <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-[10px] font-mono">Esc</kbd> to close</span>
       </div>
       <div class="flex items-center gap-2">
-        <a href="/cv-builder/new" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn" style="padding:0.5rem 1.25rem;font-size:0.85rem;border-radius:10px;">
+        <button type="button" class="mkt-modal-btn mkt-modal-btn-primary" id="mkt-modal-select-btn" style="padding:0.5rem 1.25rem;font-size:0.85rem;border-radius:10px;">
           <i class="lucide lucide-plus" style="width:1em;height:1em;"></i> <span id="mkt-modal-btn-text">Use This Template</span>
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -1070,6 +1073,7 @@
 // ─── DATA ───
 window.__mktTemplates = {{ templates|json_encode|raw }};
 window.__mktSlugs = {{ templates|keys|json_encode|raw }};
+window.__mktCurrentCvId = {{ current_cv_id|default(0) }};
 window.__mktFavorites = JSON.parse(localStorage.getItem('mktFavs') || '[]');
 window.__mktCurrentFilter = 'all';
 window.__mktFavFilter = false;
@@ -1215,13 +1219,11 @@ function mktRenderPreview(slug) {
   var btnText = document.getElementById('mkt-modal-btn-text');
   if (tmpl.is_premium) {
     btnText.textContent = 'Buy Premium Template';
-    btn.href = 'javascript:void(0)';
     btn.onclick = function() { mktClosePreview(); mktOpenPaymentModal(slug); };
     btn.style.background = 'linear-gradient(135deg, #D4A017, #B8860B)';
   } else {
     btnText.textContent = 'Use This Template';
-    btn.href = '/cv-builder/new?template=' + slug;
-    btn.onclick = null;
+    btn.onclick = function() { mktUseTemplate(slug, btn); };
     btn.style.background = '';
   }
   // Load preview iframe
@@ -1236,6 +1238,51 @@ function mktRenderPreview(slug) {
       loading.classList.add('hidden');
     }
   }, 10000);
+}
+
+function mktUseTemplate(slug, buttonEl) {
+  if (!slug) return;
+
+  {% if not is_authenticated %}
+  window.location.href = '/login?redirect=' + encodeURIComponent('/cv-builder/templates');
+  return;
+  {% endif %}
+
+  var cvId = parseInt(window.__mktCurrentCvId || 0, 10);
+  if (!cvId) {
+    window.location.href = '/cv-builder/infos?template=' + encodeURIComponent(slug);
+    return;
+  }
+
+  var csrfToken = '{{ csrf_token }}';
+  if (buttonEl) {
+    buttonEl.disabled = true;
+    buttonEl.dataset.originalText = buttonEl.innerHTML;
+    buttonEl.innerHTML = '<i class="lucide lucide-loader-circle" style="width:1em;height:1em;"></i> Applying...';
+  }
+
+  fetch('/api/cv/' + cvId + '/upgrade-template', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    body: JSON.stringify({ template: slug })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        window.location.href = '/cv-builder/infos';
+        return;
+      }
+      throw new Error(data.error || 'Template could not be applied.');
+    })
+    .catch(function(err) {
+      alert('Apply failed: ' + err.message);
+      if (buttonEl) {
+        buttonEl.disabled = false;
+        if (buttonEl.dataset.originalText) {
+          buttonEl.innerHTML = buttonEl.dataset.originalText;
+        }
+      }
+    });
 }
 
 function mktSwitchTemplate(slug) {
@@ -1502,6 +1549,9 @@ document.addEventListener('click', function(e) {
     break;
   case 'mkt-compare-now':
     mktCompareNow();
+    break;
+  case 'mkt-use-template':
+    mktUseTemplate(target.getAttribute('data-slug'), target);
     break;
   case 'mkt-remove-compare':
     mktRemoveFromCompare(target.getAttribute('data-slug'));
@@ -1830,8 +1880,8 @@ function mktShowUpgradeOffer(templateSlug, templateName) {
   if (!section) return;
 
   nameEl.textContent = templateName || (templateSlug.charAt(0).toUpperCase() + templateSlug.slice(1));
-  linkEl.href = '/cv-builder/new?template=' + encodeURIComponent(templateSlug);
-  linkEl.innerHTML = '<i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Create New CV with ' + escHtml(templateName || templateSlug);
+  linkEl.href = '/cv-builder/infos?template=' + encodeURIComponent(templateSlug);
+  linkEl.innerHTML = '<i class="lucide lucide-plus" style="width:1em;height:1em;"></i> Open CV Builder with ' + escHtml(templateName || templateSlug);
 
   section.style.display = '';
   list.innerHTML = '';
@@ -1889,7 +1939,7 @@ document.addEventListener('click', function(e) {
       mktOpenPreview(slug);
     } else if (slug) {
       // If slug isn't in the current marketplace data, redirect to builder
-      window.location.href = '/cv-builder/new?template=' + encodeURIComponent(slug);
+      window.location.href = '/cv-builder/infos?template=' + encodeURIComponent(slug);
     }
   }
 });

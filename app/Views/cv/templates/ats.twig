@@ -46,20 +46,24 @@
       {% endif %}
       <div>
         <h1 class="cv-name">{{ cv.title }}</h1>
-        {% for section in sections if section.section_type == 'summary' %}
-          {% for item in section.items %}
-            {% if item.content.job_title %}<div class="cv-job-title">{{ item.content.job_title }}</div>{% endif %}
-          {% endfor %}
+        {% for section in sections %}
+          {% if section.section_type == 'summary' %}
+            {% for item in section.items %}
+              {% if item.content.job_title %}<div class="cv-job-title">{{ item.content.job_title }}</div>{% endif %}
+            {% endfor %}
+          {% endif %}
         {% endfor %}
       </div>
     </div>
     <div class="cv-contact">
-      {% for section in sections if section.section_type == 'summary' %}
-        {% for item in section.items %}
-          {% if item.content.email %}<span>Email: {{ item.content.email }}</span>{% endif %}
-          {% if item.content.phone %}<span>Phone: {{ item.content.phone }}</span>{% endif %}
-          {% if item.content.location %}<span>Location: {{ item.content.location }}</span>{% endif %}
-        {% endfor %}
+      {% for section in sections %}
+        {% if section.section_type == 'summary' %}
+          {% for item in section.items %}
+            {% if item.content.email %}<span>Email: {{ item.content.email }}</span>{% endif %}
+            {% if item.content.phone %}<span>Phone: {{ item.content.phone }}</span>{% endif %}
+            {% if item.content.location %}<span>Location: {{ item.content.location }}</span>{% endif %}
+          {% endfor %}
+        {% endif %}
       {% endfor %}
     </div>
   </header>
@@ -92,7 +96,10 @@
     {% elseif section.section_type == 'skills' %}
       <div class="skills-list">
       {% for item in section.items %}
-        {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+        {% set skills_list = item.content.skills|default([]) %}
+        {% if skills_list is empty and item.content.name %}
+          {% set skills_list = [item.content.name] %}
+        {% endif %}
         {{ skills_list|join('; ') }}
       {% endfor %}
       </div>

@@ -17,6 +17,16 @@ require_once dirname(__DIR__, 1) . '/Services/CvSchemaBootstrapService.php';
 
 class CvModel
 {
+    private const BUILDER_SECTION_COLUMNS = [
+        'experience' => 'experience_json',
+        'education' => 'education_json',
+        'skills' => 'skills_json',
+        'languages' => 'languages_json',
+        'social_links' => 'social_links_json',
+        'custom_sections' => 'custom_sections_json',
+        'references' => 'references_json',
+    ];
+
     private CvPersonalInfoModel $piModel;
     private mysqli $mysqli;
 
@@ -85,27 +95,119 @@ class CvModel
 
     public function getBuilderData(int $cvId): array
     {
-        $cv = $this->getById($cvId);
-        if (!$cv || empty($cv['builder_data'])) return [];
-        $data = json_decode($cv['builder_data'], true);
-        return is_array($data) ? $data : [];
-    }
+        try {
+            $row = $this->piModel->getById($cvId);
+            if (!$row) {
+                return [];
+            }
 
-    public function saveBuilderStep(int $cvId, string $step, array $data): bool
-    {
-        $existing = $this->getBuilderData($cvId);
-        $existing[$step] = $data;
-        return $this->update($cvId, ['builder_data' => $existing]);
-    }
+            if ($this->rowHasStructuredBuilderContent($row)) {
+                return $this->buildBuilderDataFromRow($row);
+            }
 
-    public function completeBuilder(int $cvId, int $userId): bool
-    {
-        $data = $this->getBuilderData($cvId);
-        if (empty($data)) return false;
-        if (!empty($data['personal']['full_name'])) {
-            $this->update($cvId, ['title' => $data['personal']['full_name'] . "'s CV"]);
+            $profileService = new CvProfileService($this->mysqli);
+            $profileId = $profileService->getProfileIdByCvId($cvId);
+            if ($profileId !== null) {
+                $builderData = $profileService->getV3DataAsBuilderData($profileId);
+                return $builderData;
+            }
+
+            return $this->buildBuilderDataFromRow($row);
+        } catch (Throwable $e) {
+            logError('V3 getBuilderData failed: ' . $e->getMessage());
         }
-        return true;
+
+        return [];
+    }
+
+    public function saveBuilderStep(int $cvId, string $step, array $data, ?array $allData = null): bool
+    {
+        try {
+            $builderData = $allData ?: $this->getBuilderData($cvId);
+            if (!is_array($builderData)) {
+                $builderData = [];
+            }
+
+            $builderData[$step] = $data;
+            if ($step === 'personal') {
+                $builderData['personal'] = array_merge((array)($builderData['personal'] ?? []), $data);
+            }
+
+            $saved = $this->persistStructuredBuilderData(
+                $cvId,
+                $builderData,
+                $step === 'personal' ? $data : null
+            );
+            if (!$saved) {
+                return false;
+            }
+
+            $this->syncExistingProfileFromBuilderData($cvId, $builderData);
+            return true;
+        } catch (Throwable $e) {
+            logError('V3 saveBuilderStep failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function savePersonalInfo(int $cvId, array $data): bool
+    {
+        try {
+            $builderData = $this->getBuilderData($cvId);
+            if (!is_array($builderData)) {
+                $builderData = [];
+            }
+            $builderData['personal'] = array_merge((array)($builderData['personal'] ?? []), $data);
+            return $this->persistStructuredBuilderData($cvId, $builderData, $data);
+        } catch (Throwable $e) {
+            logError('V3 savePersonalInfo failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function completeBuilder(int $cvId, int $userId, ?array $allData = null, ?string $template = null): bool
+    {
+        try {
+            $data = $allData ?: $this->getBuilderData($cvId);
+            if (empty($data)) {
+                return false;
+            }
+
+            if ($template !== null && $template !== '') {
+                $data['_template'] = $template;
+                $this->piModel->update($cvId, ['template' => $template]);
+            } elseif (!empty($data['_template'])) {
+                $this->piModel->update($cvId, ['template' => (string)$data['_template']]);
+            }
+
+            if (!empty($data['personal']['full_name'])) {
+                $this->piModel->update($cvId, ['title' => $data['personal']['full_name'] . "'s CV"]);
+            }
+
+            $this->piModel->update($cvId, ['is_active' => 1]);
+
+            if (!$this->persistStructuredBuilderData($cvId, $data, is_array($data['personal'] ?? null) ? $data['personal'] : null)) {
+                return false;
+            }
+
+            $profileService = new CvProfileService($this->mysqli);
+            $profileId = $profileService->getProfileIdByCvId($cvId);
+            if ($profileId !== null) {
+                $profileService->saveAllBuilderDataToV3($profileId, $data);
+                $profileService->calculateCompletionScore($profileId);
+            } elseif ($userId > 0) {
+                $profileId = $this->ensureProfileForCv($cvId, $data);
+                if ($profileId !== null) {
+                    $profileService->saveAllBuilderDataToV3($profileId, $data);
+                    $profileService->calculateCompletionScore($profileId);
+                }
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            logError('V3 completeBuilder failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     // ── Admin methods ──
@@ -180,6 +282,160 @@ class CvModel
         }
     }
 
+    private function decodeJsonValue($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (!is_string($value) || trim($value) === '') {
+            return [];
+        }
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function rowHasStructuredBuilderContent(array $row): bool
+    {
+        foreach (self::BUILDER_SECTION_COLUMNS as $columnName) {
+            if (!empty($row[$columnName])) {
+                return true;
+            }
+        }
+
+        foreach (['full_name', 'job_title', 'email', 'phone', 'address', 'website', 'linkedin', 'github', 'twitter', 'portfolio'] as $field) {
+            if (!empty($row[$field])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function buildPersonalSectionFromRow(array $row): array
+    {
+        return [
+            'full_name' => $row['full_name'] ?? '',
+            'job_title' => $row['job_title'] ?? '',
+            'email' => $row['email'] ?? '',
+            'phone' => $row['phone'] ?? '',
+            'address' => $row['address'] ?? '',
+            'date_of_birth' => $row['date_of_birth'] ?? '',
+            'nationality' => $row['nationality'] ?? '',
+            'gender' => $row['gender'] ?? '',
+            'driving_license' => $row['driving_license'] ?? '',
+            'website' => $row['website'] ?? '',
+            'linkedin' => $row['linkedin'] ?? '',
+            'github' => $row['github'] ?? '',
+            'twitter' => $row['twitter'] ?? '',
+            'portfolio' => $row['portfolio'] ?? '',
+            'national_id_no' => $row['national_id_no'] ?? '',
+            'passport_no' => $row['passport_no'] ?? '',
+            'birth_certificate_no' => $row['birth_certificate_no'] ?? '',
+            'religion' => $row['religion'] ?? '',
+        ];
+    }
+
+    private function buildBuilderDataFromRow(array $row): array
+    {
+        $builderData = [];
+
+        foreach (self::BUILDER_SECTION_COLUMNS as $sectionKey => $columnName) {
+            $sectionValue = $this->decodeJsonValue($row[$columnName] ?? null);
+            if (!empty($sectionValue)) {
+                $builderData[$sectionKey] = $sectionValue;
+            } elseif (!isset($builderData[$sectionKey])) {
+                $builderData[$sectionKey] = $sectionKey === 'skills' ? ['technical' => [], 'soft' => []] : [];
+            }
+        }
+
+        $builderData['personal'] = array_merge(
+            $this->buildPersonalSectionFromRow($row),
+            is_array($builderData['personal'] ?? null) ? $builderData['personal'] : []
+        );
+
+        if (empty($builderData['_template']) && !empty($row['template'])) {
+            $builderData['_template'] = $row['template'];
+        }
+
+        if (!isset($builderData['professional'])) {
+            $builderData['professional'] = ['_combined' => true];
+        }
+        if (!isset($builderData['extras'])) {
+            $builderData['extras'] = ['_combined' => true];
+        }
+
+        return $builderData;
+    }
+
+    private function persistStructuredBuilderData(int $cvId, array $builderData, ?array $personalData = null): bool
+    {
+        $update = [];
+        foreach (self::BUILDER_SECTION_COLUMNS as $sectionKey => $columnName) {
+            if (array_key_exists($sectionKey, $builderData)) {
+                $update[$columnName] = $builderData[$sectionKey];
+            }
+        }
+
+        if ($personalData !== null) {
+            $update = array_merge($update, array_filter($personalData, static fn($value) => $value !== '' && $value !== null));
+        }
+
+        return $this->piModel->update($cvId, $update);
+    }
+
+    private function syncExistingProfileFromBuilderData(int $cvId, array $builderData): void
+    {
+        try {
+            $profileService = new CvProfileService($this->mysqli);
+            $profileId = $profileService->getProfileIdByCvId($cvId);
+            if ($profileId !== null && !empty($builderData)) {
+                $profileService->saveAllBuilderDataToV3($profileId, $builderData);
+                $profileService->calculateCompletionScore($profileId);
+            }
+        } catch (Throwable $e) {
+            logError('V3 profile sync failed: ' . $e->getMessage());
+        }
+    }
+
+    public function ensureProfileForCv(int $cvId, ?array $builderData = null): ?int
+    {
+        try {
+            $row = $this->piModel->getById($cvId);
+            if (!$row) {
+                return null;
+            }
+
+            $userId = (int)($row['user_id'] ?? 0);
+            if ($userId <= 0) {
+                return null;
+            }
+
+            $profileService = new CvProfileService($this->mysqli);
+            $profileId = $profileService->getProfileIdByCvId($cvId);
+            if ($profileId !== null) {
+                return $profileId;
+            }
+
+            $builderData = $builderData ?? $this->getBuilderData($cvId);
+            $title = $row['title'] ?? 'My CV';
+            if (!empty($builderData['personal']['full_name'])) {
+                $title = trim((string)$builderData['personal']['full_name']);
+            }
+            $template = $builderData['_template'] ?? $row['template'] ?? 'modern';
+
+            $profileId = $profileService->create($userId, $title, (string)$template, $cvId);
+            if ($profileId !== null && !empty($builderData)) {
+                $profileService->saveAllBuilderDataToV3($profileId, $builderData);
+                $profileService->calculateCompletionScore($profileId);
+            }
+
+            return $profileId;
+        } catch (Throwable $e) {
+            logError('V3 ensureProfileForCv failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     /**
      * Format a cv_infos row to match the old `cvs` table structure for backward compatibility.
      */
@@ -191,7 +447,6 @@ class CvModel
             'title' => $row['title'] ?? 'My CV',
             'template' => $row['template'] ?? 'modern',
             'professional_status' => $row['professional_status'] ?? null,
-            'builder_data' => $row['builder_data'] ?? null,
             'profile_photo' => $row['profile_photo'] ?? null,
             'is_active' => $row['is_active'] ?? 1,
             'view_count' => $row['view_count'] ?? 0,
@@ -230,7 +485,21 @@ class CvPersonalInfoModel
      */
     public function create(int $userId, array $data): ?int
     {
-        $fields = ['user_id', 'title', 'template', 'professional_status', 'builder_data', 'profile_photo', 'is_active'];
+        $fields = [
+            'user_id',
+            'title',
+            'template',
+            'professional_status',
+            'profile_photo',
+            'is_active',
+            'experience_json',
+            'education_json',
+            'skills_json',
+            'languages_json',
+            'social_links_json',
+            'custom_sections_json',
+            'references_json',
+        ];
         $values = [];
         $params = [$userId];
         $types = 'i';
@@ -304,12 +573,42 @@ class CvPersonalInfoModel
      */
     public function update(int $id, array $data): bool
     {
-        $allowed = ['title', 'template', 'professional_status', 'builder_data', 'profile_photo',
-                     'is_active', 'view_count', 'download_count', 'last_viewed_at', 'user_id',
-                     'full_name', 'job_title', 'email', 'phone', 'address', 'date_of_birth',
-                     'nationality', 'gender', 'driving_license', 'website', 'linkedin', 'github',
-                     'twitter', 'portfolio', 'national_id_no', 'passport_no', 'birth_certificate_no',
-                     'religion'];
+        $allowed = [
+            'title',
+            'template',
+            'professional_status',
+            'profile_photo',
+            'is_active',
+            'view_count',
+            'download_count',
+            'last_viewed_at',
+            'user_id',
+            'full_name',
+            'job_title',
+            'email',
+            'phone',
+            'address',
+            'date_of_birth',
+            'nationality',
+            'gender',
+            'driving_license',
+            'website',
+            'linkedin',
+            'github',
+            'twitter',
+            'portfolio',
+            'national_id_no',
+            'passport_no',
+            'birth_certificate_no',
+            'religion',
+            'experience_json',
+            'education_json',
+            'skills_json',
+            'languages_json',
+            'social_links_json',
+            'custom_sections_json',
+            'references_json',
+        ];
 
         $sets = [];
         $params = [];
@@ -506,7 +805,7 @@ class CvPersonalInfoModel
         return (int)($row['total'] ?? 0);
     }
 
-    // ── Helper: Extract personal info from builder_data ──
+    // ── Helper: Extract personal info from builder payload ──
 
     public static function extractFromBuilderData(array $builderData): array
     {

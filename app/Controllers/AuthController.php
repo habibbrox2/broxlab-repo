@@ -35,7 +35,7 @@ $securityManager = new SecurityManager($mysqli);
  */
 function autoClaimGuestCvs(int $userId, \mysqli $mysqli): int
 {
-    $cvModelFile = dirname(__DIR__, 1) . '/Models/CvModel.php';
+    $cvModelFile = dirname(__DIR__, 1) . '/Models/CvModels.php';
     if (!file_exists($cvModelFile)) {
         return 0;
     }
@@ -54,7 +54,7 @@ function autoClaimGuestCvs(int $userId, \mysqli $mysqli): int
 /**
  * Display login form
  */
-$router->get('/login', ['middleware' => ['guest_only']], function () use ($twig, $authManager, $securityManager, $userModel) {
+$router->get('/login', ['middleware' => ['guest_only']], function () use ($mysqli, $twig, $authManager, $securityManager, $userModel) {
     $oauthRedirect = resolveAuthRedirectPath([], true);
 
     // Check for auto-login via remember me cookie
@@ -927,7 +927,7 @@ $router->get('/verify-2fa', function () use ($twig) {
 /**
  * Verify 2FA POST
  */
-$router->post('/verify-2fa', function () use ($securityManager, $authManager) {
+$router->post('/verify-2fa', function () use ($securityManager, $authManager, $mysqli) {
     header('Content-Type: application/json');
 
     // Get request data (handles both JSON AJAX and form submissions)
@@ -954,7 +954,7 @@ $router->post('/verify-2fa', function () use ($securityManager, $authManager) {
         $authManager->createSession($userId);
 
         // Auto-claim any guest CVs from session
-        autoClaimGuestCvs($userId, $GLOBALS['mysqli']);
+        autoClaimGuestCvs($userId, $mysqli);
 
         authSuccessResponse(['redirect' => '/dashboard'], '2FA verified successfully', 'json', 200);
     } else {

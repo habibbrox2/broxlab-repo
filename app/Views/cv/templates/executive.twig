@@ -520,12 +520,14 @@
 
     <!-- Name & Title -->
     <div class="sidebar-name">{{ cv.title }}</div>
-    {% for section in sections if section.section_type == 'summary' %}
-      {% for item in section.items %}
-        {% if item.content.job_title %}
+    {% for section in sections %}
+      {% if section.section_type == 'summary' %}
+        {% for item in section.items %}
+          {% if item.content.job_title %}
     <div class="sidebar-title">{{ item.content.job_title }}</div>
-        {% endif %}
-      {% endfor %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
     {% endfor %}
 
     <div class="sidebar-divider"></div>
@@ -533,38 +535,44 @@
     <!-- Contact -->
     <div class="sidebar-section">
       <div class="sidebar-section-title">Contact</div>
-      {% for section in sections if section.section_type == 'summary' %}
-        {% for item in section.items %}
-          {% if item.content.email %}
+      {% for section in sections %}
+        {% if section.section_type == 'summary' %}
+          {% for item in section.items %}
+            {% if item.content.email %}
       <div class="sidebar-contact-item">
         <span class="sidebar-contact-icon">&#9993;</span>
         <span>{{ item.content.email }}</span>
       </div>
-          {% endif %}
-          {% if item.content.phone %}
+            {% endif %}
+            {% if item.content.phone %}
       <div class="sidebar-contact-item">
         <span class="sidebar-contact-icon">&#128222;</span>
         <span>{{ item.content.phone }}</span>
       </div>
-          {% endif %}
-          {% if item.content.location %}
+            {% endif %}
+            {% if item.content.location %}
       <div class="sidebar-contact-item">
         <span class="sidebar-contact-icon">&#128205;</span>
         <span>{{ item.content.location }}</span>
       </div>
-          {% endif %}
-        {% endfor %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
       {% endfor %}
     </div>
 
     <div class="sidebar-divider"></div>
 
     <!-- Skills with bars -->
-    {% for section in sections if section.section_type == 'skills' %}
+    {% for section in sections %}
+      {% if section.section_type == 'skills' %}
     <div class="sidebar-section">
       <div class="sidebar-section-title">Expertise</div>
       {% for item in section.items %}
-        {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+        {% set skills_list = item.content.skills|default([]) %}
+        {% if skills_list is empty and item.content.name %}
+          {% set skills_list = [item.content.name] %}
+        {% endif %}
         {% for s in skills_list %}
       <div class="sidebar-skill">
         <div class="sidebar-skill-name">{{ s }}</div>
@@ -575,25 +583,36 @@
         {% endfor %}
       {% endfor %}
     </div>
+      {% endif %}
     {% endfor %}
 
     <!-- Languages with stars -->
-    {% for section in sections if section.section_type == 'languages' %}
+    {% for section in sections %}
+      {% if section.section_type == 'languages' %}
     <div class="sidebar-section">
       <div class="sidebar-section-title">Languages</div>
       {% for item in section.items %}
       <div class="sidebar-lang-item">
         <span class="sidebar-lang-name">{{ item.content.name }}</span>
         {% set prof = item.content.proficiency|lower|default('intermediate') %}
-        {% set stars = (prof in ['native','fluent']) ? 5 : (prof == 'advanced' ? 4 : (prof == 'intermediate' ? 3 : (prof == 'basic' ? 2 : 3))) %}
+        {% set stars = 3 %}
+        {% if prof in ['native', 'fluent'] %}
+          {% set stars = 5 %}
+        {% elseif prof == 'advanced' %}
+          {% set stars = 4 %}
+        {% elseif prof == 'basic' %}
+          {% set stars = 2 %}
+        {% endif %}
         <span class="sidebar-lang-stars">{% for i in 1..stars %}&#9733;{% endfor %}<span class="sidebar-lang-level"> {{ item.content.proficiency|default('') }}</span></span>
       </div>
       {% endfor %}
     </div>
+      {% endif %}
     {% endfor %}
 
     <!-- Social Links -->
-    {% for section in sections if section.section_type == 'social_links' %}
+    {% for section in sections %}
+      {% if section.section_type == 'social_links' %}
     <div class="sidebar-section">
       <div class="sidebar-section-title">Connect</div>
       {% for item in section.items %}
@@ -603,6 +622,7 @@
       </div>
       {% endfor %}
     </div>
+      {% endif %}
     {% endfor %}
   </aside>
 
@@ -611,16 +631,18 @@
     <!-- Header summary area -->
     <div class="main-header">
       <h1>{{ cv.title }}</h1>
-      {% for section in sections if section.section_type == 'summary' %}
-        {% for item in section.items %}
-          {% if item.content.job_title %}<div class="job-title">{{ item.content.job_title }}</div>{% endif %}
-          {% if item.content.text or item.content.summary %}
-            {% set summary_text = item.content.text|default(item.content.summary|default('')) %}
-            {% if summary_text %}
+      {% for section in sections %}
+        {% if section.section_type == 'summary' %}
+          {% for item in section.items %}
+            {% if item.content.job_title %}<div class="job-title">{{ item.content.job_title }}</div>{% endif %}
+            {% if item.content.text or item.content.summary %}
+              {% set summary_text = item.content.text|default(item.content.summary|default('')) %}
+              {% if summary_text %}
           <div class="header-summary">{{ summary_text }}</div>
+              {% endif %}
             {% endif %}
-          {% endif %}
-        {% endfor %}
+          {% endfor %}
+        {% endif %}
       {% endfor %}
     </div>
 
@@ -680,7 +702,10 @@
       {% elseif section.section_type == 'skills' %}
         <div class="main-skills">
         {% for item in section.items %}
-          {% set skills_list = item.content.skills|default(item.content.name ? [item.content.name] : []) %}
+          {% set skills_list = item.content.skills|default([]) %}
+          {% if skills_list is empty and item.content.name %}
+            {% set skills_list = [item.content.name] %}
+          {% endif %}
           {% for s in skills_list %}
           <span class="main-skill{% if loop.first %} expert{% endif %}">{{ s }}</span>
           {% endfor %}

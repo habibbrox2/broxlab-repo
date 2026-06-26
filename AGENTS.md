@@ -1,12 +1,12 @@
 ---
 name: broxlab-guardrails
 description: AI Agent guardrails, project structure, and guidelines for BroxLab development
-version: 2.3.0
+version: 2.4.0
 ---
 
 # BroxLab - AI Agent Guardrails
 
-**Version:** 2.3.0 | Enhanced with patterns, gotchas, and decision trees
+**Version:** 2.4.0 | Updated controllers, counts, and Live TV proxy
 
 Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instructions.md](copilot-instructions.md)
 
@@ -14,6 +14,7 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 
 ## Project Map
 
+<<<<<<< HEAD
 | Layer | Location | Pattern |
 |-------|----------|---------|
 | **Entry Point** | `public_html/index.php` | PHP app bootstrap |
@@ -30,6 +31,27 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | **Agent Skills** | `.ai/*.skill.md` | Workflow and task-specific skills for AI agents |
 
 ---
+=======
+This project uses MVC with 50 Controllers, 44 Models, 26 Helpers, 261 Views, and 82 SQL schema files.
+
+| Layer | Location | Role |
+|-------|----------|------|
+| **Bootstrap** | `public_html/index.php` | Static file serving, Composer autoload, app bootstrap |
+| **Router** | `app/Router/Router.php` | Custom regex router, middleware-aware |
+| **Controllers** | `app/Controllers/*.php` | 50 controllers with embedded routes (procedural style) + middleware |
+| **Models** | `app/Models/*.php` | 44 models using Mysqli prepared statements |
+| **Services** | `app/Services/` | 14 business logic services |
+| **Helpers** | `app/Helpers/*.php` | 26 shared utilities (purify, email, logging, etc.) |
+| **Views** | `app/Views/` | 261 Twig templates (admin, user, public, auth, etc.) |
+| **Middleware** | `app/Middleware/` | Auth, CSRF, rate limiting (2 files) |
+| **Modules** | `app/Modules/` | PdfTools, AISystem (multiple layers) |
+| **Config** | `Config/` | 9 config files (Twig, DB, uploads, constants) |
+| **Database** | `Database/*.sql` | 82 files — one per table; soft deletes universal |
+| **Frontend** | `public_html/assets/{js,css}/` | Source files — never edit `dist/` |
+| **RTE** | `public_html/rtceditor/` | 16 JS source files + esbuild bundle |
+| **AI Prompts** | `system/prompts/` | 8 prompt/config files |
+| **Build** | `build/` | esbuild configs, scripts, tests |
+>>>>>>> main
 
 ## Complete Controller List
 
@@ -50,6 +72,7 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | `CommentController.php` | Comment CRUD + reactions |
 | `ContentController.php` | Content management |
 | `ContentRatingController.php` | Content rating system |
+| `AdminCvController.php` | CV builder Admin user flows |
 | `CvController.php` | CV builder user flows |
 | `DashboardController.php` | User dashboard |
 | `FeatureFlagController.php` | Feature flags API |
@@ -57,6 +80,7 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | `HomeController.php` | Home page data |
 | `JobPositionController.php` | Job position CRUD |
 | `LanguageController.php` | Language switcher |
+| `LiveTvController.php` | Live TV streaming with HLS reverse proxy |
 | `MedexController.php` | MedEX: drug details, brands, companies |
 | `MediaController.php` | Media file uploads/serving |
 | `MixedApiController.php` | Miscellaneous API endpoints |
@@ -77,7 +101,6 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 | `ScraperApiController.php` | Scraper pipeline API |
 | `ServicesController.php` | Service listing + application |
 | `SettingsController.php` | User settings |
-| `SimRoutingController.php` | SIM routing for notifications |
 | `SitemapController.php` | Sitemap generation |
 | `TagsCategoriesController.php` | Tags + categories CRUD |
 | `UserController.php` | User management (admin) |
@@ -180,9 +203,11 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 
 ### Backend Task (e.g., new API endpoint)
 1. Create `app/Controllers/FeatureController.php`
-2. Define route with middleware: `$router->post('/api/feature', ['middleware' => ['auth']], ...)`
-3. Use `$models['TableName']` for DB queries (prepared statements)
-4. Return JSON or Twig
+2. Define route **procedurally** with middleware: `$router->post('/api/feature', ['middleware' => ['auth']], function() use ($models, $twig) { ... })`
+   - Controllers are **NOT classes**; routes are defined as closures with `$router->get()` / `$router->post()` / etc.
+   - Each controller file contains multiple route definitions for the same feature area
+3. Use Models for DB queries (prepared statements, explicit columns)
+4. Return JSON or Twig render
 5. Verify: `npm run validate` (catches syntax, types, linting)
 
 ### Frontend Task (e.g., new UI component)

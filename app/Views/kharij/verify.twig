@@ -1,0 +1,228 @@
+<html lang="bn"><head>
+    <meta charset="UTF-8">
+    <title>জাতীয় ভূমি-তথ্য ও সেবা কাঠামো</title>
+    <link href="/assets/images/kharij/favicon.png" type="image/x-icon" rel="shortcut icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/smart_design_assets/css/home-style.css">
+    <link rel="stylesheet" type="text/css" href="/smart_design_assets/css/home-responsive.css">
+    <link rel="stylesheet" href="/smart_design_assets/css/bootstrap.css">
+
+    <style>
+        .col-md-12{
+            padding-right: 15px !important;
+            padding-left: 15px !important;
+        }
+        .all_info{
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+        }
+        @media (min-width: 768px) and (max-width: 1124px) {
+            .navbar-nav {
+                margin-top: 30px !important;
+            }
+        }
+        @media (min-width: 1125px) and (max-width: 1266px) {
+            .navbar-nav {
+                margin-top: 30px !important;
+            }
+        }
+        @media (min-width: 1367px) and (max-width: 1680px) {
+            .navbar-nav {
+                margin-top: 30px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<style>
+    .top-date:before {
+        background-image: none !important;
+    }
+</style>
+<header class="main-header when-print-d-none">
+    <div class="container transparent_background">
+        <div class="header-content">
+            <div class="logo-land-mutation">
+                <a class="logo-item" href="/">
+                    <img src="/smart_design_assets/images/2023/home/icons8-home-32.png" alt="Logo">
+                </a>
+                <a class="logo-item" href="/" style="height: 100%;">
+                    <img style="max-height: 68px;" src="/smart_design_assets/images/2023/home/Land_Logo_live.jpg" alt="Logo">
+                </a>
+            </div>
+            <div class="top-right">
+                <div class="top-date">
+                    <span class="date-bn">
+                        {{ current_date_bn }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="container inner_wrapper">
+    <style>
+        table td{
+            font-size: 17px;
+        }
+        #overlay {
+            flow: static(overlay);
+        }
+        #back {
+            position: absolute;
+            background: url(https://mutation.land.gov.bd/land-portal-assets/images/watermark.png) repeat left top;
+            top: 0;
+            bottom: 0;
+            left: -9%;
+            right: 0;
+            opacity: 0.2;
+        }
+    </style>
+    <div class="container transparent_background">
+        <div class="row contact-us">
+            <div class="col-md-12">
+                <div style="width: 99%; padding:0 1% 0 1%; font-size: 100%; margin: 0px;" class="khotian_print_large">
+                    <div style="margin: 0 auto;width: 80%;">
+                        <br>
+                        <table class="table" cellspacing="0" cellpadding="5" style="width:100%;margin-top:2%;margin-left:0%;margin-right:5%;font-size:100%;border:1px solid #e3e3e3;">
+                            <tr>
+                                <td colspan="2">
+                                    <b>পূর্ণাঙ্গ খতিয়ান দেখুন বা ডাউনলোড করুন নিচের বাটনগুলোর মাধ্যমে</b>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">ভূমি অফিস এর ঠিকানা</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.mouza|default('') }}, {{ record.upazila|default('') }}, {{ record.district|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">খতিয়ান নং</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.khata_number|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">আবেদন নম্বর</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.application_no|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">আবেদনের তারিখ</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.application_date|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">মিউটেশন মামলা নং</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.mutation_case_no|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right:1px solid #e3e3e3;width:50%">ডি সি আর নং</td>
+                                <td style="border-right:1px solid #e3e3e3">{{ record.online_dcr_no|default('') }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border-right: 1px solid #e3e3e3;width: 50%">মালিক, অকৃষি প্রজা বা ইজারাদারের নাম ও ঠিকানা</td>
+                                <td style="border-right: 1px solid #e3e3e3">
+                                    {% set owners_list = record.owners is defined and record.owners|length > 0 ? record.owners : [] %}
+                                    {% if owners_list|length > 0 %}
+                                        {% for owner in owners_list %}
+                                            {{ loop.index }}) {{ owner.name|default('') }}<br>
+                                            বাসা/হোল্ডিং:, গ্রাম/রাস্তা:{{ owner.address|default('') }}<br>
+                                        {% endfor %}
+                                    {% elseif record.owner_name is defined %}
+                                        ১) {{ record.owner_name|default('') }}<br>
+                                        বাসা/হোল্ডিং:, গ্রাম/রাস্তা:{{ record.owner_address|default('') }}<br>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <a href="/mutation-land-gov-bd/QrScanner/KhatianDownload/{{ hash }}" class="btn btn-success" style="color:white">খতিয়ান ডাউনলোড</a>
+
+                                </td>
+                            </tr>
+                        </table>
+                        <br/>
+                        <div style="text-align:left"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="land-smart-mutation-footer when-print-d-none">
+    <div class="footer-main">
+        <div class="container">
+            <div class="footer-top-sec">
+                <div class="row">
+                    <!-- Footer Logo Section -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="footer-item">
+                            <div class="footer-logo-group">
+                                <a class="footer-logo-item" href="#">
+                                    <img style="max-height: 60px;" src="https://mutation.land.gov.bd/smart_design_assets/images/footer_img_1.png" alt="Logo">
+                                    <img style="max-height: 60px;" class="mt-4" src="https://mutation.land.gov.bd/smart_design_assets/images/footer_img.png" alt="Logo">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mutation Services Section -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="footer-item">
+                            <h3 class="footer-title" style="font-weight: bold; color:yellow">মিউটেশন সেবা</h3>
+                            <ul class="footer-menu">
+                                <li><a href="https://mutation.land.gov.bd/notification" style="color:white">মিউটেশন সংক্রান্ত প্রজ্ঞাপন</a></li>
+                                <li><a href="https://mutation.land.gov.bd/query" style="color:white">মিউটেশন সংক্রান্ত জিজ্ঞাসা</a></li>
+                                <li><a href="https://mutation.land.gov.bd/statistic" style="color:white">পরিসংখ্যান</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Other Links Section -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="footer-item">
+                            <h3 class="footer-title" style="font-weight: bold; color:yellow">অন্যান্য</h3>
+                            <ul class="footer-menu">
+                                <li><a href="https://mutation.land.gov.bd/terms" style="color:white">শর্তাবলী</a></li>
+                                <li><a href="https://mutation.land.gov.bd/contact" style="color:white">যোগাযোগ</a></li>
+                                <li>
+                                    <a target="_blank" href="https://play.google.com/store/apps/details?id=com.landcalculation&amp;hl=bn&amp;gl=US&amp;pli=1" style="color:white">
+                                        উত্তরাধিকার ক্যালকুলেটর
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Useful Links Section -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="footer-item">
+                            <h3 class="footer-title" style="font-weight: bold; color:yellow">গুরুত্বপুর্ণ লিংকসমূহ</h3>
+                            <ul class="footer-menu">
+                                <li>
+                                    <a target="_blank" href="https://land.gov.bd/" style="color:white">
+                                        ভূমি পোর্টাল
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom Section -->
+            <div class="footer-bottom-sec">
+                <div class="footer-app-logo desk-view">
+                    <a class="app-icon" href="https://mutation.land.gov.bd/mobile-app">
+                        <img src="https://mutation.land.gov.bd/smart_design_assets/images/2023/home/Namjari_full.png" height="40" alt="Mutation App">
+                    </a>
+                </div>
+                <p>মিউটেশন অ্যাপস: মিউটেশনের সকল তথ্য এখন হাতের মুঠোয়!</p>
+                <h6 style="text-align: center; margin: 0; padding-top: 4px; font-weight: bold; color: black;">
+                পরীক্ষামূলক সংস্করণ
+                </h6>
+            </div>
+        </div>
+    </div>
+</footer>
+<script src="/smart_design_assets/js/jquery-3.5.0.js"></script>
+<script src="/smart_design_assets/js/popper.min.js"></script>
+<script src="/smart_design_assets/js/bootstrap.js"></script>
+
+</body></html>

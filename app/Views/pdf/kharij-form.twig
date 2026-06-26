@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>খতিয়ান নং — {{ data.khata_number|default('') }}</title>
+<style>
+
+/* =====================================================
+   mPDF FONT-SIZE FIX:
+   mPDF does not reliably inherit font-size from parent
+   elements across page breaks. The fix is:
+   1. Set font-size on EVERY element explicitly via CSS
+   2. Use mpdf page-break CSS instead of page-break-before
+   3. Avoid relying on inheritance for font-size
+   ===================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* Force font-size on every element — mPDF safe */
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+  color: #000;
+}
+
+body {
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+  color: #000;
+  background-color: #fff;
+  position: relative;
+  min-height: 277mm;
+}
+
+/* Page break — mPDF uses this CSS property reliably */
+.page-break {
+  page-break-before: always;
+  /* mPDF specific */
+  display: block;
+}
+
+.master-layout {
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  position: relative;
+  min-height: 277mm;
+  padding-bottom: 20mm;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.master-layout td {
+  padding: 6px 10px;
+  border: none;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.layout-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.layout-table td {
+  border: none;
+  vertical-align: middle;
+  padding: 0;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.khatian-table {
+  width: 794px;
+  border-collapse: collapse;
+  margin-top: 1mm;
+  margin-bottom: 2mm;
+  border: 2px solid #000;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.khatian-table th {
+  border: 2px solid #000;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #000;
+  font-weight: 500;
+  text-align: center;
+  vertical-align: middle;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.khatian-table td {
+  border: 2px solid #000;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #000;
+  vertical-align: top;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-row th {
+  padding: 6px;
+  line-height: 1.25;
+  word-break: break-word;
+  vertical-align: middle;
+  font-size: 13px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.col-1  { width: 298px; text-align:left; }
+.col-2  { width: 69px;  text-align:center; }
+.col-3  { width: 149px; text-align:center; }
+.col-4  { width: 92px;  text-align:center; }
+.col-5  { width: 75px;  text-align:center; }
+.col-6  { width: 75px;  text-align:center; }
+.col-7  { width: 97px;  text-align:center; }
+.col-8  { width: 97px;  text-align:center; }
+.col-9  { width: 92px;  text-align:center; }
+.col-10 { width: 57px;  text-align:center; }
+.col-11 { width: 57px;  text-align:center; }
+.col-12 { width: 206px; text-align:center; }
+
+.summary-row td {
+  vertical-align: middle;
+  height: 40px;
+  border-top: 2px solid #000;
+  font-size: 13px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.data-row td {
+  padding: 4px 6px;
+  height: 85mm;
+  font-size: 13px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.register-row td {
+  height: 25px;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.owner-entry {
+  line-height: 1.6;
+  font-size: 13px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.owner-entry + .owner-entry {
+  margin-top: 10px;
+}
+
+.owner-name {
+  font-weight: 500;
+  font-size: 13px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.signatures-layout-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1mm;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.sign-card-cell {
+  height: 60mm;
+  width: 180px;
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: center;
+  vertical-align: top;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.sign-title {
+  font-size: 10pt;
+  font-weight: bold;
+  border-bottom: 1px dashed #ccc;
+  padding-bottom: 1px;
+  margin-bottom: 2px;
+  color: #1a1a1a;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.sign-title-red {
+  font-size: 7.5pt;
+  color: #b81232;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.signature-area {
+  height: 35px;
+  margin: 2px 0;
+  text-align: center;
+}
+
+.sig-date {
+  text-align: center;
+  font-size: 8pt;
+  font-weight: bold;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.blue-ink {
+  color: #1d3dd4;
+}
+
+.purple-ink {
+  color: #9c1ca8;
+}
+
+.officer-info {
+  font-size: 9pt;
+  line-height: 1.25;
+  color: #222;
+  padding-top: 0;
+  font-family: solaimanlipi, nikosh, sans-serif;
+  margin: 0;
+}
+
+.officer-name {
+  display: block;
+  padding-top: 0;
+}
+
+.divider {
+  border: 0;
+  border-top: 2px solid #9E006E;
+  margin: 18px 0 14px 0;
+  width: 100%;
+  display: block;
+}
+
+.officer-name {
+  display: block;
+  padding-top: 0;
+}
+
+.header-left {
+  width: 310px;
+  font-size: 9pt;
+  font-weight: bold;
+  vertical-align: middle;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-center {
+  width: 491px;
+  text-align: center;
+  vertical-align: middle;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-center-title {
+  font-size: 21pt;
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-right {
+  width: 310px;
+  text-align: right;
+  vertical-align: middle;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-right-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.qr-cell {
+  vertical-align: top;
+  width: 124px;
+  text-align: left;
+  font-size: 9.5pt;
+}
+
+.qr-image {
+  width: 110px;
+  height: 110px;
+  background: #fff;
+  margin-top: 2px;
+}
+
+.app-info-cell {
+  border-collapse: collapse;
+  text-align: left;
+  vertical-align: top;
+  width: 186px;
+  font-size: 12pt;
+  line-height: 1.6;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.app-info-cell strong {
+  font-size: 12pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.location-row-table {
+  font-size: 9.5pt;
+  text-align: center;
+  padding: 8px 8px;
+  border-collapse: collapse;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.location-row-table td {
+  vertical-align: middle;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.location-cell {
+  width: 277px;
+  padding: 8px 8px;
+  font-size: 11pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.location-cell-wide {
+  width: 333px;
+  font-size: 11pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.register-height {
+  height: 12mm;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-bold {
+  font-weight: 500;
+}
+
+.font-size-11 {
+  font-size: 11px;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.seal-padding {
+  padding-top: 15px;
+}
+
+.seal-image {
+  width: 120px;
+  height: 120px;
+  opacity: 0.65;
+}
+
+.sign-image {
+  width: 100px;
+  height: 40px;
+}
+
+.header-section-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.header-section-table td {
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+/* Page 2 notice section */
+.notice-table {
+  margin-top: 4mm;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.notice-table td {
+  padding: 10px 12px;
+  line-height: 1.8;
+  vertical-align: top;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.notice-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+.notice-item {
+  margin: 0;
+  padding-left: 6px;
+  line-height: 2;
+  font-size: 9.5pt;
+  font-family: solaimanlipi, nikosh, sans-serif;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1 ==================== -->
+<table class="master-layout">
+
+  <tr>
+    <td>
+      <table class="layout-table header-section-table">
+        <tr>
+          <td class="header-left">
+            {{ data.form_number|default('বাংলাদেশ ফরম নং ৫৪৬২ (সংশোধিত)')|bn }}
+          </td>
+          <td class="header-center">
+            <span class="header-center-title">খতিয়ান নং {{ data.khata_number|default('')|bn }}</span>
+          </td>
+          <td class="header-right">
+            <table class="header-right-table">
+              <tr>
+                <td class="qr-cell">
+                  {% if qr_data_uri %}
+                  <img src="{{ qr_data_uri }}" alt="QR" class="qr-image" />
+                  {% endif %}
+                </td>
+                <td class="app-info-cell">
+                  আবেদন নম্বর: <strong>{{ data.application_no|default('')|bn }}</strong><br>
+                  আবেদনের তারিখ: <strong>{{ data.application_date|default('')|bn }}</strong><br>
+                  মিউটেশন মামলা: <strong>{{ data.mutation_case_no|default('')|bn }}</strong><br>
+                  অনলাইন ডিসিআর: <strong>{{ data.online_dcr_no|default('')|bn }}</strong>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <table class="layout-table location-row-table">
+        <tr>
+          <td class="location-cell">
+            <span class="location-label">জেলা:</span> {{ data.district|default('') }}
+          </td>
+          <td class="location-cell location-cell-wide">
+            <span class="location-label">উপজেলা:</span> {{ data.upazila|default('') }}
+          </td>
+          <td class="location-cell">
+            <span class="location-label">মৌজা:</span> {{ data.mouza|default('') }}
+          </td>
+          <td class="location-cell">
+            <span class="location-label">জে.এল:</span> {{ data.jl_number|default('')|bn }}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <table class="khatian-table">
+        <thead>
+          <tr class="header-row">
+            <th class="col-1">
+              মালিক, অকৃষি প্রজা বা<br>
+              ইজারাদারের নাম ও ঠিকানা
+            </th>
+            <th class="col-2">অংশ</th>
+            <th class="col-3">মোট ভূমি উন্নয়ন কর</th>
+            <th class="col-4">দাগ/প্লট নং</th>
+            <th class="col-5" colspan="2">জমির রেকর্ডীয় শ্রেণী</th>
+            <th class="col-7" colspan="2">দাগের মোট জমির পরিমাণ</th>
+            <th class="col-9">দাগের মধ্যে অত্র খতিয়ানের অংশ</th>
+            <th class="col-10" colspan="2">অংশানুযায়ী জমির পরিমাণ</th>
+            <th class="col-12">দখল/স্বত্ব বিষয়ক বা অন্যান্য বিবিধ মন্তব্য</th>
+          </tr>
+          <tr class="sub-header-row">
+            <th>১</th>
+            <th>২</th>
+            <th>৩</th>
+            <th>৪</th>
+            <th>কৃষি<br>৫ (ক)</th>
+            <th>অকৃষি<br>৫ (খ)</th>
+            <th>একর<br>৬ (ক)</th>
+            <th>শতাংশ<br>৬ (খ)</th>
+            <th>৭</th>
+            <th>একর<br>৮ (ক)</th>
+            <th>শতাংশ<br>৮ (খ)</th>
+            <th>৯</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="data-row">
+            <td class="col-1">
+              <div class="owner-entry">
+                {% if data.owners is defined and data.owners|length > 0 %}
+                  {% for owner in data.owners %}
+                    <div class="owner-name">({{ loop.index }}) {{ owner.name|default('') }}</div>
+                    পিতা/স্বামী: {{ owner.father_or_husband_name|default('') }}<br>
+                    মাতা: {{ owner.mothers_name|default('') }}<br>
+                    জাতীয় পরিচয়পত্র নং: {{ owner.nid_number|default('') }}<br>
+                    বাসা/হোল্ডিং:, গ্রাম/রাস্তা: {{ owner.address|default('') }}<br>
+                    {% if not loop.last %}<hr style="border: 0; border-top: 1px dashed #ccc; margin: 6px 0;">{% endif %}
+                  {% endfor %}
+                {% else %}
+                  <div class="owner-name">(১) {{ data.owner_name|default('') }}</div>
+                  পিতা/স্বামী: {{ data.father_or_husband_name|default('') }}<br>
+                  মাতা: {{ data.mothers_name|default('') }}<br>
+                  জাতীয় পরিচয়পত্র নং: {{ data.nid_number|default('') }}<br>
+                  বাসা/হোল্ডিং:, গ্রাম/রাস্তা: {{ data.owner_address|default('') }}<br>
+                {% endif %}
+              </div>
+            </td>
+            <td class="col-2 text-center">{{ data.share|default('০')|bn }}</td>
+            <td class="col-3">{{ data.land_development_tax|default('০')|bn }}</td>
+            <td class="col-4">{{ data.dag_number|default('০')|bn }}</td>
+            <td class="col-5">{{ data.agriculture_area|default('০')|bn }}</td>
+            <td class="col-6">{{ data.non_agriculture_area|default('০')|bn }}</td>
+            <td class="col-7">{{ data.total_dag_area|default('০')|bn }}</td>
+            <td class="col-8">{{ data.dag_area_shottangsho|default('০')|bn }}</td>
+            <td class="col-9">{{ data.single_area|default('০')|bn }}</td>
+            <td class="col-10">{{ data.khash_area|default('০')|bn }}</td>
+            <td class="col-11">{{ data.khash_area_shottangsho|default('০')|bn }}</td>
+            <td class="col-12">{{ data.remarks|default('') }}</td>
+          </tr>
+
+          <tr class="summary-row">
+            <td class="text-center text-bold">
+              ..১৪০ ও ১১৬/১৭৯...<br>
+              ধারাবাহিক নোট বা পরিবর্তনের খত মেমোরিয়া এবং দল
+            </td>
+            <td class="text-center">{{ data.total_share|default('১.০০০')|bn }}</td>
+            <td colspan="6"></td>
+            <td class="text-right">মোট জমি</td>
+            <td class="text-center">{{ data.total_dag_area_summary_acre|default('০')|bn }}</td>
+            <td class="text-center">{{ data.total_dag_area_summary_shottangsho|default('০')|bn }}</td>
+            <td class="font-size-11 text-bold">
+              কথায়:<br>
+              {{ data.total_land_words|default('০ একর ০ শতক ০ অনুস্বার ০০ লক্ষাংশ') }}<br>
+              <span style="font-size: 9pt;">মোট জমির পরিমাণ: {{ data.total_land_area|default('')|bn }}</span><br>
+              <span style="font-size: 9pt;">মালিকের অংশের পরিমাণ: {{ data.inherited_area|default('')|bn }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <table class="signatures-layout-table">
+        <tr>
+          <td class="sign-card-cell">
+            <div class="sign-title">প্রস্তাবিত খতিয়ান</div>
+            <div class="signature-area">
+              <img src="{{ images.sign_rezaul }}" alt="Rezaul Karim" class="sign-image" />
+              <div class="sig-date blue-ink">{{ data.proposed_date|default('২৪/০৯/২০২৩')|bn }}</div>
+            </div>
+            <div class="officer-info">
+              <hr class="divider">
+              <span class="officer-name purple-ink">
+                (মো: রেজাউল করিম পাটো:)<br>
+                ইউনিয়ন ভূমি সহকারী কর্মকর্তা (ভারপ্রাপ্ত)<br>
+                {{ data.upazila|default('ধামরাই') }} ইউনিয়ন ভূমি অফিস
+              </span>
+            </div>
+          </td>
+
+          <td class="sign-card-cell seal-padding">
+            <img src="{{ images.organisation_seal }}" alt="Seal" class="seal-image" />
+          </td>
+
+          <td class="sign-card-cell">
+            <div class="sign-title">প্রস্তাবিত খতিয়ান অনুমোদন করা যেতে পারে।</div>
+            <div class="signature-area">
+              <img src="{{ images.sign_julfikar }}" alt="Julfikar Ali" class="sign-image" />
+              <div class="sig-date blue-ink">{{ data.kanungo_date|default('০৯/০৯/২০২৩')|bn }}</div>
+            </div>
+            <div class="officer-info">
+              <hr class="divider">
+              <span class="officer-name purple-ink">
+                (মোহাম্মদ জুলফিকার আলী ভূঁঞা)<br>
+                কানুনগো<br>
+                উপজেলা ভূমি অফিস, {{ data.upazila|default('ধামরাই') }}
+              </span>
+            </div>
+          </td>
+
+          <td class="sign-card-cell">
+            <div class="sign-title">অনুমোদিত</div>
+            <div class="signature-area">
+              <img src="{{ images.sign_aminul }}" alt="Assistant Commissioner" class="sign-image" />
+              <div class="sig-date blue-ink">{{ data.approved_date|default('০৯/০৯/২০২৩')|bn }}</div>
+            </div>
+            
+            <div class="officer-info purple-ink">
+              <hr class="divider">
+              <span class="officer-name">(আমিনুল ইসলাম বুলবুল)</span><br>
+              সহকারী কমিশনার (ভূমি)<br>
+              উপজেলা ভূমি অফিস, {{ data.upazila|default('ধামরাই') }}
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+</table>
+
+
+<!-- ==================== PAGE 2 ==================== -->
+<!--
+  mPDF PAGE BREAK NOTE:
+  mPDF supports <pagebreak> tag OR the CSS class below.
+  Using a block-level div with page-break-before is the
+  most reliable method across mPDF versions.
+-->
+<div class="page-break"></div>
+
+<table class="master-layout">
+
+  <tr>
+    <td>
+      <table class="layout-table header-section-table">
+        <tr>
+          <td class="header-left">
+            {{ data.form_number|default('বাংলাদেশ ফরম নং ৫৪৬২ (সংশোধিত)')|bn }}
+          </td>
+          <td class="header-center">
+            <span class="header-center-title">খতিয়ান নং {{ data.khata_number|default('')|bn }}</span>
+          </td>
+          <td class="header-right">
+            <table class="header-right-table">
+              <tr>
+                <td class="qr-cell">
+                  {% if qr_data_uri %}
+                  <img src="{{ qr_data_uri }}" alt="QR" class="qr-image" />
+                  {% endif %}
+                </td>
+                <td class="app-info-cell">
+                  আবেদন নম্বর: <strong>{{ data.application_no|default('')|bn }}</strong><br>
+                  আবেদনের তারিখ: <strong>{{ data.application_date|default('')|bn }}</strong><br>
+                  মিউটেশন মামলা: <strong>{{ data.mutation_case_no|default('')|bn }}</strong><br>
+                  অনলাইন ডিসিআর: <strong>{{ data.online_dcr_no|default('')|bn }}</strong>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <table class="layout-table location-row-table">
+        <tr>
+          <td class="location-cell">
+            <span class="location-label">জেলা:</span> {{ data.district|default('') }}
+          </td>
+          <td class="location-cell location-cell-wide">
+            <span class="location-label">উপজেলা:</span> {{ data.upazila|default('') }}
+          </td>
+          <td class="location-cell">
+            <span class="location-label">মৌজা:</span> {{ data.mouza|default('') }}
+          </td>
+          <td class="location-cell">
+            <span class="location-label">জে.এল:</span> {{ data.jl_number|default('')|bn }}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <table class="notice-table">
+        <tr>
+          <td>
+            <div class="notice-title">বিশেষ দ্রষ্টব্য:</div>
+            <div class="notice-item">১। এই মিউটেশন খতিয়ানটি অনলাইন মিউটেশন সিস্টেম কর্তৃক প্রদত্ত। ইহা আইনগতভাবে বৈধ ও সর্বক্ষেত্রে গ্রহণযোগ্য হবে।</div>
+            <div class="notice-item">২। অনলাইন খতিয়ানের সঠিকতা যাচাইয়ের জন্য কিউআর (QR) কোডটি স্ক্যান করে ভূমি মন্ত্রণালয়ের ওয়েবসাইট থেকে যাচাই করতে পারবেন।</div>
+            <div class="notice-item">৩। ভূমি অফিস থেকে ম্যানুয়াল খতিয়ান সংগ্রহ করার প্রয়োজনীয়তা নেই।</div>
+            <div class="notice-item">৪। ভূমি বিষয়ক যেকোন তথ্য বা পরামর্শের জন্য ১৬১২২ নম্বরে কল করুন।</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td></td>
+  </tr>
+
+</table>
+
+</body>
+</html>

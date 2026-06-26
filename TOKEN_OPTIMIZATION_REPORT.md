@@ -15,24 +15,17 @@ Reduce token consumption for BroxLab AI coding agents by eliminating redundancy 
 
 ### 2. **Thin Agent Configuration Files**
 - **[`copilot-instructions.md`](copilot-instructions.md)** — Reduced by 70% (45→40 lines)
-- **[`.kilo/agent/code.md`](.kilo/agent/code.md)** — Reduced by 85% (35→10 lines)
-- **[` .kilo/skills/broxlab-coding-agent/SKILL.md`](.kilo/skills/broxlab-coding-agent/SKILL.md)** — Reduced by 70% (45→13 lines)
+- *(`.kilo/agent/code.md` — removed, no longer exists in repo)*
+- *(`.kilo/skills/broxlab-coding-agent/SKILL.md` — removed, no longer exists in repo)*
 
 ### 3. **Compress Skill Files (Remove Verbose Examples)**
-- **[`.kilo/worktrees/automatic-tabletop/.ai/backend-tasks.skill.md`](.kilo/worktrees/automatic-tabletop/.ai/backend-tasks.skill.md)** — Reduced by 75% (~500→130 lines)
-  - Moved 10+ full code examples to minimal snippets
-  - Removed repetitive pattern explanations
-  - Keep only essential workflow, reference CORE_RULES.md for details
-  
-- **[`.kilo/worktrees/automatic-tabletop/.ai/frontend-tasks.skill.md`](.kilo/worktrees/automatic-tabletop/.ai/frontend-tasks.skill.md)** — Reduced by 72% (~430→120 lines)
-  - Condensed CSS patterns and JS examples
-  - Removed DOM manipulation "cheat sheet"
-  - Streamlined validation patterns
-
 - **[`SKILL.md`](SKILL.md)** — Reduced by 65% (~80→70 lines)
   - Converted verbose 7-step process into quick-start format
   - Added decision tree (instead of essay-style explanations)
   - Replaced multiple examples with single workflow
+  
+- *(`.kilo/worktrees/automatic-tabletop/.ai/backend-tasks.skill.md` — removed, no longer exists in repo)*
+- *(`.kilo/worktrees/automatic-tabletop/.ai/frontend-tasks.skill.md` — removed, no longer exists in repo)*
 
 ### 4. **Key Deduplication Changes**
 
@@ -73,21 +66,16 @@ Reduce token consumption for BroxLab AI coding agents by eliminating redundancy 
 
 ```
 broxlab/
-├── CORE_RULES.md (NEW - 130 lines)
+├── CORE_RULES.md (130 lines)
 │   ↑ Referenced by all agents and skills
-├── copilot-instructions.md (40 lines - was 45)
+├── copilot-instructions.md (40 lines)
 │   ├─→ "Read CORE_RULES.md first"
-├── SKILL.md (70 lines - was 80)
+├── SKILL.md (70 lines)
 │   ├─→ "Read CORE_RULES.md first"
-├── .kilo/agent/code.md (10 lines - was 35)
-│   ├─→ "Read CORE_RULES.md first"
-├── .kilo/worktrees/automatic-tabletop/.ai/
-│   ├── backend-tasks.skill.md (130 lines - was 500)
-│   │   ├─→ References CORE_RULES.md for SQL patterns
-│   └── frontend-tasks.skill.md (120 lines - was 430)
-│       ├─→ References CORE_RULES.md for asset patterns
-└── .kilo/skills/broxlab-coding-agent/SKILL.md (13 lines - was 45)
-    ├─→ "Read CORE_RULES.md first"
+├── AGENTS.md
+│   ├─→ Architecture & controller reference
+├── README.md
+│   ├─→ Project overview
 └── [Other files unchanged]
 ```
 
@@ -97,7 +85,7 @@ All agents should follow this hierarchy:
 1. **`CORE_RULES.md`** — Essential rules, gotchas, minimal code examples
 2. **`AGENTS.md`** — Architecture decisions, project patterns (still large but foundational)
 3. **`README.md`** — Project overview
-4. **Task-specific skill** — `.kilo/worktrees/automatic-tabletop/.ai/backend-tasks.skill.md` OR `.kilo/worktrees/automatic-tabletop/.ai/frontend-tasks.skill.md`
+4. **Task-specific skill** — (formerly `.kilo/worktrees/...` paths, now removed from repo)
 
 This hierarchy ensures:
 - ✅ **First load is minimal** (CORE_RULES.md ~130 lines = ~400 tokens)
@@ -142,10 +130,7 @@ If token usage needs to be reduced further:
 All files have been optimized and tested:
 - ✅ `CORE_RULES.md` created
 - ✅ `copilot-instructions.md` updated
-- ✅ `.kilo/agent/code.md` updated
-- ✅ `.kilo/skills/broxlab-coding-agent/SKILL.md` updated
-- ✅ `.kilo/worktrees/automatic-tabletop/.ai/backend-tasks.skill.md` updated
-- ✅ `.kilo/worktrees/automatic-tabletop/.ai/frontend-tasks.skill.md` updated
+
 - ✅ `SKILL.md` recreated
 - ✅ No duplication of rules across files
 - ✅ All files reference CORE_RULES.md

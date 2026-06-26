@@ -13,7 +13,7 @@ $requestPath = $_SERVER['REQUEST_URI'] ?? '/';
 $requestPath = parse_url($requestPath, PHP_URL_PATH);
 
 // Define allowed static asset directories
-$staticDirs = ['/assets/', '/uploads/', '/rtceditor/', '/public/', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
+$staticDirs = ['/assets/', '/uploads/', '/rtceditor/', '/public/', '/smart_design_assets/', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
 
 $isStaticFile = false;
 foreach ($staticDirs as $dir) {

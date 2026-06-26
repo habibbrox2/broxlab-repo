@@ -170,6 +170,7 @@ class AppSettings
         return [
             'site_name' => 'BroxBhai',
             'site_logo' => '',
+
             'favicon' => '/assets/logo/favicon.ico',
             'default_language' => 'bn',
             'timezone' => 'Asia/Dhaka',
