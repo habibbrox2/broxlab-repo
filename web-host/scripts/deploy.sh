@@ -168,27 +168,18 @@ health_check() {
 
 start_node_server() {
     local node_log="$LOGS/node-server_$DATE.log"
-    local has_start_script=false
-    if [[ -f "package.json" ]] && grep -q '"start"[[:space:]]*:' package.json; then
-        has_start_script=true
-    fi
-
-    if [[ "$has_start_script" == "true" ]]; then
-        log_info "Starting single Node server with npm start"
-        (
-            cd "$CURRENT"
-            nohup env NODE_ENV="$NODE_ENV" npm start > "$node_log" 2>&1 &
-            echo $! > "$PID_FILE"
-        )
-    else
-        log_info "No npm start script found; skipping Node server startup"
-    fi
+    log_info "Starting single Node server with npm start"
+    (
+        cd "$CURRENT"
+        nohup env NODE_ENV="$NODE_ENV" npm start > "$node_log" 2>&1 &
+        echo $! > "$PID_FILE"
+    )
 
     local pid=""
     pid=$(cat "$PID_FILE" 2>/dev/null || true)
     if [[ -z "$pid" ]]; then
-        log_info "Node server PID file was not created (expected when no start script)"
-        return 0
+        log_error "Node server PID file was not created"
+        return 1
     fi
 
     for _ in $(seq 1 30); do
