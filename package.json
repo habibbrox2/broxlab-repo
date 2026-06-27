@@ -8,7 +8,7 @@
     "node": ">=16"
   },
   "scripts": {
-    "start": "node -e \"console.log('No Node server configured. Using PHP backend only.')\"",
+    "start": "node -e \"console.log('true')\"",
     "build:css": "node build/esbuild-css.mjs",
     "build:js": "node build/esbuild.config.js",
     "build:ai": "node build/esbuild-ai.mjs",
