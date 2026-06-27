@@ -1212,7 +1212,7 @@ export function initNotificationsDeviceSync() {
   }
 }
 
-/* eslint-disable no-inner-declarations */
+
 export async function initNotificationsOfflineHandler() {
   if (!byId('offlineHandlerRoot')) return;
   try {
@@ -1824,6 +1824,27 @@ export async function initNotificationsDrafts() {
     }
   }
 
+  function renderSuccessState(notificationId) {
+    if (!list) return;
+    list.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-5">
+          <i class="lucide lucide-check-circle w-8 h-8 text-emerald-600 dark:text-emerald-400"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Draft Sent Successfully!</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs">Your draft notification has been sent to the selected recipients.</p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a href="/admin/notifications/view?id=${notificationId}" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+            <i class="lucide lucide-eye w-4 h-4"></i> View Notification
+          </a>
+          <a href="/admin/notifications/list" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+            <i class="lucide lucide-list w-4 h-4"></i> Back to List
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
   async function sendDraft(draftId) {
     if (!(await window.showConfirm('Do you want to send this draft now?'))) return;
     try {
@@ -1835,10 +1856,7 @@ export async function initNotificationsDrafts() {
       const data = await response.json();
       if (data.success) {
         showSuccess?.(data.message || 'Draft sent successfully');
-        loadDrafts();
-        setTimeout(() => {
-          window.location.href = `/admin/notifications/view?id=${data.notification_id}`;
-        }, 1500);
+        renderSuccessState(data.notification_id);
       } else {
         showError?.(`Error: ${data.error || 'Unknown error'}`);
       }

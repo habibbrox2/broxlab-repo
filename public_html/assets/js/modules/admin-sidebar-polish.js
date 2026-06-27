@@ -154,19 +154,6 @@ export function initSidebarPolish() {
         handleSubmenuToggle(toggle);
       });
 
-      // Hover handlers - open submenu on hover (desktop only)
-      toggle.addEventListener('mouseenter', () => {
-        if (isMobile()) return; // Skip hover on mobile
-        const submenuId = toggle.getAttribute('data-menu-toggle');
-        const submenu = document.getElementById(submenuId);
-        if (submenu && !submenu.classList.contains('open')) {
-          // Open submenu on hover (close others first)
-          closeAllSubmenus();
-          submenu.classList.add('open');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
-      });
-
       // Add keyboard support
       toggle.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -313,6 +300,27 @@ export function initSidebarPolish() {
         }
       });
     });
+
+    // URL change detection for browser back/forward navigation
+    window.addEventListener('popstate', () => {
+      updateActiveLink();
+    });
+
+    // Intercept pushState/replaceState to catch programmatic navigation.
+    // Guard against double-wrapping if initSidebarPolish() runs more than once.
+    if (!history.__sidebarPolishWired) {
+      history.__sidebarPolishWired = true;
+      const origPushState = history.pushState;
+      history.pushState = function () {
+        origPushState.apply(this, arguments);
+        updateActiveLink();
+      };
+      const origReplaceState = history.replaceState;
+      history.replaceState = function () {
+        origReplaceState.apply(this, arguments);
+        updateActiveLink();
+      };
+    }
   }
 
   // ========== RESIZE OBSERVER FOR SMOOTH RESIZING ==========
@@ -383,15 +391,16 @@ export function initSidebarPolish() {
   // ========== ACTIVE LINK HIGHLIGHTING ==========
   function updateActiveLink() {
     const currentPath = window.location.pathname;
+    const currentSearch = window.location.search;
+    const currentFull = currentPath + currentSearch;
 
-    // Collect all interactive sidebar elements
     const sidebarLinks = sidebar.querySelectorAll('a[href]');
     const sidebarToggles = sidebar.querySelectorAll('[data-menu-toggle]');
 
-    // Close all submenus for clean state
+    // Close all submenus for a clean slate before re-determining state
     closeAllSubmenus();
 
-    // Strip all active states
+    // Reset all active states
     sidebarLinks.forEach((link) => {
       link.classList.remove('active');
       link.removeAttribute('aria-current');
@@ -400,44 +409,79 @@ export function initSidebarPolish() {
       toggle.classList.remove('active');
     });
 
-    let matchedSubmenu = null;
+    // ── Pass 1: Find EXACT matches (pathname + query string) ──
+    // This prevents sibling links like /admin/applications and
+    // /admin/applications?status=pending from both lighting up.
+    let bestExactLink = null;
+    let bestExactSubmenu = null;
 
     sidebarLinks.forEach((link) => {
       const href = link.getAttribute('href');
       if (!href || href === '#') return;
 
       try {
-        // Extract pathname from href (handles query strings like ?status=pending)
-        const linkPath = new URL(href, window.location.origin).pathname;
+        const linkUrl = new URL(href, window.location.origin);
+        const linkFull = linkUrl.pathname + linkUrl.search;
 
-        // Exact match or child-path match (e.g. /admin/posts/create matches /admin/posts)
-        const isExact = linkPath === currentPath;
-        const isPrefix = linkPath !== '/' && linkPath !== '' && currentPath.startsWith(linkPath + '/');
-
-        if (isExact || isPrefix) {
+        if (linkFull === currentFull) {
           link.classList.add('active');
           link.setAttribute('aria-current', 'page');
+          bestExactLink = link;
 
-          // Expand parent submenu and activate parent toggle
           const submenuParent = link.closest('.sidebar-submenu');
           if (submenuParent) {
-            submenuParent.classList.add('open');
-            const parentToggle = submenuParent.previousElementSibling;
-            if (parentToggle && parentToggle.hasAttribute('data-menu-toggle')) {
-              parentToggle.setAttribute('aria-expanded', 'true');
-              parentToggle.classList.add('active');
-              matchedSubmenu = submenuParent;
-            }
+            bestExactSubmenu = submenuParent;
           }
         }
-      } catch (e) {
-        // Invalid URL, skip
-      }
+      } catch (e) { /* skip */ }
     });
 
-    // If no child matched but we have a direct parent path,
-    // activate parent toggle buttons whose submenu contains the current path
-    if (!matchedSubmenu) {
+    // ── Pass 2: For unmatched paths, find best parent prefix ──
+    // Only activate when NO exact match was found in the same submenu.
+    // This prevents sibling links from both lighting up (e.g. /admin/notifications
+    // and /admin/notifications/list when visiting /admin/notifications/list).
+    // Links with query strings are skipped — they should match via exact only.
+    if (!bestExactLink) {
+      sidebarLinks.forEach((link) => {
+        const href = link.getAttribute('href');
+        if (!href || href === '#') return;
+
+        try {
+          const linkUrl = new URL(href, window.location.origin);
+
+          // Skip root/empty paths and links with query strings
+          if (linkUrl.pathname === '/' || linkUrl.pathname === '') return;
+          if (linkUrl.search) return;
+
+          // Only activate if current path starts with linkPath + '/'
+          // and no link in this submenu already has active
+          if (currentPath.startsWith(`${linkUrl.pathname }/`)) {
+            const submenuParent = link.closest('.sidebar-submenu');
+            if (submenuParent && submenuParent.querySelector('a.active')) return;
+
+            link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
+            bestExactLink = link;
+
+            if (submenuParent) {
+              bestExactSubmenu = submenuParent;
+            }
+          }
+        } catch (e) { /* skip */ }
+      });
+    }
+
+    // ── Expand parent submenu for the active link ──
+    if (bestExactSubmenu) {
+      const parentToggle = bestExactSubmenu.previousElementSibling;
+      if (parentToggle && parentToggle.hasAttribute('data-menu-toggle')) {
+        parentToggle.setAttribute('aria-expanded', 'true');
+        parentToggle.classList.add('active');
+      }
+    }
+
+    // ── Fallback: activate parent toggle if a submenu contains current path ──
+    if (!bestExactSubmenu) {
       sidebarToggles.forEach((toggle) => {
         const submenuId = toggle.getAttribute('data-menu-toggle');
         const submenu = document.getElementById(submenuId);
@@ -448,14 +492,14 @@ export function initSidebarPolish() {
           const href = child.getAttribute('href');
           if (!href || href === '#') continue;
           try {
-            const childPath = new URL(href, window.location.origin).pathname;
-            if (childPath === currentPath || currentPath.startsWith(childPath + '/')) {
+            const childUrl = new URL(href, window.location.origin);
+            const childFull = childUrl.pathname + childUrl.search;
+            if (childFull === currentFull || currentPath.startsWith(`${childUrl.pathname }/`)) {
               toggle.classList.add('active');
-              submenu.classList.add('open');
               toggle.setAttribute('aria-expanded', 'true');
               break;
             }
-          } catch (e) { /* skip invalid URLs */ }
+          } catch (e) { /* skip */ }
         }
       });
     }

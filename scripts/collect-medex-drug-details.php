@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Batch Collector: Detailed Drug Information for ALL brands listed in medex_herbal_companies.json
  *
@@ -158,9 +159,11 @@ foreach ($toProcess as $idx => $brandInfo) {
     }
 
     $elapsed = microtime(true) - $startTime;
-    printf("[%s] #%d/%d  %s (%s)\n",
+    printf(
+        "[%s] #%d/%d  %s (%s)\n",
         format_time($elapsed),
-        $globalIdx + 1, $total,
+        $globalIdx + 1,
+        $total,
         $brandInfo['brand_name'],
         $brandInfo['company_name']
     );
@@ -279,7 +282,7 @@ function save_all_company_files(array $resultsByCompany): void
             'name'       => $companyName,
             'slug'       => $slug,
             'file'       => "companies/{$slug}.json",
-            'brand_count'=> count($companyData['brands_details'] ?? []),
+            'brand_count' => count($companyData['brands_details'] ?? []),
         ];
     }
 

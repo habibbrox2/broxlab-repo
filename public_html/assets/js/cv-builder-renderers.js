@@ -200,7 +200,7 @@ export function createCvBuilderRenderers(deps) {
       html += `<div class="bld-template-card${ isSelected ? ' selected' : '' }" data-template="${ tmpl }">` +
         `<div class="bld-template-card-preview" style="background: ${ gradient };">` +
         `<div class="bld-template-card-badge">${ isSelected ? 'Default' : 'Template' }</div>` +
-        `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">` +
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">' +
         `<span style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:0.9rem;">${ icon }</span>` +
         `<div class="bld-template-card-name">${ label }</div></div>` +
         `<div class="bld-template-card-slug">${ tmpl }</div>` +

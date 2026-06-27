@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ESBuild Main Config
  * Bundles JavaScript for the app
  */

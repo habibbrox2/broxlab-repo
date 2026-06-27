@@ -1,7 +1,7 @@
 /**
  * Shared Utility Functions
  * Consolidated from: account-settings-shared.js, linked-emails.js, media-upload.js,
- * admin/modules/dom-utils.js, analytics-dashboard.js
+ * modules/dom-utils.js, analytics-dashboard.js
  */
 
 const HTML_ESCAPE_MAP = Object.freeze({
@@ -97,7 +97,7 @@ export function formatDate(dateStr) {
 export function formatDateLabel(dateStr) {
   if (!dateStr) return '';
   try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', });
   } catch {
     return String(dateStr);
   }
@@ -114,7 +114,24 @@ export function setText(el, text) {
 }
 
 /**
+ * Safely parse a Response object as JSON with BOM stripping and error fallback.
+ * @param {Response} response - Fetch Response object
+ * @returns {Promise<Object>} Parsed JSON or fallback object
+ */
+export async function parseJsonResponse(response) {
+  try {
+    const raw = await response.text();
+    const cleaned = raw.replace(/^\uFEFF/, '').trim();
+    return JSON.parse(cleaned || '{}');
+  } catch {
+    return { success: false, error: 'Invalid server response', };
+  }
+}
+
+/**
  * Debounce a function — waits `delay` ms after last call before invoking.
+ * NOTE: An identical window-level version exists in shared/dom-helpers.js
+ * for inline <script> consumers in layout.twig. Keep both in sync.
  * @param {Function} fn - Function to debounce
  * @param {number} delay - Milliseconds to wait
  * @returns {Function}
@@ -129,6 +146,8 @@ export function debounce(fn, delay = 300) {
 
 /**
  * Throttle a function — ensures it's called at most once every `limit` ms.
+ * NOTE: An identical window-level version exists in shared/dom-helpers.js
+ * for inline <script> consumers in layout.twig. Keep both in sync.
  * @param {Function} fn - Function to throttle
  * @param {number} limit - Minimum interval between calls
  * @returns {Function}
@@ -141,36 +160,6 @@ export function throttle(fn, limit = 300) {
     fn.apply(this, args);
     setTimeout(() => { inThrottle = false; }, limit);
   };
-}
-
-/**
- * Append asset version query parameter for cache busting.
- * Checks for a meta tag or data attribute; returns path unchanged if unavailable.
- * @param {string} path - Asset path
- * @returns {string} Versioned path
- */
-export function withAssetVersion(path) {
-  if (typeof path !== 'string') return path;
-  try {
-    const version =
-      document.querySelector('meta[name="asset-version"]')?.content ||
-      document.documentElement.dataset.assetVersion;
-    if (version) return `${path}?v=${version}`;
-  } catch {}
-  return path;
-}
-
-/**
- * Parse JSON from a fetch Response, throwing on HTTP errors.
- * @param {Response} response - Fetch response object
- * @returns {Promise<*>} Parsed JSON data
- */
-export async function parseJsonResponse(response) {
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`HTTP ${response.status}: ${text.slice(0, 200)}`);
-  }
-  return response.json();
 }
 
 /**
@@ -193,6 +182,29 @@ export function uniqueId(prefix = 'uid') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-if (typeof window !== 'undefined') {
-  window.withAssetVersion = withAssetVersion;
+// ── Asset Version Helpers ──
+
+/**
+ * Extract version parameter from the current module URL (set by PHP asset() helper).
+ * Used for cache-busting dynamic import() calls.
+ * @type {string}
+ */
+export const runtimeAssetVersion = (() => {
+  try {
+    return new URL(import.meta.url).searchParams.get('v') || '';
+  } catch {
+    return '';
+  }
+})();
+
+/**
+ * Append a cache-busting version parameter to a URL.
+ * If no version is available, returns the URL unchanged.
+ * @param {string} url - Base URL
+ * @returns {string} URL with version parameter appended (if version available)
+ */
+export function withAssetVersion(url) {
+  if (!runtimeAssetVersion) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(runtimeAssetVersion)}`;
 }

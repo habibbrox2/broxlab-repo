@@ -562,9 +562,9 @@ window.bldApplyPreviewTemplate = function () {
   // Show toast notification
   const toast = document.getElementById('bld-toast');
   if (toast) {
-    toast.textContent = 'Template applied: ' + (STATE.previewTemplate.charAt(0).toUpperCase() + STATE.previewTemplate.slice(1));
+    toast.textContent = `Template applied: ${ STATE.previewTemplate.charAt(0).toUpperCase() + STATE.previewTemplate.slice(1)}`;
     toast.classList.add('show');
-    setTimeout(function () { toast.classList.remove('show'); }, 2500);
+    setTimeout(() => { toast.classList.remove('show'); }, 2500);
   }
 };
 
@@ -589,17 +589,8 @@ function loadLivePreview(templateSlug) {
   // Set the template slug on the iframe for reference
   iframe.dataset.templateSlug = tmpl;
   // Load with user's actual CV data via the server-side preview endpoint
-  const previewUrl = '/api/cv/' + STATE.cvId + '/preview?template=' + encodeURIComponent(tmpl) + '&t=' + Date.now();
+  const previewUrl = `/api/cv/${ STATE.cvId }/preview?template=${ encodeURIComponent(tmpl) }&t=${ Date.now()}`;
   iframe.src = previewUrl;
-}
-
-function loadPreviewIframe() {
-  const currentStep = STEPS[STATE.currentStep];
-  if (currentStep && currentStep.id === 'review') {
-    // On review step, load the iframe for the selected template
-    const tmpl = STATE.previewTemplate || STATE.selectedTemplate;
-    loadLivePreview(tmpl);
-  }
 }
 
 // Drag-and-drop photo upload support
@@ -798,10 +789,10 @@ function setupEventDelegation() {
     },
     'close-template-preview': () => window.bldCloseTemplatePreview(),
     'select-preview-template': () => window.bldApplyPreviewTemplate(),
-    'download-preview-template': (e, t) => {
+    'download-preview-template': () => {
       // Trigger PDF download for the previewed template
       if (STATE.previewTemplate) {
-        window.open('/cv-builder/' + STATE.cvId + '/export/pdf?template=' + encodeURIComponent(STATE.previewTemplate), '_blank');
+        window.open(`/cv-builder/${ STATE.cvId }/export/pdf?template=${ encodeURIComponent(STATE.previewTemplate)}`, '_blank');
       }
     },
   });

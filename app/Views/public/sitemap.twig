@@ -1,69 +1,70 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  {# Static pages #}
-  <url>
-    <loc>{{ base_url() }}</loc>
-    <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
+ {# Static pages #}
+ <url>
+ <loc>{{ base_url() }}</loc>
+ <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
+ <changefreq>daily</changefreq>
+ <priority>1.0</priority>
+ </url>
 
-  {% for page in staticPages %}
-  <url>
-    <loc>{{ base_url() }}{{ page.slug }}</loc>
-    <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>{{ page.priority }}</priority>
-  </url>
-  {% endfor %}
+ {% for page in staticPages %}
+ <url>
+ <loc>{{ base_url() }}{{ page.slug }}</loc>
+ <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
+ <changefreq>monthly</changefreq>
+ <priority>{{ page.priority }}</priority>
+ </url>
+ {% endfor %}
 
-  {# Content pages #}
-  {% for content in contents %}
-  <url>
-    <loc>{{ base_url() }}posts/{{ content.id }}/{{ ('' ~ (content.slug|default(content.url|default(content.id))) )|url_encode }}</loc>
-    <lastmod>{{ content.updated_at|date('Y-m-d') }}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  {% endfor %}
+ {# Content pages #}
+ {% for content in contents %}
+ <url>
+ <loc>{{ base_url() }}posts/{{ content.id }}/{{ ('' ~ (content.slug|default(content.url|default(content.id))) )|url_encode }}</loc>
+ <lastmod>{{ content.updated_at|date('Y-m-d') }}</lastmod>
+ <changefreq>weekly</changefreq>
+ <priority>0.9</priority>
+ </url>
+ {% endfor %}
 
-  {# Categories #}
-  {% for category in categories %}
-  <url>
-    <loc>{{ base_url() }}category/{{ category.slug }}</loc>
-    <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  {% endfor %}
+ {# Categories #}
+ {% for category in categories %}
+ <url>
+ <loc>{{ base_url() }}category/{{ category.slug }}</loc>
+ <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
+ <changefreq>weekly</changefreq>
+ <priority>0.8</priority>
+ </url>
+ {% endfor %}
 
-  {# Tags #}
-  {% for tag in tags %}
-  <url>
-    <loc>{{ base_url() }}tag/{{ tag.slug }}</loc>
-    <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  {% endfor %}
+ {# Tags #}
+ {% for tag in tags %}
+ <url>
+ <loc>{{ base_url() }}tag/{{ tag.slug }}</loc>
+ <lastmod>{{ 'now'|date('Y-m-d') }}</lastmod>
+ <changefreq>weekly</changefreq>
+ <priority>0.7</priority>
+ </url>
+ {% endfor %}
 
-  {# Services #}
-  {% for service in services %}
-  <url>
-    <loc>{{ base_url() }}services/{{ service.slug }}</loc>
-    <lastmod>{{ service.updated_at|date('Y-m-d') }}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  {% endfor %}
+ {# Services #}
+ {% for service in services %}
+ <url>
+ <loc>{{ base_url() }}services/view/{{ service.slug }}</loc>
+ <lastmod>{{ service.updated_at|date('Y-m-d') }}</lastmod>
+ <changefreq>weekly</changefreq>
+ <priority>0.8</priority>
+ </url>
+ {% endfor %}
 
-  {# Mobiles #}
-  {% for mobile in mobiles %}
-  <url>
-    <loc>{{ base_url() }}mobiles/view/{{ mobile.id }}</loc>
-    <lastmod>{{ mobile.created_at|date('Y-m-d') }}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  {% endfor %}
+ {# Mobiles #}
+ {% for mobile in mobiles %}
+ <url>
+ <loc>{{ base_url() }}mobiles/view/{{ mobile.id }}</loc>
+ <lastmod>{{ mobile.created_at|date('Y-m-d') }}</lastmod>
+ <changefreq>monthly</changefreq>
+ <priority>0.6</priority>
+ </url>
+ {% endfor %}
 </urlset>
+

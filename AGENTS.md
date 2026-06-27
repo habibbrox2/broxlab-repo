@@ -14,24 +14,6 @@ Read first: [README.md](README.md) → [AGENTS.md](AGENTS.md) → [copilot-instr
 
 ## Project Map
 
-<<<<<<< HEAD
-| Layer | Location | Pattern |
-|-------|----------|---------|
-| **Entry Point** | `public_html/index.php` | PHP app bootstrap |
-| **Routing** | `app/Controllers/*.php` (embedded in each controller) | Custom regex router, middleware-aware |
-| **Backend Logic** | `app/Models/`, `app/Services/`, `app/Helpers/` | MVC: Models → Services → Helpers |
-| **Views** | `app/Views/` (Twig templates) | Organized by area: `public/`, `admin/`, `user/`, `auth/` |
-| **Middleware** | `app/Middleware/` | Auth, CSRF, rate limiting, etc. |
-| **Database** | `Database/*.sql` (schemas) | Manual SQL files per table; soft deletes universal |
-| **Node Service** | `src/` (TypeScript) | Unified AI, OCR, tools APIs on Fastify |
-| **Build Tools** | `build/` (esbuild, eslint, vitest, playwright) | JS/CSS bundling, linting, testing |
-| **Frontend Sources** | `public_html/assets/{js,css}/` | **Never edit `dist/`** (auto-generated) |
-| **RTE Editor** | `public_html/rtceditor/` | Rich Text Editor — source files + esbuild bundle |
-| **AI/Prompts** | `system/prompts/` | AI model configs and prompt templates |
-| **Agent Skills** | `.ai/*.skill.md` | Workflow and task-specific skills for AI agents |
-
----
-=======
 This project uses MVC with 50 Controllers, 44 Models, 26 Helpers, 261 Views, and 82 SQL schema files.
 
 | Layer | Location | Role |
@@ -51,7 +33,6 @@ This project uses MVC with 50 Controllers, 44 Models, 26 Helpers, 261 Views, and
 | **RTE** | `public_html/rtceditor/` | 16 JS source files + esbuild bundle |
 | **AI Prompts** | `system/prompts/` | 8 prompt/config files |
 | **Build** | `build/` | esbuild configs, scripts, tests |
->>>>>>> main
 
 ## Complete Controller List
 

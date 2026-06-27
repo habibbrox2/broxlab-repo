@@ -2,414 +2,411 @@
  * Admin Article Writer Stream
  * Real-time streaming article writer with SSE
  */
-(function () {
-  'use strict';
+'use strict';
 
-  const writer = {
-    state: 'idle',
-    activeXHR: null,
-    postId: null,
-    articleSlug: null,
-    articleTitle: '',
-    articleContent: '',
-    articleTags: [],
-    articleSeoTitle: '',
-    articleSeoDescription: '',
-    articleKeyPoints: [],
-    articleReadingTime: null,
-    startTime: null,
-    timerInterval: null,
-    el: {},
-    csrfToken: '',
+const writer = {
+  state: 'idle',
+  activeXHR: null,
+  postId: null,
+  articleSlug: null,
+  articleTitle: '',
+  articleContent: '',
+  articleTags: [],
+  articleSeoTitle: '',
+  articleSeoDescription: '',
+  articleKeyPoints: [],
+  articleReadingTime: null,
+  startTime: null,
+  timerInterval: null,
+  el: {},
+  csrfToken: '',
 
-    init() {
-      this.cacheEls();
-      this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-      this.bindEvents();
-    },
+  init() {
+    this.cacheEls();
+    this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    this.bindEvents();
+  },
 
-    cacheEls() {
-      const ids = [
-        'topicInput','toneSelect','lengthSelect','languageSelect',
-        'keywordsInput','generateBtn','generateBtnText','generateBtnSpinner',
-        'stopBtn','statusDot','statusText','statusElapsed',
-        'liveTitle','progressFill','contentEditor',
-        'wordCount','charCount','saveBtn','publishBtn','copyBtn','newTopicBtn',
-        'saveToast','toastMessage'
-      ];
-      ids.forEach(id => { this.el[id] = document.getElementById(id); });
-    },
+  cacheEls() {
+    const ids = [
+      'topicInput', 'toneSelect', 'lengthSelect', 'languageSelect',
+      'keywordsInput', 'generateBtn', 'generateBtnText', 'generateBtnSpinner',
+      'stopBtn', 'statusDot', 'statusText', 'statusElapsed',
+      'liveTitle', 'progressFill', 'contentEditor',
+      'wordCount', 'charCount', 'saveBtn', 'publishBtn', 'copyBtn', 'newTopicBtn',
+      'saveToast', 'toastMessage',
+    ];
+    ids.forEach(id => { this.el[id] = document.getElementById(id); });
+  },
 
-    bindEvents() {
-      this.el.generateBtn?.addEventListener('click', () => this.startGeneration());
-      this.el.stopBtn?.addEventListener('click', () => this.stopGeneration());
-      this.el.newTopicBtn?.addEventListener('click', () => this.reset());
-      this.el.saveBtn?.addEventListener('click', () => this.saveArticle(false));
-      this.el.publishBtn?.addEventListener('click', () => this.saveArticle(true));
-      this.el.copyBtn?.addEventListener('click', () => this.copyContent());
-      this.el.topicInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') this.startGeneration();
+  bindEvents() {
+    this.el.generateBtn?.addEventListener('click', () => this.startGeneration());
+    this.el.stopBtn?.addEventListener('click', () => this.stopGeneration());
+    this.el.newTopicBtn?.addEventListener('click', () => this.reset());
+    this.el.saveBtn?.addEventListener('click', () => this.saveArticle(false));
+    this.el.publishBtn?.addEventListener('click', () => this.saveArticle(true));
+    this.el.copyBtn?.addEventListener('click', () => this.copyContent());
+    this.el.topicInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.startGeneration();
+    });
+  },
+
+  startGeneration() {
+    const topic = this.el.topicInput?.value.trim();
+    if (!topic) {
+      this.el.topicInput?.focus();
+      this.setStatus('error', 'Please enter a topic');
+      return;
+    }
+
+    if (this.state === 'generating') return;
+
+    this.reset(false);
+    this.state = 'generating';
+    this.articleContent = '';
+    this.articleTitle = '';
+    this.startTime = Date.now();
+    this.startTimer();
+
+    this.el.generateBtn.disabled = true;
+    this.el.generateBtnText.innerHTML = '<i class="lucide lucide-hourglass mr-1"></i>Generating...';
+    this.el.generateBtnSpinner?.classList.remove('hidden');
+    this.el.stopBtn.disabled = false;
+    this.el.progressFill.style.width = '10%';
+    this.setStatus('generating', 'Generating article...');
+
+    const options = {
+      topic: topic,
+      tone: this.el.toneSelect?.value || 'informative',
+      length: this.el.lengthSelect?.value || 'medium',
+      language: this.el.languageSelect?.value || 'en',
+      keywords: this.el.keywordsInput?.value || '',
+    };
+
+    this.fetchStream(options);
+  },
+
+  async fetchStream(options) {
+    try {
+      const resp = await fetch('/api/admin/ai/article-writer-stream/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken,
+        },
+        body: JSON.stringify(options),
       });
-    },
 
-    startGeneration() {
-      const topic = this.el.topicInput?.value.trim();
-      if (!topic) {
-        this.el.topicInput?.focus();
-        this.setStatus('error', 'Please enter a topic');
+      const reader = resp.body?.getReader();
+      if (!reader) {
+        this.handleError('Stream not supported');
         return;
       }
 
-      if (this.state === 'generating') return;
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      this.reset(false);
-      this.state = 'generating';
-      this.articleContent = '';
-      this.articleTitle = '';
-      this.startTime = Date.now();
-      this.startTimer();
 
-      this.el.generateBtn.disabled = true;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Generating...';
-      this.el.generateBtnSpinner?.classList.remove('d-none');
-      this.el.stopBtn.disabled = false;
-      this.el.progressFill.style.width = '10%';
-      this.setStatus('generating', 'Generating article...');
+      while (true) {
+        const { done, value, } = await reader.read();
+        if (done) break;
 
-      const options = {
-        topic: topic,
-        tone: this.el.toneSelect?.value || 'informative',
-        length: this.el.lengthSelect?.value || 'medium',
-        language: this.el.languageSelect?.value || 'en',
-        keywords: this.el.keywordsInput?.value || ''
-      };
+        buffer += decoder.decode(value, { stream: true, });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      this.fetchStream(options);
-    },
-
-    async fetchStream(options) {
-      try {
-        const resp = await fetch('/api/admin/ai/article-writer-stream/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': this.csrfToken
-          },
-          body: JSON.stringify(options)
-        });
-
-        const reader = resp.body?.getReader();
-        if (!reader) {
-          this.handleError('Stream not supported');
-          return;
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim();
-              if (data === '[DONE]') {
-                this.onComplete();
-                return;
-              }
-              try {
-                const parsed = JSON.parse(data);
-                this.processEvent(parsed);
-              } catch (e) {
-                // skip invalid JSON
-              }
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') {
+              this.onComplete();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              this.processEvent(parsed);
+            } catch {
+              // skip invalid JSON
             }
           }
         }
-
-        if (buffer.trim()) {
-          const data = buffer.slice(6).trim();
-          if (data === '[DONE]') {
-            this.onComplete();
-            return;
-          }
-          try {
-            const parsed = JSON.parse(data);
-            this.processEvent(parsed);
-          } catch (e) { /* skip trailing data */ }
-        }
-
-        this.onComplete();
-      } catch (err) {
-        this.handleError('Network error: ' + err.message);
       }
-    },
 
-    processEvent(data) {
-      switch (data.type) {
-        case 'start':
-          this.setStatus('generating', data.message || 'Generating...');
-          break;
-
-        case 'title':
-          this.articleTitle = data.title || '';
-          this.el.liveTitle.textContent = this.articleTitle || 'Live Preview';
-          this.el.progressFill.style.width = '20%';
-          break;
-
-        case 'meta':
-          // Server emits: { type: 'meta', meta: { ... } }
-          if (data && data.meta) {
-            if (data.meta.slug) this.articleSlug = data.meta.slug;
-            if (Array.isArray(data.meta.tags)) this.articleTags = data.meta.tags;
-            if (data.meta.seo_title) this.articleSeoTitle = data.meta.seo_title;
-            if (data.meta.seo_description) this.articleSeoDescription = data.meta.seo_description;
-            if (Array.isArray(data.meta.key_points)) this.articleKeyPoints = data.meta.key_points;
-            if (data.meta.reading_time_minutes) this.articleReadingTime = data.meta.reading_time_minutes;
-          }
-          break;
-
-        case 'content':
-          this.articleContent += data.chunk || '';
-          this.renderContent();
-          this.updateProgress();
-          break;
-
-        case 'complete':
-          this.articleContent = data.content || this.articleContent;
-          this.articleTitle = data.title || this.articleTitle;
-          this.postId = data.post_id || null;
-          this.articleSlug = data.slug || null;
-          this.renderContent();
+      if (buffer.trim()) {
+        const data = buffer.slice(6).trim();
+        if (data === '[DONE]') {
           this.onComplete();
-          break;
-
-        case 'error':
-          this.handleError(data.error || 'Generation failed');
-          break;
-      }
-    },
-
-    renderContent() {
-      const editor = this.el.contentEditor;
-      if (!editor) return;
-
-      let html = '';
-      if (this.articleTitle) {
-        html += '<h1>' + this.escapeHtml(this.articleTitle) + '</h1>';
-      }
-
-      const paragraphs = this.articleContent.split(/\n{2,}/);
-      paragraphs.forEach(p => {
-        const trimmed = p.trim();
-        if (!trimmed) return;
-
-        if (trimmed.startsWith('## ')) {
-          html += '<h2>' + this.escapeHtml(trimmed.slice(3)) + '</h2>';
-        } else if (trimmed.startsWith('# ')) {
-          html += '<h1>' + this.escapeHtml(trimmed.slice(2)) + '</h1>';
-        } else {
-          html += '<p>' + this.escapeHtml(trimmed) + '</p>';
+          return;
         }
-      });
-
-      html += '<span class="typing-cursor"></span>';
-      editor.innerHTML = html;
-      editor.scrollTop = editor.scrollHeight;
-
-      this.updateStats();
-    },
-
-    updateStats() {
-      const text = this.articleTitle + ' ' + this.articleContent;
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const chars = text.length;
-
-      if (this.el.wordCount) this.el.wordCount.textContent = words + ' words';
-      if (this.el.charCount) this.el.charCount.textContent = chars + ' chars';
-    },
-
-    updateProgress() {
-      const el = this.el.progressFill;
-      const current = parseFloat(el.style.width) || 20;
-      if (current < 90) {
-        const increment = Math.random() * 8 + 2;
-        el.style.width = Math.min(current + increment, 90) + '%';
+        try {
+          const parsed = JSON.parse(data);
+          this.processEvent(parsed);
+        } catch { /* skip trailing data */ }
       }
-    },
 
-    onComplete() {
-      this.state = 'done';
-      this.stopTimer();
-      this.el.progressFill.style.width = '100%';
-      this.el.generateBtn.disabled = false;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
-      this.el.generateBtnSpinner?.classList.add('d-none');
-      this.el.stopBtn.disabled = true;
-      this.el.saveBtn.disabled = false;
-      this.el.publishBtn.disabled = false;
-      this.el.copyBtn.disabled = false;
-      this.setStatus('done', 'Article generated successfully');
+      this.onComplete();
+    } catch (err) {
+      this.handleError(`Network error: ${err.message}`);
+    }
+  },
 
-      // Remove cursor
-      const cursor = this.el.contentEditor?.querySelector('.typing-cursor');
-      if (cursor) cursor.remove();
-    },
+  processEvent(data) {
+    switch (data.type) {
+      case 'start':
+        this.setStatus('generating', data.message || 'Generating...');
+        break;
 
-    stopGeneration() {
-      this.state = 'idle';
-      this.stopTimer();
-      this.el.generateBtn.disabled = false;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
-      this.el.generateBtnSpinner?.classList.add('d-none');
-      this.el.stopBtn.disabled = true;
-      this.setStatus('idle', 'Generation stopped');
-    },
+      case 'title':
+        this.articleTitle = data.title || '';
+        this.el.liveTitle.textContent = this.articleTitle || 'Live Preview';
+        this.el.progressFill.style.width = '20%';
+        break;
 
-    escapeHtml(str) {
-      var d = document.createElement('div');
-      d.textContent = str || '';
-      return d.innerHTML;
-    },
-
-    setStatus(type, msg) {
-      var dot = this.el.statusDot;
-      var text = this.el.statusText;
-      if (!dot || !text) return;
-      var colors = { idle: 'secondary', generating: 'warning', done: 'success', error: 'danger' };
-      dot.className = 'status-dot bg-' + (colors[type] || 'secondary');
-      text.textContent = msg || '';
-    },
-
-    startTimer() {
-      this.stopTimer();
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      var self = this;
-      this.timerInterval = setInterval(function () {
-        var elapsed = Math.floor((Date.now() - self.startTime) / 1000);
-        var mins = Math.floor(elapsed / 60);
-        var secs = elapsed % 60;
-        if (self.el.statusElapsed) {
-          self.el.statusElapsed.textContent = mins + 'm ' + secs + 's';
+      case 'meta':
+      // Server emits: { type: 'meta', meta: { ... } }
+        if (data && data.meta) {
+          if (data.meta.slug) this.articleSlug = data.meta.slug;
+          if (Array.isArray(data.meta.tags)) this.articleTags = data.meta.tags;
+          if (data.meta.seo_title) this.articleSeoTitle = data.meta.seo_title;
+          if (data.meta.seo_description) this.articleSeoDescription = data.meta.seo_description;
+          if (Array.isArray(data.meta.key_points)) this.articleKeyPoints = data.meta.key_points;
+          if (data.meta.reading_time_minutes) this.articleReadingTime = data.meta.reading_time_minutes;
         }
-      }, 1000);
-    },
+        break;
 
-    stopTimer() {
-      if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
-      }
-    },
+      case 'content':
+        this.articleContent += data.chunk || '';
+        this.renderContent();
+        this.updateProgress();
+        break;
 
-    handleError(msg) {
-      this.state = 'error';
-      this.stopTimer();
-      this.el.generateBtn.disabled = false;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
-      this.el.generateBtnSpinner?.classList.add('d-none');
-      this.el.stopBtn.disabled = true;
-      this.el.progressFill.style.width = '0%';
-      this.setStatus('error', msg || 'Generation failed');
-      if (this.el.contentEditor) {
-        this.el.contentEditor.innerHTML += '<div class="alert alert-danger mt-3">' + this.escapeHtml(msg) + '</div>';
-      }
-    },
+      case 'complete':
+        this.articleContent = data.content || this.articleContent;
+        this.articleTitle = data.title || this.articleTitle;
+        this.postId = data.post_id || null;
+        this.articleSlug = data.slug || null;
+        this.renderContent();
+        this.onComplete();
+        break;
 
-    saveArticle(publish) {
-      if (!this.postId && !this.articleContent) {
-        this.setStatus('error', 'No article to save');
-        return;
+      case 'error':
+        this.handleError(data.error || 'Generation failed');
+        break;
+    }
+  },
+
+  renderContent() {
+    const editor = this.el.contentEditor;
+    if (!editor) return;
+
+    let html = '';
+    if (this.articleTitle) {
+      html += `<h1>${this.escapeHtml(this.articleTitle)}</h1>`;
+    }
+
+    const paragraphs = this.articleContent.split(/\n{2,}/);
+    paragraphs.forEach(p => {
+      const trimmed = p.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('## ')) {
+        html += `<h2>${this.escapeHtml(trimmed.slice(3))}</h2>`;
+      } else if (trimmed.startsWith('# ')) {
+        html += `<h1>${this.escapeHtml(trimmed.slice(2))}</h1>`;
+      } else {
+        html += `<p>${this.escapeHtml(trimmed)}</p>`;
       }
-      this.setStatus('info', (publish ? 'Publishing' : 'Saving') + '...');
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      var self = this;
-      // Canonical endpoint is `/save`. We pass `publish: true|false` to control behavior.
-      fetch('/api/admin/ai/article-writer-stream/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken },
-        body: JSON.stringify({
-          article: {
-            title: this.articleTitle,
-            content: this.articleContent,
-            slug: this.articleSlug || '',
-            tags: this.articleTags || [],
-            seo_title: this.articleSeoTitle || '',
-            seo_description: this.articleSeoDescription || ''
-          },
-          publish: publish,
-          author_id: 0
-        })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
+    });
+
+    html += '<span class="typing-cursor"></span>';
+    editor.innerHTML = html;
+    editor.scrollTop = editor.scrollHeight;
+
+    this.updateStats();
+  },
+
+  updateStats() {
+    const text = `${this.articleTitle} ${this.articleContent}`;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+
+    if (this.el.wordCount) this.el.wordCount.textContent = `${words} words`;
+    if (this.el.charCount) this.el.charCount.textContent = `${chars} chars`;
+  },
+
+  updateProgress() {
+    const el = this.el.progressFill;
+    const current = parseFloat(el.style.width) || 20;
+    if (current < 90) {
+      const increment = Math.random() * 8 + 2;
+      el.style.width = `${Math.min(current + increment, 90)}%`;
+    }
+  },
+
+  onComplete() {
+    this.state = 'done';
+    this.stopTimer();
+    this.el.progressFill.style.width = '100%';
+    this.el.generateBtn.disabled = false;
+    this.el.generateBtnText.innerHTML = '<i class="lucide lucide-zap mr-1"></i>Generate Article';
+    this.el.generateBtnSpinner?.classList.add('hidden');
+    this.el.stopBtn.disabled = true;
+    this.el.saveBtn.disabled = false;
+    this.el.publishBtn.disabled = false;
+    this.el.copyBtn.disabled = false;
+    this.setStatus('done', 'Article generated successfully');
+
+    // Remove cursor
+    const cursor = this.el.contentEditor?.querySelector('.typing-cursor');
+    if (cursor) cursor.remove();
+  },
+
+  stopGeneration() {
+    this.state = 'idle';
+    this.stopTimer();
+    this.el.generateBtn.disabled = false;
+    this.el.generateBtnText.innerHTML = '<i class="lucide lucide-zap mr-1"></i>Generate Article';
+    this.el.generateBtnSpinner?.classList.add('hidden');
+    this.el.stopBtn.disabled = true;
+    this.setStatus('idle', 'Generation stopped');
+  },
+
+  escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  },
+
+  setStatus(type, msg) {
+    const dot = this.el.statusDot;
+    const text = this.el.statusText;
+    if (!dot || !text) return;
+    const colors = { idle: 'secondary', generating: 'warning', done: 'success', error: 'danger', };
+    dot.className = `status-dot bg-${colors[type] || 'secondary'}`;
+    text.textContent = msg || '';
+  },
+
+  startTimer() {
+    this.stopTimer();
+    const self = this;
+    this.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - self.startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      if (self.el.statusElapsed) {
+        self.el.statusElapsed.textContent = `${mins}m ${secs}s`;
+      }
+    }, 1000);
+  },
+
+  stopTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  },
+
+  handleError(msg) {
+    this.state = 'error';
+    this.stopTimer();
+    this.el.generateBtn.disabled = false;
+    this.el.generateBtnText.innerHTML = '<i class="lucide lucide-zap mr-1"></i>Generate Article';
+    this.el.generateBtnSpinner?.classList.add('hidden');
+    this.el.stopBtn.disabled = true;
+    this.el.progressFill.style.width = '0%';
+    this.setStatus('error', msg || 'Generation failed');
+    if (this.el.contentEditor) {
+      this.el.contentEditor.innerHTML += `<div class="p-4 rounded-lg bg-red-50 border-red-200 text-red-700 border mt-3">${this.escapeHtml(msg)}</div>`;
+    }
+  },
+
+  saveArticle(publish) {
+    if (!this.postId && !this.articleContent) {
+      this.setStatus('error', 'No article to save');
+      return;
+    }
+    this.setStatus('info', `${publish ? 'Publishing' : 'Saving'}...`);
+    const self = this;
+    // Canonical endpoint is `/save`. We pass `publish: true|false` to control behavior.
+    fetch('/api/admin/ai/article-writer-stream/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken, },
+      body: JSON.stringify({
+        article: {
+          title: this.articleTitle,
+          content: this.articleContent,
+          slug: this.articleSlug || '',
+          tags: this.articleTags || [],
+          seo_title: this.articleSeoTitle || '',
+          seo_description: this.articleSeoDescription || '',
+        },
+        publish: publish,
+        author_id: 0,
+      }),
+    })
+      .then((r) => { return r.json(); })
+      .then((d) => {
         if (d.success) {
           self.postId = d.post_id || self.postId;
           self.articleSlug = d.slug || self.articleSlug;
-          self.setStatus('done', 'Article ' + (publish ? 'published' : 'saved') + ' successfully');
+          self.setStatus('done', `Article ${publish ? 'published' : 'saved'} successfully`);
           self.el.saveBtn.disabled = true;
           self.el.publishBtn.disabled = true;
         } else {
           self.setStatus('error', d.error || 'Save failed');
         }
       })
-      .catch(function (err) {
-        self.setStatus('error', 'Network error: ' + err.message);
+      .catch((err) => {
+        self.setStatus('error', `Network error: ${err.message}`);
       });
-    },
+  },
 
-    copyContent() {
-      var text = this.articleTitle + '\n\n' + this.articleContent;
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      var self = this;
-      navigator.clipboard.writeText(text).then(function () {
-        self.setStatus('done', 'Content copied to clipboard');
-      }).catch(function () {
-        self.setStatus('error', 'Failed to copy');
-      });
-    },
+  copyContent() {
+    const text = `${this.articleTitle}\n\n${this.articleContent}`;
+    const self = this;
+    navigator.clipboard.writeText(text).then(() => {
+      self.setStatus('done', 'Content copied to clipboard');
+    }).catch(() => {
+      self.setStatus('error', 'Failed to copy');
+    });
+  },
 
-    reset(focus) {
-      this.state = 'idle';
-      this.postId = null;
-      this.articleSlug = null;
-      this.articleTitle = '';
-      this.articleContent = '';
-      this.articleTags = [];
-      this.articleSeoTitle = '';
-      this.articleSeoDescription = '';
-      this.articleKeyPoints = [];
-      this.articleReadingTime = null;
-      this.stopTimer();
-      this.el.generateBtn.disabled = false;
-      this.el.generateBtnText.innerHTML = '<i class="bi bi-lightning-fill me-1"></i>Generate Article';
-      this.el.generateBtnSpinner?.classList.add('d-none');
-      this.el.stopBtn.disabled = true;
-      this.el.saveBtn.disabled = true;
-      this.el.publishBtn.disabled = true;
-      this.el.copyBtn.disabled = true;
-      this.el.progressFill.style.width = '0%';
-      if (this.el.contentEditor) {
-        this.el.contentEditor.innerHTML = '<div class="empty-state text-muted text-center py-5"><i class="bi bi-pencil fs-1 d-block mb-2"></i>Generated content will appear here</div>';
-      }
-      if (this.el.liveTitle) this.el.liveTitle.textContent = 'Live Preview';
-      if (this.el.wordCount) this.el.wordCount.textContent = '0 words';
-      if (this.el.charCount) this.el.charCount.textContent = '0 chars';
-      this.setStatus('idle', 'Ready');
-      if (focus !== false && this.el.topicInput) this.el.topicInput.focus();
+  reset(focus) {
+    this.state = 'idle';
+    this.postId = null;
+    this.articleSlug = null;
+    this.articleTitle = '';
+    this.articleContent = '';
+    this.articleTags = [];
+    this.articleSeoTitle = '';
+    this.articleSeoDescription = '';
+    this.articleKeyPoints = [];
+    this.articleReadingTime = null;
+    this.stopTimer();
+    this.el.generateBtn.disabled = false;
+    this.el.generateBtnText.innerHTML = '<i class="lucide lucide-zap mr-1"></i>Generate Article';
+    this.el.generateBtnSpinner?.classList.add('hidden');
+    this.el.stopBtn.disabled = true;
+    this.el.saveBtn.disabled = true;
+    this.el.publishBtn.disabled = true;
+    this.el.copyBtn.disabled = true;
+    this.el.progressFill.style.width = '0%';
+    if (this.el.contentEditor) {
+      this.el.contentEditor.innerHTML = '<div class="empty-state text-slate-500 text-center py-5"><i class="lucide lucide-pencil h-8 w-8 mx-auto block mb-2"></i>Generated content will appear here</div>';
     }
-  };
+    if (this.el.liveTitle) this.el.liveTitle.textContent = 'Live Preview';
+    if (this.el.wordCount) this.el.wordCount.textContent = '0 words';
+    if (this.el.charCount) this.el.charCount.textContent = '0 chars';
+    this.setStatus('idle', 'Ready');
+    if (focus !== false && this.el.topicInput) this.el.topicInput.focus();
+  },
+};
 
-  // Auto-init on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { writer.init(); });
-  } else {
-    writer.init();
-  }
-})();
+// Auto-init on DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { writer.init(); });
+} else {
+  writer.init();
+}
+
+export { writer };

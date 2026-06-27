@@ -667,6 +667,74 @@ $router->get('/admin/notifications/rate-limit', ['middleware' => ['auth', 'admin
     echo $twig->render('admin/notifications/rate-limit.twig', ['csrf_token' => generateCsrfToken()]);
 });
 
+// ----- ADMIN UI: Notification View / Detail -----
+$router->get('/admin/notifications/view', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    $id = (int)($_GET['id'] ?? 0);
+    if (!$id) {
+        header('Location: /admin/notifications/list');
+        exit;
+    }
+
+    try {
+        $notificationModel = new NotificationModel($mysqli);
+        $notification = $notificationModel->getNotificationById($id);
+
+        if (!$notification) {
+            header('Location: /admin/notifications/list');
+            exit;
+        }
+
+        $deliveryLogs = $notificationModel->getDeliveryLogs($id, 1000);
+
+        // Compute statistics from delivery logs
+        $sent = 0;
+        $failed = 0;
+        foreach ($deliveryLogs as $log) {
+            if (($log['status'] ?? '') === 'sent') {
+                $sent++;
+            } else {
+                $failed++;
+            }
+        }
+        $statistics = [
+            'total' => count($deliveryLogs),
+            'sent' => $sent,
+            'failed' => $failed,
+        ];
+
+        echo $twig->render('admin/notifications/view.twig', [
+            'notification' => $notification,
+            'delivery_logs' => $deliveryLogs,
+            'statistics' => $statistics,
+            'csrf_token' => generateCsrfToken(),
+        ]);
+    } catch (Throwable $e) {
+        logError("Notification View Error: " . $e->getMessage());
+        http_response_code(500);
+        echo $twig->render('error.twig');
+    }
+});
+
+// ----- ADMIN UI: Notification Dashboard -----
+$router->get('/admin/notifications', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    echo $twig->render('admin/notifications/dashboard.twig', ['csrf_token' => generateCsrfToken()]);
+});
+
+// ----- ADMIN UI: Send Notification -----
+$router->get('/admin/notifications/send', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    echo $twig->render('admin/notifications/send.twig', ['csrf_token' => generateCsrfToken()]);
+});
+
+// ----- ADMIN UI: All Notifications List -----
+$router->get('/admin/notifications/list', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    echo $twig->render('admin/notifications/list.twig', ['csrf_token' => generateCsrfToken()]);
+});
+
+// ----- ADMIN UI: Notification Subscribers -----
+$router->get('/admin/notification-subscribers', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli) {
+    echo $twig->render('admin/notifications/notifications-subscribers.twig', ['csrf_token' => generateCsrfToken()]);
+});
+
 // ==================== Dry-Run API (validation + estimates, no sends) ====================
 $router->post('/api/notifications/dry-run', ['middleware' => ['auth', 'admin_only'], 'response' => 'json'], function () use ($mysqli) {
     header('Content-Type: application/json');

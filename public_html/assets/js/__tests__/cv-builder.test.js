@@ -5,7 +5,7 @@
  * @see public_html/assets/js/cv-builder-app.js
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createCvBuilderRenderers } from '../cv-builder-renderers.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -21,11 +21,11 @@ function createMockState(overrides = {}) {
   return {
     currentStep: 0,
     data: {
-      personal: { full_name: 'John Doe', job_title: 'Engineer', email: 'john@test.com' },
-      experience: [{ company: 'Acme', position: 'Dev' }],
-      education: [{ institution: 'MIT', degree: 'BSc' }],
-      skills: { technical: ['JS', 'React'], soft: ['Leadership'] },
-      languages: [{ name: 'English', proficiency: 'native' }],
+      personal: { full_name: 'John Doe', job_title: 'Engineer', email: 'john@test.com', },
+      experience: [{ company: 'Acme', position: 'Dev', },],
+      education: [{ institution: 'MIT', degree: 'BSc', },],
+      skills: { technical: ['JS', 'React',], soft: ['Leadership',], },
+      languages: [{ name: 'English', proficiency: 'native', },],
     },
     cvId: 42,
     csrf: 'test-csrf',
@@ -43,10 +43,10 @@ function createMockState(overrides = {}) {
 
 function createMockSteps() {
   return [
-    { id: 'personal', title: 'Personal Information', icon: 'user', desc: 'Tell us about yourself' },
-    { id: 'professional', title: 'Professional Details', icon: 'briefcase', desc: 'Experience, education, skills & languages' },
-    { id: 'extras', title: 'Social, Sections & References', icon: 'share-2', desc: 'Social links, custom sections & references' },
-    { id: 'review', title: 'Review & Finish', icon: 'eye', desc: 'Preview, apply template & download' },
+    { id: 'personal', title: 'Personal Information', icon: 'user', desc: 'Tell us about yourself', },
+    { id: 'professional', title: 'Professional Details', icon: 'briefcase', desc: 'Experience, education, skills & languages', },
+    { id: 'extras', title: 'Social, Sections & References', icon: 'share-2', desc: 'Social links, custom sections & references', },
+    { id: 'review', title: 'Review & Finish', icon: 'eye', desc: 'Preview, apply template & download', },
   ];
 }
 
@@ -60,7 +60,7 @@ describe('createCvBuilderRenderers', () => {
   beforeEach(() => {
     STATE = createMockState();
     STEPS = createMockSteps();
-    renderers = createCvBuilderRenderers({ STATE, STEPS, escHtml });
+    renderers = createCvBuilderRenderers({ STATE, STEPS, escHtml, });
   });
 
   describe('exports', () => {
@@ -106,7 +106,7 @@ describe('createCvBuilderRenderers', () => {
     it('should render the review step (index 3)', () => {
       // Set window.__bldTemplates for the review step
       const origTemplates = window.__bldTemplates;
-      window.__bldTemplates = ['modern', 'minimal', 'ats', 'professional', 'creative', 'classic', 'technical', 'executive'];
+      window.__bldTemplates = ['modern', 'minimal', 'ats', 'professional', 'creative', 'classic', 'technical', 'executive',];
 
       const html = renderers.renderStepContent(3);
       expect(html).toBeTypeOf('string');
@@ -119,7 +119,7 @@ describe('createCvBuilderRenderers', () => {
       expect(html).toContain('bld-download-wrap');
 
       // Each template should have a card
-      for (const tmpl of ['modern', 'minimal', 'ats', 'professional', 'creative', 'classic', 'technical', 'executive']) {
+      for (const tmpl of ['modern', 'minimal', 'ats', 'professional', 'creative', 'classic', 'technical', 'executive',]) {
         expect(html).toContain(`data-template="${tmpl}"`);
       }
 
@@ -156,15 +156,14 @@ describe('createCvBuilderRenderers', () => {
     });
 
     it('should show non-selected templates as "Template" with "Apply as Default" button', () => {
-      window.__bldTemplates = ['modern', 'minimal'];
+      window.__bldTemplates = ['modern', 'minimal',];
       STATE.selectedTemplate = 'modern';
 
       const html = renderers.renderStepContent(3);
-      
+
       // modern should show 'Applied' and 'Default'
-      const modernMatch = html.match(/data-template="modern"[^>]*>[\s\S]*?<\/div>/);
       expect(html).toContain('Applied');
-      
+
       // minimal should show 'Apply as Default' and 'Template'
       expect(html).toContain('Apply as Default');
       expect(html).toContain('Template');
@@ -186,7 +185,7 @@ describe('createCvBuilderRenderers', () => {
 
   describe('renderSkillTags', () => {
     it('should render skill tags for each skill', () => {
-      const skills = ['JavaScript', 'TypeScript', 'React'];
+      const skills = ['JavaScript', 'TypeScript', 'React',];
       const html = renderers.renderSkillTags(skills, 'technical');
       expect(html).toContain('JavaScript');
       expect(html).toContain('TypeScript');
@@ -202,14 +201,14 @@ describe('createCvBuilderRenderers', () => {
     });
 
     it('should escape HTML in skill names', () => {
-      const skills = ['<script>alert("xss")</script>'];
+      const skills = ['<script>alert("xss")</script>',];
       const html = renderers.renderSkillTags(skills, 'technical');
       expect(html).toContain('&lt;script&gt;');
       expect(html).not.toContain('<script>');
     });
 
     it('should handle special characters in skill names', () => {
-      const skills = ['C++', 'C#', '.NET', 'Node.js'];
+      const skills = ['C++', 'C#', '.NET', 'Node.js',];
       const html = renderers.renderSkillTags(skills, 'technical');
       expect(html).toContain('C++');
       expect(html).toContain('C#');
@@ -220,7 +219,7 @@ describe('createCvBuilderRenderers', () => {
 
   describe('template gradients and thumbnails', () => {
     it('should use per-template gradient backgrounds in review step cards', () => {
-      window.__bldTemplates = ['modern', 'creative', 'ats', 'executive'];
+      window.__bldTemplates = ['modern', 'creative', 'ats', 'executive',];
       STATE.selectedTemplate = 'modern';
 
       const html = renderers.renderStepContent(3);
@@ -234,7 +233,7 @@ describe('createCvBuilderRenderers', () => {
 
     it('should show user first initial overlay on template cards', () => {
       STATE.data.personal.full_name = 'Jane Smith';
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
 
       const html = renderers.renderStepContent(3);
       expect(html).toContain("J's CV");
@@ -242,14 +241,14 @@ describe('createCvBuilderRenderers', () => {
 
     it('should fall back to "Alex Morgan" when no personal data', () => {
       STATE.data = {};
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
 
       const html = renderers.renderStepContent(3);
       expect(html).toContain("A's CV");
     });
 
     it('should fall back to default gradient for unknown template slugs', () => {
-      window.__bldTemplates = ['unknown-slug'];
+      window.__bldTemplates = ['unknown-slug',];
       const html = renderers.renderStepContent(3);
       // Unknown slug falls back to modern's purple gradient
       expect(html).toContain('linear-gradient(135deg, #4f46e5, #7c3aed)');
@@ -266,7 +265,7 @@ describe('createCvBuilderRenderers', () => {
 
   describe('modal structure in review step', () => {
     it('should include iframe for live preview', () => {
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
       const html = renderers.renderStepContent(3);
       expect(html).toContain('bld-preview-iframe');
       expect(html).toContain('sandbox="allow-scripts allow-same-origin"');
@@ -274,14 +273,14 @@ describe('createCvBuilderRenderers', () => {
     });
 
     it('should include download and close buttons in modal header', () => {
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
       const html = renderers.renderStepContent(3);
       expect(html).toContain('download-preview-template');
       expect(html).toContain('close-template-preview');
     });
 
     it('should include Apply, Close, and Download buttons in modal footer', () => {
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
       const html = renderers.renderStepContent(3);
       expect(html).toContain('select-preview-template');
       expect(html).toContain('bld-template-download-link');
@@ -291,7 +290,7 @@ describe('createCvBuilderRenderers', () => {
     });
 
     it('should have a loading spinner in the modal body', () => {
-      window.__bldTemplates = ['modern'];
+      window.__bldTemplates = ['modern',];
       const html = renderers.renderStepContent(3);
       expect(html).toContain('bld-preview-loading');
       expect(html).toContain('bld-spinner');
@@ -389,7 +388,6 @@ describe('CV Builder App Logic', () => {
 
     it('should go back to previous step', () => {
       let currentStep = 2;
-      const steps = createMockSteps();
 
       function prevStep() {
         if (currentStep <= 0) return;
@@ -419,7 +417,7 @@ describe('CV Builder App Logic', () => {
 
   describe('template selection logic', () => {
     it('should track selected template in state', () => {
-      const selectedTemplate = { value: 'modern' };
+      const selectedTemplate = { value: 'modern', };
 
       function selectTemplate(tmpl) {
         selectedTemplate.value = tmpl;
@@ -427,7 +425,7 @@ describe('CV Builder App Logic', () => {
 
       selectTemplate('minimal');
       expect(selectedTemplate.value).toBe('minimal');
-      
+
       selectTemplate('executive');
       expect(selectedTemplate.value).toBe('executive');
     });
@@ -435,7 +433,7 @@ describe('CV Builder App Logic', () => {
     it('should set template on complete builder', () => {
       const state = {
         selectedTemplate: 'creative',
-        data: { personal: { full_name: 'Test' } },
+        data: { personal: { full_name: 'Test', }, },
       };
 
       function completeBuilder(state) {
@@ -450,7 +448,7 @@ describe('CV Builder App Logic', () => {
 
   describe('entry management logic', () => {
     it('should add new empty entries to arrays', () => {
-      const state = { data: { experience: [] } };
+      const state = { data: { experience: [], }, };
 
       function addEntry(section) {
         if (!Array.isArray(state.data[section])) state.data[section] = [];
@@ -464,7 +462,7 @@ describe('CV Builder App Logic', () => {
     });
 
     it('should remove entries by index', () => {
-      const state = { data: { experience: [{ company: 'A' }, { company: 'B' }, { company: 'C' }] } };
+      const state = { data: { experience: [{ company: 'A', }, { company: 'B', }, { company: 'C', },], }, };
 
       function removeEntry(section, idx) {
         const entries = state.data[section];
@@ -479,7 +477,7 @@ describe('CV Builder App Logic', () => {
     });
 
     it('should not remove entry with invalid index', () => {
-      const state = { data: { experience: [{ company: 'A' }] } };
+      const state = { data: { experience: [{ company: 'A', },], }, };
 
       function removeEntry(section, idx) {
         const entries = state.data[section];
@@ -489,13 +487,13 @@ describe('CV Builder App Logic', () => {
 
       removeEntry('experience', -1);
       expect(state.data.experience).toHaveLength(1);
-      
+
       removeEntry('experience', 5);
       expect(state.data.experience).toHaveLength(1);
     });
 
     it('should move entries up and down', () => {
-      const state = { data: { experience: [{ company: 'A' }, { company: 'B' }, { company: 'C' }] } };
+      const state = { data: { experience: [{ company: 'A', }, { company: 'B', }, { company: 'C', },], }, };
 
       function moveEntry(section, idx, dir) {
         const entries = state.data[section];
@@ -521,7 +519,7 @@ describe('CV Builder App Logic', () => {
     });
 
     it('should not move entry at boundaries', () => {
-      const state = { data: { experience: [{ company: 'A' }, { company: 'B' }] } };
+      const state = { data: { experience: [{ company: 'A', }, { company: 'B', },], }, };
 
       function moveEntry(section, idx, dir) {
         const entries = state.data[section];
@@ -541,7 +539,7 @@ describe('CV Builder App Logic', () => {
     });
 
     it('should fix editing index after removal', () => {
-      const editingState = { section: 'experience', index: 2 };
+      const editingState = { section: 'experience', index: 2, };
 
       function removeEntry(section, idx) {
         if (editingState.section === section) {
@@ -567,7 +565,7 @@ describe('CV Builder App Logic', () => {
 
   describe('skill management logic', () => {
     it('should add skills to categorized arrays', () => {
-      const skills = { technical: ['JS'], soft: [] };
+      const skills = { technical: ['JS',], soft: [], };
 
       function addSkill(category, text) {
         if (!skills[category]) skills[category] = [];
@@ -575,24 +573,24 @@ describe('CV Builder App Logic', () => {
       }
 
       addSkill('technical', 'React');
-      expect(skills.technical).toEqual(['JS', 'React']);
+      expect(skills.technical).toEqual(['JS', 'React',]);
 
       addSkill('soft', 'Leadership');
-      expect(skills.soft).toEqual(['Leadership']);
+      expect(skills.soft).toEqual(['Leadership',]);
     });
 
     it('should remove skills by index', () => {
-      const skills = { technical: ['JS', 'React', 'Node'], soft: [] };
+      const skills = { technical: ['JS', 'React', 'Node',], soft: [], };
 
       skills.technical.splice(1, 1);
-      expect(skills.technical).toEqual(['JS', 'Node']);
+      expect(skills.technical).toEqual(['JS', 'Node',]);
     });
 
     it('should edit an existing skill', () => {
-      const skills = { technical: ['JS', 'React'] };
+      const skills = { technical: ['JS', 'React',], };
 
       skills.technical[1] = 'Vue';
-      expect(skills.technical).toEqual(['JS', 'Vue']);
+      expect(skills.technical).toEqual(['JS', 'Vue',]);
     });
   });
 
@@ -605,10 +603,10 @@ describe('CV Builder App Logic', () => {
         return Math.round((currentStep / (totalSteps - 1)) * 100);
       }
 
-      expect(calcProgress(0)).toBe(0);    // personal
-      expect(calcProgress(1)).toBe(33);   // professional
-      expect(calcProgress(2)).toBe(67);   // extras
-      expect(calcProgress(3)).toBe(100);  // review
+      expect(calcProgress(0)).toBe(0); // personal
+      expect(calcProgress(1)).toBe(33); // professional
+      expect(calcProgress(2)).toBe(67); // extras
+      expect(calcProgress(3)).toBe(100); // review
     });
   });
 
@@ -617,7 +615,7 @@ describe('CV Builder App Logic', () => {
       const cvId = 42;
       const selectedTemplate = 'modern';
 
-      const url = '/api/cv/' + cvId + '/preview?template=' + encodeURIComponent(selectedTemplate) + '&t=' + Date.now();
+      const url = `/api/cv/${ cvId }/preview?template=${ encodeURIComponent(selectedTemplate) }&t=${ Date.now()}`;
       expect(url).toContain('/api/cv/42/preview?template=modern');
       expect(url).toContain('&t=');
     });
@@ -627,7 +625,7 @@ describe('CV Builder App Logic', () => {
     });
 
     it('should fall back to modern template when none selected', () => {
-      const tmpl = undefined || 'modern';
+      const tmpl = 'modern';
       expect(tmpl).toBe('modern');
     });
   });
@@ -635,7 +633,7 @@ describe('CV Builder App Logic', () => {
   describe('completeBuilder data collection', () => {
     it('should fill in missing step data with defaults', () => {
       const state = {
-        data: { personal: { full_name: 'Test' } },
+        data: { personal: { full_name: 'Test', }, },
         selectedTemplate: 'professional',
       };
       const steps = createMockSteps();
@@ -647,9 +645,9 @@ describe('CV Builder App Logic', () => {
           if (sid === 'professional') {
             state.data.experience = state.data.experience || [];
             state.data.education = state.data.education || [];
-            state.data.skills = state.data.skills || { technical: [], soft: [] };
+            state.data.skills = state.data.skills || { technical: [], soft: [], };
             state.data.languages = state.data.languages || [];
-            state.data.professional = { _combined: true };
+            state.data.professional = { _combined: true, };
           } else {
             state.data[sid] = [];
           }
@@ -658,7 +656,7 @@ describe('CV Builder App Logic', () => {
       state.data._template = state.selectedTemplate;
 
       expect(state.data._template).toBe('professional');
-      expect(state.data.professional).toEqual({ _combined: true });
+      expect(state.data.professional).toEqual({ _combined: true, });
       expect(Array.isArray(state.data.experience)).toBe(true);
       expect(Array.isArray(state.data.education)).toBe(true);
       // 'references' is not a step-level key (not in STEPS), so it won't be auto-initialized
@@ -703,7 +701,7 @@ describe('CV Builder App Logic', () => {
 
     it('should fall back to capitalized slug for unknown templates', () => {
       const slug = 'custom';
-      const label = { custom: 'Custom' }[slug] || slug.charAt(0).toUpperCase() + slug.slice(1);
+      const label = { custom: 'Custom', }[slug] || slug.charAt(0).toUpperCase() + slug.slice(1);
       expect(label).toBe('Custom');
     });
   });

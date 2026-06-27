@@ -7,13 +7,6 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-// If executed via a browser, instruct to use the new frontend collector UI.
-if (PHP_SAPI !== 'cli') {
-    header('Content-Type: text/html; charset=utf-8');
-    echo "<h1>MedEx Detailed Scraper</h1><p>This CLI tool has been replaced by the browser-based collector: <a href=\"/medex-collector.html\">/medex-collector.html</a></p>";
-    exit;
-}
-
 /**
  * MedEx Scraper - Detailed Medicine Information Extractor
  * Fetches detailed information for all brands of herbal companies

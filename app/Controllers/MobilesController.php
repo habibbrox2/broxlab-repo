@@ -233,7 +233,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
 
         logActivity("Mobile Created", "mobile", $mobile_id, ['brand' => $brand_name, 'model' => $model_name, 'status' => $status], 'success');
         showMessage("Mobile inserted successfully", "success");
-        header('Location: /admin/mobiles/list');
+        header('Location: /admin/mobiles/all');
         exit;
     });
 
@@ -299,7 +299,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
         if (!$id) {
             logActivity("Mobile Update Failed", "mobile", 0, ['reason' => 'Missing ID'], 'failure');
             showMessage("Missing ID", "error");
-            header("Location: /admin/mobiles/list");
+            header("Location: /admin/mobiles/all");
             exit;
         }
 
@@ -421,7 +421,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
         if (!$id) {
             logActivity("Mobile Deletion Failed", "mobile", 0, ['reason' => 'Missing ID'], 'failure');
             showMessage("Missing ID", "error");
-            header("Location: /admin/mobiles/list");
+            header("Location: /admin/mobiles/all");
             exit;
         }
 
@@ -429,7 +429,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
         if (!$mobile) {
             logActivity("Mobile Deletion Failed", "mobile", 0, ['reason' => 'Mobile not found'], 'failure');
             showMessage("Mobile not found", "error");
-            header("Location: /admin/mobiles/list");
+            header("Location: /admin/mobiles/all");
             exit;
         }
 
@@ -456,7 +456,7 @@ $router->group('/admin/mobiles', ['middleware' => ['auth', 'admin_only']], funct
             showMessage("Failed to delete mobile", "error");
         }
 
-        header("Location: /admin/mobiles/list");
+        header("Location: /admin/mobiles/all");
         exit;
     });
 });

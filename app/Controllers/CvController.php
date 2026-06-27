@@ -277,6 +277,13 @@ $router->get('/cv-builder/guest', function () use ($twig, $mysqli, $cvModel) {
     ]);
 });
 
+$router->get('/admin/cv-templates', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    echo $twig->render('admin/cv/templates/list.twig', [
+        'page_title' => 'CV Templates',
+        'current_page' => 'cv-templates',
+    ]);
+});
+
 $router->get('/admin/cv-templates/view/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig) {
     $slug = sanitize_input(basename($slug));
     $template = function_exists('cvTemplateGet') ? cvTemplateGet($slug) : null;

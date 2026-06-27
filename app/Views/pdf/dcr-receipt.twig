@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>অনলাইন ডিসিআর রশিদ — {{ data.online_dcr_no|default(data.khata_number|default('')) }}</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Noto Sans Bengali', 'SolaimanLipi', 'nikosh', Arial, sans-serif;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 8mm 8mm 6mm 8mm;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    text-align: center;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header .gov-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #000;
+    line-height: 1.5;
+  }
+
+  .header .office-title {
+    font-size: 17px;
+    color: #000;
+    line-height: 1.5;
+  }
+
+  .header .district-line {
+    font-size: 16px;
+    color: #000;
+    line-height: 1.5;
+  }
+
+  .header .dcr-title {
+    font-weight: 700;
+    font-size: 22px;
+    color: #000;
+    margin-top: 4px;
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  .header-divider {
+    border: none;
+    border-top: 2px solid #000;
+    margin: 8px 0 6px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== ALL TABLES ===== */
+  .dcr-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0 8px;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dcr-table td, .dcr-table th {
+    border: 1px solid #555;
+    padding: 7px 9px;
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+
+  .label-cell {
+    white-space: nowrap;
+    width: 165px;
+    color: #111;
+  }
+
+  .value-cell {
+    font-weight: 400;
+    color: #000;
+  }
+
+  /* Land detail table header */
+  .land-header th {
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 5px;
+  }
+
+  .land-header td {
+    text-align: center;
+    padding: 6px 5px;
+  }
+
+  .total-row td {
+    text-align: center;
+  }
+
+  /* Fee table */
+  .fee-label-cell {
+    text-align: right;
+    width: 130px;
+  }
+
+  .fee-section-label {
+    vertical-align: middle;
+  }
+
+  /* ===== BOTTOM SECTION: QR + Seal + Signature (inline table) ===== */
+  .bottom-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid #555;
+    margin-top: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bottom-table td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    text-align: center;
+  }
+
+  .bottom-table .qr-cell {
+    text-align: left;
+    width: 33%;
+  }
+
+  .bottom-table .stamp-cell {
+    width: 34%;
+  }
+
+  .bottom-table .sign-cell {
+    width: 33%;
+  }
+
+  /* QR Code */
+  .qr-image-wrap {
+    width: 90px;
+    height: 90px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .qr-image-wrap img {
+    width: 95px;
+    height: 95px;
+    display: block;
+  }
+
+  .qr-label {
+    font-size: 11px;
+    margin-top: 4px;
+    text-align: right;
+    color: #333;
+  }
+
+  /* Official Stamp / Seal */
+  .stamp-wrap {
+    display: inline-block;
+    position: relative;
+  }
+
+  .stamp-image {
+    max-width: 100px;
+    max-height: 100px;
+  }
+
+  .red-seal-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    max-width: 90px;
+    max-height: 90px;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Signature */
+  .signature-label {
+    font-weight: 700;
+    font-size: 12px;
+    margin-top: 0;
+    color: #000000;
+  }
+
+  .signature-image {
+    max-width: 130px;
+    max-height: 36px;
+    display: block;
+    margin: 4px auto;
+  }
+
+
+  hr.sig-line-solid {
+    border-top: 2px solid #800080;
+    margin: 2px auto 6px auto;
+    width: 90%;
+  }
+
+  .sig-name-line {
+    font-size: 12px;
+    font-weight: 700;
+    color: #800080;
+    line-height: 1.6;
+  }
+
+  .sig-name-indent {
+    font-size: 12px;
+    font-weight: 700;
+    color: #800080;
+    line-height: 1.6;
+    padding-left: 1.2em;
+  }
+
+  .sig-post {
+    font-size: 11.5px;
+    color: #800080;
+    line-height: 1.5;
+    margin-top: 2px;
+  }
+
+  .sig-address {
+    font-size: 11.5px;
+    color: #800080;
+    line-height: 1.5;
+  }
+
+  /* ===== NOTES ===== */
+  .notes-section {
+    margin-top: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .notes-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+
+  .notes-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .notes-list li {
+    font-size: 12px;
+    line-height: 1.7;
+    padding-left: 18px;
+    position: relative;
+    color: #111;
+  }
+
+  .notes-list li::before {
+    content: attr(data-num) "।";
+    position: absolute;
+    left: 0;
+    font-weight: 600;
+  }
+
+  /* Merged border for continuous table look */
+  .table-wrapper {
+    position: relative;
+    z-index: 1;
+  }
+
+  .table-wrapper .dcr-table + .dcr-table {
+    margin-top: -1px;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer-text {
+    text-align: center;
+    font-size: 8px;
+    color: #888;
+    margin-top: 10px;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media print {
+    .page {
+      margin: 0;
+      padding: 12mm 14mm 8mm 14mm;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <div class="gov-title">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+    <div class="office-title">উপজেলা ভূমি অফিস, {{ data.upazila|default('ধামরাই') }}</div>
+    <div class="district-line">{{ data.upazila|default('ধামরাই') }}{% if data.district|default('') %}, {{ data.district }}{% endif %}</div>
+    <div class="dcr-title">Duplicate Carbon Receipt (DCR)</div>
+  </div>
+
+  <hr class="header-divider">
+
+  <!-- ===== ALL TABLES ===== -->
+  <div class="table-wrapper">
+
+    {# ── DCR Number & Date ── #}
+    <table class="dcr-table">
+      <tr class="dcr-no-row">
+        <td class="label-cell">অনলাইন ডিসিআর নম্বরঃ</td>
+        <td class="value-cell" style="font-weight:600; font-size:14px;">{{ data.online_dcr_no|default('') }}</td>
+        <td class="label-cell" style="width:110px; text-align:right;">জমার তারিখ</td>
+        <td class="value-cell" style="width:110px;">{{ data.application_date|default('') }}</td>
+      </tr>
+    </table>
+
+    {# ── Applicant Name ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell">আবেদনকারীর নাম</td>
+        <td class="value-cell">
+          {% if data.owners is defined and data.owners|length > 0 %}
+            {% for owner in data.owners %}
+              {{ loop.index }}) {{ owner.name|default('') }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+          {% elseif data.owner_name is defined and data.owner_name %}
+            ১) {{ data.owner_name }}
+          {% else %}
+            — —
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    {# ── Applicant Address ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell">আবেদনকারীর ঠিকানা</td>
+        <td class="value-cell">
+          {% set address_parts = [] %}
+          {% if data.owners is defined and data.owners|length > 0 %}
+            {% set first_owner = data.owners[0] %}
+            {% if first_owner.address is defined and first_owner.address %}
+              {% set address_parts = address_parts|merge(['বাসা/হোল্ডিং: ' ~ first_owner.address]) %}
+            {% endif %}
+          {% elseif data.owner_address is defined and data.owner_address %}
+            {% set address_parts = address_parts|merge(['বাসা/হোল্ডিং: ' ~ data.owner_address]) %}
+          {% endif %}
+          {% if data.post_office is defined and data.post_office %}
+            {% set address_parts = address_parts|merge(['ডাকঘর: ' ~ data.post_office]) %}
+          {% endif %}
+          {% if data.upazila is defined and data.upazila %}
+            {% set address_parts = address_parts|merge([data.upazila]) %}
+          {% endif %}
+          {% if data.district is defined and data.district %}
+            {% set address_parts = address_parts|merge([data.district]) %}
+          {% endif %}
+          {{ address_parts|join(', ')|default('— —') }}
+        </td>
+      </tr>
+    </table>
+
+    {# ── Application Number ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell">আবেদন নম্বর</td>
+        <td class="value-cell">{{ data.application_no|default('') }}</td>
+      </tr>
+    </table>
+
+    {# ── Mutation Case & Date ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell">মিউটেশন মামলা নম্বর</td>
+        <td class="value-cell">{{ data.mutation_case_no|default('') }}</td>
+        <td class="label-cell" style="width:160px; text-align:right;">মিউটেশন আদেশের তারিখঃ</td>
+        <td class="value-cell" style="width:100px;">{{ data.mutation_order_date|default(data.approved_date|default('')) }}</td>
+      </tr>
+    </table>
+
+    {# ── Khatian & Holding Number ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell">মিউটেশন খতিয়ান নম্বর</td>
+        <td class="value-cell">{{ data.mutation_khata_number|default(data.khata_number|default('')) }}</td>
+        <td class="label-cell" style="width:160px; text-align:right;">মিউটেশন হোল্ডিং নম্বর</td>
+        <td class="value-cell" style="width:100px;">{{ data.mutation_housing_number|default(data.khata_number|default('')) }}</td>
+      </tr>
+    </table>
+
+    {# ── Land Details (Tafshil) ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell" rowspan="3" style="text-align:center; vertical-align:middle;">জমির তফসিল</td>
+        <th class="land-header" style="text-align:center;">মৌজা</th>
+        <th class="land-header" style="text-align:center;">জে এল নাম্বার</th>
+        <th class="land-header" style="text-align:center;">আগত খতিয়ানের ধরণ</th>
+        <th class="land-header" style="text-align:center;">আগত খতিয়ানের নং</th>
+        <th class="land-header" style="text-align:center;">দাগ নং</th>
+        <th class="land-header" style="text-align:center; width:65px;">জমির পরিমাণ</th>
+      </tr>
+      <tr>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.mouza|default('') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.jl_number|default('') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.previous_khatian_type|default('আর এস') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px; font-size:11.5px;">{{ data.previous_khatian_number|default('') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px; font-size:11.5px;">{{ data.dag_number|default('') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.total_land_area|default('০') }}</td>
+      </tr>
+      <tr>
+        <td colspan="5" style="text-align:center; border:1px solid #555; padding:6px 5px;">মোট জমির পরিমাণ</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.total_land_area|default('০') }} একর</td>
+      </tr>
+    </table>
+
+    {# ── Fee Section ── #}
+    <table class="dcr-table" style="margin-top:-1px;">
+      <tr>
+        <td class="label-cell fee-section-label" rowspan="3" style="text-align:center; width:140px;">ফি এর পরিমান</td>
+        <td style="border:1px solid #555; padding:6px 9px; width:110px; text-align:center;">খাত</td>
+        <td style="border:1px solid #555; padding:6px 9px; text-align:center;">পরিমাণ (টাকায়)</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #555; padding:7px 9px;  text-align:center;">ডিসিআর ফি</td>
+        <td style="border:1px solid #555; padding:7px 9px; text-align:left; padding-left:20px;">{{ data.dcr_fee|default('১১০০') }} /=</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #555; padding:7px 9px; font-weight:700; text-align:center;">সর্বমোট</td>
+        <td style="border:1px solid #555; padding:7px 9px; font-weight:700; text-align:left; padding-left:20px;">{{ data.total_fee|default(data.dcr_fee|default('১১০০')) }} /=</td>
+      </tr>
+    </table>
+
+  </div>
+
+<!-- ===== BOTTOM TABLE: QR + Stamp + Signature (all inline) ===== -->
+   <table class="bottom-table">
+     <tr>
+       <td class="qr-cell" style="vertical-align: top;">
+         <div class="qr-image-wrap">
+           {% if qr_data_uri is defined and qr_data_uri %}
+           <img src="{{ qr_data_uri }}" alt="QR Code" style="width:85px;height:85px;">
+           {% endif %}
+         </div>
+         <div class="qr-label">অনুসন্ধান করুন</div>
+       </td>
+       <td class="stamp-cell" style="vertical-align: top;">
+         <div class="stamp-wrap">
+           {% if images.organisation_seal is defined and images.organisation_seal %}
+           <img src="{{ images.organisation_seal }}" alt="সীল" class="stamp-image">
+           {% endif %}
+         </div>
+       </td>
+<td class="sign-cell" style="vertical-align: top; position: relative;">
+          {% if images.sign_rafi is defined and images.sign_rafi %}
+          <img src="{{ images.sign_rafi }}" alt="স্বাক্ষর" class="signature-image">
+          {% elseif images.sign_rezaul is defined and images.sign_rezaul %}
+          <img src="{{ images.sign_rezaul }}" alt="স্বাক্ষর" class="signature-image">
+          {% else %}
+          <div style="font-family: Georgia, serif; font-style: italic; font-size:18px; color:#000; padding:4px 0;">
+            &#x2112;&#x1D4AA; &#x2112;-&#x1D4AA;
+          </div>
+          {% endif %}
+          <div class="signature-label" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.7); padding: 2px 6px; font-size: 11px;">স্বাক্ষর</div>
+
+         <hr class="sig-line-solid">
+
+         <div class="sig-name-line">নামঃ মোঃ রিদওয়ান আহমেদ</div>
+         <div class="sig-name-indent">রাফি</div>
+
+         <div class="sig-post">সহকারী কমিশনার (ভূমি)</div>
+
+         <div class="sig-address">ধামরাই, ঢাকা</div>
+       </td>
+     </tr>
+   </table>
+
+  <!-- ===== NOTES / বিশেষ দ্রষ্টব্য ===== -->
+  <div class="notes-section">
+    <div class="notes-title">বিশেষ দ্রষ্টব্যঃ</div>
+    <ul class="notes-list">
+      <li data-num="১">ভূমি মন্ত্রণালয়ের স্মারক নং ৩১.০০.০০০০.০৪২.৮.০১১.২০-৫৫৯; তারিখঃ ০২-১১-২০২১ খ্রিঃ এর পরিপত্র মোতাবেক অনলাইন ডিসিআর (DCR) ম্যানুয়াল পদ্ধতিতে প্রদত্ত ডিসিআর-এর সমতুল্য। ইহা আইনগতভাবে বৈধ ও সর্বক্ষেত্রে গ্রহণযোগ্য হবে।</li>
+      <li data-num="২">অনলাইন ডিসিআর (DCR) এর সঠিকতা যাচাইয়ের জন্য কিউআর (QR) কোডটি স্ক্যান করে যাচাই করতে পারবেন।</li>
+      <li data-num="৩">ভূমি অফিস থেকে ম্যানুয়াল ডিসিআর সংগ্রহ করার প্রয়োজনীয়তা নেই।</li>
+      <li data-num="৪">ভূমি বিষয়ক যেকোন তথ্য বা পরামর্শের জন্য ১৬১২২ নম্বরে কল করুন।</li>
+    </ul>
+  </div>
+
+
+</div>
+
+</body>
+</html>

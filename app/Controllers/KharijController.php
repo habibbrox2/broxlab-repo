@@ -591,6 +591,145 @@ $router->get('/admin/kharij/image-download/{id}', ['middleware' => ['auth', 'adm
 });
 
 // ============================================================
+// HELPER: Stream DCR Receipt PDF with inline/attachment toggle
+// ============================================================
+
+$kharijStreamDcrReceipt = function (array $data, string $hash, bool $inline = true) use ($twig): void {
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
+
+    $html = $twig->render('pdf/dcr-receipt.twig', $data);
+
+    $mpdf = mpdf_create_instance([
+        'format' => 'A4',
+        'orientation' => 'P',
+        'margin_left' => 5,
+        'margin_right' => 5,
+        'margin_top' => 4,
+        'margin_bottom' => 5,
+    ]);
+
+    if (!$mpdf) {
+        http_response_code(500);
+        echo 'Failed to initialize PDF engine';
+        exit;
+    }
+
+    mpdf_apply_runtime_optimizations($mpdf);
+
+    if (method_exists($mpdf, 'SetDefaultFontSize')) {
+        $mpdf->SetDefaultFontSize(10);
+    }
+
+    // Watermark — shown on all pages behind content
+    $watermarkPath = realpath(__DIR__ . '/../../public_html/assets/images/kharij/watermark.png');
+    if ($watermarkPath && is_file($watermarkPath) && method_exists($mpdf, 'SetWatermarkImage')) {
+        $mpdf->SetWatermarkImage($watermarkPath, 0.18, 205);
+        $mpdf->showWatermarkImage = true;
+        $mpdf->watermarkImgBehind = true;
+    }
+
+    $mpdf->SetTitle('অনলাইন ডিসিআর রশিদ - ' . ($data['data']['online_dcr_no'] ?? $data['data']['khata_number'] ?? ''));
+    $mpdf->SetAuthor('BroxLab Kharij System');
+    $mpdf->SetSubject('ডিসিআর রশিদ (Duplicate Carbon Receipt)');
+    $mpdf->WriteHTML(mpdf_optimize_html($html));
+
+    $pdfBinary = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+
+    $filename = 'dcr-receipt-' . ($data['data']['online_dcr_no'] ?? $data['data']['khata_number'] ?? 'receipt') . '.pdf';
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/u', '_', $filename);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($pdfBinary));
+    header('Cache-Control: max-age=0');
+    header('Pragma: public');
+    echo $pdfBinary;
+    exit;
+};
+
+// ============================================================
+// ADMIN ROUTE: Download DCR Receipt PDF
+// GET /admin/kharij/dcr-receipt/{id}
+// ============================================================
+
+$router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijStreamDcrReceipt) {
+    $kharijModel = new KharijModel($mysqli);
+    $id = (int)$id;
+    $record = $kharijModel->findById($id);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'Kharij record not found';
+        exit;
+    }
+
+    $data = $record['data'];
+    $hash = $record['hash'] ?? '';
+    $qrDataUri = $kharijGenerateQr($hash);
+    $verificationUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/mutation-land-gov-bd/online-dcr/' . $hash;
+
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'hash' => $hash,
+        'verification_url' => $verificationUrl,
+        'images' => [
+            'organisation_seal' => '/assets/images/kharij/seal.png',
+            'red_seal' => '/assets/images/kharij/red-seal.png',
+            'sign_rafi' => '/assets/images/kharij/sign-rafi.png',
+        ],
+    ];
+
+    // Stream as download (attachment)
+    $kharijStreamDcrReceipt($templateData, $hash, true);
+    exit;
+});
+
+// ============================================================
+// PUBLIC ROUTE: Online DCR Preview / Verification (no auth required)
+// GET /mutation-land-gov-bd/online-dcr/{hash}
+// ============================================================
+
+$router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($mysqli, $kharijGenerateQr, $kharijStreamDcrReceipt) {
+    $kharijModel = new KharijModel($mysqli);
+    $record = $kharijModel->findByHash($hash);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'রশিদ পাওয়া যায়নি';
+        exit;
+    }
+
+    $data = $record['data'];
+    $qrDataUri = $kharijGenerateQr($hash);
+
+    // Generate the verification URL using $_SERVER for the public link
+    $verificationUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/mutation-land-gov-bd/online-dcr/' . $hash;
+
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'hash' => $hash,
+        'verification_url' => $verificationUrl,
+        'images' => [
+            'organisation_seal' => '/assets/images/kharij/seal.png',
+            'red_seal' => '/assets/images/kharij/red-seal.png',
+            'sign_rafi' => '/assets/images/kharij/sign-rafi.png',
+        ],
+    ];
+
+    // Preview inline in browser (for QR scan → live preview)
+    $kharijStreamDcrReceipt($templateData, $hash, true);
+    exit;
+});
+
+// ============================================================
 // PUBLIC ROUTE: PDF Download (no auth required)
 // GET /mutation-land-gov-bd/QrScanner/KhatianDownload/{hash}
 // ============================================================

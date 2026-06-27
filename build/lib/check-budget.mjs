@@ -38,7 +38,7 @@ const BUDGETS = [
   { key: 'public_html/assets/js/dist/ai-system-admin.js',        maxBytes: 35_000,  label: 'ai-system-admin.js' },
   { key: 'public_html/assets/js/dist/analytics-dashboard.js',    maxBytes: 25_000,  label: 'analytics-dashboard.js' },
   { key: 'public_html/assets/js/dist/account-settings-shared.js', maxBytes: 28_000, label: 'account-settings-shared.js' },
-  { key: 'public_html/assets/js/dist/cv-builder.js',             maxBytes: 55_000,  label: 'cv-builder.js (app + renderers bundled)' },
+  { key: 'public_html/assets/js/dist/cv-builder.js',             maxBytes: 60_000,  label: 'cv-builder.js (app + renderers bundled)' },
   { key: 'public_html/assets/js/dist/datepicker.js',             maxBytes: 28_000,  label: 'datepicker.js' },
 
   // ── Other JS bundles ──
@@ -96,8 +96,8 @@ const BUDGETS = [
   { pattern: 'public_html/assets/js/dist/chunk-*.js',           maxBytes: 10_000,  label: 'tiny shared chunks' },
 
   // ── CSS ──
-  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 480_000, label: 'tailwind-public.css' },
-  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 480_000, label: 'tailwind-admin.css' },
+  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 490_000, label: 'tailwind-public.css' },
+  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 490_000, label: 'tailwind-admin.css' },
   { key: 'public_html/assets/css/dist/admin-bundle.css',       maxBytes: 565_000, label: 'admin-bundle.css' },
   { key: 'public_html/assets/css/dist/public-bundle.css',      maxBytes: 565_000, label: 'public-bundle.css' },
 

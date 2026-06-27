@@ -80,6 +80,19 @@ $setSitemapHeaders = static function (): void {
     header('X-Robots-Tag: noindex'); // prevent indexing the sitemaps themselves
 };
 
+$router->get('/robots.txt', function () use ($twig) {
+    $protocol = brox_get_request_protocol();
+    $host = brox_get_request_host() ?? 'localhost';
+    $host = preg_replace('/:\\d+$/', '', $host);
+    $sitemapUrl = $protocol . '://' . $host . '/sitemap.xml';
+
+    header('Content-Type: text/plain; charset=utf-8');
+    echo $twig->render('public/robots.txt.twig', [
+        'sitemap_url' => $sitemapUrl,
+    ]);
+    exit;
+});
+
 // ============================================================
 // SITEMAP INDEX (entry point for search engines)
 // ============================================================
@@ -248,7 +261,7 @@ $router->get('/sitemap-static.xml', function () use ($twig, $setSitemapHeaders) 
         ]);
     } catch (\Throwable $e) {
         error_log('Sitemap static error: ' . $e->getMessage());
-        echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' . htmlspecialchars(base_url() ?: 'http://localhost/') . '</loc></url></urlset>';
+        echo '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' . htmlspecialchars(getAppUrl() ?: 'http://localhost/') . '</loc></url></urlset>';
     }
     exit;
 });
@@ -264,6 +277,22 @@ $router->get('/sitemap-mobiles.xml', function () use ($twig, $mobileModel, $setS
     }
     echo $twig->render('public/sitemaps/sitemap-mobiles.twig', [
         'mobiles' => $mobiles,
+    ]);
+    exit;
+});
+
+// --- MedEx Brands (individual brand/medicine pages) ---
+$router->get('/sitemap-medex-brands.xml', function () use ($twig, $setSitemapHeaders) {
+    $setSitemapHeaders();
+    try {
+        $medexService = new \App\Services\MedexDataService();
+        $brands = $medexService->getAllBrands();
+    } catch (\Throwable $e) {
+        error_log('Sitemap MedEx brands error: ' . $e->getMessage());
+        $brands = [];
+    }
+    echo $twig->render('public/sitemaps/sitemap-medex-brands.twig', [
+        'brands' => $brands,
     ]);
     exit;
 });

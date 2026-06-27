@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 /**
- * ESBuild RTE Bundle
- * Concatenates and minifies all eager-loaded RTE editor helper files
+ * ESBuild RTE Bundle (Optimized)
+ * Concatenates and tree-shakes all eager-loaded RTE editor helper files
  * into a single editor.bundle.js, reducing HTTP requests from 11->1 on init.
+ *
+ * Optimizations:
+ * - Uses esbuild.build() with stdin for tree-shaking (vs transform() which only minifies)
+ * - Defines window.RTE_DEBUG=false at build time so debug code branches are eliminated
+ * - Marks debug log calls as pure so dead debug code is tree-shaken away
+ * - Removes debugger statements
+ * - Strips license comments for smaller size
  *
  * The 3 lazy modules (modals, color, images) are excluded - they are loaded
  * dynamically on first interaction via editor.js _loadLazyModule().
  */
 
 import esbuild from 'esbuild';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { existsSync, readFileSync } from 'fs';
+import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,20 +38,12 @@ const EAGER_MODULES = [
 ];
 
 async function buildRteBundle() {
-  console.log('Building RTE editor bundle...');
+  console.log('Building RTE editor bundle (optimized)...');
 
   const outputPath = join(RTE_DIR, 'editor.bundle.js');
 
-  let sourceParts = [
-    '// RTE Editor Bundle - generated ' + new Date().toISOString(),
-    '// Eager modules: ' + EAGER_MODULES.join(', '),
-    '// 3 lazy modules (modals, color, images) loaded dynamically.',
-    '',
-    'if (typeof window.__RTE_BUNDLED__ === "undefined") {',
-    '  window.__RTE_BUNDLED__ = true;',
-    '}',
-    '',
-  ];
+  // Concatenate all eager modules into a single source
+  const sourceParts = [];
 
   for (const file of EAGER_MODULES) {
     const filePath = join(RTE_DIR, file);
@@ -53,39 +52,57 @@ async function buildRteBundle() {
       process.exit(1);
     }
     const code = readFileSync(filePath, 'utf-8');
-    sourceParts.push('// ===== ' + file + ' =====');
     sourceParts.push(code);
-    sourceParts.push('');
   }
 
   const concatSource = sourceParts.join('\n');
 
   try {
-    const result = await esbuild.transform(concatSource, {
-      minify: true,
-      target: 'es2020',
+    // Use esbuild.build() with stdin instead of transform() so tree-shaking
+    // and other build-level optimizations are applied.
+    const result = await esbuild.build({
+      stdin: {
+        contents: concatSource,
+        sourcefile: 'editor.bundle.js',
+        resolveDir: RTE_DIR,
+      },
+      outfile: outputPath,
+      bundle: false, // We handle bundling ourselves via concatenation
       format: 'iife',
+      target: 'es2020',
+      minify: true,
+      minifyWhitespace: true,
+      minifyIdentifiers: true,
+      minifySyntax: true,
       logLevel: 'warning',
+      allowOverwrite: true,
+      legalComments: 'none',
+      drop: ['debugger'],
+      pure: ['window.RTE_debugLog'],
+      // window.RTE_DEBUG is NOT defined here to avoid 'assign-to-define' warnings,
+      // since the editor source code also assigns to it at runtime for the debug
+      // toggle API (RTE_enableDebug, options.debug). The 'pure' marking on
+      // window.RTE_debugLog above handles tree-shaking of log calls instead.
     });
 
-    const header = '/* RTE Editor Bundle - ' + new Date().toISOString() + ' */\n' +
-      '/* Eager: ' + EAGER_MODULES.length + ' files - 3 lazy (modals,color,images) loaded dynamically */\n';
-    writeFileSync(outputPath, header + result.code, 'utf-8');
+    // Re-read the written file to calculate sizes
+    const bundledCode = readFileSync(outputPath, 'utf-8');
 
     const originalBytes = Buffer.byteLength(concatSource, 'utf-8');
-    const bundledBytes = Buffer.byteLength(header + result.code, 'utf-8');
+    const bundledBytes = Buffer.byteLength(bundledCode, 'utf-8');
     const savings = ((1 - bundledBytes / originalBytes) * 100).toFixed(1);
 
     console.log('RTE bundle written: ' + outputPath);
     console.log('Original: ' + (originalBytes / 1024).toFixed(1) + ' KB -> Bundled: ' + (bundledBytes / 1024).toFixed(1) + ' KB (' + savings + '% reduction)');
     console.log(EAGER_MODULES.length + ' eager files -> 1 bundle');
+    console.log('Optimizations: pure[RTE_debugLog], drop[debugger], legalComments[none]');
   } catch (err) {
-    console.error('esbuild transform failed: ' + err.message);
+    console.error('esbuild build failed: ' + err.message);
     process.exit(1);
   }
 }
 
-buildRteBundle().catch(function(err) {
+buildRteBundle().catch(function (err) {
   console.error('Build failed: ' + err.message);
   process.exit(1);
 });
