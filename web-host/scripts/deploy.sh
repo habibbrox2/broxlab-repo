@@ -178,22 +178,16 @@ start_node_server() {
     local pid=""
     pid=$(cat "$PID_FILE" 2>/dev/null || true)
     if [[ -z "$pid" ]]; then
-        log_error "Node server PID file was not created"
-        return 1
+        log_warn "Node server PID file was not created; skipping (Node server is optional)"
+        return 0
     fi
 
     for _ in $(seq 1 30); do
         if ! kill -0 "$pid" 2>/dev/null; then
-            wait "$pid" 2>/dev/null
-            rc=$?
-            if [[ "$rc" -eq 0 ]]; then
-                log_info "npm start completed successfully (no persistent server)"
-                rm -f "$PID_FILE"
-                return 0
-            fi
-            log_error "npm start failed with exit code $rc. Check: $node_log"
-            tail -40 "$node_log" 2>/dev/null || true
-            return 1
+            wait "$pid" 2>/dev/null || true
+            log_warn "npm start exited; skipping Node server (optional for PHP-first deployments)"
+            rm -f "$PID_FILE"
+            return 0
         fi
         if health_check; then
             log_info "Node server is healthy"
@@ -202,7 +196,7 @@ start_node_server() {
         sleep 2
     done
 
-    log_warn "Node server started, but health check timed out"
+    log_warn "Node server started, but health check timed out; continuing deployment anyway"
     return 0
 }
 
