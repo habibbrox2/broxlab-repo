@@ -184,7 +184,14 @@ start_node_server() {
 
     for _ in $(seq 1 30); do
         if ! kill -0 "$pid" 2>/dev/null; then
-            log_error "Node server exited early. Check: $node_log"
+            local exit_code=0
+            wait "$pid" 2>/dev/null || exit_code=$?
+            if [[ "$exit_code" -eq 0 ]]; then
+                log_info "npm start finished successfully (no long-running Node server required)"
+                rm -f "$PID_FILE"
+                return 0
+            fi
+            log_error "Node server exited early with code $exit_code. Check: $node_log"
             tail -40 "$node_log" 2>/dev/null || true
             return 1
         fi
