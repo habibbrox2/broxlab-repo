@@ -171,7 +171,7 @@ start_node_server() {
     log_info "Starting single Node server with npm start"
     (
         cd "$CURRENT"
-        nohup env NODE_ENV="$NODE_ENV" npm start > "$node_log" 2>&1 &
+        nohup env NODE_ENV="$NODE_ENV" PATH="$PATH" npm start > "$node_log" 2>&1 &
         echo $! > "$PID_FILE"
     )
 
