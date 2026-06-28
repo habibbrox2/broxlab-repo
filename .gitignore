@@ -214,6 +214,11 @@ jest.config.js.bak
 /playwright-report/
 /playwright/.cache/
 .playwright/
+.playwright-mcp/
+.gitignore.server
+TOKEN_OPTIMIZATION_REPORT.md
+CORE_RULES.md
+copilot-instructions.md
 
 # ─────────────────────────────────────────────────────────────────
 #  13. LOCAL DEVELOPMENT ONLY (Never push)
