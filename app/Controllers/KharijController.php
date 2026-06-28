@@ -17,7 +17,7 @@
  *     GET  /admin/kharij/image-download/{id} → Download first page as PNG
  *
  *   Public (no auth):
- *     GET /mutation-land/qr-vk/{hash}                      → Verify page
+ *     GET /mutation-land-gov-bd/qr-vk/{hash}                      → Verify page
  *     GET /mutation-land-gov-bd/QrScanner/KhatianDownload/{hash} → PDF download
  */
 
@@ -32,10 +32,19 @@ use Endroid\QrCode\Writer\PngWriter;
 // HELPER: Generate QR code as data URI
 // ============================================================
 
-$kharijGenerateQr = function (string $hash): ?string {
+$kharijGetVerificationBaseUrl = function (): string {
+    $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'production') === 'production';
+    if ($isProduction) {
+        return 'https://mutation-land.broxlab.online';
+    }
+    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host;
+};
+
+$kharijGenerateQr = function (string $hash) use ($kharijGetVerificationBaseUrl): ?string {
     try {
-        $verificationUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-            . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/mutation-land/qr-vk/' . $hash;
+        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/qr-vk/' . $hash;
         $qrCode = new QrCode($verificationUrl);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -232,41 +241,52 @@ $router->get('/admin/kharij', ['middleware' => ['auth', 'admin_only']], function
 // ============================================================
 
 $router->get('/admin/kharij/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    // All default values are now generated on the frontend via JavaScript
     echo $twig->render('kharij/create.twig', [
         'title' => 'নতুন খারিজ তৈরি করুন',
         'current_page' => 'kharij',
         'csrf_token' => $_SESSION['csrf_token'] ?? '',
         'data' => [
-            'khata_number' => '৮৮২',
-            'mouza' => 'সেনাইল',
-            'jl_number' => '২০৫',
-            'upazila' => 'ধামরাই',
-            'district' => 'ঢাকা',
-            'owner_name' => 'আয়ুবুর রহমান',
-            'father_or_husband_name' => 'মোঃ বারেক',
-            'mothers_name' => 'খাদেজা',
-            'owner_address' => 'গ্রাম-সেনাইল, থানা-ধামরাই, জেলা-ঢাকা',
-            'share' => '৪.০০০',
-            'dag_number' => '১২৫',
-            'land_type' => 'নাল',
-            'total_land_area' => '০.৫০',
-            'dag_area_shottangsho' => '0',
-            'khash_area_shottangsho' => '0',
-            'inherited_area' => '০.১২৫',
-            'agriculture_area' => '0',
-            'non_agriculture_area' => '0',
-            'total_dag_area' => '0',
-            'single_area' => '0',
-            'khash_area' => '0',
-            'land_development_tax' => '১০',
-            'total_dag_area_summary_acre' => '0',
-            'total_dag_area_summary_shottangsho' => '0',
+            'khata_number' => '',
+            'mouza' => '',
+            'jl_number' => '',
+            'upazila' => '',
+            'district' => '',
+            'owner_name' => '',
+            'father_or_husband_name' => '',
+            'mothers_name' => '',
+            'owner_address' => '',
+            'share' => '',
+            'dag_number' => '',
+            'land_type' => '',
+            'total_land_area' => '',
+            'dag_area_shottangsho' => '',
+            'khash_area_shottangsho' => '',
+            'inherited_area' => '',
+            'agriculture_area' => '',
+            'non_agriculture_area' => '',
+            'total_dag_area' => '',
+            'single_area' => '',
+            'khash_area' => '',
+            'land_development_tax' => '',
+            'total_dag_area_summary_acre' => '',
+            'total_dag_area_summary_shottangsho' => '',
             'total_land_words' => '',
-            'remarks' => 'পূর্ববর্তী খতিয়ান: ৩৪২',
-            'application_no' => '৭৪৩২৬০১',
-            'application_date' => '২১-০৮-২০২৩',
-            'mutation_case_no' => '২,৮৩২(IX-I)/২০২৩-২৪',
-            'online_dcr_no' => '23261420502832',
+            'remarks' => '',
+            'application_no' => '',
+            'application_date' => '',
+            'mutation_case_no' => '',
+            'online_dcr_no' => '',
+            'dcr_fee' => '',
+            'total_fee' => '',
+            'mutation_share' => '',
+            'total_share' => '',
+            'proposed_date' => '',
+            'kanungo_date' => '',
+            'approved_date' => '',
+            'mutation_date' => '',
+            'deed_number' => '',
+            'deed_date' => '',
         ],
         'breadcrumbs' => [
             ['label' => 'Dashboard', 'url' => '/admin/dashboard', 'icon' => 'home'],
@@ -402,6 +422,37 @@ $router->post('/admin/kharij/update/{id}', ['middleware' => ['auth', 'admin_only
 });
 
 // ============================================================
+// ADMIN ROUTE: Bulk delete records (soft delete)
+// POST /admin/kharij/bulk-delete
+// ============================================================
+
+$router->post('/admin/kharij/bulk-delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($mysqli) {
+    $kharijModel = new KharijModel($mysqli);
+
+    $ids = isset($_POST['ids']) && is_array($_POST['ids']) ? $_POST['ids'] : [];
+    $ids = array_map('intval', $ids);
+    $ids = array_filter($ids, fn($id) => $id > 0);
+
+    if (empty($ids)) {
+        showMessage('কোনো রেকর্ড নির্বাচন করা হয়নি।', 'danger');
+        header('Location: /admin/kharij');
+        exit;
+    }
+
+    $count = $kharijModel->bulkSoftDelete($ids);
+
+    if ($count > 0) {
+        logActivity("Bulk Kharij Records Deleted", "kharij", 0, ['count' => $count, 'ids' => $ids], 'success');
+        showMessage("{$count} টি খারিজ রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।", 'success');
+    } else {
+        showMessage('কোনো রেকর্ড মুছে ফেলা সম্ভব হয়নি।', 'info');
+    }
+
+    header('Location: /admin/kharij');
+    exit;
+});
+
+// ============================================================
 // ADMIN ROUTE: Delete record (soft delete)
 // ============================================================
 
@@ -427,6 +478,45 @@ $router->post('/admin/kharij/delete/{id}', ['middleware' => ['auth', 'admin_only
 $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig, $mysqli, $kharijGenerateQr, $kharijStreamPdf) {
     $kharijModel = new KharijModel($mysqli);
 
+    // Server-side validation of required fields
+    $requiredFields = [
+        'khata_number' => 'খতিয়ান নম্বর',
+        'mouza' => 'মৌজা',
+        'upazila' => 'উপজেলা/থানা',
+        'district' => 'জেলা',
+        'dag_number' => 'দাগ/প্লট নম্বর',
+        'total_land_area' => 'মোট জমির পরিমাণ',
+    ];
+    $errors = [];
+    foreach ($requiredFields as $field => $label) {
+        $val = trim($_POST[$field] ?? '');
+        if ($val === '') {
+            $errors[] = "{$label} আবশ্যক";
+        }
+    }
+    // Validate owners (at least one owner with required fields)
+    if (isset($_POST['owners']) && is_array($_POST['owners'])) {
+        foreach ($_POST['owners'] as $idx => $owner) {
+            $ownerName = trim($owner['name'] ?? '');
+            $ownerAddress = trim($owner['address'] ?? '');
+            $ownerShare = trim($owner['share'] ?? '');
+            if ($ownerName === '') $errors[] = "মালিক #" . ($idx + 1) . " এর নাম আবশ্যক";
+            if ($ownerAddress === '') $errors[] = "মালিক #" . ($idx + 1) . " এর ঠিকানা আবশ্যক";
+            if ($ownerShare === '') $errors[] = "মালিক #" . ($idx + 1) . " এর অংশ আবশ্যক";
+        }
+    } else {
+        $ownerName = trim($_POST['owner_name'] ?? '');
+        $ownerAddress = trim($_POST['owner_address'] ?? '');
+        if ($ownerName === '') $errors[] = 'মালিকের নাম আবশ্যক';
+        if ($ownerAddress === '') $errors[] = 'মালিকের ঠিকানা আবশ্যক';
+    }
+
+    if (!empty($errors)) {
+        showMessage(implode('<br>', $errors), 'danger');
+        header('Location: /admin/kharij/create');
+        exit;
+    }
+
     $data = [
         'khata_number' => sanitize_input($_POST['khata_number'] ?? ''),
         'mouza' => sanitize_input($_POST['mouza'] ?? ''),
@@ -444,11 +534,12 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         'remarks' => sanitize_input($_POST['remarks'] ?? ''),
         'form_number' => sanitize_input($_POST['form_number'] ?? 'বাংলাদেশ ফরম নং ৫৪৬২ (সংশোধিত)'),
         'application_no' => sanitize_input($_POST['application_no'] ?? ''),
-        'application_date' => sanitize_input($_POST['application_date'] ?? date('d-m-Y')),
+        'application_date' => sanitize_input($_POST['application_date'] ?? ''),
         'mutation_case_no' => sanitize_input($_POST['mutation_case_no'] ?? ''),
         'mutation_share' => sanitize_input($_POST['mutation_share'] ?? ''),
         'online_dcr_no' => sanitize_input($_POST['online_dcr_no'] ?? ''),
-        'post_office' => sanitize_input($_POST['post_office'] ?? ''),
+        'dcr_fee' => sanitize_input($_POST['dcr_fee'] ?? '১১০০'),
+        'total_fee' => sanitize_input($_POST['total_fee'] ?? '১১০০'),
         'total_share' => sanitize_input($_POST['total_share'] ?? '১.০০০'),
         'agriculture_area' => sanitize_input($_POST['agriculture_area'] ?? ''),
         'non_agriculture_area' => sanitize_input($_POST['non_agriculture_area'] ?? ''),
@@ -524,10 +615,10 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
 
 // ============================================================
 // PUBLIC ROUTE: Verify page (no auth required)
-// GET /mutation-land/qr-vk/{hash}
+// GET /mutation-land-gov-bd/qr-vk/{hash}
 // ============================================================
 
-$router->get('/mutation-land/qr-vk/{hash}', function ($hash) use ($twig, $mysqli) {
+$router->get('/mutation-land-gov-bd/qr-vk/{hash}', function ($hash) use ($twig, $mysqli) {
     $kharijModel = new KharijModel($mysqli);
     $record = $kharijModel->findByHash($hash);
 
@@ -656,7 +747,7 @@ $kharijStreamDcrReceipt = function (array $data, string $hash, bool $inline = tr
 // GET /admin/kharij/dcr-receipt/{id}
 // ============================================================
 
-$router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijStreamDcrReceipt) {
+$router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamDcrReceipt) {
     $kharijModel = new KharijModel($mysqli);
     $id = (int)$id;
     $record = $kharijModel->findById($id);
@@ -670,8 +761,7 @@ $router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_
     $data = $record['data'];
     $hash = $record['hash'] ?? '';
     $qrDataUri = $kharijGenerateQr($hash);
-    $verificationUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/mutation-land-gov-bd/online-dcr/' . $hash;
+    $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/online-dcr/' . $hash;
 
     $templateData = [
         'data' => $data,
@@ -695,7 +785,7 @@ $router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_
 // GET /mutation-land-gov-bd/online-dcr/{hash}
 // ============================================================
 
-$router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($mysqli, $kharijGenerateQr, $kharijStreamDcrReceipt) {
+$router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamDcrReceipt) {
     $kharijModel = new KharijModel($mysqli);
     $record = $kharijModel->findByHash($hash);
 
@@ -708,9 +798,8 @@ $router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($m
     $data = $record['data'];
     $qrDataUri = $kharijGenerateQr($hash);
 
-    // Generate the verification URL using $_SERVER for the public link
-    $verificationUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/mutation-land-gov-bd/online-dcr/' . $hash;
+    // Generate the verification URL using production domain or dynamic fallback
+    $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/online-dcr/' . $hash;
 
     $templateData = [
         'data' => $data,

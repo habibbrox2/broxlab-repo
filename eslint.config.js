@@ -24,6 +24,8 @@ export default [
       'build/Scripts/**',
       'build/esbuild.config.js',
       'build/esbuild-firebase.mjs',
+      'docs/**',
+      'vendor/**',
     ],
   },
 

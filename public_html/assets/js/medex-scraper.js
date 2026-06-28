@@ -212,10 +212,10 @@
       this.abortController = new AbortController();
 
       this.log('=== MedEx JS Collection Started (client-side, non-blocking) ===');
-      this.emit('progress', { phase: 'init', current: 0, total: 0 });
+      this.emit('progress', { phase: 'init', current: 0, total: 0, });
 
       const baseUrl = 'https://medex.com.bd';
-      const listUrl = baseUrl + '/companies?herbal=1';
+      const listUrl = `${baseUrl }/companies?herbal=1`;
 
       try {
         // Step 1: first page + total pages
@@ -225,19 +225,19 @@
         this.log(`Detected ${totalPages} pages of companies.`);
 
         let all = this.parseMainPage(firstHtml);
-        this.emit('progress', { phase: 'list', current: 1, total: totalPages });
+        this.emit('progress', { phase: 'list', current: 1, total: totalPages, });
 
         // Step 2: remaining list pages
         for (let p = 2; p <= totalPages; p++) {
           await this.waitWhilePaused();
           if (!this.running) break;
 
-          const pageUrl = listUrl + '&page=' + p;
+          const pageUrl = `${listUrl }&page=${ p}`;
           this.log(`Fetching list page ${p}/${totalPages}...`);
           const pageHtml = await this.fetchViaProxy(pageUrl);
           const more = this.parseMainPage(pageHtml);
           all = all.concat(more);
-          this.emit('progress', { phase: 'list', current: p, total: totalPages, found: all.length });
+          this.emit('progress', { phase: 'list', current: p, total: totalPages, found: all.length, });
           await this.delay(this.rate);
         }
 
@@ -279,8 +279,8 @@
           collected_at: new Date().toISOString(),
         });
       } catch (err) {
-        this.log('FATAL: ' + err.message);
-        this.emit('error', { message: err.message, stack: err.stack });
+        this.log(`FATAL: ${ err.message}`);
+        this.emit('error', { message: err.message, stack: err.stack, });
       } finally {
         this.running = false;
         this.paused = false;
@@ -319,7 +319,7 @@
 
       const retries = Number(options.retries || 3);
       const backoffBase = Number(options.backoffBase || 500);
-      const silent = !!options.silent;
+      const silent = Boolean(options.silent);
 
       const csrf = this.getCsrfToken();
 
@@ -354,8 +354,8 @@
           const json = await res.json().catch(() => ({}));
 
           if (res.ok && json && json.success) {
-            this.log('Data successfully saved on server: ' + (json.saved || 'unknown') + ' companies.');
-            return { success: true, attempts: attempt, response: json };
+            this.log(`Data successfully saved on server: ${ json.saved || 'unknown' } companies.`);
+            return { success: true, attempts: attempt, response: json, };
           }
 
           // not OK
@@ -380,7 +380,7 @@
         // Only throw when not silent; caller can handle structured result when silent
         throw new Error(errMsg);
       }
-      return { success: false, attempts: attempt, error: lastErr };
+      return { success: false, attempts: attempt, error: lastErr, };
     }
   }
 

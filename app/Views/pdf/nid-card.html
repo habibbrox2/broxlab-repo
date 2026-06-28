@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* ===== mPDF COMPATIBLE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 15mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            background: #fff;
+            color: #000;
+        }
+
+        /* ===== PAGE WRAPPER ===== */
+        .page-wrapper {
+            width: 180mm;
+            margin: 0 auto;
+        }
+
+        /* ===== OUTER CARD BORDER TABLE ===== */
+        .card-outer {
+            width: 100%;
+            border: 2px solid #333;
+            border-collapse: collapse;
+        }
+
+        /* ===== FRONT SIDE (LEFT PANEL) ===== */
+        .front-panel {
+            width: 50%;
+            border-right: 1px solid #555;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        /* ===== BACK SIDE (RIGHT PANEL) ===== */
+        .back-panel {
+            width: 50%;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        /* ===== FRONT: HEADER TABLE ===== */
+        .front-header {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            padding: 4px 6px 2px 6px;
+        }
+
+        .header-logo-cell {
+            width: 28px;
+            vertical-align: middle;
+            padding: 2px;
+        }
+
+        .header-text-cell {
+            vertical-align: middle;
+            text-align: center;
+            padding: 2px 4px;
+        }
+
+        .gov-title-bn {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.3;
+        }
+
+        .gov-title-en {
+            font-size: 7pt;
+            color: #c00;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+
+        .nid-title {
+            font-size: 7pt;
+            color: #c00;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+
+        /* ===== FRONT: DIVIDER ===== */
+        .header-divider {
+            width: 100%;
+            height: 1px;
+            background: #555;
+            font-size: 0;
+            line-height: 0;
+        }
+
+        /* ===== FRONT: BODY TABLE (photo + info) ===== */
+        .front-body-table {
+            width: 100%;
+            border-collapse: collapse;
+            padding: 4px 6px;
+        }
+
+        .photo-cell {
+            width: 35mm;
+            vertical-align: top;
+            padding: 2px 4px 2px 2px;
+        }
+
+        .photo-placeholder {
+            width: 30mm;
+            height: 38mm;
+            border: 1px solid #aaa;
+            background: #e8e8e8;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 7pt;
+            color: #666;
+            display: block;
+            line-height: 38mm;
+            /* mPDF: use table for centering */
+        }
+
+        /* mPDF-safe photo placeholder via nested table */
+        .photo-box {
+            width: 30mm;
+            border: 1px solid #aaa;
+            border-collapse: collapse;
+        }
+
+        .photo-box td {
+            height: 38mm;
+            background: #ddd;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 7pt;
+            color: #555;
+        }
+
+        .info-cell {
+            vertical-align: top;
+            padding: 2px 2px 2px 2px;
+        }
+
+        /* ===== INFO TABLE (name, father, mother, dob, id) ===== */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-label-bn {
+            font-size: 7.5pt;
+            color: #000;
+            font-weight: bold;
+            white-space: nowrap;
+            padding: 1px 3px 1px 0;
+            vertical-align: top;
+            width: 20mm;
+        }
+
+        .info-colon {
+            font-size: 7.5pt;
+            padding: 1px 2px;
+            vertical-align: top;
+        }
+
+        .info-value-bn {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #000;
+            padding: 1px 2px;
+            vertical-align: top;
+        }
+
+        .info-label-en {
+            font-size: 7pt;
+            color: #000;
+            padding: 0px 3px 1px 0;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        .info-value-en {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #000;
+            padding: 0px 2px 1px 2px;
+            vertical-align: top;
+        }
+
+        .info-value-red {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #c00;
+            padding: 1px 2px;
+            vertical-align: top;
+        }
+
+        /* ===== WATERMARK / SEAL AREA ===== */
+        .seal-row td {
+            text-align: center;
+            padding: 2px;
+        }
+
+        .seal-box {
+            width: 18mm;
+            border: 1px solid #888;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        .seal-box td {
+            height: 14mm;
+            background: #f5f5f5;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 6pt;
+            color: #999;
+        }
+
+        /* ===== BACK PANEL STYLES ===== */
+        .back-notice-table {
+            width: 100%;
+            border-collapse: collapse;
+            padding: 4px 5px;
+        }
+
+        .back-notice-cell {
+            font-size: 6.8pt;
+            color: #000;
+            line-height: 1.4;
+            padding: 3px 4px;
+            vertical-align: top;
+        }
+
+        /* ===== BACK: ADDRESS SECTION ===== */
+        .address-section {
+            border-top: 1px solid #555;
+            padding: 3px 5px;
+            font-size: 7pt;
+            line-height: 1.5;
+        }
+
+        .address-label {
+            font-weight: bold;
+            font-size: 7pt;
+        }
+
+        /* ===== BACK: BLOOD GROUP / BIRTHPLACE ROW ===== */
+        .info-row-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-top: 1px solid #555;
+        }
+
+        .bg-cell {
+            font-size: 7pt;
+            padding: 2px 4px;
+            width: 40%;
+            vertical-align: middle;
+            border-right: 1px solid #555;
+        }
+
+        .bg-label {
+            font-size: 6.5pt;
+            color: #333;
+        }
+
+        .bg-value {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #c00;
+        }
+
+        .birth-cell {
+            font-size: 7pt;
+            padding: 2px 4px;
+            width: 35%;
+            vertical-align: middle;
+            border-right: 1px solid #555;
+        }
+
+        .print-cell {
+            font-size: 7pt;
+            padding: 2px 4px;
+            width: 25%;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        /* ===== SIGNATURE ROW ===== */
+        .sig-row-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-top: 1px solid #555;
+        }
+
+        .sig-cell {
+            padding: 3px 5px;
+            vertical-align: top;
+            width: 55%;
+            font-size: 6.5pt;
+            border-right: 1px solid #555;
+        }
+
+        .sig-line-box {
+            width: 22mm;
+            border-collapse: collapse;
+            margin-bottom: 1mm;
+        }
+        .sig-line-box td {
+            height: 10mm;
+            background: #f9f9f9;
+            text-align: center;
+            vertical-align: bottom;
+            font-size: 6pt;
+            color: #aaa;
+            border-bottom: 1px solid #555;
+        }
+
+        .date-cell {
+            padding: 3px 5px;
+            vertical-align: middle;
+            font-size: 6.5pt;
+        }
+
+        /* ===== BARCODE / QR ROW ===== */
+        .barcode-row-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-top: 1px solid #555;
+        }
+
+        .barcode-cell {
+            padding: 3px 5px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Barcode placeholder */
+        .barcode-placeholder {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .barcode-placeholder td {
+            height: 12mm;
+            background: repeating-linear-gradient(
+                90deg,
+                #000 0px, #000 2px,
+                #fff 2px, #fff 4px
+            );
+            /* mPDF fallback: solid dark */
+            background: #222;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 6pt;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        /* QR placeholder */
+        .qr-placeholder {
+            width: 14mm;
+            border-collapse: collapse;
+        }
+        .qr-placeholder td {
+            width: 14mm;
+            height: 14mm;
+            background: #ddd;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 5pt;
+            color: #555;
+            border: 1px solid #666;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+    <!-- ============================================================
+         OUTER CARD: 2-column table (Front | Back)
+    ============================================================ -->
+    <table class="card-outer" cellspacing="0" cellpadding="0">
+        <tr>
+
+            <!-- ===========================
+                 LEFT: FRONT OF NID CARD
+            =========================== -->
+            <td class="front-panel">
+
+                <!-- HEADER: Logo + Title -->
+                <table width="100%" cellspacing="0" cellpadding="0" style="padding:4px 6px 2px 6px;">
+                    <tr>
+                        <!-- Emblem Placeholder -->
+                        <td width="28" style="vertical-align:middle; padding:2px;">
+                            <table width="26" cellspacing="0" cellpadding="0" style="border:1px solid #999;">
+                                <tr>
+                                    <td style="width:26px; height:26px; background:#f0f0f0; text-align:center; vertical-align:middle; font-size:5pt; color:#999;">
+                                        SEAL
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <!-- Title Text -->
+                        <td style="text-align:center; vertical-align:middle; padding:2px 4px;">
+                            <div class="gov-title-bn">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                            <div class="gov-title-en">Government of the People's Republic of Bangladesh</div>
+                            <div class="nid-title">National ID Card / জাতীয় পরিচয় পত্র</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- HEADER DIVIDER -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="header-divider">&nbsp;</td>
+                    </tr>
+                </table>
+
+                <!-- BODY: Photo + Info (nested table) -->
+                <table width="100%" cellspacing="0" cellpadding="0" style="padding:4px 6px;">
+                    <tr>
+                        <!-- Photo placeholder -->
+                        <td style="width:32mm; vertical-align:top; padding:2px 4px 2px 0;">
+                            <table class="photo-box" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="width:30mm; height:38mm; background:#d0d0d0; text-align:center; vertical-align:middle; font-size:6.5pt; color:#555; border:1px solid #aaa;">
+                                        Photo
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Signature below photo -->
+                            <div style="font-size:6pt; color:#555; margin-top:2px; text-align:center;">স্বাক্ষর</div>
+                        </td>
+
+                        <!-- Info Fields -->
+                        <td style="vertical-align:top; padding:2px;">
+                            <table class="info-table" cellspacing="0" cellpadding="0">
+
+                                <!-- Bangla Name -->
+                                <tr>
+                                    <td class="info-label-bn">নাম:</td>
+                                    <td class="info-value-bn" colspan="2">মোঃ শামীম হোসেন</td>
+                                </tr>
+                                <!-- English Name -->
+                                <tr>
+                                    <td class="info-label-en">Name:</td>
+                                    <td class="info-value-en" colspan="2">MD. SHAMIM HOSSAIN</td>
+                                </tr>
+
+                                <!-- Spacer -->
+                                <tr><td colspan="3" style="height:2px;"></td></tr>
+
+                                <!-- Father -->
+                                <tr>
+                                    <td class="info-label-bn">পিতা:</td>
+                                    <td class="info-value-bn" colspan="2">তারা মিয়া</td>
+                                </tr>
+
+                                <!-- Mother -->
+                                <tr>
+                                    <td class="info-label-bn">মাতা:</td>
+                                    <td class="info-value-bn" colspan="2">মোসাঃ রাবেয়া আক্তার</td>
+                                </tr>
+
+                                <!-- Spacer -->
+                                <tr><td colspan="3" style="height:3px;"></td></tr>
+
+                                <!-- Date of Birth -->
+                                <tr>
+                                    <td class="info-label-en">Date of Birth:</td>
+                                    <td class="info-value-red" colspan="2">02 Jan 2006</td>
+                                </tr>
+
+                                <!-- Spacer -->
+                                <tr><td colspan="3" style="height:2px;"></td></tr>
+
+                                <!-- ID Number -->
+                                <tr>
+                                    <td class="info-label-en">ID NO:</td>
+                                    <td class="info-value-red" colspan="2">8732904670</td>
+                                </tr>
+
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+            </td><!-- END front-panel -->
+
+
+            <!-- ===========================
+                 RIGHT: BACK OF NID CARD
+            =========================== -->
+            <td class="back-panel">
+
+                <!-- Notice Text -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="back-notice-cell">
+                            এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr><td class="header-divider">&nbsp;</td></tr>
+                </table>
+
+                <!-- Address -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="back-notice-cell">
+                            <span class="address-label">ঠিকানা:</span> বাসা/হোল্ডিং: ১০৬, গ্রাম/রাস্তা: বহুতকুল, ডাকঘর: রোয়াইল - ১৮২২, ধামরাই, ঢাকা
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr><td class="header-divider">&nbsp;</td></tr>
+                </table>
+
+                <!-- Blood Group / Birthplace / Print No row -->
+                <table class="info-row-table" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td class="bg-cell">
+                            <span class="bg-label">রক্তের গ্রুপ /Blood Group: </span>
+                            <span class="bg-value">O+</span>
+                        </td>
+                        <td class="birth-cell">
+                            জন্মস্থান: ঢাকা
+                        </td>
+                        <td class="print-cell">
+                            মূদ্রণ: ০১
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr><td class="header-divider">&nbsp;</td></tr>
+                </table>
+
+                <!-- Signature + Date row -->
+                <table class="sig-row-table" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <!-- Signature placeholder -->
+                        <td class="sig-cell">
+                            <table class="sig-line-box" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="width:22mm; height:10mm; background:#f9f9f9; text-align:center; vertical-align:bottom; font-size:6pt; color:#bbb; border-bottom:1px solid #555; padding-bottom:1px;">
+                                        স্বাক্ষর
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="font-size:6pt; margin-top:1px;">প্রদানকারী কর্তৃপক্ষের স্বাক্ষর</div>
+                        </td>
+                        <!-- Issue Date -->
+                        <td class="date-cell">
+                            প্রদানের তারিখ: <strong>১৯/০৬/২০২৬</strong>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr><td class="header-divider">&nbsp;</td></tr>
+                </table>
+
+                <!-- Barcode + QR row -->
+                <table class="barcode-row-table" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <!-- Barcode placeholder -->
+                        <td style="padding:3px 4px; vertical-align:middle;">
+                            <table width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="height:12mm; background:#111; text-align:center; vertical-align:middle; font-size:5.5pt; color:#fff; letter-spacing:2px; padding:2px;">
+                                        ▌▌▌ ▌ ▌▌ ▌▌▌ ▌ ▌▌▌ ▌▌ ▌ ▌▌▌
+                                    </td>
+                                    <!-- QR placeholder -->
+                                    <td style="width:14mm;">
+                                        <table class="qr-placeholder" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td style="width:14mm; height:14mm; background:#ccc; text-align:center; vertical-align:middle; font-size:5pt; color:#555; border:1px solid #777;">
+                                                    QR
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+            </td><!-- END back-panel -->
+
+        </tr>
+    </table>
+    <!-- END OUTER CARD -->
+
+</div><!-- END page-wrapper -->
+
+</body>
+</html>

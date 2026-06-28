@@ -214,6 +214,109 @@ class KharijModel
     }
 
     /**
+     * Generate land area in words (Bangla) from numeric values.
+     *
+     * @param float $totalLandArea Total land area in acres
+     * @param float $inheritedArea Inherited area
+     * @return string
+     */
+    public function generateLandAreaWords(float $totalLandArea, float $inheritedArea = 0): string
+    {
+        $acrePart = (int)$totalLandArea;
+        $decimalPart = $totalLandArea - $acrePart;
+        
+        // Convert to bigha (33 shottangsho = 1 bigha)
+        $totalShottangsho = $acrePart * 100 + $decimalPart * 100;
+        $bighaPart = (int)($totalShottangsho / 33);
+        $remainingShottangsho = $totalShottangsho % 33;
+        
+        $sotangshoPart = (int)$remainingShottangsho;
+        $decimalShottangsho = $remainingShottangsho - $sotangshoPart;
+        
+        // Convert to ansha (1 sotangsho = 6 ansha approximately)
+        $anashaPart = round($decimalShottangsho * 6);
+        
+        // Bengali numerals
+        $bnDigits = ['', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯', '০'];
+        
+        $toBn = function($num) use ($bnDigits) {
+            $str = (string)$num;
+            $result = '';
+            for ($i = 0; $i < strlen($str); $i++) {
+                $char = $str[$i];
+                if ($char === '-') {
+                    $result .= '-';
+                } else {
+                    $result .= $bnDigits[(int)$char] ?? $char;
+                }
+            }
+            return $result;
+        };
+        
+        $parts = [];
+        $parts[] = $toBn($acrePart) . ' একর';
+        $parts[] = $toBn($bighaPart) . ' শতক';
+        $parts[] = $toBn($sotangshoPart) . ' অযুতাংশ';
+        $parts[] = $toBn($anashaPart) . ' লক্ষাংশ';
+        
+        return implode(' ', $parts);
+    }
+
+    /**
+     * Generate DCR number based on application date year.
+     *
+     * @param string $applicationDate Application date in d-m-Y format
+     * @return string
+     */
+    public function generateDcrNoFromDate(string $applicationDate): string
+    {
+        $parts = explode('-', $applicationDate);
+        $year = isset($parts[2]) ? substr($parts[2], 2, 2) : date('y');
+        $month = isset($parts[1]) ? $parts[1] : date('m');
+        $day = isset($parts[0]) ? $parts[0] : date('d');
+        
+        $countStmt = $this->mysqli->prepare(
+            "SELECT COUNT(*) as cnt FROM kharij_records WHERE YEAR(created_at) = ? AND deleted_at IS NULL"
+        );
+        $fullYear = '20' . $year;
+        $countStmt->bind_param('s', $fullYear);
+        $countStmt->execute();
+        $result = $countStmt->get_result()->fetch_assoc();
+        $countStmt->close();
+        
+        $sequence = (int)($result['cnt'] ?? 0) + 1;
+        $paddedSequence = str_pad($sequence, 7, '0', STR_PAD_LEFT);
+        
+        return sprintf('DCR%s%s%s%s', $year, $month, $day, $paddedSequence);
+    }
+
+    /**
+     * Generate mutation case number based on application date year.
+     *
+     * @param string $applicationDate Application date in d-m-Y format
+     * @return string
+     */
+    public function generateMutationCaseNoFromDate(string $applicationDate): string
+    {
+        $parts = explode('-', $applicationDate);
+        $year = isset($parts[2]) ? substr($parts[2], 2, 2) : date('y');
+        
+        $countStmt = $this->mysqli->prepare(
+            "SELECT COUNT(*) as cnt FROM kharij_records WHERE YEAR(created_at) = ? AND deleted_at IS NULL"
+        );
+        $fullYear = '20' . $year;
+        $countStmt->bind_param('s', $fullYear);
+        $countStmt->execute();
+        $result = $countStmt->get_result()->fetch_assoc();
+        $countStmt->close();
+        
+        $sequence = (int)($result['cnt'] ?? 0) + 1;
+        
+        return sprintf('%d,%.3d(IX-I)/%s-%.2d', $sequence / 1000, $sequence % 1000, $year, ($sequence % 100) ?: 1);
+    }
+
+
+    /**
      * Create a new kharij record.
      *
      * @param array  $data       The form data to store
@@ -275,6 +378,37 @@ class KharijModel
         $result = $stmt->execute();
         $stmt->close();
         return $result;
+    }
+
+    /**
+     * Soft-delete multiple records by IDs.
+     *
+     * @param array $ids Array of record IDs
+     * @return int Number of records deleted
+     */
+    public function bulkSoftDelete(array $ids): int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids, fn($id) => $id > 0);
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+
+        $stmt = $this->mysqli->prepare("UPDATE kharij_records SET deleted_at = NOW() WHERE id IN ({$placeholders}) AND deleted_at IS NULL");
+        $stmt->bind_param($types, ...$ids);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        return $affected;
     }
 
     /**

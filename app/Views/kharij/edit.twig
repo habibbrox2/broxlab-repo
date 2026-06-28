@@ -154,6 +154,61 @@
     border-top: 1px dashed #d1d5db;
     margin: 10px 0;
   }
+
+  /* Form Validation */
+  .kharij-field-group .validation-error {
+    display: none;
+    font-size: 11px;
+    color: #e11d48;
+    margin-top: 4px;
+    padding-left: 4px;
+  }
+  .kharij-field-group.invalid input,
+  .kharij-field-group.invalid textarea,
+  .kharij-field-group.invalid select {
+    border-color: #e11d48;
+    background-color: #fff1f2;
+    box-shadow: 0 0 0 3px rgba(225,29,72,0.08);
+  }
+  .kharij-field-group.invalid .field-icon {
+    color: #e11d48;
+  }
+  .kharij-field-group.invalid .validation-error {
+    display: block;
+  }
+  .owner-entry.invalid {
+    border-color: #e11d48 !important;
+    box-shadow: 0 0 0 1px rgba(225,29,72,0.15);
+  }
+  .validation-summary {
+    display: none;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #be123c;
+    font-weight: 600;
+  }
+  .validation-summary.visible {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .validation-summary svg {
+    flex-shrink: 0;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+  .shake {
+    animation: shake 0.4s ease-in-out;
+  }
 </style>
 <div class="admin-page" data-admin-dir>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -212,12 +267,12 @@
               </div>
               <div class="kharij-field-group">
                 <label for="upazila" class="block text-sm font-semibold text-slate-700 mb-1.5">উপজেলা/থানা <span class="text-rose-500">*</span></label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="upazila" id="upazila" value="{{ data.upazila|default('') }}" required placeholder="প্রশাসনিক উপজেলা">
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="upazila" id="upazila" value="{{ data.upazila|default('ধামরাই') }}" required placeholder="প্রশাসনিক উপজেলা">
                 <span class="field-icon">🏛</span>
               </div>
               <div class="kharij-field-group">
                 <label for="district" class="block text-sm font-semibold text-slate-700 mb-1.5">জেলা <span class="text-rose-500">*</span></label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="district" id="district" value="{{ data.district|default('') }}" required placeholder="জমির প্রশাসনিক জেলা">
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="district" id="district" value="{{ data.district|default('ঢাকা') }}" required placeholder="জমির প্রশাসনিক জেলা">
                 <span class="field-icon">🗺</span>
               </div>
             </div>
@@ -449,12 +504,21 @@
                 <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="online_dcr_no" id="online_dcr_no" value="{{ data.online_dcr_no|default('') }}" placeholder="অনলাইন ডিসিআর নম্বর">
                 <span class="field-icon">🖥️</span>
               </div>
+              <div class="kharij-field-group">
+                <label for="dcr_fee" class="block text-sm font-semibold text-slate-700 mb-1.5">DCR ফি (টাকায়)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dcr_fee" id="dcr_fee" value="{{ data.dcr_fee|default('') }}" placeholder="যেমন: ১১০০">
+                <span class="field-icon">💵</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Submit -->
         <div class="scroll-fade-in" style="transition-delay: 0.25s;">
+          <div class="validation-summary" id="validationSummary">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <span></span>
+          </div>
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 pb-4">
             <p class="text-xs text-slate-400">
               <span class="inline-flex items-center gap-1">
@@ -488,103 +552,15 @@
 {% block scripts %}
 {{ parent() }}
 <script>
-(function() {
+/**
+ * Dynamic Kharij Owner Manager
+ * Handles add/remove of multiple land owners in the form.
+ * Core functions shared via kharij/_owner_manager.twig
+ */
+document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  var OWNER_TEMPLATE = '\
-    <div class="owner-entry rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" data-owner-index="__INDEX__">\
-      <div class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">\
-        <span class="text-sm font-semibold text-slate-700 owner-number-badge">\u09AE\u09BE\u09B2\u09BF\u0995 #__DISPLAY__</span>\
-        <button type="button" class="remove-owner-btn inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.97]">\
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>\
-          \u09B8\u09B0\u09BE\u09A8\
-        </button>\
-      </div>\
-      <div class="p-5">\
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">\
-          <div class="kharij-field-group">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09A8\u09BE\u09AE <span class="text-rose-500">*</span></label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][name]" required placeholder="\u099C\u09AE\u09BF\u09B0 \u09AA\u09CD\u09B0\u0995\u09C3\u09A4 \u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09A8\u09BE\u09AE" data-owner-field="name">\
-            <span class="field-icon" style="top: 36px;">\uD83D\uDC64</span>\
-          </div>\
-          <div class="kharij-field-group">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AA\u09BF\u09A4\u09BE/\u09B8\u09CD\u09AC\u09BE\u09AE\u09C0\u09B0 \u09A8\u09BE\u09AE</label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][father_or_husband_name]" placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09AA\u09BF\u09A4\u09BE \u09AC\u09BE \u09B8\u09CD\u09AC\u09BE\u09AE\u09C0\u09B0 \u09A8\u09BE\u09AE" data-owner-field="father_or_husband_name">\
-            <span class="field-icon" style="top: 36px;">\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67</span>\
-          </div>\
-          <div class="kharij-field-group">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09AE\u09BE\u09A4\u09BE\u09B0 \u09A8\u09BE\u09AE</label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][mothers_name]" placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09AE\u09BE\u09A4\u09BE\u09B0 \u09A8\u09BE\u09AE" data-owner-field="mothers_name">\
-            <span class="field-icon" style="top: 36px;">\uD83D\uDC69</span>\
-          </div>\
-          <div class="kharij-field-group">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u099C\u09BE\u09A4\u09C0\u09AF\u09BC \u09AA\u09B0\u09BF\u099A\u09AF\u09BC\u09AA\u09A4\u09CD\u09B0 \u09A8\u0982</label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][nid_number]" placeholder="\u098F\u09A8\u0986\u0987\u09A1\u09BF \u09A8\u09AE\u09CD\u09AC\u09B0 (\u0990\u099B\u09BF\u0995\u09CD\u09AF)" data-owner-field="nid_number">\
-            <span class="field-icon" style="top: 36px;">\uD83E\uDEAA</span>\
-          </div>\
-          <div class="kharij-field-group sm:col-span-2">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09A0\u09BF\u0995\u09BE\u09A8\u09BE <span class="text-rose-500">*</span></label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][address]" required placeholder="\u09AE\u09BE\u09B2\u09BF\u0995\u09C7\u09B0 \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09A0\u09BF\u0995\u09BE\u09A8\u09BE" data-owner-field="address">\
-            <span class="field-icon" style="top: 36px;">\uD83D\uDCCD</span>\
-          </div>\
-          <div class="kharij-field-group">\
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u0985\u0982\u09B6 <span class="text-rose-500">*</span></label>\
-            <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="owners[__INDEX__][share]" required placeholder="\u09AF\u09C7\u09AE\u09A8: \u09E7/\u09EA \u09AC\u09BE \u09EA \u0986\u09A8\u09BE" data-owner-field="share">\
-            <span class="field-icon" style="top: 36px;">\uD83E\uDDEE</span>\
-          </div>\
-        </div>\
-      </div>\
-    </div>\
-  ';
-
-  function updateBadge(count) {
-    var badge = document.getElementById('owner-count-badge');
-    if (badge) badge.textContent = count + " \u099C\u09A8 \u09AE\u09BE\u09B2\u09BF\u0995";
-  }
-
-  function reindexOwners() {
-    var entries = document.querySelectorAll('#owners-container .owner-entry');
-    entries.forEach(function(entry, idx) {
-      var displayNum = idx + 1;
-      entry.dataset.ownerIndex = idx;
-      var badge = entry.querySelector('.owner-number-badge');
-      if (badge) badge.textContent = "\u09AE\u09BE\u09B2\u09BF\u0995 #" + displayNum;
-      var inputs = entry.querySelectorAll('[name^="owners["]');
-      inputs.forEach(function(input) {
-        var fieldName = input.dataset.ownerField;
-        if (fieldName) {
-          input.name = 'owners[' + idx + '][' + fieldName + ']';
-          input.id = 'owner_' + idx + '_' + fieldName;
-        }
-      });
-    });
-    updateBadge(entries.length);
-  }
-
-  function createOwnerEntry(data) {
-    var container = document.getElementById('owners-container');
-    var entryCount = container.querySelectorAll('.owner-entry').length;
-    var html = OWNER_TEMPLATE
-      .replace(/__INDEX__/g, entryCount)
-      .replace(/__DISPLAY__/g, entryCount + 1);
-
-    var temp = document.createElement('div');
-    temp.innerHTML = html.trim();
-    var entry = temp.firstChild;
-
-    if (data) {
-      var fields = ['name', 'father_or_husband_name', 'mothers_name', 'nid_number', 'address', 'share'];
-      fields.forEach(function(f) {
-        if (data[f]) {
-          var input = entry.querySelector('[data-owner-field="' + f + '"]');
-          if (input) input.value = data[f];
-        }
-      });
-    }
-
-    container.appendChild(entry);
-    reindexOwners();
-  }
+{% include 'kharij/_owner_manager.twig' %}
 
   function init() {
     var container = document.getElementById('owners-container');
@@ -636,11 +612,11 @@
 
     createOwnerEntry(initialOwner);
 
+    // Add button listener
     var addBtn = document.getElementById('add-owner-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', function() { createOwnerEntry(null); });
-    }
+    if (addBtn) addBtn.addEventListener('click', function() { createOwnerEntry(null); });
 
+    // Remove button listener (event delegation)
     container.addEventListener('click', function(e) {
       var removeBtn = e.target.closest('.remove-owner-btn');
       if (!removeBtn) return;
@@ -648,10 +624,10 @@
       if (entry) {
         var count = container.querySelectorAll('.owner-entry').length;
         if (count <= 1) {
-          alert('\u0985\u09A8\u09CD\u09A4\u09A4 \u098F\u0995\u099C\u09A8 \u09AE\u09BE\u09B2\u09BF\u0995 \u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7\u0964');
+          alert('অন্তত একজন মালিক থাকতে হবে।');
           return;
         }
-        if (confirm('\u098F\u0987 \u09AE\u09BE\u09B2\u09BF\u0995\u0995\u09C7 \u09B8\u09B0\u09BE\u09A4\u09C7 \u099A\u09BE\u09A8?')) {
+        if (confirm('এই মালিককে সরাতে চান?')) {
           entry.remove();
           reindexOwners();
         }
@@ -659,22 +635,18 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
+  init();
+});
 </script>
 
 <script>
 /**
  * Kharij Land Calculator — automatic unit conversion & field calculation
  */
-(function() {
+document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  // Bangladeshi land unit constants
+// Bangladeshi land unit constants
   var SHOTTANGSHO_PER_ACRE = 100;
   var SQFT_PER_SHOTTANGSHO = 435.6;
   var SQFT_PER_ACRE = 43560;
@@ -683,9 +655,17 @@
   function bnToEn(str) {
     if (!str) return str;
     // Unicode: ০=U+09E6, ১=U+09E7, ..., ৯=U+09EF
-    return str.replace(/[\u09E6-\u09EF]/g, function(m) {
+    return str.replace(/[০-৯]/g, function(m) {
       return String.fromCharCode(m.charCodeAt(0) - 0x09E6 + 48);
     });
+  }
+
+  // Convert English digits (0-9) to Bengali digits
+  function enToBn(str) {
+    if (!str && str !== 0) return str;
+    var en = ['0','1','2','3','4','5','6','7','8','9'];
+    var bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+    return String(str).replace(/[0-9]/g, function(m) { return bn[parseInt(m)]; });
   }
 
   // Parse a numeric value from an input field (handles Bengali & English digits)
@@ -764,9 +744,24 @@
     }
   }
 
+  // Auto-calculate total_land_words from total_land_area
+  function calcLandWords() {
+    var tla = document.getElementById('total_land_area');
+    var tlw = document.getElementById('total_land_words');
+    if (!tla || !tlw) return;
+    var acres = parseNum(tla.value);
+    if (isNaN(acres) || acres <= 0) return;
+    var acrePart = Math.floor(acres);
+    var totalSh = acres * 100;
+    var bighaPart = Math.floor(totalSh / 33);
+    var sotangshoPart = Math.floor(totalSh % 33);
+    tlw.value = enToBn(acrePart) + ' একর ' + enToBn(bighaPart) + ' শতক ' + enToBn(sotangshoPart) + ' অযুতাংশ ০০ লক্ষাংশ';
+  }
+
   // Run all auto-calculations
   function runAll() {
     calcLandArea();
+    calcLandWords();
     calcTotalDag();
     calcSingle();
     calcKhash();
@@ -841,11 +836,187 @@
     setTimeout(runAll, 200);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  init();
+});
+</script>
+
+<script>
+/**
+ * Form validation before form submission
+ * Checks all required fields and highlights invalid ones.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+
+  'use strict';
+
+  var form = document.getElementById('kharijForm');
+  if (!form) return;
+
+  // Required field IDs for validation
+  var requiredFields = [
+    { id: 'khata_number', label: 'খতিয়ান নম্বর' },
+    { id: 'mouza', label: 'মৌজা' },
+    { id: 'upazila', label: 'উপজেলা/থানা' },
+    { id: 'district', label: 'জেলা' },
+    { id: 'dag_number', label: 'দাগ/প্লট নম্বর' },
+    { id: 'total_land_area', label: 'মোট জমির পরিমাণ' }
+  ];
+
+  // Owner required field names (within each owner entry)
+  var ownerRequiredFields = ['name', 'address', 'share'];
+  var ownerFieldLabels = {
+    name: 'মালিকের নাম',
+    address: 'ঠিকানা',
+    share: 'অংশ'
+  };
+
+  // Clear all validation errors
+  function clearErrors() {
+    document.querySelectorAll('.kharij-field-group.invalid').forEach(function(el) {
+      el.classList.remove('invalid');
+    });
+    document.querySelectorAll('.owner-entry.invalid').forEach(function(el) {
+      el.classList.remove('invalid');
+    });
+    var summary = document.getElementById('validationSummary');
+    if (summary) {
+      summary.classList.remove('visible');
+      summary.querySelector('span').textContent = '';
+    }
   }
-})();
+
+  // Show validation summary error
+  function showSummary(message) {
+    var summary = document.getElementById('validationSummary');
+    if (!summary) {
+      var submitArea = document.querySelector('.scroll-fade-in:last-of-type .flex');
+      if (submitArea) {
+        summary = document.createElement('div');
+        summary.id = 'validationSummary';
+        summary.className = 'validation-summary';
+        summary.innerHTML = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span></span>';
+        submitArea.parentNode.insertBefore(summary, submitArea);
+      }
+    }
+    if (summary) {
+      summary.querySelector('span').textContent = message;
+      summary.classList.add('visible');
+      summary.classList.add('shake');
+      setTimeout(function() { summary.classList.remove('shake'); }, 500);
+    }
+  }
+
+  // Validate a single field group
+  function validateField(id, label) {
+    var el = document.getElementById(id);
+    if (!el) return true;
+    var group = el.closest('.kharij-field-group');
+    if (!group) return true;
+    var val = el.value.trim();
+    if (!val) {
+      group.classList.add('invalid');
+      var errorEl = group.querySelector('.validation-error');
+      if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'validation-error';
+        group.appendChild(errorEl);
+      }
+      errorEl.textContent = 'দয়া করে ' + label + ' পূরণ করুন';
+      return false;
+    }
+    return true;
+  }
+
+  // Validate all owners
+  function validateOwners() {
+    var entries = document.querySelectorAll('#owners-container .owner-entry');
+    var valid = true;
+    entries.forEach(function(entry) {
+      var entryValid = true;
+      ownerRequiredFields.forEach(function(field) {
+        var input = entry.querySelector('[data-owner-field="' + field + '"]');
+        if (!input) return;
+        var group = input.closest('.kharij-field-group');
+        if (!group) return;
+        var val = input.value.trim();
+        if (!val) {
+          group.classList.add('invalid');
+          var errorEl = group.querySelector('.validation-error');
+          if (!errorEl) {
+            errorEl = document.createElement('div');
+            errorEl.className = 'validation-error';
+            group.appendChild(errorEl);
+          }
+          errorEl.textContent = 'দয়া করে ' + ownerFieldLabels[field] + ' পূরণ করুন';
+          entry.classList.add('invalid');
+          entryValid = false;
+          valid = false;
+        }
+      });
+    });
+    return valid;
+  }
+
+  // Validate the entire form
+  function validateForm() {
+    clearErrors();
+    var allValid = true;
+    var firstInvalid = null;
+
+    // Check main required fields
+    requiredFields.forEach(function(f) {
+      if (!validateField(f.id, f.label)) {
+        allValid = false;
+        if (!firstInvalid) firstInvalid = document.getElementById(f.id);
+      }
+    });
+
+    // Check owners
+    if (!validateOwners()) {
+      allValid = false;
+      if (!firstInvalid) {
+        var firstOwnerInput = document.querySelector('#owners-container [data-owner-field="name"]');
+        if (firstOwnerInput) firstInvalid = firstOwnerInput;
+      }
+    }
+
+    if (!allValid) {
+      showSummary('দয়া করে সকল বাধ্যতামূলক ক্ষেত্রের মান পূরণ করুন');
+      // Scroll to first invalid field
+      if (firstInvalid) {
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function() { firstInvalid.focus(); }, 400);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // Hook into form submit
+  form.addEventListener('submit', function(e) {
+    if (!validateForm()) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Clear errors on input change (real-time feedback)
+  form.addEventListener('input', function(e) {
+    var group = e.target.closest('.kharij-field-group');
+    if (group && group.classList.contains('invalid')) {
+      group.classList.remove('invalid');
+    }
+    var ownerEntry = e.target.closest('.owner-entry');
+    if (ownerEntry && ownerEntry.classList.contains('invalid')) {
+      // Check if this owner entry's required fields are all filled now
+      var allFilled = true;
+      ownerRequiredFields.forEach(function(f) {
+        var input = ownerEntry.querySelector('[data-owner-field="' + f + '"]');
+        if (!input || !input.value.trim()) allFilled = false;
+      });
+      if (allFilled) ownerEntry.classList.remove('invalid');
+    }
+  });
+});
 </script>
 {% endblock %}

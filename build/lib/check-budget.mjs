@@ -81,7 +81,15 @@ const BUDGETS = [
   { pattern: 'public_html/assets/js/dist/mobile-*.js',           maxBytes: 8_000,   label: 'mobile chunk' },
   { pattern: 'public_html/assets/js/dist/notification-runtime-*.js', maxBytes: 26_000, label: 'notification-runtime chunk' },
   { pattern: 'public_html/assets/js/dist/notifications-analytics-*.js', maxBytes: 2_000, label: 'notifications-analytics chunk' },
-  { pattern: 'public_html/assets/js/dist/notifications-workflows-*.js', maxBytes: 70_000, label: 'notifications-workflows chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-send-*.js', maxBytes: 45_000, label: 'notifications-send chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-scheduled-*.js', maxBytes: 25_000, label: 'notifications-scheduled chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-device-sync-*.js', maxBytes: 25_000, label: 'notifications-device-sync chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-offline-handler-*.js', maxBytes: 25_000, label: 'notifications-offline-handler chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-list-*.js', maxBytes: 10_000, label: 'notifications-list chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-view-*.js', maxBytes: 10_000, label: 'notifications-view chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-dashboard-*.js', maxBytes: 15_000, label: 'notifications-dashboard chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-drafts-*.js', maxBytes: 15_000, label: 'notifications-drafts chunk' },
+  { pattern: 'public_html/assets/js/dist/notifications-workflows-*.js', maxBytes: 120_000, label: 'notifications-workflows shared chunks' },
   { pattern: 'public_html/assets/js/dist/oauth-*.js',            maxBytes: 4_000,   label: 'oauth chunk' },
   { pattern: 'public_html/assets/js/dist/rbac-users-*.js',      maxBytes: 12_000,  label: 'rbac-users chunk' },
   { pattern: 'public_html/assets/js/dist/realtime-monitoring-*.js', maxBytes: 7_000, label: 'realtime-monitoring chunk' },
@@ -96,11 +104,8 @@ const BUDGETS = [
   { pattern: 'public_html/assets/js/dist/chunk-*.js',           maxBytes: 10_000,  label: 'tiny shared chunks' },
 
   // ── CSS ──
-  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 490_000, label: 'tailwind-public.css' },
-  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 490_000, label: 'tailwind-admin.css' },
-  { key: 'public_html/assets/css/dist/admin-bundle.css',       maxBytes: 565_000, label: 'admin-bundle.css' },
-  { key: 'public_html/assets/css/dist/public-bundle.css',      maxBytes: 565_000, label: 'public-bundle.css' },
-
+  { key: 'public_html/assets/css/dist/tailwind-public.css',    maxBytes: 500_000, label: 'tailwind-public.css' },
+  { key: 'public_html/assets/css/dist/tailwind-admin.css',     maxBytes: 500_000, label: 'tailwind-admin.css' },
   // ── Other generated bundles ──
   { key: 'public_html/rtceditor/editor.bundle.js',             maxBytes: 120_000, label: 'editor.bundle.js' },
   { key: 'public_html/assets/cdn/css/lucide/lucide.css',       maxBytes: 130_000, label: 'lucide.css' },

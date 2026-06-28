@@ -228,7 +228,10 @@ Makefile.local
 
 # ─────────────────────────────────────────────────────────────────
 #  14. SYSTEM & RUNTIME FILES
-# ─────────────────────────────────────────────────────────────────
+# Windows artifacts
+nul
+NUL
+
 # Node.js
 .npm
 npm-debug.log*

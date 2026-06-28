@@ -84,7 +84,7 @@
       delegateType: TRANSITION_END,
       handle: function handle(event) {
         if ($__default['default'](event.target).is(this)) {
-          return event.handleObj.handler.apply(this, arguments); // eslint-disable-line prefer-rest-params
+          return event.handleObj.handler.apply(this, arguments);  
         }
 
         return undefined;
@@ -1920,7 +1920,7 @@
       }
 
       return parent || element.parentNode;
-    } // eslint-disable-next-line complexity
+    }  
     ;
 
     Dropdown._dataApiKeydownHandler = function _dataApiKeydownHandler(event) {

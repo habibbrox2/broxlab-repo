@@ -98,7 +98,14 @@ const moduleImporters = {
   categoryCombobox: () => import('./modules/category-combobox.js'),
   mediaUpload: () => import('./modules/media-upload.js'),
   notificationsAnalytics: () => import('./modules/notifications-analytics.js'),
-  notificationsWorkflows: () => import('./modules/notifications-workflows.js'),
+  notificationsSend: () => import('./modules/notifications-send.js'),
+  notificationsScheduled: () => import('./modules/notifications-scheduled.js'),
+  notificationsDeviceSync: () => import('./modules/notifications-device-sync.js'),
+  notificationsOfflineHandler: () => import('./modules/notifications-offline-handler.js'),
+  notificationsList: () => import('./modules/notifications-list.js'),
+  notificationsView: () => import('./modules/notifications-view.js'),
+  notificationsDashboard: () => import('./modules/notifications-dashboard.js'),
+  notificationsDrafts: () => import('./modules/notifications-drafts.js'),
   rbacUsers: () => import('./modules/rbac-users.js'),
   security2fa: () => import('./modules/security-2fa.js'),
   activityLog: () => import('./modules/activity-log.js'),
@@ -247,31 +254,31 @@ function initRealtimeMonitoring() {
 
 // ==================== NOTIFICATION SCRIPTS ====================
 function initNotificationsList() {
-  loadAdminModule('notificationsWorkflows').then((mod) => mod.initNotificationsList()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsList').then((mod) => mod.initNotificationsList()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsView() {
-  loadAdminModule('notificationsWorkflows').then((mod) => mod.initNotificationsView()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsView').then((mod) => mod.initNotificationsView()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsDashboard() {
-  loadAdminModule('notificationsWorkflows').then((mod) => mod.initNotificationsDashboard()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsDashboard').then((mod) => mod.initNotificationsDashboard()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsDrafts() {
-  loadAdminModule('notificationsWorkflows').then((mod) => mod.initNotificationsDrafts()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsDrafts').then((mod) => mod.initNotificationsDrafts()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsSend() {
-  loadAdminModule('notificationsWorkflows').then((notificationsWorkflows) => notificationsWorkflows.initNotificationsSend()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsSend').then((mod) => mod.initNotificationsSend()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsScheduled() {
-  loadAdminModule('notificationsWorkflows').then((notificationsWorkflows) => notificationsWorkflows.initNotificationsScheduled()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsScheduled').then((mod) => mod.initNotificationsScheduled()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsDashboardRealtime() {
   loadAdminModule('misc').then((mod) => mod.initNotificationsDashboardRealtime()).catch((error) => logModuleError('misc', error));
 }
 function initNotificationsDeviceSync() {
-  loadAdminModule('notificationsWorkflows').then((notificationsWorkflows) => notificationsWorkflows.initNotificationsDeviceSync()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsDeviceSync').then((mod) => mod.initNotificationsDeviceSync()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsOfflineHandler() {
-  loadAdminModule('notificationsWorkflows').then((notificationsWorkflows) => notificationsWorkflows.initNotificationsOfflineHandler()).catch((error) => logModuleError('notificationsWorkflows', error));
+  loadAdminModule('notificationsOfflineHandler').then((mod) => mod.initNotificationsOfflineHandler()).catch((error) => logModuleError('notificationsSend', error));
 }
 function initNotificationsSubscribers() {
   loadAdminModule('subscribers').then((mod) => mod.initNotificationsSubscribers({ byId, getCsrfToken, escapeHtml, })).catch((error) => logModuleError('subscribers', error));
