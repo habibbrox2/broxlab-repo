@@ -618,7 +618,7 @@ function generateAppNumbers() {
     var appNo = appDate.year + appDate.month + appDate.date + appSeq;
 
     // Online DCR number: DCRYYMMDD + 7-digit sequential
-    var dcrSeq = ('0000000' + seq).slice(-7);
+    var dcrSeq = ('5416544' + seq).slice(-7);
     var dcrNo = 'DCR' + yy + mm + dd + dcrSeq;
 
     // Mutation case number: group,NNN(IX-I)/YY-XX (derived from same counter)
