@@ -1,3 +1,8 @@
+<!--
+  AI AGENT NOTE: Preserve table column structure.
+  Do NOT add or remove columns from the land details table (জমির তফসিল).
+  Current columns: মৌজা | জে এল নাম্বার | আগত খতিয়ানের ধরণ | আগত খতিয়ানের নং | দাগ নং | একর ৬(ক) | শতাংশ ৬(খ)
+-->
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -425,7 +430,8 @@
         <th class="land-header" style="text-align:center;">আগত খতিয়ানের ধরণ</th>
         <th class="land-header" style="text-align:center;">আগত খতিয়ানের নং</th>
         <th class="land-header" style="text-align:center;">দাগ নং</th>
-        <th class="land-header" style="text-align:center; width:65px;">জমির পরিমাণ</th>
+        <th class="land-header" style="text-align:center; width:55px;">জমির পরিমাণ</th>
+
       </tr>
       <tr>
         <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.mouza|default('') }}</td>
@@ -433,12 +439,15 @@
         <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.previous_khatian_type|default('আর এস') }}</td>
         <td style="text-align:center; border:1px solid #555; padding:6px 5px; font-size:11.5px;">{{ data.previous_khatian_number|default('') }}</td>
         <td style="text-align:center; border:1px solid #555; padding:6px 5px; font-size:11.5px;">{{ data.dag_number|default('') }}</td>
-        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.total_land_area|default('০') }}</td>
+        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.total_land_area|default('০') }} </td>
+
       </tr>
       <tr>
-        <td colspan="5" style="text-align:center; border:1px solid #555; padding:6px 5px;">মোট জমির পরিমাণ</td>
-        <td style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.total_land_area|default('০') }} একর</td>
+        <td colspan="3" style="text-align:center; border:1px solid #555; padding:6px 5px;">মোট জমির পরিমাণ</td>
+        <td colspan="3" style="text-align:center; border:1px solid #555; padding:6px 5px;">{{ data.single_area|default('০') }} একর</td>
+
       </tr>
+
     </table>
 
     {# ── Fee Section ── #}

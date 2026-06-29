@@ -44,7 +44,7 @@ $kharijGetVerificationBaseUrl = function (): string {
 
 $kharijGenerateQr = function (string $hash) use ($kharijGetVerificationBaseUrl): ?string {
     try {
-        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/qr-vk/' . $hash;
+        $verificationUrl = $kharijGetVerificationBaseUrl() . '/';
         $qrCode = new QrCode($verificationUrl);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -604,7 +604,7 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
             'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
             'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
             'organisation_seal' => '/assets/images/kharij/seal.png',
-            'red_seal' => '/assets/images/kharij/red-seal.png',
+
         ],
     ];
 
@@ -673,7 +673,7 @@ $router->get('/admin/kharij/image-download/{id}', ['middleware' => ['auth', 'adm
             'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
             'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
             'organisation_seal' => '/assets/images/kharij/seal.png',
-            'red_seal' => '/assets/images/kharij/red-seal.png',
+
         ],
     ];
 
@@ -770,7 +770,7 @@ $router->get('/admin/kharij/dcr-receipt/{id}', ['middleware' => ['auth', 'admin_
         'verification_url' => $verificationUrl,
         'images' => [
             'organisation_seal' => '/assets/images/kharij/seal.png',
-            'red_seal' => '/assets/images/kharij/red-seal.png',
+
             'sign_rafi' => '/assets/images/kharij/sign-rafi.png',
         ],
     ];
@@ -808,7 +808,6 @@ $router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($m
         'verification_url' => $verificationUrl,
         'images' => [
             'organisation_seal' => '/assets/images/kharij/seal.png',
-            'red_seal' => '/assets/images/kharij/red-seal.png',
             'sign_rafi' => '/assets/images/kharij/sign-rafi.png',
         ],
     ];
@@ -843,7 +842,7 @@ $router->get('/mutation-land-gov-bd/QrScanner/KhatianDownload/{hash}', function 
             'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
             'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
             'organisation_seal' => '/assets/images/kharij/seal.png',
-            'red_seal' => '/assets/images/kharij/red-seal.png',
+
         ],
     ];
 

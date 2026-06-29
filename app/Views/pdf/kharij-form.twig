@@ -1,3 +1,11 @@
+<!--
+  AI AGENT NOTE: Preserve khatian table column structure.
+  Do NOT add or remove columns from the khatian table.
+  Current columns:
+  ১. মালিক/ঠিকানা | ২. অংশ | ৩. মোট ভূমি উন্নয়ন কর | ৪. দাগ/প্লট নং |
+  ৫. কৃষি(৫-ক) / অকৃষি(৫-খ) | ৬. একর(৬-ক) / শতাংশ(৬-খ) | ৭. খতিয়ানের অংশ |
+  ৮. একর(৮-ক) / শতাংশ(৮-খ) | ৯. মন্তব্য
+-->
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -532,7 +540,15 @@ body {
                 {% endif %}
               </div>
             </td>
-            <td class="col-2 text-center">{{ data.share|default('০')|bn }}</td>
+            <td class="col-2 text-center">
+              {% if data.owners is defined and data.owners|length > 0 %}
+                {% for owner in data.owners %}
+                  {{ owner.share|default('১.০০০')|bn }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+              {% else %}
+                {{ data.share|default('০')|bn }}
+              {% endif %}
+            </td>
             <td class="col-3">{{ data.land_development_tax|default('০')|bn }}</td>
             <td class="col-4">{{ data.dag_number|default('০')|bn }}</td>
             <td class="col-5">{{ data.agriculture_area|default('০')|bn }}</td>
