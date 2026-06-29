@@ -44,7 +44,7 @@ $kharijGetVerificationBaseUrl = function (): string {
 
 $kharijGenerateQr = function (string $hash) use ($kharijGetVerificationBaseUrl): ?string {
     try {
-        $verificationUrl = $kharijGetVerificationBaseUrl() . '/';
+        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/online-dcr/' . $hash;
         $qrCode = new QrCode($verificationUrl);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -475,7 +475,7 @@ $router->post('/admin/kharij/delete/{id}', ['middleware' => ['auth', 'admin_only
 // ADMIN ROUTE: Generate PDF and save record
 // ============================================================
 
-$router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig, $mysqli, $kharijGenerateQr, $kharijStreamPdf) {
+$router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig, $mysqli) {
     $kharijModel = new KharijModel($mysqli);
 
     // Server-side validation of required fields
@@ -485,7 +485,6 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         'upazila' => 'উপজেলা/থানা',
         'district' => 'জেলা',
         'dag_number' => 'দাগ/প্লট নম্বর',
-        'total_land_area' => 'মোট জমির পরিমাণ',
     ];
     $errors = [];
     foreach ($requiredFields as $field => $label) {
@@ -594,22 +593,9 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         exit;
     }
 
-    // Prepare data for template
-    $qrDataUri = $kharijGenerateQr($hash);
-    $templateData = [
-        'data' => $data,
-        'qr_data_uri' => $qrDataUri,
-        'images' => [
-            'sign_rezaul' => '/assets/images/kharij/sign-rezaul.png',
-            'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
-            'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
-            'organisation_seal' => '/assets/images/kharij/seal.png',
-
-        ],
-    ];
-
-    // Stream PDF as download (attachment)
-    $kharijStreamPdf($templateData, false);
+    // Redirect to edit page where DCR Receipt and Kharij Download buttons are available
+    showMessage('খারিজ রেকর্ড সফলভাবে তৈরি হয়েছে।', 'success');
+    header('Location: /admin/kharij/edit/' . $recordId);
     exit;
 });
 

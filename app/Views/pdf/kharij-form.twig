@@ -551,8 +551,8 @@ body {
             </td>
             <td class="col-3">{{ data.land_development_tax|default('০')|bn }}</td>
             <td class="col-4">{{ data.dag_number|default('০')|bn }}</td>
-            <td class="col-5">{{ data.agriculture_area|default('০')|bn }}</td>
-            <td class="col-6">{{ data.non_agriculture_area|default('০')|bn }}</td>
+            <td class="col-5">{{ data.land_type|default('')|bn }}</td>
+            <td class="col-6">{{ data.land_type_kh|default('')|bn }}</td>
             <td class="col-7">{{ data.total_dag_area|default('০')|bn }}</td>
             <td class="col-8">{{ data.dag_area_shottangsho|default('০')|bn }}</td>
             <td class="col-9">{{ data.single_area|default('০')|bn }}</td>

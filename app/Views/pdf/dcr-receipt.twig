@@ -481,7 +481,7 @@
                   <img src="{{ qr_data_uri }}" alt="QR Code" style="width:85px;height:85px;">
                   {% endif %}
                 </div>
-                <div class="qr-label">অনুসন্ধান করুন</div>
+                <div class="qr-label" style="margin-top:3px; font-size:9px;">{{ verification_url|default('') }}</div>
               </td>
             </tr>
           </table>
