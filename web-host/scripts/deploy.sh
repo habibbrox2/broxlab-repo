@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # BroxLab shared-hosting deployment script - Production Ready
-# Deploys one release, one Node server, one port.
+# Deploys new release, symlinks shared resources, switches current release.
 # Enhanced with comprehensive validation, locking, and rollback safety.
 
 set -euo pipefail
@@ -9,8 +9,6 @@ set -euo pipefail
 BASE="${BASE_PATH:-/home/tdhuedhn/broxlab}"
 GIT_REPO="${GIT_REPO:-git@github.com:habibbrox2/broxlab-repo.git}"
 NODE_ENV="${NODE_ENV:-production}"
-START_NODE_SERVER="${START_NODE_SERVER:-true}"
-
 APP="$BASE/app"
 RELEASES="$APP/releases"
 SHARED="$APP/shared"
@@ -19,7 +17,6 @@ STORAGE="$SHARED/storage"
 CODE_BACKUPS="$SHARED/backups/code"
 DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
-PID_FILE="$SHARED/node-server.pid"
 DEPLOY_LOCK="$SHARED/.deploy.lock"
 DEPLOY_TIMEOUT=7200  # 2 hours
 
@@ -42,7 +39,6 @@ while [[ $# -gt 0 ]]; do
         --skip-build) SKIP_BUILD=true; shift ;;
         --keep) KEEP_RELEASES="$2"; shift 2 ;;
         --base) BASE="$2"; shift 2 ;;
-        --no-node-start) START_NODE_SERVER=false; shift ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start]"
@@ -59,7 +55,6 @@ STORAGE="$SHARED/storage"
 CODE_BACKUPS="$SHARED/backups/code"
 DB_BACKUPS="$SHARED/backups/database"
 LOGS="$BASE/logs"
-PID_FILE="$SHARED/node-server.pid"
 NEW_RELEASE="$RELEASES/$DATE"
 export BASE_PATH="$BASE"
 
@@ -133,72 +128,6 @@ deployment_cleanup() {
 }
 
 trap deployment_cleanup EXIT
-
-stop_node_server() {
-    if [[ -f "$PID_FILE" ]]; then
-        local pid
-        pid=$(cat "$PID_FILE" 2>/dev/null || true)
-        if [[ -n "${pid:-}" ]] && kill -0 "$pid" 2>/dev/null; then
-            log_info "Stopping existing Node server (PID: $pid)"
-            kill "$pid" 2>/dev/null || true
-            for _ in $(seq 1 10); do
-                if ! kill -0 "$pid" 2>/dev/null; then
-                    break
-                fi
-                sleep 1
-            done
-            kill -9 "$pid" 2>/dev/null || true
-        fi
-        rm -f "$PID_FILE"
-    fi
-}
-
-health_check() {
-    local url="${NODE_HEALTH_URL:-http://127.0.0.1:3000/health}"
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsS "$url" >/dev/null 2>&1
-        return $?
-    fi
-    if command -v wget >/dev/null 2>&1; then
-        wget -qO- "$url" >/dev/null 2>&1
-        return $?
-    fi
-    return 1
-}
-
-start_node_server() {
-    local node_log="$LOGS/node-server_$DATE.log"
-    log_info "Starting single Node server with npm start"
-    (
-        cd "$CURRENT"
-        nohup env NODE_ENV="$NODE_ENV" PATH="$PATH" npm start > "$node_log" 2>&1 &
-        echo $! > "$PID_FILE"
-    )
-
-    local pid=""
-    pid=$(cat "$PID_FILE" 2>/dev/null || true)
-    if [[ -z "$pid" ]]; then
-        log_warn "Node server PID file was not created; skipping (Node server is optional)"
-        return 0
-    fi
-
-    for _ in $(seq 1 30); do
-        if ! kill -0 "$pid" 2>/dev/null; then
-            wait "$pid" 2>/dev/null || true
-            log_warn "npm start exited; skipping Node server (optional for PHP-first deployments)"
-            rm -f "$PID_FILE"
-            return 0
-        fi
-        if health_check; then
-            log_info "Node server is healthy"
-            return 0
-        fi
-        sleep 2
-    done
-
-    log_warn "Node server started, but health check timed out; continuing deployment anyway"
-    return 0
-}
 
 require_command() {
     local name="$1"
@@ -385,8 +314,6 @@ cat > "$VERSION_FILE" <<EOF
 EOF
 
 log_section "SWITCHING RELEASE"
-stop_node_server
-
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 PUBLIC_HTML_BASE="$BASE/public_html"
 PUBLIC_HTML_TARGET="$CURRENT/public_html"
@@ -396,12 +323,6 @@ elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
     mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
 fi
 ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
-
-if [[ "$START_NODE_SERVER" == "true" ]]; then
-    start_node_server
-else
-    log_warn "Node server start skipped; restart it manually after deployment"
-fi
 
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
