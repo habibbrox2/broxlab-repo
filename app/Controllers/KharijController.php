@@ -42,9 +42,9 @@ $kharijGetVerificationBaseUrl = function (): string {
     return $scheme . '://' . $host;
 };
 
-$kharijGenerateQr = function (string $hash) use ($kharijGetVerificationBaseUrl): ?string {
+$kharijGenerateQr = function (string $hash, string $path = 'online-dcr') use ($kharijGetVerificationBaseUrl): ?string {
     try {
-        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/online-dcr/' . $hash;
+        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/' . $path . '/' . $hash;
         $qrCode = new QrCode($verificationUrl);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -382,6 +382,37 @@ $router->post('/admin/kharij/update/{id}', ['middleware' => ['auth', 'admin_only
         'court_order_date' => sanitize_input($_POST['court_order_date'] ?? ''),
     ];
 
+    // Handle multiple dags (dynamic array format)
+    if (isset($_POST['dags']) && is_array($_POST['dags'])) {
+        $dags = [];
+        foreach ($_POST['dags'] as $dag) {
+            $dags[] = [
+                'dag_number' => sanitize_input($dag['dag_number'] ?? ''),
+                'land_type' => sanitize_input($dag['land_type'] ?? ''),
+                'total_dag_area' => sanitize_input($dag['total_dag_area'] ?? ''),
+                'dag_area_shottangsho' => sanitize_input($dag['dag_area_shottangsho'] ?? ''),
+                'single_area' => sanitize_input($dag['single_area'] ?? ''),
+                'khash_area' => sanitize_input($dag['khash_area'] ?? ''),
+                'khash_area_shottangsho' => sanitize_input($dag['khash_area_shottangsho'] ?? ''),
+            ];
+        }
+        $data['dags'] = $dags;
+        // Also set first dag values to flat fields for backward compatibility
+        if (!empty($dags)) {
+            $data['dag_number'] = $dags[0]['dag_number'];
+            $data['land_type'] = $dags[0]['land_type'];
+            $data['total_dag_area'] = $dags[0]['total_dag_area'];
+            $data['dag_area_shottangsho'] = $dags[0]['dag_area_shottangsho'];
+            $data['single_area'] = $dags[0]['single_area'];
+            $data['khash_area'] = $dags[0]['khash_area'];
+            $data['khash_area_shottangsho'] = $dags[0]['khash_area_shottangsho'];
+        }
+    } else {
+        // Keep flat fields as single dag (backward compatibility for old records)
+        $data['dag_number'] = sanitize_input($_POST['dag_number'] ?? '');
+        $data['land_type'] = sanitize_input($_POST['land_type'] ?? '');
+    }
+
     // Handle multiple owners (dynamic array format)
     if (isset($_POST['owners']) && is_array($_POST['owners'])) {
         $owners = [];
@@ -484,13 +515,24 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         'mouza' => 'মৌজা',
         'upazila' => 'উপজেলা/থানা',
         'district' => 'জেলা',
-        'dag_number' => 'দাগ/প্লট নম্বর',
     ];
     $errors = [];
     foreach ($requiredFields as $field => $label) {
         $val = trim($_POST[$field] ?? '');
         if ($val === '') {
             $errors[] = "{$label} আবশ্যক";
+        }
+    }
+    // Validate dag entries (at least first dag must have dag_number)
+    if (isset($_POST['dags']) && is_array($_POST['dags'])) {
+        $dagNumber = trim($_POST['dags'][0]['dag_number'] ?? '');
+        if ($dagNumber === '') {
+            $errors[] = 'প্রথম দাগ/প্লট নম্বর আবশ্যক';
+        }
+    } else {
+        $dagNumber = trim($_POST['dag_number'] ?? '');
+        if ($dagNumber === '') {
+            $errors[] = 'দাগ/প্লট নম্বর আবশ্যক';
         }
     }
     // Validate owners (at least one owner with required fields)
@@ -557,6 +599,33 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         'court_order_no' => sanitize_input($_POST['court_order_no'] ?? ''),
         'court_order_date' => sanitize_input($_POST['court_order_date'] ?? ''),
     ];
+
+    // Handle multiple dags (dynamic array format)
+    if (isset($_POST['dags']) && is_array($_POST['dags'])) {
+        $dags = [];
+        foreach ($_POST['dags'] as $dag) {
+            $dags[] = [
+                'dag_number' => sanitize_input($dag['dag_number'] ?? ''),
+                'land_type' => sanitize_input($dag['land_type'] ?? ''),
+                'total_dag_area' => sanitize_input($dag['total_dag_area'] ?? ''),
+                'dag_area_shottangsho' => sanitize_input($dag['dag_area_shottangsho'] ?? ''),
+                'single_area' => sanitize_input($dag['single_area'] ?? ''),
+                'khash_area' => sanitize_input($dag['khash_area'] ?? ''),
+                'khash_area_shottangsho' => sanitize_input($dag['khash_area_shottangsho'] ?? ''),
+            ];
+        }
+        $data['dags'] = $dags;
+        // Set first dag values to flat fields for backward compatibility
+        if (!empty($dags)) {
+            $data['dag_number'] = $dags[0]['dag_number'];
+            $data['land_type'] = $dags[0]['land_type'];
+            $data['total_dag_area'] = $dags[0]['total_dag_area'];
+            $data['dag_area_shottangsho'] = $dags[0]['dag_area_shottangsho'];
+            $data['single_area'] = $dags[0]['single_area'];
+            $data['khash_area'] = $dags[0]['khash_area'];
+            $data['khash_area_shottangsho'] = $dags[0]['khash_area_shottangsho'];
+        }
+    }
 
     // Handle multiple owners (dynamic array format)
     if (isset($_POST['owners']) && is_array($_POST['owners'])) {
@@ -650,7 +719,7 @@ $router->get('/admin/kharij/image-download/{id}', ['middleware' => ['auth', 'adm
     }
 
     $data = $record['data'];
-    $qrDataUri = $kharijGenerateQr($record['hash'] ?? '');
+    $qrDataUri = $kharijGenerateQr($record['hash'] ?? '', 'qr-vk');
     $templateData = [
         'data' => $data,
         'qr_data_uri' => $qrDataUri,
@@ -804,6 +873,39 @@ $router->get('/mutation-land-gov-bd/online-dcr/{hash}', function ($hash) use ($m
 });
 
 // ============================================================
+// PUBLIC ROUTE: Verify page (no auth required)
+// GET /mutation-land-gov-bd/qr-vk/{hash}
+// ============================================================
+
+$router->get('/mutation-land-gov-bd/qr-vk/{hash}', function ($hash) use ($mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamPdf) {
+    $kharijModel = new KharijModel($mysqli);
+    $record = $kharijModel->findByHash($hash);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'রশিদ পাওয়া যায়নি';
+        exit;
+    }
+
+    $data = $record['data'];
+    $qrDataUri = $kharijGenerateQr($hash, 'qr-vk');
+
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'images' => [
+            'sign_rezaul' => '/assets/images/kharij/sign-rezaul.png',
+            'sign_julfikar' => '/assets/images/kharij/sign-julfikar.png',
+            'sign_aminul' => '/assets/images/kharij/sign-aminul.png',
+            'organisation_seal' => '/assets/images/kharij/seal.png',
+        ],
+    ];
+
+    $kharijStreamPdf($templateData, true);
+    exit;
+});
+
+// ============================================================
 // PUBLIC ROUTE: PDF Download (no auth required)
 // GET /mutation-land-gov-bd/QrScanner/KhatianDownload/{hash}
 // ============================================================
@@ -819,7 +921,7 @@ $router->get('/mutation-land-gov-bd/QrScanner/KhatianDownload/{hash}', function 
     }
 
     $data = $record['data'];
-    $qrDataUri = $kharijGenerateQr($hash);
+    $qrDataUri = $kharijGenerateQr($hash, 'qr-vk');
     $templateData = [
         'data' => $data,
         'qr_data_uri' => $qrDataUri,

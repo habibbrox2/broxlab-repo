@@ -155,6 +155,34 @@
     margin: 10px 0;
   }
 
+  /* Dag Entry Collapse */
+  .dag-body {
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    max-height: 800px;
+    opacity: 1;
+    overflow: hidden;
+  }
+  .dag-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .dag-toggle-btn {
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .dag-toggle-btn:hover {
+    background-color: #f1f5f9;
+  }
+  .dag-toggle-btn .chevron-icon {
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+  .dag-toggle-btn.collapsed .chevron-icon {
+    transform: rotate(-90deg);
+  }
+
   /* Form Validation */
   .kharij-field-group .validation-error {
     display: none;
@@ -354,60 +382,35 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div class="kharij-field-group">
-                <label for="dag_number" class="block text-sm font-semibold text-slate-700 mb-1.5">দাগ/প্লট নম্বর <span class="text-rose-500">*</span></label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dag_number" id="dag_number" value="{{ data.dag_number|default('0') }}" required placeholder="মৌজা ম্যাপ অনুযায়ী প্লট নম্বর">
-                <span class="field-icon">📍</span>
-              </div>
-              <div>
-                <label for="land_type" class="block text-sm font-semibold text-slate-700 mb-1.5">জমির শ্রেণী</label>
-                <div class="relative">
-                  <select class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 appearance-none" name="land_type" id="land_type">
-                    <option value="">-- নির্বাচন করুন --</option>
-                    <option value="নাল" {{ data.land_type == 'নাল' ? 'selected' : '' }}>নাল</option>
-                    <option value="ভিটা" {{ data.land_type == 'ভিটা' ? 'selected' : '' }}>ভিটা</option>
-                    <option value="দালান" {{ data.land_type == 'দালান' ? 'selected' : '' }}>দালান</option>
-                    <option value="ডোবা" {{ data.land_type == 'ডোবা' ? 'selected' : '' }}>ডোবা</option>
-                    <option value="বাগান" {{ data.land_type == 'বাগান' ? 'selected' : '' }}>বাগান</option>
-                    <option value="ধানি" {{ data.land_type == 'ধানি' ? 'selected' : '' }}>ধানি</option>
-                    <option value="পুকুর" {{ data.land_type == 'পুকুর' ? 'selected' : '' }}>পুকুর</option>
-                    <option value="অন্যান্য" {{ data.land_type == 'অন্যান্য' ? 'selected' : '' }}>অন্যান্য</option>
-                  </select>
-                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                  </span>
-                </div>
-              </div>
-              <div class="kharij-field-group">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div class="kharij-field-group sm:col-span-2">
                 <label for="total_land_area" class="block text-sm font-semibold text-slate-700 mb-1.5">মোট জমির পরিমাণ (একর)</label>
                 <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_land_area" id="total_land_area" value="{{ data.total_land_area|default('0') }}" placeholder="একর/শতক/হেক্টরে">
                 <span class="field-icon">📐</span>
               </div>
-              <div class="kharij-field-group">
-                <label for="total_dag_area" class="block text-sm font-semibold text-slate-700 mb-1.5">দাগের মোট জমি (একর) (৬-ক)</label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_dag_area" id="total_dag_area" value="{{ data.total_dag_area|default('0') }}" placeholder="একর">
-                <span class="field-icon">📐</span>
+            </div>
+
+            <!-- Multi-Dag Entries -->
+            <div class="mt-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm font-semibold text-slate-700">দাগ/প্লট বিবরণ</span>
+                <span class="text-xs text-slate-400" id="dag-count-badge">
+                  {% if data.dags is defined and data.dags|length > 0 %}
+                    {{ data.dags|length }}{% else %}১{% endif %}টি দাগ
+                </span>
               </div>
-              <div class="kharij-field-group">
-                <label for="dag_area_shottangsho" class="block text-sm font-semibold text-slate-700 mb-1.5">দাগের মোট জমি (শতাংশ) (৬-খ)</label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dag_area_shottangsho" id="dag_area_shottangsho" value="{{ data.dag_area_shottangsho|default('0') }}" placeholder="দাগের মোট জমি শতাংশ">
-                <span class="field-icon">📏</span>
+              <div id="dag-entries-container" class="space-y-4"
+                {% if data.dags is defined and data.dags|length > 0 %}
+                data-dags='{{ data.dags|json_encode|e("html_attr") }}'
+                {% endif %}
+              >
+                <!-- Dags injected by JavaScript -->
               </div>
-              <div class="kharij-field-group">
-                <label for="single_area" class="block text-sm font-semibold text-slate-700 mb-1.5">খতিয়ানের অংশ (৭)</label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="single_area" id="single_area" value="{{ data.single_area|default('0') }}" placeholder="দাগের মধ্যে অত্র খতিয়ানের অংশ">
-                <span class="field-icon">📊</span>
-              </div>
-              <div class="kharij-field-group">
-                <label for="khash_area" class="block text-sm font-semibold text-slate-700 mb-1.5">অংশানুযায়ী জমি (একর) (৮-ক)</label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="khash_area" id="khash_area" value="{{ data.khash_area|default('0') }}" placeholder="অংশানুযায়ী জমি একর">
-                <span class="field-icon">📏</span>
-              </div>
-              <div class="kharij-field-group">
-                <label for="khash_area_shottangsho" class="block text-sm font-semibold text-slate-700 mb-1.5">অংশানুযায়ী জমি (শতাংশ)</label>
-                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="khash_area_shottangsho" id="khash_area_shottangsho" value="{{ data.khash_area_shottangsho|default('0') }}" placeholder="অংশানুযায়ী জমির শতাংশ">
-                <span class="field-icon">📏</span>
+              <div class="mt-3 flex items-center gap-3">
+                <button type="button" id="add-dag-btn" class="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 px-5 py-3 text-sm font-semibold text-amber-700 transition-all duration-200 hover:border-amber-400 hover:bg-amber-100/50 hover:text-amber-800 active:scale-[0.97]">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  আরও দাগ/প্লট যোগ করুন
+                </button>
               </div>
             </div>
           </div>
@@ -767,60 +770,62 @@ document.addEventListener('DOMContentLoaded', () => {
     return n.toFixed(4).replace(/\.?0+$/, '');
   }
 
-  // Auto-calculate dag_area_shottangsho from total_land_area
-  function calcLandArea() {
-    var tla = document.getElementById('total_land_area');
-    var das = document.getElementById('dag_area_shottangsho');
-    if (!tla || !das) return;
-    var acres = parseNum(tla.value);
-    if (!isNaN(acres) && acres > 0) {
-      das.value = fmt(acres * SHOTTANGSHO_PER_ACRE);
-    }
-  }
+  // ──────────────────────────────────────────────
+  // Per-Dag Auto-Calculation Functions
+  // ──────────────────────────────────────────────
 
-
-
-  // Auto-calculate single_area from total_dag_area and total_share
-  function calcSingle() {
-    var dag = document.getElementById('total_dag_area');
-    var share = document.getElementById('total_share');
-    var single = document.getElementById('single_area');
-    if (!dag || !share || !single) return;
-    var d = parseNum(dag.value);
-    var s = parseNum(share.value);
-    if (!isNaN(d) && !isNaN(s) && s > 0) {
-      single.value = fmt(d / s);
-    }
-  }
-
-  // Auto-calculate khash_area from total_land_area × owner share
+  // Get the first owner's share value
   function getFirstOwnerShare() {
     var el = document.querySelector('[data-owner-field="share"]');
     return el ? parseNum(el.value) : NaN;
   }
 
-  function calcKhash() {
-    var tla = document.getElementById('total_land_area');
-    var khash = document.getElementById('khash_area');
-    if (!tla || !khash) return;
-    var acres = parseNum(tla.value);
-    var shareVal = getFirstOwnerShare();
-    if (!isNaN(acres) && acres > 0 && !isNaN(shareVal) && shareVal > 0) {
-      khash.value = fmt(acres * shareVal);
+  // Calculate dag_area_shottangsho from total_dag_area within a dag entry
+  function calcDagTotalArea(dagEntry) {
+    var totalDagInput = dagEntry.querySelector('[data-dag-field="total_dag_area"]');
+    var dagAreaStgInput = dagEntry.querySelector('[data-dag-field="dag_area_shottangsho"]');
+    if (!totalDagInput || !dagAreaStgInput) return;
+    var acres = parseNum(totalDagInput.value);
+    if (!isNaN(acres) && acres > 0) {
+      dagAreaStgInput.value = fmt(acres * SHOTTANGSHO_PER_ACRE);
     }
   }
 
-  // Auto-calculate summary fields
-  function calcSummary() {
-    var dagAcr = document.getElementById('total_dag_area_summary_acre');
-    var dagStg = document.getElementById('total_dag_area_summary_shottangsho');
-    var dag = document.getElementById('total_dag_area');
-    if (!dagAcr || !dagStg || !dag) return;
-    var d = parseNum(dag.value);
-    if (!isNaN(d) && d > 0) {
-      dagAcr.value = fmt(d);
-      dagStg.value = fmt(d * SHOTTANGSHO_PER_ACRE);
+  // Calculate khash_area and khash_area_shottangsho from single_area × owner share
+  function calcDagKhash(dagEntry) {
+    var singleInput = dagEntry.querySelector('[data-dag-field="single_area"]');
+    var khashInput = dagEntry.querySelector('[data-dag-field="khash_area"]');
+    var khashStgInput = dagEntry.querySelector('[data-dag-field="khash_area_shottangsho"]');
+    var shareVal = getFirstOwnerShare();
+    if (!singleInput || !khashInput || !khashStgInput) return;
+    var single = parseNum(singleInput.value);
+    if (!isNaN(single) && single > 0 && !isNaN(shareVal) && shareVal > 0) {
+      var khashAcres = single * shareVal;
+      khashInput.value = fmt(khashAcres);
+      khashStgInput.value = fmt(khashAcres * SHOTTANGSHO_PER_ACRE);
     }
+  }
+
+  // Recalculate all dags and update summary
+  function recalcAllDags() {
+    document.querySelectorAll('#dag-entries-container .dag-entry').forEach(function(entry) {
+      calcDagTotalArea(entry);
+      calcDagKhash(entry);
+    });
+    updateDagSummary();
+  }
+
+  // Update summary fields by summing all dags
+  function updateDagSummary() {
+    var totalDagAcres = 0, totalDagStg = 0;
+    document.querySelectorAll('#dag-entries-container .dag-entry').forEach(function(entry) {
+      totalDagAcres += parseNum(entry.querySelector('[data-dag-field="total_dag_area"]').value) || 0;
+      totalDagStg += parseNum(entry.querySelector('[data-dag-field="dag_area_shottangsho"]').value) || 0;
+    });
+    var summaryAcr = document.getElementById('total_dag_area_summary_acre');
+    var summaryStg = document.getElementById('total_dag_area_summary_shottangsho');
+    if (summaryAcr) summaryAcr.value = fmt(totalDagAcres);
+    if (summaryStg) summaryStg.value = fmt(totalDagStg);
   }
 
   // Auto-calculate total_land_words from total_land_area
@@ -839,11 +844,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Run all auto-calculations
   function runAll() {
-    calcLandArea();
+    recalcAllDags();
     calcLandWords();
-    calcSingle();
-    calcKhash();
-    calcSummary();
   }
 
   // Unit converter
@@ -885,30 +887,54 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Auto-calc on input change
-    var fieldIds = ['total_land_area', 'dag_area_shottangsho', 'total_dag_area', 'total_share', 'single_area'];
-    fieldIds.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('input', runAll);
-        el.addEventListener('change', runAll);
-      }
-    });
+    // Auto-calc for total_land_area changes
+    var tla = document.getElementById('total_land_area');
+    if (tla) {
+      tla.addEventListener('input', function() { calcLandWords(); recalcAllDags(); });
+      tla.addEventListener('change', function() { calcLandWords(); recalcAllDags(); });
+    }
 
-    // Listen for owner share changes (event delegation for dynamic owner entries)
+    // Per-dag auto-calc via event delegation
+    var dagContainer = document.getElementById('dag-entries-container');
+    if (dagContainer) {
+      dagContainer.addEventListener('input', function(e) {
+        var dagEntry = e.target.closest('.dag-entry');
+        if (!dagEntry) return;
+        var field = e.target.dataset.dagField;
+        if (field === 'total_dag_area') {
+          calcDagTotalArea(dagEntry);
+          updateDagSummary();
+        } else if (field === 'single_area') {
+          calcDagKhash(dagEntry);
+        }
+      });
+      dagContainer.addEventListener('change', function(e) {
+        var dagEntry = e.target.closest('.dag-entry');
+        if (!dagEntry) return;
+        var field = e.target.dataset.dagField;
+        if (field === 'total_dag_area') {
+          calcDagTotalArea(dagEntry);
+          updateDagSummary();
+        } else if (field === 'single_area') {
+          calcDagKhash(dagEntry);
+        }
+      });
+    }
+
+    // Listen for owner share changes (affects all dag khash calculations)
     var ownerContainer = document.getElementById('owners-container');
     if (ownerContainer) {
       ownerContainer.addEventListener('input', function(e) {
         var shareInput = e.target.closest('[data-owner-field="share"]');
         if (shareInput) {
-          calcKhash();
+          recalcAllDags();
           calcLandWords();
         }
       });
       ownerContainer.addEventListener('change', function(e) {
         var shareInput = e.target.closest('[data-owner-field="share"]');
         if (shareInput) {
-          calcKhash();
+          recalcAllDags();
           calcLandWords();
         }
       });
@@ -939,6 +965,229 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 /**
+ * Kharij Dag (Plot) Manager
+ * Handles multiple plot entries within a single khatian.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  var DAG_TEMPLATE = '\
+    <div class="dag-entry rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" data-dag-index="__INDEX__">\
+      <div class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">\
+        <div class="flex items-center gap-2">\
+          <button type="button" class="dag-toggle-btn rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-all duration-200" title="\u09B8\u0982\u0995\u09CB\u099A\u09BF\u09A4/\u09AA\u09CD\u09B0\u09B8\u09BE\u09B0\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8">\
+            <svg class="w-4 h-4 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>\
+          </button>\
+          <span class="text-sm font-semibold text-slate-700 dag-number-badge">\u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F #__DISPLAY__</span>\
+        </div>\
+        <button type="button" class="remove-dag-btn inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.97]">\
+          <svg class=\"w-3.5 h-3.5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\"/></svg>\
+          \u09B8\u09B0\u09BE\u09A8\
+        </button>\
+      </div>\
+      <div class="p-5 dag-body">\
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">\
+          <div class="kharij-field-group">\
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">\u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F \u09A8\u09AE\u09CD\u09AC\u09B0 <span class=\"text-rose-500\">*</span></label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][dag_number]\" required placeholder=\"\u09AE\u09CC\u099C\u09BE \u09AE\u09CD\u09AF\u09BE\u09AA \u0985\u09A8\u09C1\u09AF\u09BE\u09AF\u09BC\u09C0 \u09AA\u09CD\u09B2\u099F \u09A8\u09AE\u09CD\u09AC\u09B0\" data-dag-field=\"dag_number\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCCD</span>\
+          </div>\
+          <div>\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u099C\u09AE\u09BF\u09B0 \u09B6\u09CD\u09B0\u09C7\u09A3\u09C0</label>\
+            <div class=\"relative\">\
+              <select class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 appearance-none\" name=\"dags[__INDEX__][land_type]\" data-dag-field=\"land_type\">\
+                <option value=\"\">-- \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0995\u09B0\u09C1\u09A8 --</option>\
+                <option value=\"\u09A8\u09BE\u09B2\">\u09A8\u09BE\u09B2</option>\
+                <option value=\"\u09AD\u09BF\u099F\u09BE\">\u09AD\u09BF\u099F\u09BE</option>\
+                <option value=\"\u09A6\u09BE\u09B2\u09BE\u09A8\">\u09A6\u09BE\u09B2\u09BE\u09A8</option>\
+                <option value=\"\u09A1\u09CB\u09AC\u09BE\">\u09A1\u09CB\u09AC\u09BE</option>\
+                <option value=\"\u09AC\u09BE\u0997\u09BE\u09A8\">\u09AC\u09BE\u0997\u09BE\u09A8</option>\
+                <option value=\"\u09A7\u09BE\u09A8\u09BF\">\u09A7\u09BE\u09A8\u09BF</option>\
+                <option value=\"\u09AA\u09C1\u0995\u09C1\u09B0\">\u09AA\u09C1\u0995\u09C1\u09B0</option>\
+                <option value=\"\u0985\u09A8\u09CD\u09AF\u09BE\u09A8\u09CD\u09AF\">\u0985\u09A8\u09CD\u09AF\u09BE\u09A8\u09CD\u09AF</option>\
+              </select>\
+              <span class=\"absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none\">\
+                <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"/></svg>\
+              </span>\
+            </div>\
+          </div>\
+          <div class=\"kharij-field-group\">\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u09A6\u09BE\u0997\u09C7\u09B0 \u09AE\u09CB\u099F \u099C\u09AE\u09BF (\u098F\u0995\u09B0) (\u09EC-\u0995)</label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][total_dag_area]\" value=\"0\" placeholder=\"\u098F\u0995\u09B0\" data-dag-field=\"total_dag_area\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCD0</span>\
+          </div>\
+          <div class=\"kharij-field-group\">\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u09A6\u09BE\u0997\u09C7\u09B0 \u09AE\u09CB\u099F \u099C\u09AE\u09BF (\u09B6\u09A4\u09BE\u0982\u09B6) (\u09EC-\u0996)</label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][dag_area_shottangsho]\" value=\"0\" placeholder=\"\u09B6\u09A4\u09BE\u0982\u09B6\u09C7 \u099C\u09AE\u09BF\u09B0 \u09AA\u09B0\u09BF\u09AE\u09BE\u09A3\" data-dag-field=\"dag_area_shottangsho\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCCF</span>\
+          </div>\
+          <div class=\"kharij-field-group\">\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u0996\u09A4\u09BF\u09AF\u09BC\u09BE\u09A8\u09C7\u09B0 \u0985\u0982\u09B6 (\u09ED)</label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][single_area]\" value=\"0\" placeholder=\"\u09A6\u09BE\u0997\u09C7\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 \u0985\u09A4\u09CD\u09B0 \u0996\u09A4\u09BF\u09AF\u09BC\u09BE\u09A8\u09C7\u09B0 \u0985\u0982\u09B6\" data-dag-field=\"single_area\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCCA</span>\
+          </div>\
+          <div class=\"kharij-field-group\">\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u0985\u0982\u09B6\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09AF\u09BC\u09C0 \u099C\u09AE\u09BF (\u098F\u0995\u09B0) (\u09EE-\u0995)</label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][khash_area]\" value=\"0\" placeholder=\"\u0985\u0982\u09B6\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09AF\u09BC\u09C0 \u099C\u09AE\u09BF \u098F\u0995\u09B0\" data-dag-field=\"khash_area\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCCF</span>\
+          </div>\
+          <div class=\"kharij-field-group\">\
+            <label class=\"block text-sm font-semibold text-slate-700 mb-1.5\">\u0985\u0982\u09B6\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09AF\u09BC\u09C0 \u099C\u09AE\u09BF (\u09B6\u09A4\u09BE\u0982\u09B6) (\u09EE-\u0996)</label>\
+            <input type=\"text\" class=\"block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10\" name=\"dags[__INDEX__][khash_area_shottangsho]\" value=\"0\" placeholder=\"\u0985\u0982\u09B6\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09AF\u09BC\u09C0 \u099C\u09AE\u09BF\u09B0 \u09B6\u09A4\u09BE\u0982\u09B6\" data-dag-field=\"khash_area_shottangsho\">\
+            <span class=\"field-icon\" style=\"top: 36px;\">\uD83D\uDCCF</span>\
+          </div>\
+        </div>\
+      </div>\
+    </div>\
+  ';
+
+  function updateDagBadge(count) {
+    var badge = document.getElementById('dag-count-badge');
+    if (badge) badge.textContent = count + '\u099F\u09BF \u09A6\u09BE\u0997';
+  }
+
+  function reindexDags() {
+    var entries = document.querySelectorAll('#dag-entries-container .dag-entry');
+    entries.forEach(function(entry, idx) {
+      entry.dataset.dagIndex = idx;
+      var badge = entry.querySelector('.dag-number-badge');
+      if (badge) badge.textContent = '\u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F #' + (idx + 1);
+      var inputs = entry.querySelectorAll('[name^="dags["]');
+      inputs.forEach(function(input) {
+        var field = input.dataset.dagField;
+        if (field) {
+          input.name = 'dags[' + idx + '][' + field + ']';
+          input.id = 'dag_' + idx + '_' + field;
+        }
+      });
+    });
+    updateDagBadge(entries.length);
+  }
+
+  function createDagEntry(data) {
+    var container = document.getElementById('dag-entries-container');
+    var entryCount = container.querySelectorAll('.dag-entry').length;
+    var html = DAG_TEMPLATE
+      .replace(/__INDEX__/g, entryCount)
+      .replace(/__DISPLAY__/g, entryCount + 1);
+
+    var temp = document.createElement('div');
+    temp.innerHTML = html.trim();
+    var entry = temp.firstChild;
+
+    if (data) {
+      var fields = ['dag_number', 'land_type', 'total_dag_area', 'dag_area_shottangsho', 'single_area', 'khash_area', 'khash_area_shottangsho'];
+      fields.forEach(function(f) {
+        if (data[f]) {
+          var input = entry.querySelector('[data-dag-field="' + f + '"]');
+          if (input) input.value = data[f];
+        }
+      });
+    }
+
+    container.appendChild(entry);
+    reindexDags();
+
+    // Auto-calc this new dag
+    calcDagTotalArea(entry);
+    calcDagKhash(entry);
+    updateDagSummary();
+
+    return entry;
+  }
+
+  function initDagManager() {
+    var container = document.getElementById('dag-entries-container');
+    if (!container) return;
+
+    // Check for pre-populated dags data (from data-dags attribute)
+    var dagsData = container.getAttribute('data-dags');
+    if (dagsData) {
+      try {
+        var dags = JSON.parse(dagsData);
+        if (Array.isArray(dags) && dags.length > 0) {
+          dags.forEach(function(dag) { createDagEntry(dag); });
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // Fallback: build from existing flat fields
+    var initialDag = {};
+    var dagNumInput = document.querySelector('[name="dag_number"]');
+    if (dagNumInput && dagNumInput.value) initialDag.dag_number = dagNumInput.value;
+    var landTypeInput = document.querySelector('[name="land_type"]');
+    if (landTypeInput && landTypeInput.value) initialDag.land_type = landTypeInput.value;
+
+    // Remove old single fields
+    var oldFields = ['dag_number', 'land_type'];
+    oldFields.forEach(function(f) {
+      var el = document.querySelector('[name="' + f + '"]');
+      if (el && el.parentNode) {
+        var group = el.closest('.kharij-field-group') || el.parentNode;
+        if (group && group.parentNode) group.parentNode.removeChild(group);
+      }
+    });
+
+    // Fallback to Twig data if no form fields found
+    if (!initialDag.dag_number) {
+      initialDag = {
+        dag_number: '{{ data.dag_number|default("")|e("js") }}',
+        land_type: '{{ data.land_type|default("")|e("js") }}',
+        total_dag_area: '{{ data.total_dag_area|default("0")|e("js") }}',
+        dag_area_shottangsho: '{{ data.dag_area_shottangsho|default("0")|e("js") }}',
+        single_area: '{{ data.single_area|default("0")|e("js") }}',
+        khash_area: '{{ data.khash_area|default("0")|e("js") }}',
+        khash_area_shottangsho: '{{ data.khash_area_shottangsho|default("0")|e("js") }}'
+      };
+    }
+
+    createDagEntry(initialDag);
+
+    // Add button listener
+    var addBtn = document.getElementById('add-dag-btn');
+    if (addBtn) addBtn.addEventListener('click', function() { createDagEntry(null); });
+
+    // Remove button listener (event delegation)
+    container.addEventListener('click', function(e) {
+      var removeBtn = e.target.closest('.remove-dag-btn');
+      if (!removeBtn) return;
+      var entry = removeBtn.closest('.dag-entry');
+      if (entry) {
+        var count = container.querySelectorAll('.dag-entry').length;
+        if (count <= 1) {
+          alert('\u0985\u09A8\u09CD\u09A4\u09A4 \u098F\u0995\u099F\u09BF \u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F \u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7\u0964');
+          return;
+        }
+        if (confirm('\u098F\u0987 \u09A6\u09BE\u0997\u099F\u09BF \u09B8\u09B0\u09BE\u09A4\u09C7 \u099A\u09BE\u09A8?')) {
+          entry.remove();
+          reindexDags();
+          updateDagSummary();
+        }
+      }
+    });
+
+    // Toggle collapsible dag body
+    container.addEventListener('click', function(e) {
+      var toggleBtn = e.target.closest('.dag-toggle-btn');
+      if (!toggleBtn) return;
+      var entry = toggleBtn.closest('.dag-entry');
+      if (!entry) return;
+      var body = entry.querySelector('.dag-body');
+      if (body) {
+        body.classList.toggle('collapsed');
+        toggleBtn.classList.toggle('collapsed');
+      }
+    });
+  }
+
+  // Initialize dag entries on page load
+  initDagManager();
+});
+</script>
+
+<script>
+/**
  * Form validation before form submission
  * Checks all required fields and highlights invalid ones.
  */
@@ -949,14 +1198,19 @@ document.addEventListener('DOMContentLoaded', () => {
   var form = document.getElementById('kharijForm');
   if (!form) return;
 
-  // Required field IDs for validation
+  //  Required field IDs for validation
   var requiredFields = [
     { id: 'khata_number', label: 'খতিয়ান নম্বর' },
     { id: 'mouza', label: 'মৌজা' },
     { id: 'upazila', label: 'উপজেলা/থানা' },
-    { id: 'district', label: 'জেলা' },
-    { id: 'dag_number', label: 'দাগ/প্লট নম্বর' }
+    { id: 'district', label: 'জেলা' }
   ];
+
+  // Dag required field names (within each dag entry)
+  var dagRequiredFields = ['dag_number'];
+  var dagFieldLabels = {
+    dag_number: 'দাগ/প্লট নম্বর'
+  };
 
   // Owner required field names (within each owner entry)
   var ownerRequiredFields = ['name', 'address', 'share'];
@@ -1023,6 +1277,33 @@ document.addEventListener('DOMContentLoaded', () => {
     return true;
   }
 
+  // Validate dag entries (at least first dag must have required fields)
+  function validateDags() {
+    var entries = document.querySelectorAll('#dag-entries-container .dag-entry');
+    var valid = true;
+    entries.forEach(function(entry) {
+      dagRequiredFields.forEach(function(field) {
+        var input = entry.querySelector('[data-dag-field="' + field + '"]');
+        if (!input) return;
+        var group = input.closest('.kharij-field-group');
+        if (!group) return;
+        var val = input.value.trim();
+        if (!val) {
+          group.classList.add('invalid');
+          var errorEl = group.querySelector('.validation-error');
+          if (!errorEl) {
+            errorEl = document.createElement('div');
+            errorEl.className = 'validation-error';
+            group.appendChild(errorEl);
+          }
+          errorEl.textContent = 'দয়া করে ' + dagFieldLabels[field] + ' পূরণ করুন';
+          valid = false;
+        }
+      });
+    });
+    return valid;
+  }
+
   // Validate all owners
   function validateOwners() {
     var entries = document.querySelectorAll('#owners-container .owner-entry');
@@ -1066,6 +1347,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!firstInvalid) firstInvalid = document.getElementById(f.id);
       }
     });
+
+    // Validate dag entries (at least first dag must have dag_number)
+    if (!validateDags()) {
+      allValid = false;
+      if (!firstInvalid) {
+        var firstDagInput = document.querySelector('#dag-entries-container [data-dag-field="dag_number"]');
+        if (firstDagInput) firstInvalid = firstDagInput;
+      }
+    }
 
     // Check owners
     if (!validateOwners()) {

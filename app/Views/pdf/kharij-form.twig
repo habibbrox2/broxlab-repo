@@ -519,8 +519,11 @@ body {
           </tr>
         </thead>
         <tbody>
+          {% set dag_list = data.dags is defined and data.dags|length > 0 ? data.dags : [data] %}
+          {% for dag in dag_list %}
           <tr class="data-row">
             <td class="col-1">
+              {% if loop.first %}
               <div class="owner-entry">
                 {% if data.owners is defined and data.owners|length > 0 %}
                   {% for owner in data.owners %}
@@ -539,27 +542,31 @@ body {
                   বাসা/হোল্ডিং:, গ্রাম/রাস্তা: {{ data.owner_address|default('') }}<br>
                 {% endif %}
               </div>
-            </td>
-            <td class="col-2 text-center">
-              {% if data.owners is defined and data.owners|length > 0 %}
-                {% for owner in data.owners %}
-                  {{ owner.share|default('১.০০০')|bn }}{% if not loop.last %}, {% endif %}
-                {% endfor %}
-              {% else %}
-                {{ data.share|default('০')|bn }}
               {% endif %}
             </td>
-            <td class="col-3">{{ data.land_development_tax|default('০')|bn }}</td>
-            <td class="col-4">{{ data.dag_number|default('০')|bn }}</td>
-            <td class="col-5">{{ data.land_type|default('')|bn }}</td>
-            <td class="col-6">{{ data.land_type_kh|default('')|bn }}</td>
-            <td class="col-7">{{ data.total_dag_area|default('০')|bn }}</td>
-            <td class="col-8">{{ data.dag_area_shottangsho|default('০')|bn }}</td>
-            <td class="col-9">{{ data.single_area|default('০')|bn }}</td>
-            <td class="col-10">{{ data.khash_area|default('০')|bn }}</td>
-            <td class="col-11">{{ data.khash_area_shottangsho|default('০')|bn }}</td>
-            <td class="col-12">{{ data.remarks|default('') }}</td>
+            <td class="col-2 text-center">
+              {% if loop.first %}
+                {% if data.owners is defined and data.owners|length > 0 %}
+                  {% for owner in data.owners %}
+                    {{ owner.share|default('১.০০০')|bn }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                {% else %}
+                  {{ data.share|default('০')|bn }}
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="col-3">{% if loop.first %}{{ data.land_development_tax|default('০')|bn }}{% endif %}</td>
+            <td class="col-4">{{ dag.dag_number|default('০')|bn }}</td>
+            <td class="col-5">{{ dag.land_type|default('')|bn }}</td>
+            <td class="col-6">{{ dag.land_type_kh|default('')|bn }}</td>
+            <td class="col-7">{{ dag.total_dag_area|default('০')|bn }}</td>
+            <td class="col-8">{{ dag.dag_area_shottangsho|default('০')|bn }}</td>
+            <td class="col-9">{{ dag.single_area|default('০')|bn }}</td>
+            <td class="col-10">{{ dag.khash_area|default('০')|bn }}</td>
+            <td class="col-11">{{ dag.khash_area_shottangsho|default('০')|bn }}</td>
+            <td class="col-12">{% if loop.first %}{{ data.remarks|default('') }}{% endif %}</td>
           </tr>
+          {% endfor %}
 
           <tr class="summary-row">
             <td class="text-center text-bold">
