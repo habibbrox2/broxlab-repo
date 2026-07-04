@@ -79,6 +79,7 @@ if (!function_exists('mpdf_default_config')) {
         $fontSolaiman = 'SolaimanLipi.ttf';
         $fontNikosh = 'Nikosh.ttf';
         $fontHelvetica = 'Helvetica.ttf';
+        $fontKalpurush = 'kalpurush.ttf';
 
         $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
         $fontDirs = $defaultConfig['fontDir'] ?? [];
@@ -99,6 +100,10 @@ if (!function_exists('mpdf_default_config')) {
             ];
             $customFontData['helvetica'] = [
                 'R' => $fontHelvetica,
+                'useOTL' => 0xFF,
+            ];
+            $customFontData['kalpurush'] = [
+                'R' => $fontKalpurush,
                 'useOTL' => 0xFF,
             ];
         }

@@ -3,6 +3,42 @@
 {% block title %}{{ title }}{% endblock %}
 {% set breadcrumbs = auto_admin_breadcrumbs() %}
 {% block content %}
+<style>
+  /* ── Sticky Actions Column ── */
+  .kharij-actions-col {
+    position: sticky;
+    right: 0;
+    background: inherit;
+    z-index: 2;
+  }
+  .kharij-actions-col::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, #e2e8f0 50%, transparent);
+    pointer-events: none;
+  }
+  .kharij-row .kharij-actions-col {
+    background: #fff;
+  }
+  .kharij-row:hover .kharij-actions-col {
+    background: #f1f5f9;
+  }
+  .dark .kharij-row .kharij-actions-col {
+    background: #0f172a;
+  }
+  .dark .kharij-row:hover .kharij-actions-col {
+    background: rgba(30, 41, 59, 0.6);
+  }
+  .dark .kharij-actions-col::before {
+    background: linear-gradient(to bottom, transparent, #334155 50%, transparent);
+  }
+  /* ── Dropdown safe overflow ── */
+  /* Positioned via JS using position:fixed to escape all ancestor clipping contexts */
+</style>
 
 {# ── Gradient Page Header ── #}
 <div class="scroll-fade-in relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-900 text-white shadow-xl shadow-slate-900/20">
@@ -118,7 +154,7 @@
           <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Mouza</th>
           <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Dag</th>
           <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Khatian No.</th>
-          <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap text-right">Actions</th>
+          <th class="kharij-actions-col px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap text-right">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -149,7 +185,7 @@
               <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ record.data.khata_number|default('—') }}</span>
             </div>
           </td>
-<td class="px-4 py-3 text-right">
+<td class="kharij-actions-col px-4 py-3 text-right">
              <div class="kharij-actions-dropdown relative inline-block text-left" data-record-hash="{{ record.hash }}">
                <button type="button"
                   class="kharij-actions-trigger inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-sm transition-all duration-150 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 active:scale-[0.97]">
@@ -199,6 +235,26 @@
                     class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-100" title="Download DCR receipt PDF">
                    <i class="lucide lucide-download w-4 h-4 text-emerald-400"></i>
                    <span class="flex-1">Download DCR</span>
+                 </a>
+
+                 <div class="border-t border-slate-100 dark:border-slate-700/50 my-1"></div>
+
+                 <!-- Tax Receipt group -->
+                 <div class="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">Tax Receipt</div>
+                 <a href="/admin/kharij/tax-receipt/{{ record.id }}" target="_blank" rel="noopener"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 transition-colors duration-100" title="Download Tax Receipt PDF">
+                   <i class="lucide lucide-download w-4 h-4 text-rose-400"></i>
+                   <span class="flex-1">Download Tax Receipt</span>
+                 </a>
+                 <a href="/admin/kharij/tax-receipt-preview/{{ record.id }}" target="_blank" rel="noopener"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-100" title="Preview Tax Receipt PDF">
+                   <i class="lucide lucide-eye w-4 h-4 text-sky-400"></i>
+                   <span class="flex-1">Preview Tax Receipt</span>
+                 </a>
+                 <a href="/ldtax-gov-bd/dakhila-print/{{ record.hash }}" target="_blank" rel="noopener"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-100" title="View Dakhila webpage">
+                   <i class="lucide lucide-globe w-4 h-4 text-amber-400"></i>
+                   <span class="flex-1">Dakhila Web</span>
                  </a>
 
                  <div class="border-t border-slate-100 dark:border-slate-700/50 my-1"></div>
@@ -273,15 +329,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   'use strict';
 
-  /* ── Dropdown logic ── */
+  /* ── Dropdown logic (fixed positioning — escapes ALL ancestor clipping contexts) ── */
 
   function initDropdown(container) {
     var trigger = container.querySelector('.kharij-actions-trigger');
     var menu = container.querySelector('.kharij-actions-menu');
     if (!trigger || !menu) return;
 
+    // Set ARIA attributes
+    trigger.setAttribute('aria-haspopup', 'true');
+    trigger.setAttribute('aria-expanded', 'false');
+    menu.setAttribute('role', 'menu');
+    menu.querySelectorAll('a, button').forEach(function(el) {
+      if (!el.getAttribute('role')) el.setAttribute('role', 'menuitem');
+    });
+
     trigger.addEventListener('click', function(e) {
       e.stopPropagation();
+      // Close all other open dropdowns
       document.querySelectorAll('.kharij-actions-menu.opacity-100').forEach(function(m) {
         if (m !== menu) {
           var p = m.closest('.kharij-actions-dropdown');
@@ -318,22 +383,112 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function toggleDropdown(menu, trigger) {
-    var isOpen = !menu.classList.contains('invisible');
+    var isOpen = menu.classList.contains('opacity-100');
     if (isOpen) { closeDropdown(menu, trigger); } else { openDropdown(menu, trigger); }
   }
 
   function openDropdown(menu, trigger) {
+    var rect = trigger.getBoundingClientRect();
+    var menuWidth = 208; // w-52 = 13rem
+    var gap = 6; // mt-1.5 equivalent
+
+    // ── Use fixed positioning to escape ALL ancestor clipping contexts ──
+    // overflow:hidden, overflow-x:auto, table cells, sticky columns, etc.
+    // do NOT clip position:fixed elements.
+    menu.style.position = 'fixed';
+
+    // Default position: right-aligned, below the trigger button
+    var left = rect.right - menuWidth;
+    var top = rect.bottom + gap;
+
+    // ── Horizontal boundary protection ──
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - menuWidth - 8);
+    }
+
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.right = 'auto';
+    menu.style.bottom = 'auto';
+
+    // Show with CSS transition animation
     menu.classList.remove('opacity-0', 'invisible', 'pointer-events-none', 'scale-95');
     menu.classList.add('opacity-100', 'visible', 'pointer-events-auto', 'scale-100');
+
+    // Update ARIA
+    trigger.setAttribute('aria-expanded', 'true');
+
+    // Rotate chevron
     var arrow = trigger.querySelector('.dropdown-arrow');
     if (arrow) arrow.style.transform = 'rotate(180deg)';
+
+    // ── Vertical boundary check (after show, to measure actual height) ──
+    requestAnimationFrame(function() {
+      var menuRect = menu.getBoundingClientRect();
+      var overflowBottom = menuRect.bottom - window.innerHeight + 4;
+      var spaceAbove = rect.top - 8;
+
+      if (overflowBottom > 0) {
+        // Not enough space below
+        if (spaceAbove >= menuRect.height || spaceAbove >= menuRect.height - overflowBottom) {
+          // Flip above the trigger
+          menu.style.top = 'auto';
+          menu.style.bottom = (window.innerHeight - rect.top + gap) + 'px';
+          menu.style.maxHeight = '';
+          menu.style.overflowY = '';
+        } else {
+          // Shrink to fit available space
+          var maxH = Math.max(180, window.innerHeight - menuRect.top - 8);
+          // If still too tall, try flipping
+          if (maxH < 180 && spaceAbove > 180) {
+            menu.style.top = 'auto';
+            menu.style.bottom = (window.innerHeight - rect.top + gap) + 'px';
+            maxH = Math.min(Math.max(180, spaceAbove - 8), window.innerHeight - 16);
+          }
+          if (maxH < menuRect.height) {
+            menu.style.maxHeight = maxH + 'px';
+            menu.style.overflowY = 'auto';
+          }
+        }
+      }
+
+      // Focus first focusable item
+      var items = getFocusableItems(menu);
+      if (items.length) items[0].focus();
+    });
   }
 
   function closeDropdown(menu, trigger) {
     menu.classList.add('opacity-0', 'invisible', 'pointer-events-none', 'scale-95');
     menu.classList.remove('opacity-100', 'visible', 'pointer-events-auto', 'scale-100');
+
+    // Reset ARIA
+    trigger.setAttribute('aria-expanded', 'false');
+
+    // Reset chevron
     var arrow = trigger.querySelector('.dropdown-arrow');
     if (arrow) arrow.style.transform = 'rotate(0deg)';
+
+    // Reset all inline positioning overrides (revert to CSS default: position:absolute)
+    menu.style.position = '';
+    menu.style.left = '';
+    menu.style.top = '';
+    menu.style.right = '';
+    menu.style.bottom = '';
+    menu.style.maxHeight = '';
+    menu.style.overflowY = '';
+
+    // Return focus to trigger
+    trigger.focus();
+  }
+
+  function getFocusableItems(menu) {
+    var selector = 'a:not([tabindex="-1"]), button:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+    var items = Array.from(menu.querySelectorAll(selector));
+    return items.filter(function(el) {
+      return el.offsetParent !== null && !el.disabled;
+    });
   }
 
   function showCopied(feedback) {
@@ -352,32 +507,96 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 
-  // Delegated click handler for dropdowns
+  // ── Delegated click handler: close dropdown when clicking outside ──
   document.addEventListener('click', function(e) {
-    document.querySelectorAll('.kharij-actions-dropdown').forEach(function(container) {
-      var menu = container.querySelector('.kharij-actions-menu');
+    var openMenu = document.querySelector('.kharij-actions-menu.opacity-100');
+    if (!openMenu) return;
+    var container = openMenu.closest('.kharij-actions-dropdown');
+    if (container && !container.contains(e.target)) {
       var trigger = container.querySelector('.kharij-actions-trigger');
-      if (menu && trigger && !container.contains(e.target)) {
-        closeDropdown(menu, trigger);
-      }
-    });
-  });
-
-  // Escape closes any open dropdown
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      var openMenu = document.querySelector('.kharij-actions-menu.opacity-100');
-      if (openMenu) {
-        var container = openMenu.closest('.kharij-actions-dropdown');
-        if (container) {
-          var trigger = container.querySelector('.kharij-actions-trigger');
-          closeDropdown(openMenu, trigger);
-          if (trigger) trigger.focus();
-        }
-      }
+      closeDropdown(openMenu, trigger);
     }
   });
 
+  // ── Keyboard navigation for open dropdowns ──
+  document.addEventListener('keydown', function(e) {
+    var openMenu = document.querySelector('.kharij-actions-menu.opacity-100');
+    if (!openMenu) return;
+
+    var container = openMenu.closest('.kharij-actions-dropdown');
+    if (!container) return;
+    var trigger = container.querySelector('.kharij-actions-trigger');
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDropdown(openMenu, trigger);
+      return;
+    }
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var items = getFocusableItems(openMenu);
+      if (!items.length) return;
+      var focusedIndex = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        var nextIndex = focusedIndex < items.length - 1 ? focusedIndex + 1 : 0;
+        items[nextIndex].focus();
+      } else {
+        var prevIndex = focusedIndex > 0 ? focusedIndex - 1 : items.length - 1;
+        items[prevIndex].focus();
+      }
+      return;
+    }
+
+    if (e.key === 'Home') {
+      e.preventDefault();
+      var items = getFocusableItems(openMenu);
+      if (items.length) items[0].focus();
+      return;
+    }
+
+    if (e.key === 'End') {
+      e.preventDefault();
+      var items = getFocusableItems(openMenu);
+      if (items.length) items[items.length - 1].focus();
+      return;
+    }
+  });
+
+  // ── Close dropdown when focus leaves the container (Tab key edge case) ──
+  document.addEventListener('focusout', function(e) {
+    var openMenu = document.querySelector('.kharij-actions-menu.opacity-100');
+    if (!openMenu) return;
+    var container = openMenu.closest('.kharij-actions-dropdown');
+    if (!container) return;
+    // Check if the newly focused element is outside the dropdown container
+    var relatedTarget = e.relatedTarget;
+    // Use setTimeout because relatedTarget is not always available in focusout
+    setTimeout(function() {
+      var newActive = document.activeElement;
+      if (newActive && !container.contains(newActive)) {
+        var trigger = container.querySelector('.kharij-actions-trigger');
+        closeDropdown(openMenu, trigger);
+      }
+    }, 0);
+  });
+
+  // ── Close dropdown on scroll or resize (fixed positioning stays in place) ──
+  function closeDropdownOnPageChange(e) {
+    var openMenu = document.querySelector('.kharij-actions-menu.opacity-100');
+    if (!openMenu) return;
+    // Don't close when scrolling inside the open menu itself
+    if (e.type === 'scroll' && openMenu.contains(e.target)) return;
+    var container = openMenu.closest('.kharij-actions-dropdown');
+    if (container) {
+      var trigger = container.querySelector('.kharij-actions-trigger');
+      closeDropdown(openMenu, trigger);
+    }
+  }
+  window.addEventListener('scroll', closeDropdownOnPageChange, { capture: true, passive: true });
+  window.addEventListener('resize', closeDropdownOnPageChange, { passive: true });
+
+  // ── Initialize all dropdowns ──
   document.querySelectorAll('.kharij-actions-dropdown').forEach(initDropdown);
 
   /* ── Bulk Actions ── */

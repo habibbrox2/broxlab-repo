@@ -501,6 +501,104 @@
           </div>
         </div>
 
+        <!-- ৬. কর প্রাপ্তি তথ্য (Tax Receipt) -->
+        <div class="scroll-fade-in kharij-card rounded-[1.5rem] border border-slate-200/80 bg-white shadow-sm overflow-hidden" style="transition-delay: 0.23s;">
+          <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-rose-50/80 to-transparent">
+            <div class="flex items-center gap-3">
+              <div class="kharij-section-icon bg-rose-100 text-rose-600">🧾</div>
+              <div>
+                <h5 class="text-base font-bold text-slate-900">কর প্রাপ্তি তথ্য</h5>
+                <p class="text-xs text-slate-500 mt-0.5">ভূমি উন্নয়ন কর পরিশোধ রসিদ (দাখিলা) সংক্রান্ত তথ্য</p>
+              </div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div class="kharij-field-group">
+                <label for="holding_number" class="block text-sm font-semibold text-slate-700 mb-1.5">হোল্ডিং নম্বর</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="holding_number" id="holding_number" value="{{ data.holding_number|default('') }}" placeholder="২ নং রেজিস্টার অনুযায়ী হোল্ডিং নম্বর">
+                <span class="field-icon">🏠</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="dakhila_serial" class="block text-sm font-semibold text-slate-700 mb-1.5">ক্রমিক নং</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="dakhila_serial" id="dakhila_serial" value="{{ data.dakhila_serial|default('') }}" placeholder="দাখিলার ক্রমিক নম্বর">
+                <span class="field-icon">🔢</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="challan_number" class="block text-sm font-semibold text-slate-700 mb-1.5">চালান নং</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="challan_number" id="challan_number" value="{{ data.challan_number|default('') }}" placeholder="চালান নম্বর">
+                <span class="field-icon">🧾</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="last_payment_year" class="block text-sm font-semibold text-slate-700 mb-1.5">সর্বশেষ কর পরিশোধের সাল</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="last_payment_year" id="last_payment_year" value="{{ data.last_payment_year|default('২০২৫-২০২৬') }}" placeholder="যেমন: ২০২৫-২০২৬">
+                <span class="field-icon">📅</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="receipt_date" class="block text-sm font-semibold text-slate-700 mb-1.5">দাখিলার তারিখ</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="receipt_date" id="receipt_date" value="{{ data.receipt_date|default('') }}" placeholder="যেমন: ৭ জ্যৈষ্ঠ ১৪৩৩">
+                <span class="field-icon">📆</span>
+              </div>
+              <div class="kharij-field-group">
+                <label for="receipt_date_en" class="block text-sm font-semibold text-slate-700 mb-1.5">ইংরেজি তারিখ</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 datepicker" name="receipt_date_en" id="receipt_date_en" value="{{ data.receipt_date_en|default('') }}" placeholder="dd-mm-yyyy">
+                <span class="field-icon">📅</span>
+              </div>
+              <div class="kharij-field-group sm:col-span-2">
+                <label for="total_amount_words" class="block text-sm font-semibold text-slate-700 mb-1.5">সর্বমোট (কথায়)</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="total_amount_words" id="total_amount_words" value="{{ data.total_amount_words|default('') }}" placeholder="যেমন: তিন শত সাঁইত্রিশ টাকা মাত্র">
+                <span class="field-icon">📝</span>
+              </div>
+            </div>
+
+            <!-- Tax Collection Details -->
+            <div class="mt-5 pt-4 border-t border-slate-100">
+              <h6 class="text-sm font-bold text-slate-800 mb-3">আদায়ের বিবরণ</h6>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="kharij-field-group">
+                  <label for="tax_arrears_over_3_years" class="block text-xs font-semibold text-slate-600 mb-1">তিন বৎসরের ঊর্ধ্বের বকেয়া</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_arrears_over_3_years" id="tax_arrears_over_3_years" value="{{ data.tax_arrears_over_3_years|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_arrears_last_3_years" class="block text-xs font-semibold text-slate-600 mb-1">গত তিন বৎসরের বকেয়া</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_arrears_last_3_years" id="tax_arrears_last_3_years" value="{{ data.tax_arrears_last_3_years|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_penalty" class="block text-xs font-semibold text-slate-600 mb-1">বকেয়ার জরিমানা ও ক্ষতিপূরণ</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_penalty" id="tax_penalty" value="{{ data.tax_penalty|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_current_demand" class="block text-xs font-semibold text-slate-600 mb-1">হাল দাবি</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_current_demand" id="tax_current_demand" value="{{ data.tax_current_demand|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_total_demand" class="block text-xs font-semibold text-slate-600 mb-1">মোট দাবি</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_total_demand" id="tax_total_demand" value="{{ data.tax_total_demand|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_total_collected" class="block text-xs font-semibold text-slate-600 mb-1">মোট আদায়</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_total_collected" id="tax_total_collected" value="{{ data.tax_total_collected|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_total_arrears" class="block text-xs font-semibold text-slate-600 mb-1">মোট বকেয়া</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_total_arrears" id="tax_total_arrears" value="{{ data.tax_total_arrears|default('') }}" placeholder="০">
+                </div>
+                <div class="kharij-field-group">
+                  <label for="tax_remarks" class="block text-xs font-semibold text-slate-600 mb-1">মন্তব্য</label>
+                  <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="tax_remarks" id="tax_remarks" value="{{ data.tax_remarks|default('') }}" placeholder="ঐছিক্য">
+                </div>
+              </div>
+              <div class="mt-2 flex items-center gap-2">
+                <button type="button" id="calcTaxTotals" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-100 hover:border-rose-300 active:scale-[0.97]">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  স্বয়ংক্রিয় গণনা
+                </button>
+                <span class="text-xs text-slate-400">মোট দাবি = বকেয়া + জরিমানা + হাল দাবি</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Submit -->
         <div class="scroll-fade-in" style="transition-delay: 0.25s;">
           <div class="validation-summary" id="validationSummary">
@@ -514,6 +612,12 @@
                 পরিবর্তন সংরক্ষণ করতে ফর্মটি জমা দিন
               </span>
             </p>
+            <div class="flex items-center gap-2">
+              <button type="button" id="fillTaxReceiptBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-100 hover:border-rose-300 active:scale-[0.97]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.356 2H15"/></svg>
+                নমুনা কর তথ্য
+              </button>
+            </div>
             <div class="flex items-center gap-3">
               <a href="/mutation-land-gov-bd/QrScanner/KhatianDownload/{{ record.hash }}" target="_blank" class="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:bg-indigo-100 hover:border-indigo-300 active:scale-[0.97]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -523,6 +627,12 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 ডিসিআর রশিদ
               </a>
+
+              <a href="/admin/kharij/tax-receipt-preview/{{ record.id }}" target="_blank" class="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 shadow-sm transition-all duration-200 hover:bg-sky-100 hover:border-sky-300 active:scale-[0.97]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                কর রশিদ (প্রিভিউ)
+              </a>
+
               <a href="/admin/kharij" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.97]">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 বাতিল
@@ -1183,6 +1293,156 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize dag entries on page load
   initDagManager();
+});
+</script>
+
+<script>
+/**
+ * Tax Collection Auto-Calculator
+ * Calculates total demand, arrears, and converts to Bengali words.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  var taxFields = ['tax_arrears_over_3_years','tax_arrears_last_3_years','tax_penalty','tax_current_demand','tax_total_demand','tax_total_collected','tax_total_arrears'];
+
+  // Convert Bengali digits (০-৯) to English digits (0-9)
+  function bnToEn(str) {
+    if (!str) return str;
+    return str.replace(/[০-৯]/g, function(m) {
+      return String.fromCharCode(m.charCodeAt(0) - 0x09E6 + 48);
+    });
+  }
+
+  function parseTaxVal(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    return parseFloat(bnToEn(el.value).replace(/[^0-9.]/g,'')) || 0;
+  }
+
+  /**
+   * Convert a number (0-999) to Bengali words, e.g. 337 → তিন শত সাঁইত্রিশ টাকা মাত্র
+   */
+  function bnNumToWords(n) {
+    n = parseInt(n, 10) || 0;
+    if (n === 0) return 'শূন্য টাকা মাত্র';
+
+    var ones = ['', 'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'সাত', 'আট', 'নয়'];
+    var teens = ['দশ', 'এগারো', 'বারো', 'তেরো', 'চৌদ্দ', 'পনেরো', 'ষোল', 'সতেরো', 'আঠারো', 'উনিশ'];
+    var compounds = {
+      21: 'একুশ', 22: 'বাইশ', 23: 'তেইশ', 24: 'চব্বিশ', 25: 'পঁচিশ',
+      26: 'ছাব্বিশ', 27: 'সাতাশ', 28: 'আটাশ', 29: 'উনত্রিশ',
+      31: 'একত্রিশ', 32: 'বত্রিশ', 33: 'তেত্রিশ', 34: 'চৌত্রিশ', 35: 'পঁয়ত্রিশ',
+      36: 'ছত্রিশ', 37: 'সাঁইত্রিশ', 38: 'আটত্রিশ', 39: 'উনচল্লিশ',
+      41: 'একচল্লিশ', 42: 'বেয়াল্লিশ', 43: 'তেতাল্লিশ', 44: 'চুয়াল্লিশ', 45: 'পঁয়তাল্লিশ',
+      46: 'ছেচাল্লিশ', 47: 'সাতচল্লিশ', 48: 'আটচল্লিশ', 49: 'উনপঞ্চাশ',
+      51: 'একান্ন', 52: 'বাহান্ন', 53: 'তিপ্পান্ন', 54: 'চুয়ান্ন', 55: 'পঞ্চান্ন',
+      56: 'ছাপ্পান্ন', 57: 'সাতান্ন', 58: 'আটান্ন', 59: 'উনষাট',
+      61: 'একষট্টি', 62: 'বাষট্টি', 63: 'তেষট্টি', 64: 'চৌষট্টি', 65: 'পঁয়ষট্টি',
+      66: 'ছেষট্টি', 67: 'সাতষট্টি', 68: 'আটষট্টি', 69: 'উনসত্তর',
+      71: 'একাত্তর', 72: 'বাহাত্তর', 73: 'তিয়াত্তর', 74: 'চুয়াত্তর', 75: 'পঁচাত্তর',
+      76: 'ছিয়াত্তর', 77: 'সাতাত্তর', 78: 'আটাত্তর', 79: 'উনআশি',
+      81: 'একাশি', 82: 'বিরাশি', 83: 'তিরাশি', 84: 'চুরাশি', 85: 'পঁচাশি',
+      86: 'ছিয়াশি', 87: 'সাতাশি', 88: 'আটাশি', 89: 'উননব্বই',
+      91: 'একানব্বই', 92: 'বিরানব্বই', 93: 'তিরানব্বই', 94: 'চুরানব্বই', 95: 'পঁচানব্বই',
+      96: 'ছিয়ানব্বই', 97: 'সাতানব্বই', 98: 'আটানব্বই', 99: 'নিরানব্বই'
+    };
+
+    var result = '';
+    if (n >= 100) {
+      result += ones[Math.floor(n / 100)] + ' শত ';
+      n = n % 100;
+    }
+    if (n > 0) {
+      if (n < 10) result += ones[n];
+      else if (n < 20) result += teens[n - 10];
+      else result += compounds[n] || '';
+    }
+    return (result.trim() || 'শূন্য') + ' টাকা মাত্র';
+  }
+
+  function calcTaxTotals() {
+    var d = parseTaxVal('tax_arrears_over_3_years') + parseTaxVal('tax_arrears_last_3_years') + parseTaxVal('tax_penalty') + parseTaxVal('tax_current_demand');
+    var c = parseTaxVal('tax_total_collected');
+    var a = d - c;
+
+    var tdEl = document.getElementById('tax_total_demand');
+    var taEl = document.getElementById('tax_total_arrears');
+    var twEl = document.getElementById('total_amount_words');
+
+    if (tdEl) tdEl.value = d > 0 ? d.toString() : '';
+    if (taEl) taEl.value = a >= 0 ? a.toString() : a.toString();
+    if (twEl && d > 0) {
+      var words = bnNumToWords(d);
+      if (twEl.value.indexOf('টাকা') === -1 || !twEl.value.trim()) {
+        twEl.value = words;
+      }
+    }
+  }
+
+  taxFields.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', calcTaxTotals);
+      el.addEventListener('change', calcTaxTotals);
+    }
+  });
+
+  setTimeout(calcTaxTotals, 300);
+  var calcBtn = document.getElementById('calcTaxTotals');
+  if (calcBtn) calcBtn.addEventListener('click', calcTaxTotals);
+});
+</script>
+
+<script>
+/**
+ * Fill tax receipt fields with random sample data
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('fillTaxReceiptBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    var holdingNums = ['২০২৬-১০০০২০', '২০২৬-১০০০২১', '২০২৬-১০০০২২', '২০২৬-১০০০২৩'];
+    var dakhilaSerials = ['২৬১৪২৬১২৬৬০১', '২৬১৪২৬১২৬৬০২', '২৬১৪২৬১২৬৬০৩', '২৬১৪২৬১২৬৬০৪'];
+    var challanNums = ['২৫২৬-০০৫৭১১০৩৩২', '২৫২৬-০০৫৭১১০৩৩৩', '২৫২৬-০০৫৭১১০৩৩৪'];
+    var bnDates = ['৭ জ্যৈষ্ঠ ১৪৩৩', '১৫ আষাঢ় ১৪৩২', '২৩ বৈশাখ ১৪৩৩', '১০ শ্রাবণ ১৪৩২'];
+    var enDates = ['২১ মে, ২০২৬', '২৯ জুন, ২০২৫', '৬ মে, ২০২৬', '২৬ জুলাই, ২০২৫'];
+    var amountWords = ['তিন শত সাঁইত্রিশ টাকা মাত্র', 'পাঁচ শত বাষট্টি টাকা মাত্র', 'দুই শত পনের টাকা মাত্র', 'চার শত তিরাশি টাকা মাত্র'];
+    var paymentYears = ['২০২৫-২০২৬', '২০২৪-২০২৫', '২০২৩-২০২৪', '২০২২-২০২৩'];
+    var idx = Math.floor(Math.random() * 4);
+    var arrearsOver3 = (Math.floor(Math.random() * 200) + 50).toString();
+    var arrearsLast3 = (Math.floor(Math.random() * 100) + 20).toString();
+    var penalty = (Math.floor(Math.random() * 150) + 10).toString();
+    var currentDemand = (Math.floor(Math.random() * 80) + 5).toString();
+    var totalDemand = (parseInt(arrearsOver3) + parseInt(arrearsLast3) + parseInt(penalty) + parseInt(currentDemand)).toString();
+    var totalCollected = (Math.floor(parseInt(totalDemand) * (0.7 + Math.random() * 0.3))).toString();
+    var totalArrears = (parseInt(totalDemand) - parseInt(totalCollected)).toString();
+
+    function toBnNum(str) {
+      var bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+      return String(str).replace(/[0-9]/g, function(m) { return bn[parseInt(m)]; }).replace(/\./g, '.');
+    }
+
+    function fill(id, val) { var el = document.getElementById(id); if (el && !el.value) el.value = val; }
+
+    fill('holding_number', holdingNums[idx]);
+    fill('dakhila_serial', dakhilaSerials[idx]);
+    fill('challan_number', challanNums[idx % 3]);
+    fill('last_payment_year', paymentYears[idx]);
+    fill('receipt_date', bnDates[idx]);
+    fill('receipt_date_en', enDates[idx]);
+    fill('total_amount_words', amountWords[idx]);
+    fill('tax_arrears_over_3_years', toBnNum(arrearsOver3));
+    fill('tax_arrears_last_3_years', toBnNum(arrearsLast3));
+    fill('tax_penalty', toBnNum(penalty));
+    fill('tax_current_demand', toBnNum(currentDemand));
+    fill('tax_total_demand', toBnNum(totalDemand));
+    fill('tax_total_collected', toBnNum(totalCollected));
+    fill('tax_total_arrears', toBnNum(totalArrears));
+    fill('tax_remarks', 'স্বয়ংক্রিয় গণনা');
+
+    if (typeof calcTaxTotals === 'function') setTimeout(calcTaxTotals, 50);
+  });
 });
 </script>
 

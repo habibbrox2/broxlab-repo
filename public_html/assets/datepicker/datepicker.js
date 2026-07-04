@@ -207,14 +207,13 @@
                 this.input.type = 'text';
             }
             this.input.setAttribute('autocomplete', 'on');
-            // always allow typing/copy-paste; readonly only used to prevent mobile keyboards when desired
             this.input.removeAttribute('inputmode');
             this.input.readOnly = false;
             if (this.config.allowManual) {
                 this.input.classList.add('bxdp-manual');
                 this.input.setAttribute('data-allow-manual', '1');
+                this._createCalendarToggle();
             } else {
-                // still show calendar icon unless manual is allowed
                 this.input.classList.remove('bxdp-manual');
                 this.input.removeAttribute('data-allow-manual');
             }
@@ -659,6 +658,54 @@
             if (this.config.onMonthChange) this.config.onMonthChange(this.currentMonth, this);
         }
 
+        toggle() {
+            if (this.isOpen) this.close();
+            else this.open();
+        }
+
+        _createCalendarToggle() {
+            this._removeCalendarToggle();
+
+            const wrapper = document.createElement('span');
+            wrapper.className = 'bxdp-toggle-wrapper';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'bxdp-toggle-btn';
+            btn.setAttribute('aria-label', 'Open calendar');
+            btn.setAttribute('tabindex', '-1');
+            btn.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1v2M14 1v2M2 7h16M4 3h12a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>';
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.input.focus({ preventScroll: true });
+                this.toggle();
+            });
+
+            // Wrap input + toggle in a positioned container for reliable rendering
+            this.input.parentNode.insertBefore(wrapper, this.input);
+            wrapper.appendChild(this.input);
+            wrapper.appendChild(btn);
+            this._toggleBtn = btn;
+
+            // Update aria-label when calendar opens/closes
+            this._updateToggleLabel = () => {
+                btn.setAttribute('aria-label', this.isOpen ? 'Close calendar' : 'Open calendar');
+            };
+            const origOpen = this.open.bind(this);
+            const origClose = this.close.bind(this);
+            this.open = (...args) => { origOpen(...args); if (this._updateToggleLabel) this._updateToggleLabel(); };
+            this.close = (...args) => { origClose(...args); if (this._updateToggleLabel) this._updateToggleLabel(); };
+            this._updateToggleLabel();
+        }
+
+        _removeCalendarToggle() {
+            if (this._toggleBtn) {
+                this._toggleBtn.remove();
+                this._toggleBtn = null;
+            }
+        }
+
         open() {
             if (this.isOpen) return;
             this.isOpen = true;
@@ -724,39 +771,51 @@
         }
 
         attachEvents() {
+            // In manual mode: don't auto-open calendar on input click/focus
+            // so the user can type freely. Use the toggle button to open.
             this.input.addEventListener('pointerdown', (e) => {
                 if (e.button !== 0) return;
-                if (!this.config.allowManual) e.preventDefault();
-                this.input.focus({ preventScroll: true });
-                this.open();
+                if (!this.config.allowManual) {
+                    e.preventDefault();
+                    this.input.focus({ preventScroll: true });
+                    this.open();
+                }
             });
-            this.input.addEventListener('focus', () => { if (!this._closing) this.open(); });
-            this.input.addEventListener('click', (e) => { if (!this.config.allowManual) e.preventDefault(); this.open(); });
+            this.input.addEventListener('focus', () => {
+                if (!this.config.allowManual && !this._closing) this.open();
+            });
+            this.input.addEventListener('click', (e) => {
+                if (!this.config.allowManual) { e.preventDefault(); this.open(); }
+            });
             this.input.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab' || e.ctrlKey || e.metaKey || e.altKey) return;
                 if (this.config.allowManual) return; // allow typing
                 if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); this.open(); return; }
                 if (e.key === 'Escape') { e.preventDefault(); this.close(); return; }
-                // do not prevent default so copy/paste/navigation works
             });
-            // synchronize calendar whenever the input value changes (typing/paste)
+            // When manual: only normalize digits on input, don't parse/clear
+            // Parsing happens on blur so incomplete dates aren't wiped out.
             this.input.addEventListener('input', () => {
-                // convert bangla digits on the fly then parse
                 this.input.value = U.normalizeDigits(this.input.value);
-                this.setDateFromInput();
-                this.render();
-                this.updateInput();
+                if (!this.config.allowManual) {
+                    this.setDateFromInput();
+                    this.render();
+                    this.updateInput();
+                }
             });
             this.input.addEventListener('blur', () => this.handleManualInput());
 
-            // close on mousedown outside (captures before focus shifts)
+            // Close on mousedown outside (captures before focus shifts)
+            // Exclude the toggle button from outside-click detection.
             document.addEventListener('mousedown', (e) => {
                 if (!this.isOpen) return;
                 const target = e.target;
-                if (this.calendar.contains(target) || this.input.contains(target)) return;
+                const inToggle = this._toggleBtn && (this._toggleBtn.contains(target) || target === this._toggleBtn);
+                if (this.calendar.contains(target) || this.input.contains(target) || inToggle) return;
                 if (e.composedPath) {
                     const path = e.composedPath();
-                    if (path.includes(this.calendar) || path.includes(this.input)) return;
+                    const inPathToggle = this._toggleBtn && path.includes(this._toggleBtn);
+                    if (path.includes(this.calendar) || path.includes(this.input) || inPathToggle) return;
                 }
                 this.close();
                 if (target !== this.input) target.focus && target.focus();
@@ -769,6 +828,7 @@
         }
 
         destroy() {
+            this._removeCalendarToggle();
             if (this.calendar && this.calendar.parentNode) this.calendar.parentNode.removeChild(this.calendar);
         }
     }
@@ -841,7 +901,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.DatePicker.init({
         selector: 'input[type="date"], .datepicker',
         format: 'DD-MM-YYYY',
-        locale: 'en',          // change to 'ar', 'fr', etc.
+        locale: 'bn',          // Bengali for month/weekday names
         mode: 'single',
         weekNumbers: false,
         withTime: false,

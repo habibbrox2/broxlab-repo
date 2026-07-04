@@ -380,6 +380,22 @@ $router->post('/admin/kharij/update/{id}', ['middleware' => ['auth', 'admin_only
         'mutation_date' => sanitize_input($_POST['mutation_date'] ?? ''),
         'court_order_no' => sanitize_input($_POST['court_order_no'] ?? ''),
         'court_order_date' => sanitize_input($_POST['court_order_date'] ?? ''),
+        // Tax receipt fields
+        'holding_number' => sanitize_input($_POST['holding_number'] ?? ''),
+        'dakhila_serial' => sanitize_input($_POST['dakhila_serial'] ?? ''),
+        'challan_number' => sanitize_input($_POST['challan_number'] ?? ''),
+        'last_payment_year' => sanitize_input($_POST['last_payment_year'] ?? ''),
+        'receipt_date' => sanitize_input($_POST['receipt_date'] ?? ''),
+        'receipt_date_en' => sanitize_input($_POST['receipt_date_en'] ?? ''),
+        'total_amount_words' => sanitize_input($_POST['total_amount_words'] ?? ''),
+        'tax_arrears_over_3_years' => sanitize_input($_POST['tax_arrears_over_3_years'] ?? ''),
+        'tax_arrears_last_3_years' => sanitize_input($_POST['tax_arrears_last_3_years'] ?? ''),
+        'tax_penalty' => sanitize_input($_POST['tax_penalty'] ?? ''),
+        'tax_current_demand' => sanitize_input($_POST['tax_current_demand'] ?? ''),
+        'tax_total_demand' => sanitize_input($_POST['tax_total_demand'] ?? ''),
+        'tax_total_collected' => sanitize_input($_POST['tax_total_collected'] ?? ''),
+        'tax_total_arrears' => sanitize_input($_POST['tax_total_arrears'] ?? ''),
+        'tax_remarks' => sanitize_input($_POST['tax_remarks'] ?? ''),
     ];
 
     // Handle multiple dags (dynamic array format)
@@ -598,6 +614,22 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
         'mutation_date' => sanitize_input($_POST['mutation_date'] ?? ''),
         'court_order_no' => sanitize_input($_POST['court_order_no'] ?? ''),
         'court_order_date' => sanitize_input($_POST['court_order_date'] ?? ''),
+        // Tax receipt fields
+        'holding_number' => sanitize_input($_POST['holding_number'] ?? ''),
+        'dakhila_serial' => sanitize_input($_POST['dakhila_serial'] ?? ''),
+        'challan_number' => sanitize_input($_POST['challan_number'] ?? ''),
+        'last_payment_year' => sanitize_input($_POST['last_payment_year'] ?? ''),
+        'receipt_date' => sanitize_input($_POST['receipt_date'] ?? ''),
+        'receipt_date_en' => sanitize_input($_POST['receipt_date_en'] ?? ''),
+        'total_amount_words' => sanitize_input($_POST['total_amount_words'] ?? ''),
+        'tax_arrears_over_3_years' => sanitize_input($_POST['tax_arrears_over_3_years'] ?? ''),
+        'tax_arrears_last_3_years' => sanitize_input($_POST['tax_arrears_last_3_years'] ?? ''),
+        'tax_penalty' => sanitize_input($_POST['tax_penalty'] ?? ''),
+        'tax_current_demand' => sanitize_input($_POST['tax_current_demand'] ?? ''),
+        'tax_total_demand' => sanitize_input($_POST['tax_total_demand'] ?? ''),
+        'tax_total_collected' => sanitize_input($_POST['tax_total_collected'] ?? ''),
+        'tax_total_arrears' => sanitize_input($_POST['tax_total_arrears'] ?? ''),
+        'tax_remarks' => sanitize_input($_POST['tax_remarks'] ?? ''),
     ];
 
     // Handle multiple dags (dynamic array format)
@@ -665,6 +697,156 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
     // Redirect to edit page where DCR Receipt and Kharij Download buttons are available
     showMessage('খারিজ রেকর্ড সফলভাবে তৈরি হয়েছে।', 'success');
     header('Location: /admin/kharij/edit/' . $recordId);
+    exit;
+});
+
+// ============================================================
+// HELPER: Stream Tax Receipt PDF with inline/attachment toggle
+// ============================================================
+
+$kharijStreamTaxReceipt = function (array $data, string $hash, bool $inline = true) use ($twig): void {
+    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
+
+    $html = $twig->render('pdf/tax-receipt.twig', $data);
+
+    $mpdf = mpdf_create_instance([
+        'format' => 'A4',
+        'orientation' => 'P',
+        'margin_left' => 5,
+        'margin_right' => 5,
+        'margin_top' => 4,
+        'margin_bottom' => 5,
+    ]);
+
+    if (!$mpdf) {
+        http_response_code(500);
+        echo 'Failed to initialize PDF engine';
+        exit;
+    }
+
+    mpdf_apply_runtime_optimizations($mpdf);
+
+    if (method_exists($mpdf, 'SetDefaultFontSize')) {
+        $mpdf->SetDefaultFontSize(10);
+    }
+
+    $mpdf->SetTitle('ভূমি উন্নয়ন কর দাখিলা - ' . ($data['data']['khata_number'] ?? ''));
+    $mpdf->SetAuthor('BroxLab Kharij System');
+    $mpdf->SetSubject('ভূমি উন্নয়ন কর পরিশোধ রসিদ');
+    $mpdf->WriteHTML(mpdf_optimize_html($html));
+
+    $pdfBinary = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
+
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+
+    $filename = 'tax-receipt-' . ($data['data']['khata_number'] ?? 'receipt') . '.pdf';
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/u', '_', $filename);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($pdfBinary));
+    header('Cache-Control: max-age=0');
+    header('Pragma: public');
+    echo $pdfBinary;
+    exit;
+};
+
+// ============================================================
+// ADMIN ROUTE: Download Tax Receipt PDF
+// GET /admin/kharij/tax-receipt/{id}
+// ============================================================
+
+$router->get('/admin/kharij/tax-receipt/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamTaxReceipt) {
+    $kharijModel = new KharijModel($mysqli);
+    $id = (int)$id;
+    $record = $kharijModel->findById($id);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'Kharij record not found';
+        exit;
+    }
+
+    $data = $record['data'];
+    $hash = $record['hash'] ?? '';
+    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
+    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
+
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'hash' => $hash,
+        'verification_url' => $verificationUrl,
+    ];
+
+    // Stream as download (attachment)
+    $kharijStreamTaxReceipt($templateData, $hash, true);
+    exit;
+});
+
+// ============================================================
+// PUBLIC ROUTE: Dakhila Print / Verification (no auth required, webpage view)
+// GET /ldtax-gov-bd/dakhila-print/{hash}
+// ============================================================
+
+$router->get('/ldtax-gov-bd/dakhila-print/{hash}', function ($hash) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl) {
+    $kharijModel = new KharijModel($mysqli);
+    $record = $kharijModel->findByHash($hash);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'রশিদ পাওয়া যায়নি';
+        exit;
+    }
+
+    $data = $record['data'];
+    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
+
+    // Generate the verification URL using production domain or dynamic fallback
+    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
+
+    // Render as webpage (no mPDF)
+    echo $twig->render('kharij/dakhila.twig', [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'hash' => $hash,
+        'verification_url' => $verificationUrl,
+    ]);
+    exit;
+});
+
+// ============================================================
+// ADMIN ROUTE: Tax Receipt PDF Preview (auth required, rendered via mPDF)
+// GET /admin/kharij/tax-receipt-preview/{id}
+// ============================================================
+
+$router->get('/admin/kharij/tax-receipt-preview/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamTaxReceipt) {
+    $kharijModel = new KharijModel($mysqli);
+    $id = (int)$id;
+    $record = $kharijModel->findById($id);
+
+    if (!$record) {
+        http_response_code(404);
+        echo 'Kharij record not found';
+        exit;
+    }
+
+    $data = $record['data'];
+    $hash = $record['hash'] ?? '';
+    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
+    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
+
+    $templateData = [
+        'data' => $data,
+        'qr_data_uri' => $qrDataUri,
+        'hash' => $hash,
+        'verification_url' => $verificationUrl,
+    ];
+
+    // Stream as inline PDF preview
+    $kharijStreamTaxReceipt($templateData, $hash, true);
     exit;
 });
 
