@@ -315,7 +315,8 @@ EOF
 
 log_section "SWITCHING RELEASE"
 ln -sfn "$NEW_RELEASE" "$CURRENT"
-PUBLIC_HTML_BASE="$BASE/public_html"
+# Web server document root — production expects this at /broxlab/public_html
+PUBLIC_HTML_BASE="/broxlab/public_html"
 PUBLIC_HTML_TARGET="$CURRENT/public_html"
 if [[ -L "$PUBLIC_HTML_BASE" ]]; then
     rm -f "$PUBLIC_HTML_BASE"

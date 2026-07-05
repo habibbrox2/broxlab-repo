@@ -32,9 +32,12 @@ use Endroid\QrCode\Writer\PngWriter;
 // HELPER: Generate QR code as data URI
 // ============================================================
 
-$kharijGetVerificationBaseUrl = function (): string {
+$kharijGetVerificationBaseUrl = function (string $domain = 'mutation'): string {
     $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'production') === 'production';
     if ($isProduction) {
+        if ($domain === 'dakhila') {
+            return 'https://dakhila.broxlab.online';
+        }
         return 'https://mutation-land.broxlab.online';
     }
     $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
@@ -42,9 +45,11 @@ $kharijGetVerificationBaseUrl = function (): string {
     return $scheme . '://' . $host;
 };
 
-$kharijGenerateQr = function (string $hash, string $path = 'online-dcr') use ($kharijGetVerificationBaseUrl): ?string {
+$kharijGenerateQr = function (string $hash, string $path = 'online-dcr', string $domain = 'mutation') use ($kharijGetVerificationBaseUrl): ?string {
     try {
-        $verificationUrl = $kharijGetVerificationBaseUrl() . '/mutation-land-gov-bd/' . $path . '/' . $hash;
+        $baseUrl = $kharijGetVerificationBaseUrl($domain);
+        $pathPrefix = ($domain === 'dakhila') ? '/ldtax-gov-bd/' : '/mutation-land-gov-bd/';
+        $verificationUrl = $baseUrl . $pathPrefix . $path . '/' . $hash;
         $qrCode = new QrCode($verificationUrl);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
@@ -701,92 +706,6 @@ $router->post('/admin/kharij/generate', ['middleware' => ['auth', 'admin_only', 
 });
 
 // ============================================================
-// HELPER: Stream Tax Receipt PDF with inline/attachment toggle
-// ============================================================
-
-$kharijStreamTaxReceipt = function (array $data, string $hash, bool $inline = true) use ($twig): void {
-    require_once dirname(__DIR__, 1) . '/Helpers/MpdfHelper.php';
-
-    $html = $twig->render('pdf/tax-receipt.twig', $data);
-
-    $mpdf = mpdf_create_instance([
-        'format' => 'A4',
-        'orientation' => 'P',
-        'margin_left' => 5,
-        'margin_right' => 5,
-        'margin_top' => 4,
-        'margin_bottom' => 5,
-    ]);
-
-    if (!$mpdf) {
-        http_response_code(500);
-        echo 'Failed to initialize PDF engine';
-        exit;
-    }
-
-    mpdf_apply_runtime_optimizations($mpdf);
-
-    if (method_exists($mpdf, 'SetDefaultFontSize')) {
-        $mpdf->SetDefaultFontSize(10);
-    }
-
-    $mpdf->SetTitle('ভূমি উন্নয়ন কর দাখিলা - ' . ($data['data']['khata_number'] ?? ''));
-    $mpdf->SetAuthor('BroxLab Kharij System');
-    $mpdf->SetSubject('ভূমি উন্নয়ন কর পরিশোধ রসিদ');
-    $mpdf->WriteHTML(mpdf_optimize_html($html));
-
-    $pdfBinary = $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN);
-
-    if (ob_get_level() > 0) {
-        ob_clean();
-    }
-
-    $filename = 'tax-receipt-' . ($data['data']['khata_number'] ?? 'receipt') . '.pdf';
-    $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/u', '_', $filename);
-
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($pdfBinary));
-    header('Cache-Control: max-age=0');
-    header('Pragma: public');
-    echo $pdfBinary;
-    exit;
-};
-
-// ============================================================
-// ADMIN ROUTE: Download Tax Receipt PDF
-// GET /admin/kharij/tax-receipt/{id}
-// ============================================================
-
-$router->get('/admin/kharij/tax-receipt/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamTaxReceipt) {
-    $kharijModel = new KharijModel($mysqli);
-    $id = (int)$id;
-    $record = $kharijModel->findById($id);
-
-    if (!$record) {
-        http_response_code(404);
-        echo 'Kharij record not found';
-        exit;
-    }
-
-    $data = $record['data'];
-    $hash = $record['hash'] ?? '';
-    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
-    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
-
-    $templateData = [
-        'data' => $data,
-        'qr_data_uri' => $qrDataUri,
-        'hash' => $hash,
-        'verification_url' => $verificationUrl,
-    ];
-
-    // Stream as download (attachment)
-    $kharijStreamTaxReceipt($templateData, $hash, true);
-    exit;
-});
-
-// ============================================================
 // PUBLIC ROUTE: Dakhila Print / Verification (no auth required, webpage view)
 // GET /ldtax-gov-bd/dakhila-print/{hash}
 // ============================================================
@@ -802,10 +721,11 @@ $router->get('/ldtax-gov-bd/dakhila-print/{hash}', function ($hash) use ($twig, 
     }
 
     $data = $record['data'];
-    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
+    // Dakhila QR code uses dakhila domain
+    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print', 'dakhila');
 
-    // Generate the verification URL using production domain or dynamic fallback
-    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
+    // Generate the verification URL using dakhila domain
+    $verificationUrl = $kharijGetVerificationBaseUrl('dakhila') . '/ldtax-gov-bd/dakhila-print/' . $hash;
 
     // Render as webpage (no mPDF)
     echo $twig->render('kharij/dakhila.twig', [
@@ -814,39 +734,6 @@ $router->get('/ldtax-gov-bd/dakhila-print/{hash}', function ($hash) use ($twig, 
         'hash' => $hash,
         'verification_url' => $verificationUrl,
     ]);
-    exit;
-});
-
-// ============================================================
-// ADMIN ROUTE: Tax Receipt PDF Preview (auth required, rendered via mPDF)
-// GET /admin/kharij/tax-receipt-preview/{id}
-// ============================================================
-
-$router->get('/admin/kharij/tax-receipt-preview/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $kharijGenerateQr, $kharijGetVerificationBaseUrl, $kharijStreamTaxReceipt) {
-    $kharijModel = new KharijModel($mysqli);
-    $id = (int)$id;
-    $record = $kharijModel->findById($id);
-
-    if (!$record) {
-        http_response_code(404);
-        echo 'Kharij record not found';
-        exit;
-    }
-
-    $data = $record['data'];
-    $hash = $record['hash'] ?? '';
-    $qrDataUri = $kharijGenerateQr($hash, 'dakhila-print');
-    $verificationUrl = $kharijGetVerificationBaseUrl() . '/ldtax-gov-bd/dakhila-print/' . $hash;
-
-    $templateData = [
-        'data' => $data,
-        'qr_data_uri' => $qrDataUri,
-        'hash' => $hash,
-        'verification_url' => $verificationUrl,
-    ];
-
-    // Stream as inline PDF preview
-    $kharijStreamTaxReceipt($templateData, $hash, true);
     exit;
 });
 

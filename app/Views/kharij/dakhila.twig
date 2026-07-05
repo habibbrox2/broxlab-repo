@@ -1,320 +1,298 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title> ভূমি উন্নয়ন কর: Dakhila</title>
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta content="width=600, initial-scale=1.0, minimum-scale=1.0, maximum-scale=3.0, user-scalable=no" name="viewport">
-<meta content="" name="description">
-<meta content="" name="author">
-
-<link href="/assets/kharij/dakhila_files/css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/font-awesome.min.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/simple-line-icons.min.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/bootstrap.min.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/uniform.default.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/bootstrap-switch.min.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/components-rounded.css" id="style_components" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/plugins-md.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/layout.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/light.css" rel="stylesheet" type="text/css" id="style_color">
-<link href="/assets/kharij/dakhila_files/custom.css" rel="stylesheet" type="text/css">
-<link href="/assets/kharij/dakhila_files/common.css" rel="stylesheet" type="text/css">
+<meta charset="utf-8">
+<title>ভূমি উন্নয়ন কর: Dakhila</title>
+<meta name="viewport" content="width=600, initial-scale=1.0, minimum-scale=1.0, maximum-scale=3.0, user-scalable=no">
+<meta name="description" content="ভূমি উন্নয়ন কর দাখিলা">
 <link rel="shortcut icon" href="/assets/images/kharij/favicon.png">
+<style type="text/css">
+    body{
+        font-family: "kalpurush",Arial,sans-serif;
+        font-size: 13px !important;
+        line-height: 1.2;
+        color: #333;
+        background-color: #f4ffe6;
+        margin: 0;
+        padding: 0;
+    }
+    .dotted_botton{
+        border:none;
+        border-bottom:1px dotted #000;
+        background-color:#fff;
+    }
+    .border_none{
+        border-top: none !important;
+    }
+    .table-bordered {
+        border: 1px solid #ddd;
+    }
+    .b1 {border: 1px dotted; padding: 2px;}
+    .text-left{text-align:left}
+    .text-right{text-align:right}
+    .text-center{text-align:center}
+    .qrcode-print{
+       width:100%;
+       display: list-item;
+       list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEoAAABKAQMAAAAmHlAyAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA6klEQVQokZXRMWoGQQgFYMFW8CrCtMJcXZhW8CrCtgNmNxs2v5sqVt80jzcK8I/hsrAhtRsJ3Ba6Uec2RtTwFyPQ6A8XWMqbEFPgJ/chl19zd3gIgAmcd82HvGuk15DOFMfS3J1sC1YsaaRBHCVpLx4BuSY0QikcJaaN7GsGY0rn5lRMskagmCCl0sjnkmDL0s44IAFRGnGqy0i1Tt3bPK6wD3Ioyx532EMiP2/I16I+qRqKMq2zIo1qU+P5OA4l9sbzWOfv1bORwCzZ2Tu3B2V85zbqEFZ/syJsWSdc1YU7uWKp3Uv95T/mC1AmG8zXL3PLAAAAAElFTkSuQmCC);
+       list-style-position: inside;
+       background-repeat: no-repeat;
+       background-color: #fff;
+    }
+    .toolbar {
+        text-align: center;
+        padding: 16px 0;
+    }
+    .toolbar button {
+        padding: 8px 20px;
+        border-radius: 6px;
+        color: #fff;
+        background-color: #3B82F6;
+        border: none;
+        font-size: 15px;
+        cursor: pointer;
+        font-family: kalpurush, Arial, sans-serif;
+    }
+    .toolbar button:hover {
+        background-color: #2563eb;
+    }
+    @media print {
+        body {
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .toolbar {
+            display: none !important;
+        }
+        #printArea {
+            width: 100% !important;
+            border: none !important;
+        }
+        @page {
+            size: A4;
+            margin: 5mm;
+        }
+    }
+</style>
 </head>
-<body class="page-md page-sidebar-page-sidebar-closed-hide-logo page-header-fixed page-footer-fixed">
-    <div class="clearfix"></div>
-<div class="page-container">
-    <div class="page-content">
-        <div class="page-content">
+<body>
 
-<div class="row">
-<div class="col-md-12">
-    <div class="">
-        <div style="display: flex; margin-bottom: 1.25rem; justify-content: center; align-items: center;">
-            <button onclick="printDiv('printArea')" style="padding: 0.25rem 0.75rem; border-radius: 0.25rem; color: #ffffff; background-color: #3B82F6; border-color: #3B82F6;">
-              🖨️ প্রিন্ট
-            </button>
-        </div>
-
-        <div class="portlet-body">
-            <div id="printArea" class="content" style="width: 815px; margin: 0 auto;">
-                <div class="col-md-12">
-                    <style type="text/css">
-                        body{
-                            font-family: "kalpurush",Arial,sans-serif;
-                            font-size: 13px !important;
-                            line-height: 1.2;
-                            color: #333;
-                            background-color: #fff;
-                        }
-                        .dotted_botton{
-                            border:none;
-                            border-bottom:1px dotted #000;
-                            background-color:#fff;
-                        }
-                        .border_none{
-                            border-top: none !important;
-                        }
-                        .table-bordered {
-                            border: 1px solid #ddd;
-                        }
-                        .qrcode-print{
-                           width:100%;
-                           display: list-item;
-                           list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEoAAABKAQMAAAAmHlAyAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA6klEQVQokZXRMWoGQQgFYMFW8CrCtMJcXZhW8CrCtgNmNxs2v5sqVt80jzcK8I/hsrAhtRsJ3Ba6Uec2RtTwFyPQ6A8XWMqbEFPgJ/chl19zd3gIgAmcd82HvGuk15DOFMfS3J1sC1YsaaRBHCVpLx4BuSY0QikcJaaN7GsGY0rn5lRMskagmCCl0sjnkmDL0s44IAFRGnGqy0i1Tt3bPK6wD3Ioyx532EMiP2/I16I+qRqKMq2zIo1qU+P5OA4l9sbzWOfv1bORwCzZ2Tu3B2V85zbqEFZ/syJsWSdc1YU7uWKp3Uv95T/mC1AmG8zXL3PLAAAAAElFTkSuQmCC);
-                           list-style-position: inside;
-                           background-repeat: no-repeat;
-                        }
-                        .b1 {border: 1px dotted; padding: 2px;}
-                        .text-left{text-align:left}
-                        .text-right{text-align:right}
-                        .text-center{text-align:center}
-                    </style>
-                    <style type="text/css" media="print">
-                        @page {
-                            size:  a4;
-                            margin: 0mm;
-                        }
-                        html{
-                            background-color: #FFFFFF;
-                            margin: 0px;
-                        }
-                        body{
-                            border: solid 0px blue ;
-                            margin: 0mm;
-                        }
-                    </style>
-
-                    <div style="font-family:'kalpurush',Arial,sans-serif; font-size:14px !important; line-height:1.2;color: #333; background-color: #fff; width: 7.9in; height: 11in; border-radius: 10px; border: dotted 1px; padding: 10px; float: left; margin: 30px auto; position: relative;">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="from-controll">
-                                    <table style="width: 100%;">
-                                        <tr>
-                                            <td class="text-left">বাংলাদেশ ফরম নং ১০৭৭</td>
-                                            <td class="text-right">(পরিশিষ্ট: ৩৮)</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-left">(সংশোধিত)</td>
-                                            <td class="text-right input_bangla">ক্রমিক নং {{ data.dakhila_serial|default('') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-center" colspan="2">
-                                                ভূমি উন্নয়ন কর পরিশোধ রসিদ
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-center" colspan="2">
-                                                (অনুচ্ছেদ ৩৯২ দ্রষ্টব্য)
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <div style="width: 100%; height: 20px;"></div>
-                                    <table style="width:100%;">
-                                        <tr>
-                                            <td style="width: 320px;">সিটি কর্পোরেশন/ পৌর/ ইউনিয়ন ভূমি অফিসের নাম:</td>
-                                            <td class="dotted_botton">{{ data.mouza|default('') }} ইউনিয়ন ভূমি অফিস</td>
-                                        </tr>
-                                    </table>
-                                    <table style="margin-top:5px; width:100%;">
-                                        <tr>
-                                            <td style="width: 170px;">মৌজার নাম ও জে. এল. নং:</td>
-                                            <td class="dotted_botton input_bangla" style="padding: 0 10px 0 5px;">{{ data.mouza|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number }}{% endif %}</td>
-                                            <td style="width: 105px">উপজেলা/থানা:</td>
-                                            <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.upazila|default('') }}</td>
-                                            <td style="width: 40px">জেলা:</td>
-                                            <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.district|default('') }}</td>
-                                        </tr>
-                                    </table>
-
-                                    <table style="margin-top:5px; width:100%;">
-                                        <tr>
-                                            <td style="width: 225px">২ নং রেজিস্টার অনুযায়ী হোল্ডিং নম্বর:</td>
-                                            <td class="dotted_botton numeric_bangla" style="padding-left: 10px;">
-                                                {{ data.holding_number|default('') }}
-                                            </td>
-                                        </tr>
-                                    </table>
-
-                                    <table style="margin-top:5px; width:100%;">
-                                        <tr>
-                                            <td style="width: 75px">খতিয়ান নং:</td>
-                                            <td class="dotted_botton numeric_bangla" style="padding-left: 10px;">
-                                                {{ data.khata_number|default('') }}
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <div style="height: 10px"></div>
-                                </div>
-
-                                <div class="from-controll">
-                                    <p style="font-weight: bold; font-size: 12px; text-align: center; margin: 0px; padding: 0px;"><u>মালিকের বিবরণ</u></p>
-                                </div>
-
-                                <table style="border: 1px dotted; border-collapse: collapse; margin:10px 2px ; width: 100%; font-size: 11px; float: left;">
-                                    <thead>
-                                        <tr>
-                                            <th style="width:10%;text-align: center;" class="b1">ক্রমঃ</th>
-                                            <th style="width:60%;text-align: center;" class="b1">মালিকের নাম</th>
-                                            <th style="width:25%;text-align: center;" class="b1">মালিকের অংশ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style="height: 21px;">
-                                    {% if data.owners is defined and data.owners|length > 0 %}
-                                        {% for owner in data.owners %}
-                                        <tr>
-                                            <td class="b1 input_bangla text-center">{{ loop.index }}</td>
-                                            <td class="b1 input_bangla">{{ owner.name|default('') }}</td>
-                                            <td class="b1 input_bangla text-center">{{ owner.share|default('১') }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td class="b1 input_bangla text-center">১</td>
-                                            <td class="b1 input_bangla">{{ data.owner_name|default('') }}</td>
-                                            <td class="b1 input_bangla text-center">{{ data.share|default('১') }}</td>
-                                        </tr>
-                                    {% endif %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <p style="font-weight: bold; font-size: 12px; text-align: center; margin: 0px; padding: 0px;"><u>জমির বিবরণ</u></p>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table style="border: 1px dotted; border-collapse: collapse; margin:10px 2px ; width: 100%; font-size: 11px; float: left;">
-                                    <thead>
-                                        <tr>
-                                            <th class="b1">ক্রমঃ</th>
-                                            <th class="b1">দাগ নং</th>
-                                            <th class="b1">জমির শ্রেণি</th>
-                                            <th class="b1">জমির পরিমাণ (শতাংশ)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style="height: 21px;">
-                                    {% set dag_list = data.dags is defined and data.dags|length > 0 ? data.dags : [] %}
-                                    {% if dag_list|length > 0 %}
-                                        {% for dag in dag_list %}
-                                        <tr>
-                                            <td class="b1 input_bangla text-center">{{ loop.index }}</td>
-                                            <td class="b1 input_bangla">{{ dag.dag_number|default('') }}</td>
-                                            <td class="b1">{{ dag.land_type|default('') }}</td>
-                                            <td class="b1 input_bangla">{{ dag.dag_area_shottangsho|default('') }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td class="b1 input_bangla text-center">১</td>
-                                            <td class="b1 input_bangla">{{ data.dag_number|default('') }}</td>
-                                            <td class="b1">{{ data.land_type|default('') }}</td>
-                                            <td class="b1 input_bangla">{{ data.total_land_area|default('') }}</td>
-                                        </tr>
-                                    {% endif %}
-                                    </tbody>
-                                </table>
-
-                                <table style="border: 1px dotted; border-collapse: collapse; margin:10px 2px ; width: 100%; font-size: 12px;">
-                                    <tr>
-                                        <td class="b1 text-center" style="width: 50%;">সর্বমোট জমি (শতাংশ)</td>
-                                        <td class="b1 input_bangla" style="width: 50%;">{{ data.total_dag_area_summary_shottangsho|default(data.total_land_area|default('')) }}</td>
-                                    </tr>
-                                </table>
-
-                                <div style="height: 10px;"></div>
-
-                                <table class="table table-striped table-bordered table-hover" style="margin:10px 2px ; width:100% !important;">
-                                    <tr>
-                                        <th style="text-align: center;" colspan="8">আদায়ের বিবরণ</th>
-                                    </tr>
-                                    <tr>
-                                        <td style="text-align: center;">তিন বৎসরের ঊর্ধ্বের বকেয়া</td>
-                                        <td style="text-align: center;">গত তিন বৎসরের বকেয়া</td>
-                                        <td style="text-align: center;">বকেয়ার জরিমানা ও ক্ষতিপূরণ</td>
-                                        <td style="text-align: center;">হাল দাবি</td>
-                                        <td style="text-align: center;">মোট দাবি</td>
-                                        <td style="text-align: center;">মোট আদায়</td>
-                                        <td style="text-align: center;">মোট বকেয়া</td>
-                                        <td style="text-align: center;">মন্তব্য</td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center">{{ data.tax_arrears_over_3_years|default('') }}</td>
-                                        <td align="center">{{ data.tax_arrears_last_3_years|default('') }}</td>
-                                        <td align="center">{{ data.tax_penalty|default('') }}</td>
-                                        <td align="center">{{ data.tax_current_demand|default('') }}</td>
-                                        <td align="center">{{ data.tax_total_demand|default('') }}</td>
-                                        <td align="center">{{ data.tax_total_collected|default('') }}</td>
-                                        <td align="center">{{ data.tax_total_arrears|default('') }}</td>
-                                        <td align="center">{{ data.tax_remarks|default('') }}</td>
-                                    </tr>
-                                </table>
-
-                                <div style="width:100% !important; margin:10px 2px ;">
-                                    <p class="dotted_botton"> সর্বমোট (কথায়): {{ data.total_amount_words|default('') }}</p>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div style="width: 350px; float: left;" align="left">
-                                            <p style="margin: 0 !important;">
-                                                নোট: সর্বশেষ কর পরিশোধের সাল -
-                                                {{ data.last_payment_year|default('') }}
-                                                (অর্থবছর)
-                                            </p>
-                                            <p class="input_bangla"> চালান নং : {{ data.challan_number|default('') }}</p>
-                                            <p>
-                                                তারিখ : </p><div style="margin-top: -37px;margin-left: 10px;"><p style="width: 115px;padding: 0;margin: 0;margin-left: 38px;margin-bottom: 2px;">{{ data.receipt_date|default('') }}</p><span style="border-top:1px solid; margin-left:36px;">{{ data.receipt_date_en|default('') }}</span><p></p></div>
-                                            <p></p>
-                                        </div>
-                                        <div style="width: 90px; float: left;" align="center">
-                                            {% if qr_data_uri is defined and qr_data_uri %}
-                                            <img src="{{ qr_data_uri }}" alt="QR" style="width:85px;height:85px;">
-                                            {% else %}
-                                            <div class="qrcode-print"></div>
-                                            {% endif %}
-                                        </div>
-                                        <div style="width: 265px; float: right; text-align: right;font-size: 12px;font-family: 'kalpurush',Arial,sans-serif;">
-                                            <p class="text-center" style="padding: 5px;">এই দাখিলা ইলেক্ট্রনিকভাবে তৈরি করা হয়েছে, <br> কোন স্বাক্ষর প্রয়োজন নেই।</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12 text-right" style="width: 100%; position: absolute; bottom: 0; right: 0;">
-                                <div style="width: 100%; border-top: 1px dotted gray; margin-top:15px;"></div>
-                                <div class="from-controll">{{ data.dakhila_page|default('১/১') }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- ===== TOOLBAR ===== -->
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ প্রিন্ট</button>
 </div>
 
-<script type="text/javascript">
-function printDiv(divName) {
-    var printContents = document.getElementById(divName).innerHTML;
-    var originalContents = document.body.innerHTML;
-    document.body.innerHTML = printContents;
-    setTimeout(function() {}, 500);
-    window.print();
-    document.body.innerHTML = originalContents;
-}
-</script>
+<!-- ===== PRINT AREA ===== -->
+<div id="printArea" class="content" style="width: 992px; margin: 0 auto; font-family: 'kalpurush',Arial,sans-serif; font-size: 14px !important; line-height: 1.2; color: #333; background-color: #fff; border-radius: 10px; border: dotted 1px; padding: 10px; margin-bottom: 20px !important; width: 7.9in;
+  height: 11in;">
 
-            </div>
-        </div>
-    </div>
+<table cellpadding="0" cellspacing="0" style="width: 100%;">
+  <tr>
+    <td>
+
+      <!-- ===== HEADER: Form Title & Serial ===== -->
+      <table cellpadding="0" cellspacing="0" style="width: 100%;">
+        <tr>
+          <td class="text-left" style="width:50%;">বাংলাদেশ ফরম নং ১০৭৭</td>
+          <td class="text-right" style="width:50%;">(পরিশিষ্ট: ৩৮)</td>
+        </tr>
+        <tr>
+          <td class="text-left">(সংশোধিত)</td>
+          <td class="text-right">ক্রমিক নং {{ data.dakhila_serial|default('') }}</td>
+        </tr>
+        <tr>
+          <td class="text-center" colspan="2" style="font-size:15px; font-weight:bold;">ভূমি উন্নয়ন কর পরিশোধ রসিদ</td>
+        </tr>
+        <tr>
+          <td class="text-center" colspan="2">(অনুচ্ছেদ ৩৯২ দ্রষ্টব্য)</td>
+        </tr>
+      </table>
+
+      <div style="width: 100%; height: 15px;"></div>
+
+      <!-- ===== OFFICE NAME ===== -->
+      <table cellpadding="0" cellspacing="0" style="width:100%;">
+        <tr>
+          <td style="width: 320px;">সিটি কর্পোরেশন/ পৌর/ ইউনিয়ন ভূমি অফিসের নাম:</td>
+          <td class="dotted_botton">{{ data.mouza|default('') }} ইউনিয়ন ভূমি অফিস</td>
+        </tr>
+      </table>
+
+      <!-- ===== MOUZA, UPAZILA, DISTRICT ===== -->
+      <table cellpadding="0" cellspacing="0" style="margin-top:5px; width:100%;">
+        <tr>
+          <td style="width: 170px;">মৌজার নাম ও জে. এল. নং:</td>
+          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.mouza|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number }}{% endif %}</td>
+          <td style="width: 105px">উপজেলা/থানা:</td>
+          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.upazila|default('') }}</td>
+          <td style="width: 40px">জেলা:</td>
+          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.district|default('') }}</td>
+        </tr>
+      </table>
+
+      <!-- ===== HOLDING NUMBER ===== -->
+      <table cellpadding="0" cellspacing="0" style="margin-top:5px; width:100%;">
+        <tr>
+          <td style="width: 225px;">২ নং রেজিস্টার অনুযায়ী হোল্ডিং নম্বর:</td>
+          <td class="dotted_botton" style="padding-left: 10px;">{{ data.holding_number|default('') }}</td>
+        </tr>
+      </table>
+
+      <!-- ===== KHATIAN NUMBER ===== -->
+      <table cellpadding="0" cellspacing="0" style="margin-top:5px; width:100%;">
+        <tr>
+          <td style="width: 75px;">খতিয়ান নং:</td>
+          <td class="dotted_botton" style="padding-left: 10px;">{{ data.khata_number|default('') }}</td>
+        </tr>
+      </table>
+
+      <div style="height: 10px;"></div>
+
+      <!-- ===== OWNER DETAILS ===== -->
+      <p style="font-weight: bold; font-size: 12px; text-align: center; margin: 0; padding: 0;"><u>মালিকের বিবরণ</u></p>
+
+      <table cellpadding="0" cellspacing="0" style="border: 1px dotted; border-collapse: collapse; margin:10px 2px; width: 100%;">
+        <thead>
+          <tr>
+            <th style="width:10%; text-align:center;" class="b1">ক্রমঃ</th>
+            <th style="width:60%; text-align:center;" class="b1">মালিকের নাম</th>
+            <th style="width:25%; text-align:center;" class="b1">মালিকের অংশ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if data.owners is defined and data.owners|length > 0 %}
+            {% for owner in data.owners %}
+            <tr>
+              <td class="b1 text-center">{{ loop.index }}</td>
+              <td class="b1">{{ owner.name|default('') }}</td>
+              <td class="b1 text-center">{{ owner.share|default('১') }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td class="b1 text-center">১</td>
+              <td class="b1">{{ data.owner_name|default('') }}</td>
+              <td class="b1 text-center">{{ data.share|default('১') }}</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <!-- ===== LAND DETAILS ===== -->
+      <p style="font-weight: bold; font-size: 12px; text-align: center; margin: 0; padding: 0;"><u>জমির বিবরণ</u></p>
+
+      <table cellpadding="0" cellspacing="0" style="border: 1px dotted; border-collapse: collapse; margin:10px 2px; width: 100%;">
+        <thead>
+          <tr>
+            <th class="b1">ক্রমঃ</th>
+            <th class="b1">দাগ নং</th>
+            <th class="b1">জমির শ্রেণি</th>
+            <th class="b1">জমির পরিমাণ (শতাংশ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set dag_list = data.dags is defined and data.dags|length > 0 ? data.dags : [] %}
+          {% if dag_list|length > 0 %}
+            {% for dag in dag_list %}
+            <tr>
+              <td class="b1 text-center">{{ loop.index }}</td>
+              <td class="b1">{{ dag.dag_number|default('') }}</td>
+              <td class="b1">{{ dag.land_type|default('') }}</td>
+              <td class="b1 text-center">{{ dag.dag_area_shottangsho|default('') }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td class="b1 text-center">১</td>
+              <td class="b1">{{ data.dag_number|default('') }}</td>
+              <td class="b1">{{ data.land_type|default('') }}</td>
+              <td class="b1 text-center">{{ data.total_land_area|default('') }}</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <!-- ===== TOTAL LAND ===== -->
+      <table cellpadding="0" cellspacing="0" style="border: 1px dotted; border-collapse: collapse; margin:10px 2px; width: 100%;">
+        <tr>
+          <td class="b1 text-center" style="width: 50%;">সর্বমোট জমি (শতাংশ)</td>
+          <td class="b1 text-center" style="width: 50%;">{{ data.total_dag_area_summary_shottangsho|default(data.total_land_area|default('')) }}</td>
+        </tr>
+      </table>
+
+      <div style="height: 10px;"></div>
+
+      <!-- ===== COLLECTION DETAILS ===== -->
+      <table cellpadding="0" cellspacing="0" style="border: 1px dotted; border-collapse: collapse; margin:10px 2px; width:100%;">
+        <tr>
+          <th style="text-align:center; border:1px dotted; padding:2px;" colspan="8">আদায়ের বিবরণ</th>
+        </tr>
+        <tr>
+          <td style="text-align:center; border:1px dotted; padding:2px;">তিন বৎসরের ঊর্ধ্বের বকেয়া</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">গত তিন বৎসরের বকেয়া</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">বকেয়ার জরিমানা ও ক্ষতিপূরণ</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">হাল দাবি</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">মোট দাবি</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">মোট আদায়</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">মোট বকেয়া</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">মন্তব্য</td>
+        </tr>
+        <tr>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_over_3_years|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_last_3_years|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_penalty|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_current_demand|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_demand|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_collected|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_arrears|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_remarks|default('') }}</td>
+        </tr>
+      </table>
+
+      <!-- ===== TOTAL IN WORDS ===== -->
+      <div style="width:100%; margin:10px 2px;">
+        <p class="dotted_botton"> সর্বমোট (কথায়): {{ data.total_amount_words|default('') }}</p>
+      </div>
+
+      <!-- ===== FOOTER: Notes, QR, Disclaimer ===== -->
+      <table cellpadding="0" cellspacing="0" style="width:100%; margin-top:10px;">
+        <tr>
+          <!-- Left: Notes -->
+          <td style="width:320px; text-align:left; vertical-align:top;">
+            <p style="margin:0 !important;">নোট: সর্বশেষ কর পরিশোধের সাল - {{ data.last_payment_year|default('') }} (অর্থবছর)</p>
+            <p>চালান নং : {{ data.challan_number|default('') }}</p>
+            <p>তারিখ : {{ data.receipt_date|default('') }}</p>
+            <p style="border-top:1px solid; margin-left:48px; width:115px;">{{ data.receipt_date_en|default('') }}</p>
+          </td>
+          <!-- Center: QR Code -->
+          <td style="width:90px; text-align:center; vertical-align:middle;">
+            {% if qr_data_uri is defined and qr_data_uri %}
+            <img src="{{ qr_data_uri }}" alt="QR" style="width:85px;height:85px;">
+            {% else %}
+            <div class="qrcode-print"></div>
+            {% endif %}
+          </td>
+          <!-- Right: Electronic Note -->
+          <td style="width:265px; text-align:center; vertical-align:middle; font-size:12px;">
+            <p style="text-align:center; padding:5px;">
+              এই দাখিলা ইলেক্ট্রনিকভাবে তৈরি করা হয়েছে,<br>কোন স্বাক্ষর প্রয়োজন নেই।
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- ===== PAGE FOOTER ===== -->
+      <table cellpadding="0" cellspacing="0" style="width: 100%; bottom: 0; right: 0;">
+        <tr>
+          <td style="border-top:1px dotted gray; text-align:right;">{{ data.dakhila_page|default('১/১') }}</td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
 </div>
 
 </body>

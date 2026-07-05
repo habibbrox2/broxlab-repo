@@ -773,7 +773,7 @@ function fillRandomData() {
     setField('tax_total_demand', toBnNum(totalDemand));
     setField('tax_total_collected', toBnNum(totalCollected));
     setField('tax_total_arrears', toBnNum(totalArrears));
-    setField('tax_remarks', 'স্বয়ংক্রিয় গণনা');
+    setField('tax_remarks', '');
 
     // Trigger auto-calculations
     if (typeof runAll === 'function') runAll();
@@ -1225,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Calculate dag_area_shottangsho from total_dag_area within a dag entry
-  function calcDagTotalArea(dagEntry) {
+  window.calcDagTotalArea = function(dagEntry) {
     var totalDagInput = dagEntry.querySelector('[data-dag-field="total_dag_area"]');
     var dagAreaStgInput = dagEntry.querySelector('[data-dag-field="dag_area_shottangsho"]');
     if (!totalDagInput || !dagAreaStgInput) return;
@@ -1236,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Calculate khash_area and khash_area_shottangsho from single_area × owner share
-  function calcDagKhash(dagEntry) {
+  window.calcDagKhash = function(dagEntry) {
     var singleInput = dagEntry.querySelector('[data-dag-field="single_area"]');
     var khashInput = dagEntry.querySelector('[data-dag-field="khash_area"]');
     var khashStgInput = dagEntry.querySelector('[data-dag-field="khash_area_shottangsho"]');
@@ -1260,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Update summary fields by summing all dags
-  function updateDagSummary() {
+  window.updateDagSummary = function() {
     var totalDagAcres = 0, totalDagStg = 0;
     document.querySelectorAll('#dag-entries-container .dag-entry').forEach(function(entry) {
       totalDagAcres += parseNum(entry.querySelector('[data-dag-field="total_dag_area"]').value) || 0;
@@ -1618,15 +1618,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<script src="{{ asset('/assets/js/kharij/amount-to-bangla-words.js') }}"></script>
+<script src="{{ asset('/assets/js/kharij/bangla-calendar.js') }}"></script>
 <script>
 /**
  * Tax Collection Auto-Calculator
  * Calculates total demand, arrears, and converts to Bengali words.
+ * Plus: auto-converts English receipt date to Bengali calendar date.
  */
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  var taxFields = ['tax_arrears_over_3_years','tax_arrears_last_3_years','tax_penalty','tax_current_demand','tax_total_demand','tax_total_collected','tax_total_arrears'];
+  var taxFields = ['tax_arrears_over_3_years','tax_arrears_last_3_years','tax_penalty','tax_current_demand','tax_total_collected'];
 
   // Convert Bengali digits (০-৯) to English digits (0-9)
   function bnToEn(str) {
@@ -1642,46 +1645,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return parseFloat(bnToEn(el.value).replace(/[^0-9.]/g,'')) || 0;
   }
 
-  /**
-   * Convert a number (0-999) to Bengali words, e.g. 337 → তিন শত সাঁইত্রিশ টাকা মাত্র
-   */
-  function bnNumToWords(n) {
-    n = parseInt(n, 10) || 0;
-    if (n === 0) return 'শূন্য টাকা মাত্র';
-
-    var ones = ['', 'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'সাত', 'আট', 'নয়'];
-    var teens = ['দশ', 'এগারো', 'বারো', 'তেরো', 'চৌদ্দ', 'পনেরো', 'ষোল', 'সতেরো', 'আঠারো', 'উনিশ'];
-    var compounds = {
-      21: 'একুশ', 22: 'বাইশ', 23: 'তেইশ', 24: 'চব্বিশ', 25: 'পঁচিশ',
-      26: 'ছাব্বিশ', 27: 'সাতাশ', 28: 'আটাশ', 29: 'উনত্রিশ',
-      31: 'একত্রিশ', 32: 'বত্রিশ', 33: 'তেত্রিশ', 34: 'চৌত্রিশ', 35: 'পঁয়ত্রিশ',
-      36: 'ছত্রিশ', 37: 'সাঁইত্রিশ', 38: 'আটত্রিশ', 39: 'উনচল্লিশ',
-      41: 'একচল্লিশ', 42: 'বেয়াল্লিশ', 43: 'তেতাল্লিশ', 44: 'চুয়াল্লিশ', 45: 'পঁয়তাল্লিশ',
-      46: 'ছেচাল্লিশ', 47: 'সাতচল্লিশ', 48: 'আটচল্লিশ', 49: 'উনপঞ্চাশ',
-      51: 'একান্ন', 52: 'বাহান্ন', 53: 'তিপ্পান্ন', 54: 'চুয়ান্ন', 55: 'পঞ্চান্ন',
-      56: 'ছাপ্পান্ন', 57: 'সাতান্ন', 58: 'আটান্ন', 59: 'উনষাট',
-      61: 'একষট্টি', 62: 'বাষট্টি', 63: 'তেষট্টি', 64: 'চৌষট্টি', 65: 'পঁয়ষট্টি',
-      66: 'ছেষট্টি', 67: 'সাতষট্টি', 68: 'আটষট্টি', 69: 'উনসত্তর',
-      71: 'একাত্তর', 72: 'বাহাত্তর', 73: 'তিয়াত্তর', 74: 'চুয়াত্তর', 75: 'পঁচাত্তর',
-      76: 'ছিয়াত্তর', 77: 'সাতাত্তর', 78: 'আটাত্তর', 79: 'উনআশি',
-      81: 'একাশি', 82: 'বিরাশি', 83: 'তিরাশি', 84: 'চুরাশি', 85: 'পঁচাশি',
-      86: 'ছিয়াশি', 87: 'সাতাশি', 88: 'আটাশি', 89: 'উননব্বই',
-      91: 'একানব্বই', 92: 'বিরানব্বই', 93: 'তিরানব্বই', 94: 'চুরানব্বই', 95: 'পঁচানব্বই',
-      96: 'ছিয়ানব্বই', 97: 'সাতানব্বই', 98: 'আটানব্বই', 99: 'নিরানব্বই'
-    };
-
-    var result = '';
-    if (n >= 100) {
-      result += ones[Math.floor(n / 100)] + ' শত ';
-      n = n % 100;
-    }
-    if (n > 0) {
-      if (n < 10) result += ones[n];
-      else if (n < 20) result += teens[n - 10];
-      else result += compounds[n] || '';
-    }
-    return (result.trim() || 'শূন্য') + ' টাকা মাত্র';
-  }
+  // bnNumToWords is loaded from /assets/js/kharij/amount-to-bangla-words.js (global)
+  // gregorianToBangla is loaded from /assets/js/kharij/bangla-calendar.js (global)
 
   function calcTaxTotals() {
     var d = parseTaxVal('tax_arrears_over_3_years') + parseTaxVal('tax_arrears_last_3_years') + parseTaxVal('tax_penalty') + parseTaxVal('tax_current_demand');
@@ -1692,13 +1657,25 @@ document.addEventListener('DOMContentLoaded', () => {
     var taEl = document.getElementById('tax_total_arrears');
     var twEl = document.getElementById('total_amount_words');
 
-    if (tdEl) tdEl.value = d > 0 ? d.toString() : '';
-    if (taEl) taEl.value = a >= 0 ? a.toString() : a.toString();
-    if (twEl && d > 0) {
+    if (tdEl && !tdEl.value) tdEl.value = d > 0 ? d.toString() : '';
+    if (taEl && !taEl.value) taEl.value = a >= 0 ? a.toString() : a.toString();
+    if (twEl && d > 0 && !twEl.value) {
       var words = bnNumToWords(d);
-      if (twEl.value.indexOf('টাকা') === -1 || !twEl.value.trim()) {
-        twEl.value = words;
-      }
+      twEl.value = words;
+    }
+  }
+
+  // Auto-convert English receipt date to Bengali calendar date
+  function updateBanglaDate() {
+    var enEl = document.getElementById('receipt_date_en');
+    var bnEl = document.getElementById('receipt_date');
+    if (!enEl || !bnEl) return;
+    var enVal = enEl.value.trim();
+    if (!enVal) return;
+    // Try gregorianToBangla for dd-mm-yyyy format
+    var banglaDate = gregorianToBangla(enVal);
+    if (banglaDate && (!bnEl.value || bnEl.value.indexOf('গ্রেগরিয়') === -1)) {
+      bnEl.value = banglaDate;
     }
   }
 
@@ -1710,8 +1687,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Also watch total_amount_words changes to recalculate words if total demand changes
-  var twEl = document.getElementById('total_amount_words');
+  // Listen for English date changes to auto-populate Bengali date
+  var enDateEl = document.getElementById('receipt_date_en');
+  if (enDateEl) {
+    enDateEl.addEventListener('change', updateBanglaDate);
+    enDateEl.addEventListener('blur', updateBanglaDate);
+  }
 
   setTimeout(calcTaxTotals, 300);
   var calcBtn = document.getElementById('calcTaxTotals');
