@@ -123,7 +123,7 @@
       <table cellpadding="0" cellspacing="0" style="margin-top:5px; width:100%;">
         <tr>
           <td style="width: 170px;">মৌজার নাম ও জে. এল. নং:</td>
-          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.mouza|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number }}{% endif %}</td>
+          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.union_name|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number|bn }}{% endif %}</td>
           <td style="width: 105px">উপজেলা/থানা:</td>
           <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.upazila|default('') }}</td>
           <td style="width: 40px">জেলা:</td>
@@ -166,14 +166,14 @@
             <tr>
               <td class="b1 text-center">{{ loop.index }}</td>
               <td class="b1">{{ owner.name|default('') }}</td>
-              <td class="b1 text-center">{{ owner.share|default('১') }}</td>
+              <td class="b1 text-center">{{ owner.share|default('১,০০০')|bn }}</td>
             </tr>
             {% endfor %}
           {% else %}
             <tr>
               <td class="b1 text-center">১</td>
               <td class="b1">{{ data.owner_name|default('') }}</td>
-              <td class="b1 text-center">{{ data.share|default('১') }}</td>
+              <td class="b1 text-center">{{ data.share|default('১,০০০')|bn }}</td>
             </tr>
           {% endif %}
         </tbody>
@@ -197,16 +197,16 @@
             {% for dag in dag_list %}
             <tr>
               <td class="b1 text-center">{{ loop.index }}</td>
-              <td class="b1">{{ dag.dag_number|default('') }}</td>
-              <td class="b1">{{ dag.land_type|default('') }}</td>
-              <td class="b1 text-center">{{ dag.dag_area_shottangsho|default('') }}</td>
+              <td class="b1">{{ dag.dag_number|default('')|bn }}</td>
+              <td class="b1">{{ dag.land_type|default('নাল') }}</td>
+              <td class="b1 text-center">{{ dag.khash_area_shottangsho|default('')|bn }}</td>
             </tr>
             {% endfor %}
           {% else %}
             <tr>
               <td class="b1 text-center">১</td>
-              <td class="b1">{{ data.dag_number|default('') }}</td>
-              <td class="b1">{{ data.land_type|default('') }}</td>
+              <td class="b1">{{ data.dag_number|default('')|bn }}</td>
+              <td class="b1">{{ data.land_type|default('নাল') }}</td>
               <td class="b1 text-center">{{ data.total_land_area|default('') }}</td>
             </tr>
           {% endif %}
@@ -239,14 +239,14 @@
           <td style="text-align:center; border:1px dotted; padding:2px;">মন্তব্য</td>
         </tr>
         <tr>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_over_3_years|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_last_3_years|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_penalty|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_current_demand|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_demand|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_collected|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_arrears|default('') }}</td>
-          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_remarks|default('') }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_over_3_years|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_arrears_last_3_years|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_penalty|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_current_demand|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_demand|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_collected|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_total_arrears|default('')|bn }}</td>
+          <td style="text-align:center; border:1px dotted; padding:2px;">{{ data.tax_remarks|default('')|bn }}</td>
         </tr>
       </table>
 

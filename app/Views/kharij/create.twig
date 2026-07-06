@@ -306,6 +306,11 @@
                 <span class="field-icon">🏛</span>
               </div>
               <div class="kharij-field-group">
+                <label for="union_name" class="block text-sm font-semibold text-slate-700 mb-1.5">ইউনিয়ন</label>
+                <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="union_name" id="union_name" value="{{ data.union_name|default('') }}" placeholder="ইউনিয়নের নাম">
+                <span class="field-icon">🏘</span>
+              </div>
+              <div class="kharij-field-group">
                 <label for="district" class="block text-sm font-semibold text-slate-700 mb-1.5">জেলা <span class="text-rose-500">*</span></label>
                 <input type="text" class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" name="district" id="district" value="{{ data.district|default('ঢাকা') }}" required placeholder="জমির প্রশাসনিক জেলা">
                 <span class="field-icon">🗺</span>
@@ -758,7 +763,7 @@ function fillRandomData() {
     var totalDemand = (parseInt(arrearsOver3) + parseInt(arrearsLast3) + parseInt(penalty) + parseInt(currentDemand)).toString();
     var totalCollected = (Math.floor(parseInt(totalDemand) * (0.7 + Math.random() * 0.3))).toString();
     var totalArrears = (parseInt(totalDemand) - parseInt(totalCollected)).toString();
-
+ 
     setField('holding_number', holdingNums[idx]);
     setField('dakhila_serial', dakhilaSerials[idx]);
     setField('challan_number', challanNums[idx % 3]);
@@ -1629,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
-  var taxFields = ['tax_arrears_over_3_years','tax_arrears_last_3_years','tax_penalty','tax_current_demand','tax_total_collected'];
+  var taxFields = ['tax_arrears_over_3_years','tax_arrears_last_3_years','tax_penalty','tax_current_demand','tax_total_collected','tax_total_demand'];
 
   // Convert Bengali digits (০-৯) to English digits (0-9)
   function bnToEn(str) {
@@ -1659,8 +1664,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (tdEl && !tdEl.value) tdEl.value = d > 0 ? d.toString() : '';
     if (taEl && !taEl.value) taEl.value = a >= 0 ? a.toString() : a.toString();
-    if (twEl && d > 0 && !twEl.value) {
-      var words = bnNumToWords(d);
+    var demandVal = tdEl && tdEl.value ? parseTaxVal('tax_total_demand') : d;
+    if (twEl && demandVal > 0) {
+      var words = bnNumToWords(demandVal);
       twEl.value = words;
     }
   }

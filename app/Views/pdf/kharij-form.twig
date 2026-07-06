@@ -531,7 +531,7 @@ body {
                     পিতা/স্বামী: {{ owner.father_or_husband_name|default('') }}<br>
                     মাতা: {{ owner.mothers_name|default('') }}<br>
                     জাতীয় পরিচয়পত্র নং: {{ owner.nid_number|default('') }}<br>
-                    বাসা/হোল্ডিং:, গ্রাম/রাস্তা: {{ owner.address|default('') }}<br>
+                     {{ owner.address|default('') }}<br>
                     {% if not loop.last %}<hr style="border: 0; border-top: 1px dashed #ccc; margin: 6px 0;">{% endif %}
                   {% endfor %}
                 {% else %}
@@ -539,7 +539,7 @@ body {
                   পিতা/স্বামী: {{ data.father_or_husband_name|default('') }}<br>
                   মাতা: {{ data.mothers_name|default('') }}<br>
                   জাতীয় পরিচয়পত্র নং: {{ data.nid_number|default('') }}<br>
-                  বাসা/হোল্ডিং:, গ্রাম/রাস্তা: {{ data.owner_address|default('') }}<br>
+                  {{ data.owner_address|default('') }}<br>
                 {% endif %}
               </div>
               {% endif %}
@@ -558,7 +558,7 @@ body {
             <td class="col-3">{% if loop.first %}{{ data.land_development_tax|default('০')|bn }}{% endif %}</td>
             <td class="col-4">{{ dag.dag_number|default('০')|bn }}</td>
             <td class="col-5">{{ dag.land_type|default('')|bn }}</td>
-            <td class="col-6">{{ dag.land_type_kh|default('')|bn }}</td>
+            <td class="col-6">{{ dag.land_type_kh|default('০')|bn }}</td>
             <td class="col-7">{{ dag.total_dag_area|default('০')|bn }}</td>
             <td class="col-8">{{ dag.dag_area_shottangsho|default('০')|bn }}</td>
             <td class="col-9">{{ dag.single_area|default('০')|bn }}</td>
