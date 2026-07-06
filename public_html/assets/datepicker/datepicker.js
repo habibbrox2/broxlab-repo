@@ -901,7 +901,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.DatePicker.init({
         selector: 'input[type="date"], .datepicker',
         format: 'DD-MM-YYYY',
-        locale: 'bn',          // Bengali for month/weekday names
+        locale: 'en',          // English for month/weekday names
         mode: 'single',
         weekNumbers: false,
         withTime: false,

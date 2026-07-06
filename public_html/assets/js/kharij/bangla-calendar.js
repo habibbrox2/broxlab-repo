@@ -44,6 +44,18 @@
     { name: 'চৈত্র',   month: 3,  day: 15 }
   ];
 
+  var EN_MONTH_MAP = {
+    'january': 1, 'february': 2, 'march': 3, 'april': 4,
+    'may': 5, 'june': 6, 'july': 7, 'august': 8,
+    'september': 9, 'october': 10, 'november': 11, 'december': 12
+  };
+
+  var BN_MONTH_MAP = {
+    'জানুয়ারী': 1, 'ফেব্রুয়ারী': 2, 'মার্চ': 3, 'এপ্রিল': 4,
+    'মে': 5, 'জুন': 6, 'জুলাই': 7, 'আগস্ট': 8,
+    'সেপ্টেম্বর': 9, 'অক্টোবর': 10, 'নভেম্বর': 11, 'ডিসেম্বর': 12
+  };
+
   /**
    * Convert integer to Bengali digits.
    */
@@ -103,41 +115,57 @@
   function gregorianToBangla(dateStr) {
     if (!dateStr || typeof dateStr !== 'string') return '';
 
-    // Normalize: remove Bengali digits, split by - or /
+    // Normalize: remove Bengali digits
     var cleaned = dateStr.replace(/[০-৯]/g, function(m) {
       return String.fromCharCode(m.charCodeAt(0) - 0x09E6 + 48);
     });
+
+    // Try numeric format first: dd-mm-yyyy or dd/mm/yyyy
     var parts = cleaned.split(/[-\/]/);
-    if (parts.length !== 3) return '';
+    if (parts.length === 3) {
+      var day = parseInt(parts[0], 10);
+      var month = parseInt(parts[1], 10);
+      var year = parseInt(parts[2], 10);
 
-    var day = parseInt(parts[0], 10);
-    var month = parseInt(parts[1], 10);
-    var year = parseInt(parts[2], 10);
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1000) {
+          return buildBengaliDate(day, month, year);
+        }
+      }
+    }
 
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
-    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1000) return '';
+    // Try "dd MonthName, yyyy" or "dd MonthName yyyy" format
+    var monthNameMatch = cleaned.match(/^(\d{1,2})\s+([a-zA-Z\u0980-\u09FF]+)[\s,]+(\d{4})$/);
+    if (monthNameMatch) {
+      var mDay = parseInt(monthNameMatch[1], 10);
+      var mName = monthNameMatch[2].toLowerCase().trim();
+      var mYear = parseInt(monthNameMatch[3], 10);
 
-    // Find which Bengali month this date falls in
+      var mMonth = EN_MONTH_MAP[mName] || BN_MONTH_MAP[mName];
+      if (mMonth && !isNaN(mDay) && !isNaN(mYear)) {
+        if (mDay >= 1 && mDay <= 31 && mYear >= 1000) {
+          return buildBengaliDate(mDay, mMonth, mYear);
+        }
+      }
+    }
+
+    return '';
+  }
+
+  function buildBengaliDate(day, month, year) {
     for (var i = 0; i < BN_MONTHS.length; i++) {
       var bnMon = BN_MONTHS[i];
       var nextIdx = (i + 1) % BN_MONTHS.length;
       var nextMon = BN_MONTHS[nextIdx];
 
-      // A Bengali month "wraps" around the Gregorian year boundary if its
-      // start Gregorian month is later than the next month's start month.
-      // Example: পৌষ starts in Dec (month 12), মাঘ starts in Jan (month 1): 12 > 1 → wraps
       var wraps = bnMon.month > nextMon.month;
 
-      // Start year: for wrapping months, if the current date is before the
-      // Bengali month's start month, the start was in the previous Gregorian year.
-      // Example: Jan 10, 2026 is in পৌষ which started Dec 15, 2025.
       var startYear = year;
       if (wraps && (month < bnMon.month || (month === bnMon.month && day < bnMon.day))) {
         startYear = year - 1;
       }
       var bnStart = newDate(startYear, bnMon.month, bnMon.day);
 
-      // End year: for wrapping months, the end is in the next Gregorian year.
       var endYear = wraps ? year + 1 : year;
       var bnEnd = newDate(endYear, nextMon.month, nextMon.day);
 
