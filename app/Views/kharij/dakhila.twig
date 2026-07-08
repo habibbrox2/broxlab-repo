@@ -71,7 +71,7 @@
         }
         @page {
             size: A4;
-            margin: 5mm;
+            margin: 10mm;
         }
     }
 </style>
@@ -115,7 +115,7 @@
       <table cellpadding="0" cellspacing="0" style="width:100%;">
         <tr>
           <td style="width: 320px;">সিটি কর্পোরেশন/ পৌর/ ইউনিয়ন ভূমি অফিসের নাম:</td>
-          <td class="dotted_botton">{{ data.mouza|default('') }} ইউনিয়ন ভূমি অফিস</td>
+          <td class="dotted_botton">{{ data.union_name|default('') }} ইউনিয়ন ভূমি অফিস</td>
         </tr>
       </table>
 
@@ -123,7 +123,7 @@
       <table cellpadding="0" cellspacing="0" style="margin-top:5px; width:100%;">
         <tr>
           <td style="width: 170px;">মৌজার নাম ও জে. এল. নং:</td>
-          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.union_name|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number|bn }}{% endif %}</td>
+          <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.mouza|default('') }}{% if data.jl_number|default('') %}-{{ data.jl_number|bn }}{% endif %}</td>
           <td style="width: 105px">উপজেলা/থানা:</td>
           <td class="dotted_botton" style="padding: 0 10px 0 5px;">{{ data.upazila|default('') }}</td>
           <td style="width: 40px">জেলা:</td>
