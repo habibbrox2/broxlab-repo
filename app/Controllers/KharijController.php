@@ -256,6 +256,7 @@ $router->get('/admin/kharij/create', ['middleware' => ['auth', 'admin_only']], f
             'mouza' => '',
             'jl_number' => '',
             'upazila' => '',
+            'union_name' => '',
             'district' => '',
             'owner_name' => '',
             'father_or_husband_name' => '',
