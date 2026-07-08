@@ -407,12 +407,6 @@
               <div id="dag-entries-container" class="space-y-4">
                 <!-- Dags injected by JavaScript -->
               </div>
-              <div class="mt-3 flex items-center gap-3">
-                <button type="button" id="add-dag-btn" class="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 px-5 py-3 text-sm font-semibold text-amber-700 transition-all duration-200 hover:border-amber-400 hover:bg-amber-100/50 hover:text-amber-800 active:scale-[0.97]">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                  আরও দাগ/প্লট যোগ করুন
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -769,7 +763,7 @@ function fillRandomData() {
     var penalty = (Math.floor(Math.random() * 150) + 10).toString();
     var currentDemand = (Math.floor(Math.random() * 80) + 5).toString();
     var totalDemand = (parseInt(arrearsOver3) + parseInt(arrearsLast3) + parseInt(penalty) + parseInt(currentDemand)).toString();
-    var totalCollected = (Math.floor(parseInt(totalDemand) * (0.7 + Math.random() * 0.3))).toString();
+    var totalCollected = totalDemand;
     var totalArrears = (parseInt(totalDemand) - parseInt(totalCollected)).toString();
  
     setField('holding_number', holdingNums[idx]);
@@ -1427,10 +1421,6 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>\
           <span class="text-sm font-semibold text-slate-700 dag-number-badge">\u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F #__DISPLAY__</span>\
         </div>\
-        <button type="button" class="remove-dag-btn inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.97]">\
-          <svg class=\"w-3.5 h-3.5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\"/></svg>\
-          \u09B8\u09B0\u09BE\u09A8\
-        </button>\
       </div>\
       <div class="p-5 dag-body">\
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">\
@@ -1578,29 +1568,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     createDagEntry(initialDag);
-
-    // Add button listener
-    var addBtn = document.getElementById('add-dag-btn');
-    if (addBtn) addBtn.addEventListener('click', function() { createDagEntry(null); });
-
-    // Remove button listener (event delegation)
-    container.addEventListener('click', function(e) {
-      var removeBtn = e.target.closest('.remove-dag-btn');
-      if (!removeBtn) return;
-      var entry = removeBtn.closest('.dag-entry');
-      if (entry) {
-        var count = container.querySelectorAll('.dag-entry').length;
-        if (count <= 1) {
-          alert('\u0985\u09A8\u09CD\u09A4\u09A4 \u098F\u0995\u099F\u09BF \u09A6\u09BE\u0997/\u09AA\u09CD\u09B2\u099F \u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7\u0964');
-          return;
-        }
-        if (confirm('\u098F\u0987 \u09A6\u09BE\u0997\u099F\u09BF \u09B8\u09B0\u09BE\u09A4\u09C7 \u099A\u09BE\u09A8?')) {
-          entry.remove();
-          reindexDags();
-          updateDagSummary();
-        }
-      }
-    });
 
     // Toggle collapsible dag body
     container.addEventListener('click', function(e) {
