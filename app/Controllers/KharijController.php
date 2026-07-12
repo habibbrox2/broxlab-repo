@@ -33,16 +33,10 @@ use Endroid\QrCode\Writer\PngWriter;
 // ============================================================
 
 $kharijGetVerificationBaseUrl = function (string $domain = 'mutation'): string {
-    $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'production') === 'production';
-    if ($isProduction) {
-        if ($domain === 'dakhila') {
-            return 'https://dakhila.broxlab.online';
-        }
-        return 'https://mutation-land.broxlab.online';
+    if ($domain === 'dakhila') {
+        return 'https://dakhila.broxlab.online';
     }
-    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    return $scheme . '://' . $host;
+    return 'https://mutation-land.broxlab.online';
 };
 
 $kharijGenerateQr = function (string $hash, string $path = 'online-dcr', string $domain = 'mutation') use ($kharijGetVerificationBaseUrl): ?string {

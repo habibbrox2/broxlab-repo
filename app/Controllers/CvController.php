@@ -277,11 +277,247 @@ $router->get('/cv-builder/guest', function () use ($twig, $mysqli, $cvModel) {
     ]);
 });
 
+// ============================================================
+// ADMIN: CV TEMPLATES MANAGEMENT (full CRUD)
+// ============================================================
+
 $router->get('/admin/cv-templates', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $templates = function_exists('cvTemplateGetAll') ? cvTemplateGetAll(true) : [];
+    $search  = trim((string)($_GET['search'] ?? ''));
+    $status  = trim((string)($_GET['status'] ?? 'all'));
+    $page    = max(1, (int)($_GET['page'] ?? 1));
+    $limit   = min(100, max(5, (int)($_GET['limit'] ?? 20)));
+
+    // Filter by status
+    if ($status === 'active') {
+        $templates = array_filter($templates, static function ($t) {
+            return ($t['status'] ?? 'active') === 'active';
+        });
+    } elseif ($status === 'inactive') {
+        $templates = array_filter($templates, static function ($t) {
+            return ($t['status'] ?? 'active') === 'disabled';
+        });
+    } elseif ($status === 'deleted') {
+        $templates = array_filter($templates, static function ($t) {
+            return !empty($t['deleted_at']);
+        });
+    }
+
+    // Filter by search keyword
+    if ($search !== '') {
+        $templates = array_filter($templates, static function ($t) use ($search) {
+            $name = strtolower($t['name'] ?? '');
+            $desc = strtolower($t['description'] ?? '');
+            $slug = strtolower($t['slug'] ?? '');
+            $q = strtolower($search);
+            return strpos($name, $q) !== false || strpos($desc, $q) !== false || strpos($slug, $q) !== false;
+        });
+    }
+
+    $total       = count($templates);
+    $totalPages  = max(1, (int)ceil($total / $limit));
+    $offset      = ($page - 1) * $limit;
+    $paginated   = array_slice($templates, $offset, $limit, true);
+
     echo $twig->render('admin/cv/templates/list.twig', [
-        'page_title' => 'CV Templates',
+        'templates'   => $paginated,
+        'filters'     => ['search' => $search, 'status' => $status, 'limit' => $limit],
+        'pagination'  => [
+            'total'         => $total,
+            'total_pages'   => $totalPages,
+            'current_page'  => $page,
+            'per_page'      => $limit,
+            'from'          => $total > 0 ? $offset + 1 : 0,
+            'to'            => $total > 0 ? min($offset + $limit, $total) : 0,
+            'search'        => $search,
+            'status'        => $status,
+        ],
+        'page_title'  => 'CV Templates',
         'current_page' => 'cv-templates',
+        'csrf_token'  => $_SESSION['csrf_token'] ?? '',
     ]);
+});
+
+$router->get('/admin/cv-templates/create', ['middleware' => ['auth', 'admin_only']], function () use ($twig) {
+    $baseTemplates = function_exists('cvTemplateGetAll') ? cvTemplateGetAll() : [];
+    echo $twig->render('admin/cv/templates/form.twig', [
+        'mode'          => 'create',
+        'base_templates' => $baseTemplates,
+        'form_data'     => [],
+        'csrf_token'    => $_SESSION['csrf_token'] ?? '',
+        'current_page'  => 'cv-templates',
+        'page_title'    => 'Create CV Template',
+    ]);
+});
+
+$router->post('/admin/cv-templates', ['middleware' => ['auth', 'admin_only', 'csrf']], function () use ($twig) {
+    $slug        = sanitize_input($_POST['slug'] ?? '');
+    $name        = sanitize_input($_POST['name'] ?? '');
+    $description = sanitize_input($_POST['description'] ?? '');
+    $baseSlug    = sanitize_input($_POST['base_template'] ?? '');
+
+    $errors = [];
+    if ($slug === '') { $errors[] = 'Slug is required.'; }
+    if ($name === '') { $errors[] = 'Name is required.'; }
+    if ($baseSlug === '') { $errors[] = 'Base template is required.'; }
+
+    if (!empty($errors)) {
+        $baseTemplates = function_exists('cvTemplateGetAll') ? cvTemplateGetAll() : [];
+        echo $twig->render('admin/cv/templates/form.twig', [
+            'mode'          => 'create',
+            'base_templates' => $baseTemplates,
+            'form_data'     => ['name' => $name, 'slug' => $slug, 'description' => $description, 'base_template' => $baseSlug],
+            'errors'        => $errors,
+            'csrf_token'    => $_SESSION['csrf_token'] ?? '',
+            'current_page'  => 'cv-templates',
+            'page_title'    => 'Create CV Template',
+        ]);
+        return;
+    }
+
+    if (!function_exists('cvTemplateCreate') || !cvTemplateCreate($slug, $name, $description, $baseSlug)) {
+        showMessage('Failed to create template. Check that the slug is unique and the base template exists.', 'danger');
+        header('Location: /admin/cv-templates/create');
+        exit;
+    }
+
+    showMessage('Template "' . htmlspecialchars($name) . '" created successfully.', 'success');
+    header('Location: /admin/cv-templates');
+    exit;
+});
+
+$router->get('/admin/cv-templates/{slug}/edit', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig) {
+    $slug = sanitize_input(basename($slug));
+    $template = function_exists('cvTemplateGet') ? cvTemplateGet($slug) : null;
+    if (!$template) {
+        http_response_code(404);
+        echo $twig->render('admin/error.twig', ['error' => 'Template not found', 'page_title' => 'Error', 'current_page' => 'cv-templates']);
+        exit;
+    }
+
+    $templateContent = '';
+    $templatePath = function_exists('cvTemplateGetDirectory') ? cvTemplateGetDirectory() . '/' . $slug . '.twig' : '';
+    if ($templatePath !== '' && file_exists($templatePath)) {
+        $templateContent = file_get_contents($templatePath);
+    }
+
+    echo $twig->render('admin/cv/templates/form.twig', [
+        'mode'             => 'edit',
+        'template'         => $template,
+        'template_slug'    => $slug,
+        'template_content' => $templateContent,
+        'csrf_token'       => $_SESSION['csrf_token'] ?? '',
+        'current_page'     => 'cv-templates',
+        'page_title'       => 'Edit Template: ' . ($template['name'] ?? $slug),
+    ]);
+});
+
+$router->post('/admin/cv-templates/{slug}', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
+    $slug        = sanitize_input(basename($slug));
+    $template    = function_exists('cvTemplateGet') ? cvTemplateGet($slug) : null;
+    if (!$template) {
+        showMessage('Template not found.', 'danger');
+        header('Location: /admin/cv-templates');
+        exit;
+    }
+
+    $name        = sanitize_input($_POST['name'] ?? '');
+    $description = sanitize_input($_POST['description'] ?? '');
+    $profession  = sanitize_input($_POST['profession'] ?? '');
+    $content     = $_POST['content'] ?? null;
+
+    $errors = [];
+    if ($name === '') { $errors[] = 'Name is required.'; }
+
+    if (!empty($errors)) {
+        $templateContent = '';
+        $templatePath = function_exists('cvTemplateGetDirectory') ? cvTemplateGetDirectory() . '/' . $slug . '.twig' : '';
+        if ($templatePath !== '' && file_exists($templatePath)) {
+            $templateContent = file_get_contents($templatePath);
+        }
+        echo $twig->render('admin/cv/templates/form.twig', [
+            'mode'             => 'edit',
+            'template'         => $template,
+            'template_slug'    => $slug,
+            'template_content' => $templateContent,
+            'form_data'        => ['name' => $name, 'description' => $description],
+            'errors'           => $errors,
+            'csrf_token'       => $_SESSION['csrf_token'] ?? '',
+            'current_page'     => 'cv-templates',
+            'page_title'       => 'Edit Template: ' . ($template['name'] ?? $slug),
+        ]);
+        return;
+    }
+
+    if (function_exists('cvTemplateUpdate')) {
+        cvTemplateUpdate($slug, $name, $description, $profession !== '' ? $profession : null, $content);
+    }
+
+    showMessage('Template "' . htmlspecialchars($name) . '" updated successfully.', 'success');
+    header('Location: /admin/cv-templates/' . $slug . '/edit');
+    exit;
+});
+
+$router->post('/admin/cv-templates/{slug}/delete', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
+    $slug = sanitize_input(basename($slug));
+    if (!function_exists('cvTemplateDelete')) {
+        showMessage('Template management functions not available.', 'danger');
+        header('Location: /admin/cv-templates');
+        exit;
+    }
+    $result = cvTemplateDelete($slug);
+    if (!$result['success']) {
+        showMessage($result['message'] ?? 'Failed to delete template.', 'danger');
+    } else {
+        showMessage($result['message'] ?? 'Template deleted.', 'success');
+    }
+    header('Location: /admin/cv-templates');
+    exit;
+});
+
+$router->post('/admin/cv-templates/{slug}/restore', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
+    $slug = sanitize_input(basename($slug));
+    if (!function_exists('cvTemplateRestore')) {
+        showMessage('Template management functions not available.', 'danger');
+        header('Location: /admin/cv-templates');
+        exit;
+    }
+    $result = cvTemplateRestore($slug);
+    if (!$result['success']) {
+        showMessage($result['message'] ?? 'Failed to restore template.', 'danger');
+    } else {
+        showMessage($result['message'] ?? 'Template restored.', 'success');
+    }
+    header('Location: /admin/cv-templates');
+    exit;
+});
+
+$router->post('/admin/cv-templates/{slug}/toggle', ['middleware' => ['auth', 'admin_only', 'csrf']], function ($slug) use ($twig) {
+    $slug = sanitize_input(basename($slug));
+    if (!function_exists('cvTemplateToggleStatus')) {
+        showMessage('Template management functions not available.', 'danger');
+        header('Location: /admin/cv-templates');
+        exit;
+    }
+    cvTemplateToggleStatus($slug);
+    showMessage('Template status toggled.', 'success');
+    header('Location: /admin/cv-templates');
+    exit;
+});
+
+$router->get('/admin/cv-templates/preview/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig, $cvPreviewService) {
+    $slug = sanitize_input(basename($slug));
+    $result = $cvPreviewService->renderTemplatePreview($slug);
+    if (!$result['success']) {
+        http_response_code(404);
+        echo $twig->render('admin/error.twig', [
+            'error'       => $result['error'] ?? 'Template not found',
+            'page_title'  => 'Preview Error',
+            'current_page' => 'cv-templates',
+        ]);
+        exit;
+    }
+    echo $result['html'];
 });
 
 $router->get('/admin/cv-templates/view/{slug}', ['middleware' => ['auth', 'admin_only']], function ($slug) use ($twig) {
@@ -556,6 +792,7 @@ $router->get('/admin/cv-infos/create', ['middleware' => ['auth', 'admin_only']],
         while ($row = $result->fetch_assoc()) $users[] = $row;
         echo $twig->render('admin/cv/infos/form.twig', [
             'mode' => 'create', 'users' => $users,
+            'form_data' => [],
             'page_title' => 'Create CV Info', 'current_page' => 'cv-infos',
             'csrf_token' => $_SESSION['csrf_token'] ?? '',
         ]);

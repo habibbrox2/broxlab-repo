@@ -473,6 +473,7 @@ export function initSidebarPolish() {
 
     // ── Expand parent submenu for the active link ──
     if (bestExactSubmenu) {
+      bestExactSubmenu.classList.add('open');
       const parentToggle = bestExactSubmenu.previousElementSibling;
       if (parentToggle && parentToggle.hasAttribute('data-menu-toggle')) {
         parentToggle.setAttribute('aria-expanded', 'true');
@@ -495,6 +496,7 @@ export function initSidebarPolish() {
             const childUrl = new URL(href, window.location.origin);
             const childFull = childUrl.pathname + childUrl.search;
             if (childFull === currentFull || currentPath.startsWith(`${childUrl.pathname }/`)) {
+              submenu.classList.add('open');
               toggle.classList.add('active');
               toggle.setAttribute('aria-expanded', 'true');
               break;

@@ -127,20 +127,19 @@ const wireConfirmActions = () => {
 
     if (action === 'toggle-template-status') {
       e.preventDefault();
-      const btn = form.querySelector('button[type="submit"]');
-      if (btn) btn.disabled = true;
-      if (btn) {
-        btn.dataset.originalHtml = btn.innerHTML;
-        btn.innerHTML = '<span class="inline-flex items-center gap-2"><span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"></span>Saving...</span>';
-      }
-      const fd = new FormData(form);
-      fetch(form.action, { method: 'POST', body: fd, })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.success) { notify(`Template ${d.status === 'active' ? 'enabled' : 'disabled'}`); setTimeout(() => window.location.reload(), 600); }
-          else { notify(d.error || 'Toggle failed', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML; delete btn.dataset.originalHtml; } }
-        })
-        .catch(() => { notify('Toggle failed', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML; delete btn.dataset.originalHtml; } });
+      window.Swal && typeof window.Swal.fire === 'function'
+        ? window.Swal.fire({
+          title: 'Toggle Template Status?',
+          text: 'Enable or disable this template?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#059669',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'Yes, toggle',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true,
+        }).then((r) => { if (r.isConfirmed) submitFormWithLoading(form, 'Toggling...'); })
+        : confirm('Toggle this template status?') && submitFormWithLoading(form, 'Toggling...');
     }
   });
 };
@@ -236,4 +235,4 @@ document.addEventListener('DOMContentLoaded', () => {
   wireTemplateViewLinks();
 });
 
-export { notify, getCsrfToken };
+export { notify, getCsrfToken, wireConfirmActions, wirePurchaseActions };

@@ -13,7 +13,7 @@
   'use strict';
 
   function bnNumToWords(amount) {
-    var ones = [
+    const ones = [
       '', 'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'সাত', 'আট', 'নয়',
       'দশ', 'এগারো', 'বারো', 'তেরো', 'চৌদ্দ', 'পনেরো', 'ষোল', 'সতেরো', 'আঠারো', 'উনিশ',
       'বিশ', 'একুশ', 'বাইশ', 'তেইশ', 'চব্বিশ', 'পঁচিশ', 'ছাব্বিশ', 'সাতাশ', 'আটাশ', 'ঊনত্রিশ',
@@ -23,41 +23,41 @@
       'ষাট', 'একষট্টি', 'বাষট্টি', 'তেষট্টি', 'চৌষট্টি', 'পঁয়ষট্টি', 'ছেষট্টি', 'সাতষট্টি', 'আটষট্টি', 'ঊনসত্তর',
       'সত্তর', 'একাত্তর', 'বাহাত্তর', 'তিয়াত্তর', 'চুয়াত্তর', 'পঁচাত্তর', 'ছিয়াত্তর', 'সাতাত্তর', 'আটাত্তর', 'ঊনআশি',
       'আশি', 'একাশি', 'বিরাশি', 'তিরাশি', 'চুরাশি', 'পঁচাশি', 'ছিয়াশি', 'সাতাশি', 'আটাশি', 'ঊননব্বই',
-      'নব্বই', 'একানব্বই', 'বিরানব্বই', 'তিরানব্বই', 'চুরানব্বই', 'পঁচানব্বই', 'ছিয়ানব্বই', 'সাতানব্বই', 'আটানব্বই', 'নিরানব্বই'
+      'নব্বই', 'একানব্বই', 'বিরানব্বই', 'তিরানব্বই', 'চুরানব্বই', 'পঁচানব্বই', 'ছিয়ানব্বই', 'সাতানব্বই', 'আটানব্বই', 'নিরানব্বই',
     ];
 
     function convert(num) {
       if (num < 100) return ones[num];
       if (num < 1000) {
-        var t = ones[Math.floor(num / 100)] + 'শত';
-        var r = num % 100;
-        return r ? t + ' ' + convert(r) : t;
+        const t = `${ones[Math.floor(num / 100)] }শত`;
+        const r = num % 100;
+        return r ? `${t } ${ convert(r)}` : t;
       }
       if (num < 100000) {
-        var t = convert(Math.floor(num / 1000)) + ' হাজার';
-        var r = num % 1000;
-        return r ? t + ' ' + convert(r) : t;
+        const t2 = `${convert(Math.floor(num / 1000)) } হাজার`;
+        const r2 = num % 1000;
+        return r2 ? `${t2 } ${ convert(r2)}` : t2;
       }
       if (num < 10000000) {
-        var t = convert(Math.floor(num / 100000)) + ' লক্ষ';
-        var r = num % 100000;
-        return r ? t + ' ' + convert(r) : t;
+        const t3 = `${convert(Math.floor(num / 100000)) } লক্ষ`;
+        const r3 = num % 100000;
+        return r3 ? `${t3 } ${ convert(r3)}` : t3;
       }
       if (num < 1000000000) {
-        var t = convert(Math.floor(num / 10000000)) + ' কোটি';
-        var r = num % 10000000;
-        return r ? t + ' ' + convert(r) : t;
+        const t4 = `${convert(Math.floor(num / 10000000)) } কোটি`;
+        const r4 = num % 10000000;
+        return r4 ? `${t4 } ${ convert(r4)}` : t4;
       }
       return '';
     }
 
     amount = Math.round(amount * 100) / 100;
-    var taka = Math.floor(amount);
-    var poisha = Math.round((amount - taka) * 100);
+    const taka = Math.floor(amount);
+    const poisha = Math.round((amount - taka) * 100);
 
-    var result = (convert(taka) || 'শূন্য') + ' টাকা';
-    if (poisha > 0) result += ' ' + (convert(poisha) || 'শূন্য') + ' পয়সা';
-    return result + ' মাত্র';
+    let result = `${convert(taka) || 'শূন্য' } টাকা`;
+    if (poisha > 0) result += ` ${ convert(poisha) || 'শূন্য' } পয়সা`;
+    return `${result } মাত্র`;
   }
 
   window.bnNumToWords = bnNumToWords;

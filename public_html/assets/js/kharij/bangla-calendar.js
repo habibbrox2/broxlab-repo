@@ -29,39 +29,39 @@
 
   // Bengali month definitions: [name, startMonth(1-12), startDay]
   // Order follows the Gregorian calendar from বৈশাখ (Apr) to চৈত্র (Mar)
-  var BN_MONTHS = [
-    { name: 'বৈশাখ',   month: 4,  day: 14 },
-    { name: 'জ্যৈষ্ঠ',  month: 5,  day: 15 },
-    { name: 'আষাঢ়',   month: 6,  day: 15 },
-    { name: 'শ্রাবণ',   month: 7,  day: 16 },
-    { name: 'ভাদ্র',    month: 8,  day: 16 },
-    { name: 'আশ্বিন',   month: 9,  day: 16 },
-    { name: 'কার্তিক',  month: 10, day: 16 },
-    { name: 'অগ্রহায়ণ', month: 11, day: 15 },
-    { name: 'পৌষ',     month: 12, day: 15 },
-    { name: 'মাঘ',     month: 1,  day: 15 },
-    { name: 'ফাল্গুন',  month: 2,  day: 14 },
-    { name: 'চৈত্র',   month: 3,  day: 15 }
+  const BN_MONTHS = [
+    { name: 'বৈশাখ', month: 4, day: 14, },
+    { name: 'জ্যৈষ্ঠ', month: 5, day: 15, },
+    { name: 'আষাঢ়', month: 6, day: 15, },
+    { name: 'শ্রাবণ', month: 7, day: 16, },
+    { name: 'ভাদ্র', month: 8, day: 16, },
+    { name: 'আশ্বিন', month: 9, day: 16, },
+    { name: 'কার্তিক', month: 10, day: 16, },
+    { name: 'অগ্রহায়ণ', month: 11, day: 15, },
+    { name: 'পৌষ', month: 12, day: 15, },
+    { name: 'মাঘ', month: 1, day: 15, },
+    { name: 'ফাল্গুন', month: 2, day: 14, },
+    { name: 'চৈত্র', month: 3, day: 15, },
   ];
 
-  var EN_MONTH_MAP = {
+  const EN_MONTH_MAP = {
     'january': 1, 'february': 2, 'march': 3, 'april': 4,
     'may': 5, 'june': 6, 'july': 7, 'august': 8,
-    'september': 9, 'october': 10, 'november': 11, 'december': 12
+    'september': 9, 'october': 10, 'november': 11, 'december': 12,
   };
 
-  var BN_MONTH_MAP = {
+  const BN_MONTH_MAP = {
     'জানুয়ারী': 1, 'ফেব্রুয়ারী': 2, 'মার্চ': 3, 'এপ্রিল': 4,
     'মে': 5, 'জুন': 6, 'জুলাই': 7, 'আগস্ট': 8,
-    'সেপ্টেম্বর': 9, 'অক্টোবর': 10, 'নভেম্বর': 11, 'ডিসেম্বর': 12
+    'সেপ্টেম্বর': 9, 'অক্টোবর': 10, 'নভেম্বর': 11, 'ডিসেম্বর': 12,
   };
 
   /**
    * Convert integer to Bengali digits.
    */
   function toBnNum(num) {
-    var bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return String(num).split('').map(function(c) {
+    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯',];
+    return String(num).split('').map((c) => {
       return bn[parseInt(c, 10)] || c;
     }).join('');
   }
@@ -81,17 +81,17 @@
    * Returns 1-based day number within the Bengali month.
    */
   function calcBnDay(bnMonthIdx, gYear, gMonth, gDay) {
-    var bnMon = BN_MONTHS[bnMonthIdx];
+    const bnMon = BN_MONTHS[bnMonthIdx];
     // Determine which Gregorian year the Bengali month started in
     // If the Bengali month starts in a month > the date's month
     // (or same month but later day), the start was in the previous year
-    var startYear = gYear;
+    let startYear = gYear;
     if (bnMon.month > gMonth || (bnMon.month === gMonth && bnMon.day > gDay)) {
       startYear = gYear - 1;
     }
-    var startDate = newDate(startYear, bnMon.month, bnMon.day);
-    var currentDate = newDate(gYear, gMonth, gDay);
-    var diffMs = currentDate.getTime() - startDate.getTime();
+    const startDate = newDate(startYear, bnMon.month, bnMon.day);
+    const currentDate = newDate(gYear, gMonth, gDay);
+    const diffMs = currentDate.getTime() - startDate.getTime();
     return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
   }
 
@@ -116,16 +116,16 @@
     if (!dateStr || typeof dateStr !== 'string') return '';
 
     // Normalize: remove Bengali digits
-    var cleaned = dateStr.replace(/[০-৯]/g, function(m) {
+    const cleaned = dateStr.replace(/[০-৯]/g, (m) => {
       return String.fromCharCode(m.charCodeAt(0) - 0x09E6 + 48);
     });
 
     // Try numeric format first: dd-mm-yyyy or dd/mm/yyyy
-    var parts = cleaned.split(/[-\/]/);
+    const parts = cleaned.split(/[-/]/);
     if (parts.length === 3) {
-      var day = parseInt(parts[0], 10);
-      var month = parseInt(parts[1], 10);
-      var year = parseInt(parts[2], 10);
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
 
       if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
         if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1000) {
@@ -135,13 +135,13 @@
     }
 
     // Try "dd MonthName, yyyy" or "dd MonthName yyyy" format
-    var monthNameMatch = cleaned.match(/^(\d{1,2})\s+([a-zA-Z\u0980-\u09FF]+)[\s,]+(\d{4})$/);
+    const monthNameMatch = cleaned.match(/^(\d{1,2})\s+([a-zA-Z\u0980-\u09FF]+)[\s,]+(\d{4})$/);
     if (monthNameMatch) {
-      var mDay = parseInt(monthNameMatch[1], 10);
-      var mName = monthNameMatch[2].toLowerCase().trim();
-      var mYear = parseInt(monthNameMatch[3], 10);
+      const mDay = parseInt(monthNameMatch[1], 10);
+      const mName = monthNameMatch[2].toLowerCase().trim();
+      const mYear = parseInt(monthNameMatch[3], 10);
 
-      var mMonth = EN_MONTH_MAP[mName] || BN_MONTH_MAP[mName];
+      const mMonth = EN_MONTH_MAP[mName] || BN_MONTH_MAP[mName];
       if (mMonth && !isNaN(mDay) && !isNaN(mYear)) {
         if (mDay >= 1 && mDay <= 31 && mYear >= 1000) {
           return buildBengaliDate(mDay, mMonth, mYear);
@@ -153,28 +153,28 @@
   }
 
   function buildBengaliDate(day, month, year) {
-    for (var i = 0; i < BN_MONTHS.length; i++) {
-      var bnMon = BN_MONTHS[i];
-      var nextIdx = (i + 1) % BN_MONTHS.length;
-      var nextMon = BN_MONTHS[nextIdx];
+    for (let i = 0; i < BN_MONTHS.length; i++) {
+      const bnMon = BN_MONTHS[i];
+      const nextIdx = (i + 1) % BN_MONTHS.length;
+      const nextMon = BN_MONTHS[nextIdx];
 
-      var wraps = bnMon.month > nextMon.month;
+      const wraps = bnMon.month > nextMon.month;
 
-      var startYear = year;
+      let startYear = year;
       if (wraps && (month < bnMon.month || (month === bnMon.month && day < bnMon.day))) {
         startYear = year - 1;
       }
-      var bnStart = newDate(startYear, bnMon.month, bnMon.day);
+      const bnStart = newDate(startYear, bnMon.month, bnMon.day);
 
-      var endYear = wraps ? year + 1 : year;
-      var bnEnd = newDate(endYear, nextMon.month, nextMon.day);
+      const endYear = wraps ? year + 1 : year;
+      const bnEnd = newDate(endYear, nextMon.month, nextMon.day);
 
-      var current = newDate(year, month, day);
+      const current = newDate(year, month, day);
 
       if (current >= bnStart && current < bnEnd) {
-        var bnDay = calcBnDay(i, year, month, day);
-        var bnYear = calcBnYear(year, month, day);
-        return toBnNum(bnDay) + ' ' + bnMon.name + ' ' + toBnNum(bnYear);
+        const bnDay = calcBnDay(i, year, month, day);
+        const bnYear = calcBnYear(year, month, day);
+        return `${toBnNum(bnDay) } ${ bnMon.name } ${ toBnNum(bnYear)}`;
       }
     }
 
