@@ -166,7 +166,7 @@
           {% if data.owners is defined and data.owners|length > 0 %}
             {% for owner in data.owners %}
             <tr>
-              <td class="b1 text-center">{{ loop.index }}</td>
+              <td class="b1 text-center">{{ loop.index|bn }}</td>
               <td class="b1">{{ owner.name|default('') }}</td>
               <td class="b1 text-center">{{ owner.share|default('১,০০০')|bn }}</td>
             </tr>
@@ -198,7 +198,7 @@
           {% if dag_list|length > 0 %}
             {% for dag in dag_list %}
             <tr>
-              <td class="b1 text-center">{{ loop.index }}</td>
+              <td class="b1 text-center">{{ loop.index|bn }}</td>
               <td class="b1">{{ dag.dag_number|default('')|bn }}</td>
               <td class="b1">{{ dag.land_type|default('নাল') }}</td>
               <td class="b1 text-center">{{ dag.khash_area_shottangsho|default('')|bn }}</td>
@@ -265,7 +265,7 @@
             <p style="margin:0 !important;">নোট: সর্বশেষ কর পরিশোধের সাল - {{ data.last_payment_year|default('') }} (অর্থবছর)</p>
             <p>চালান নং : {{ data.challan_number|default('') }}</p>
             <p>তারিখ : {{ data.receipt_date|default('') }}</p>
-            <p style="border-top:1px solid; margin-left:48px; width:115px;">{{ data.receipt_date_en|default('') }}</p>
+            <p style="border-top:1px solid; margin-left:48px; width:115px;">{{ data.receipt_date_en|default('')|date_bn('d F Y') }}</p>
           </td>
           <!-- Center: QR Code -->
           <td style="width:90px; text-align:center; vertical-align:middle;">

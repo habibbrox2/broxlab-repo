@@ -12,9 +12,11 @@
     RewriteEngine On
     RewriteBase /
 
-    # Option A: Redirect www to non-www
-    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-    RewriteRule ^(.*)$ http://%1/$1 [R=301,L]
+    # Option A: Redirect www (apex only) to non-www
+    # Subdomains (e.g. dakhila.broxlab.online, mutation-land.broxlab.online)
+    # are preserved and never redirected to the apex domain.
+    RewriteCond %{HTTP_HOST} ^www\.broxlab\.online$ [NC]
+    RewriteRule ^(.*)$ https://broxlab.online/$1 [R=301,L]
 
     # Option B: Redirect non-www to www (uncomment to enable)
     # RewriteCond %{HTTP_HOST} !^www\. [NC]

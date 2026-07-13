@@ -33,6 +33,21 @@ use Endroid\QrCode\Writer\PngWriter;
 // ============================================================
 
 $kharijGetVerificationBaseUrl = function (string $domain = 'mutation'): string {
+    // Preserve the subdomain the visitor used (e.g. dakhila.broxlab.online,
+    // mutation-land.broxlab.online, or any staging subdomain) so generated
+    // links and QR codes stay on that same subdomain.
+    $apex = 'broxlab.online';
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $isSubdomain = $host !== ''
+        && preg_match('/\.' . preg_quote($apex, '/') . '$/i', $host)
+        && !preg_match('/^(www\.)?' . preg_quote($apex, '/') . '$/i', $host);
+
+    if ($isSubdomain) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $scheme . '://' . $host;
+    }
+
+    // Fallback for apex/www requests
     if ($domain === 'dakhila') {
         return 'https://dakhila.broxlab.online';
     }
