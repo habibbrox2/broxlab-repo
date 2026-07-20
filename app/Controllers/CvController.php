@@ -17,7 +17,6 @@ $cvPersonalInfoModel = new CvPersonalInfoModel($mysqli);
 $cvRateLimitModel = new CvRateLimitModel($mysqli);
 $cvTemplateService = new CvTemplateService($mysqli);
 $userModel = new UserModel($mysqli);
-$jobPositionModel = new JobPositionModel($mysqli);
 $cvPreviewService = new CvPreviewService($mysqli, $twig);
 
 $cvNormalizeInput = function (&$value): void {
@@ -275,6 +274,250 @@ $router->get('/cv-builder/guest', function () use ($twig, $mysqli, $cvModel) {
         'page_title' => 'CV Builder - Guest',
         'breadcrumbs' => [['label' => 'CV Builder', 'icon' => 'file-earmark-text'], ['label' => 'Guest Mode', 'icon' => 'person-badge']]
     ]);
+});
+
+// ============================================================
+// LIVE CV BUILDER (Two-Column: Form + Live Preview)
+// ============================================================
+
+$cvLiveBuilderRender = function (int $cvId, string $selectedTemplate, array $cvRecord, array $builderData) use ($twig): void {
+    $templates = [];
+    if (function_exists('cvTemplateGetAll')) {
+        $allTemplates = cvTemplateGetAll();
+        foreach ($allTemplates as $slug => $t) {
+            if (!empty($t['deleted_at'])) continue;
+            if (($t['status'] ?? 'active') === 'disabled') continue;
+            $templates[] = [
+                'slug' => $slug,
+                'name' => $t['name'] ?? ucfirst($slug),
+                'category' => $t['category'] ?? 'General',
+                'primary_color' => $t['primary_color'] ?? '#6366f1',
+                'description' => $t['description'] ?? '',
+                'version' => $t['version'] ?? '1.0.0',
+                'is_premium' => !empty($t['is_premium']),
+                'best_for' => $t['best_for'] ?? '',
+                'font' => $t['font'] ?? 'Inter',
+                'is_html' => !empty($t['is_html']),
+                'thumbnail_url' => $t['thumbnail_url'] ?? null,
+            ];
+        }
+    }
+    usort($templates, static fn($a, $b) => strcmp($a['name'], $b['name']));
+
+    $availableSlugs = array_map(static fn($t) => $t['slug'], $templates);
+    if (!in_array($selectedTemplate, $availableSlugs, true) && !empty($templates)) {
+        $selectedTemplate = $templates[0]['slug'];
+    }
+
+    $categories = array_values(array_unique(array_filter(array_map(static fn($t) => $t['category'] ?? null, $templates))));
+    sort($categories);
+
+    echo $twig->render('cv/live-builder.twig', [
+        'cv_id' => $cvId,
+        'cv' => $cvRecord,
+        'builder_data' => $builderData,
+        'templates' => $templates,
+        'categories' => $categories,
+        'selected_template' => $selectedTemplate,
+        'csrf_token' => $_SESSION['csrf_token'] ?? '',
+        'page_title' => 'Live CV Builder',
+        'is_guest' => false,
+        'is_admin' => false,
+        'preview_api_url' => '/api/cv/live-preview',
+        'pdf_export_url' => '/cv-builder/' . $cvId . '/export/pdf?template=' . urlencode($selectedTemplate),
+    ]);
+};
+
+$router->get('/cv-builder/live', ['middleware' => ['auth']], function () use ($twig, $mysqli, $cvModel, $cvLiveBuilderRender) {
+    $currentUserId = getCurrentUserId();
+    $cv = $cvModel->getByUserId($currentUserId);
+    $cvId = $cv[0]['id'] ?? null;
+    $builderData = [];
+    $defaultTemplate = 'modern-blue';
+    if ($cvId) {
+        $cvRecord = $cvModel->getById($cvId);
+        $builderData = $cvModel->getBuilderData($cvId);
+        $selectedTemplate = $cvRecord['template'] ?? $defaultTemplate;
+    } else {
+        $cvId = $cvModel->create($currentUserId, 'My CV', $defaultTemplate);
+        $selectedTemplate = $defaultTemplate;
+        $cvRecord = $cvModel->getById($cvId) ?? [];
+    }
+    $cvLiveBuilderRender($cvId, $selectedTemplate, $cvRecord ?? [], $builderData);
+});
+
+$router->get('/cv-builder/live/{id}', ['middleware' => ['auth']], function ($id) use ($twig, $mysqli, $cvModel, $cvLiveBuilderRender) {
+    $currentUserId = getCurrentUserId();
+    $cvId = (int)$id;
+    if (!$cvModel->belongsToUser($cvId, $currentUserId)) {
+        showMessage('CV not found.', 'danger');
+        header('Location: /cv-builder/live');
+        exit;
+    }
+    $cvRecord = $cvModel->getById($cvId);
+    $builderData = $cvModel->getBuilderData($cvId);
+    $selectedTemplate = $cvRecord['template'] ?? 'modern-blue';
+    $cvLiveBuilderRender($cvId, $selectedTemplate, $cvRecord ?? [], $builderData);
+});
+
+$router->get('/admin/cv-builder', ['middleware' => ['auth', 'admin_only']], function () use ($twig, $mysqli, $cvModel, $cvLiveBuilderRender) {
+    $currentUserId = getCurrentUserId();
+    $cv = $cvModel->getByUserId($currentUserId);
+    $cvId = $cv[0]['id'] ?? null;
+    if ($cvId) {
+        $cvRecord = $cvModel->getById($cvId);
+        $builderData = $cvModel->getBuilderData($cvId);
+        $selectedTemplate = $cvRecord['template'] ?? 'modern-blue';
+    } else {
+        $cvId = $cvModel->create($currentUserId, 'My CV (Admin)', 'modern-blue');
+        $selectedTemplate = 'modern-blue';
+        $cvRecord = $cvModel->getById($cvId) ?? [];
+        $builderData = [];
+    }
+    $cvLiveBuilderRender($cvId, $selectedTemplate, $cvRecord ?? [], $builderData);
+});
+
+$router->get('/admin/cv-builder/{id}', ['middleware' => ['auth', 'admin_only']], function ($id) use ($twig, $mysqli, $cvModel, $cvLiveBuilderRender) {
+    $cvId = (int)$id;
+    $cvRecord = $cvModel->getById($cvId);
+    if (!$cvRecord) {
+        showMessage('CV not found.', 'danger');
+        header('Location: /admin/cv-builder');
+        exit;
+    }
+    $builderData = $cvModel->getBuilderData($cvId);
+    $selectedTemplate = $cvRecord['template'] ?? 'modern-blue';
+    $cvLiveBuilderRender($cvId, $selectedTemplate, $cvRecord, $builderData);
+});
+
+// No CSRF middleware on live-preview — it's idempotent (GET-style, no side effects)
+$router->post('/api/cv/live-preview', function () use ($twig) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($input)) {
+        json_response(['success' => false, 'error' => 'Invalid request'], 400);
+        return;
+    }
+    $template = basename(sanitize_input((string)($input['template'] ?? '')));
+    $data = $input['data'] ?? [];
+    if ($template === '') {
+        json_response(['success' => false, 'error' => 'Template slug required'], 400);
+        return;
+    }
+    if (!preg_match('/^[a-z0-9][a-z0-9-]*$/', $template)) {
+        json_response(['success' => false, 'error' => 'Invalid template slug'], 400);
+        return;
+    }
+    array_walk_recursive($data, static function (&$value): void {
+        if (is_string($value)) { $value = sanitize_input($value); }
+    });
+    try {
+        $personal = $data['personal'] ?? [];
+        $summary = $data['summary'] ?? [];
+        $sections = [];
+        $idx = 0;
+        $personalData = [
+            'full_name' => $personal['full_name'] ?? '',
+            'job_title' => $personal['job_title'] ?? '',
+            'email' => $personal['email'] ?? '',
+            'phone' => $personal['phone'] ?? '',
+            'address' => $personal['address'] ?? '',
+            'website' => $personal['website'] ?? '',
+            'linkedin' => $personal['linkedin'] ?? '',
+            'github' => $personal['github'] ?? '',
+            'portfolio' => $personal['portfolio'] ?? '',
+        ];
+        $idx++;
+        $summaryText = $summary['professional_summary'] ?? $data['summary']['text'] ?? '';
+        $objectiveText = $summary['career_objective'] ?? '';
+        $sections[] = ['id' => $idx, 'title' => 'Professional Summary', 'section_type' => 'summary', 'is_visible' => 1, 'items' => [['id' => 1, 'content' => array_merge($personalData, ['summary' => $summaryText, 'objective' => $objectiveText, 'text' => $summaryText])]]];
+        $expEntries = $data['experience'] ?? [];
+        if (!empty($expEntries)) {
+            $idx++;
+            $items = [];
+            foreach ($expEntries as $i => $exp) {
+                if (!empty($exp['company']) || !empty($exp['position'])) {
+                    $items[] = ['id' => $i + 1, 'content' => ['position' => $exp['position'] ?? '', 'company' => $exp['company'] ?? '', 'location' => $exp['location'] ?? '', 'start_date' => $exp['start_date'] ?? '', 'end_date' => $exp['end_date'] ?? '', 'description' => $exp['description'] ?? '', 'is_current' => empty($exp['end_date']) || $exp['end_date'] === 'Present' ? 1 : 0]];
+                }
+            }
+            if (!empty($items)) $sections[] = ['id' => $idx, 'title' => 'Experience', 'section_type' => 'experience', 'is_visible' => 1, 'items' => $items];
+        }
+        $eduEntries = $data['education'] ?? [];
+        if (!empty($eduEntries)) {
+            $idx++;
+            $items = [];
+            foreach ($eduEntries as $i => $edu) {
+                if (!empty($edu['institution']) || !empty($edu['degree'])) {
+                    $items[] = ['id' => $i + 1, 'content' => ['degree' => $edu['degree'] ?? '', 'institution' => $edu['institution'] ?? '', 'field' => $edu['field'] ?? '', 'start_date' => $edu['start_date'] ?? '', 'end_date' => $edu['end_date'] ?? '', 'gpa' => $edu['gpa'] ?? '']];
+                }
+            }
+            if (!empty($items)) $sections[] = ['id' => $idx, 'title' => 'Education', 'section_type' => 'education', 'is_visible' => 1, 'items' => $items];
+        }
+        $techSkills = $data['skills']['technical'] ?? $data['technical_skills'] ?? [];
+        $softSkills = $data['skills']['soft'] ?? $data['soft_skills'] ?? [];
+        if (!empty($techSkills) || !empty($softSkills)) {
+            $idx++;
+            $skillItems = [];
+            foreach ($techSkills as $s) $skillItems[] = ['id' => count($skillItems) + 1, 'content' => ['name' => trim((string)$s)]];
+            foreach ($softSkills as $s) $skillItems[] = ['id' => count($skillItems) + 1, 'content' => ['name' => trim((string)$s)]];
+            $sections[] = ['id' => $idx, 'title' => 'Skills', 'section_type' => 'skills', 'is_visible' => 1, 'items' => $skillItems ?: [['id' => 1, 'content' => []]]];
+        }
+        $langs = $data['languages'] ?? [];
+        if (!empty($langs)) {
+            $idx++;
+            $items = [];
+            foreach ($langs as $i => $lang) {
+                $name = is_string($lang) ? $lang : ($lang['name'] ?? '');
+                $prof = is_string($lang) ? 'Fluent' : ($lang['proficiency'] ?? 'Fluent');
+                if ($name !== '') $items[] = ['id' => $i + 1, 'content' => ['name' => $name, 'proficiency' => $prof]];
+            }
+            if (!empty($items)) $sections[] = ['id' => $idx, 'title' => 'Languages', 'section_type' => 'languages', 'is_visible' => 1, 'items' => $items];
+        }
+        $projEntries = $data['projects'] ?? [];
+        if (!empty($projEntries)) {
+            $idx++;
+            $items = [];
+            foreach ($projEntries as $i => $proj) {
+                if (!empty($proj['name'])) $items[] = ['id' => $i + 1, 'content' => ['name' => $proj['name'] ?? '', 'description' => $proj['description'] ?? '', 'technologies' => $proj['technologies'] ?? '', 'url' => $proj['url'] ?? '']];
+            }
+            if (!empty($items)) $sections[] = ['id' => $idx, 'title' => 'Projects', 'section_type' => 'projects', 'is_visible' => 1, 'items' => $items];
+        }
+        $certEntries = $data['certificates'] ?? [];
+        if (!empty($certEntries)) {
+            $idx++;
+            $items = [];
+            foreach ($certEntries as $i => $cert) {
+                if (!empty($cert['name'])) $items[] = ['id' => $i + 1, 'content' => ['name' => $cert['name'] ?? '', 'organization' => $cert['organization'] ?? '', 'date' => $cert['date'] ?? '']];
+            }
+            if (!empty($items)) $sections[] = ['id' => $idx, 'title' => 'Certificates', 'section_type' => 'certifications', 'is_visible' => 1, 'items' => $items];
+        }
+        $cvData = array_merge($personalData, ['title' => ($personal['full_name'] ?? '') . "'s CV", 'full_name' => $personal['full_name'] ?? '', 'job_title' => $personal['job_title'] ?? '', 'professional_summary' => $summaryText, 'location' => $personal['address'] ?? '', 'profile_photo' => '']);
+        $html = '';
+        $headResources = '';
+        $isHtml = function_exists('cvIsHtmlTemplate') && cvIsHtmlTemplate($template);
+        if ($isHtml) {
+            $htmlPath = dirname(__DIR__, 1) . '/Views/cv/templates/' . $template . '/index.html';
+            if (file_exists($htmlPath)) {
+                $raw = file_get_contents($htmlPath);
+                if (preg_match('/<head[^>]*>(.*?)<\/head>/si', $raw, $headMatch)) {
+                    $headContent = $headMatch[1];
+                    if (preg_match_all('/<(?:script|link|style|meta|title)[^>]*>.*?<\/(?:script)>|<(?:link|meta)[^>]*\/?>|<style[^>]*>.*?<\/style>/si', $headContent, $headTags)) {
+                        $headResources = implode("\n", $headTags[0]);
+                    }
+                }
+                $html = preg_replace('/^<!DOCTYPE html[^>]*>/i', '', $raw);
+                $html = preg_replace('/<html[^>]*>|<\/html>|<head>.*?<\/head>/si', '', $html);
+                $html = preg_replace('/<body[^>]*>|<\/body>/i', '', $html);
+            }
+            if (empty($html)) { json_response(['success' => false, 'error' => 'Template not found'], 404); return; }
+        } else {
+            try { $html = $twig->render('cv/templates/' . $template . '.twig', ['cv' => $cvData, 'sections' => $sections, 'is_preview' => true, 'is_public' => false, 'is_pdf' => false]); }
+            catch (\Throwable $e) { json_response(['success' => false, 'error' => 'Template render failed: ' . $e->getMessage()], 500); return; }
+        }
+        $wrapped = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CV Preview</title>' . $headResources . '<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#f1f5f9;font-family:system-ui,-apple-system,sans-serif;display:flex;justify-content:center;overflow:hidden;padding:8px 0}.a4-page{width:210mm;height:297mm;overflow:hidden;margin:0 auto;background:white;box-shadow:0 2px 16px rgba(0,0,0,0.08);position:relative}@media print{body{background:white;padding:0}.a4-page{box-shadow:none}}</style></head><body><div class="a4-page">' . $html . '</div></body></html>';
+        json_response(['success' => true, 'html' => $wrapped]);
+    } catch (\Throwable $e) {
+        json_response(['success' => false, 'error' => 'Render error: ' . $e->getMessage()], 500);
+    }
 });
 
 // ============================================================
@@ -708,6 +951,44 @@ $router->post('/admin/cv-purchases/{id}/cancel', ['middleware' => ['auth', 'admi
         showMessage('Failed to cancel purchase', 'danger');
     }
     header('Location: /admin/cv-purchases');
+    exit;
+});
+
+// ============================================================
+// CV TEMPLATE THUMBNAIL (auto-generated SVG)
+// ============================================================
+
+$router->get('/api/cv/thumbnail/{slug}.svg', function ($slug) {
+    $slug = basename($slug);
+    $slug = preg_replace('/\.svg$/i', '', $slug);
+    if (!function_exists('cvTemplateGet')) {
+        http_response_code(500);
+        header('Content-Type: image/svg+xml');
+        exit;
+    }
+    $template = cvTemplateGet($slug);
+    if (!$template) {
+        http_response_code(404);
+        header('Content-Type: image/svg+xml');
+        exit;
+    }
+    $template['slug'] = $slug;
+    if (!function_exists('cvTemplateGenerateThumbnailSvg')) {
+        http_response_code(500);
+        header('Content-Type: image/svg+xml');
+        exit;
+    }
+    $svg = cvTemplateGenerateThumbnailSvg($template);
+    $etag = '"' . md5($svg) . '"';
+    header('ETag: ' . $etag);
+    header('Cache-Control: public, max-age=3600');
+    header('Content-Type: image/svg+xml; charset=utf-8');
+    header('Content-Length: ' . strlen($svg));
+    if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+        http_response_code(304);
+        exit;
+    }
+    echo $svg;
     exit;
 });
 
@@ -1179,7 +1460,6 @@ $router->get('/cv-builder/templates', function () use ($twig, $mysqli, $cvModel)
         'executive' => ['name' => 'Executive Elite', 'category' => 'Premium', 'description' => 'Gold-accented luxury design with dark header.', 'gradient' => 'linear-gradient(135deg, #1A1A2E, #16213E)', 'icon' => 'crown', 'features' => ['Premium Design', 'Gold accents', 'Serif typography', 'Two-column layout', 'Dark header', 'ATS-friendly'], 'best_for' => 'Senior Executives & Leaders', 'popularity' => 98, 'version' => '1.0.0', 'is_premium' => true, 'price' => 50],
     ];
     $jobPositions = [];
-    try { $jpModel = new JobPositionModel($mysqli); $jobPositions = $jpModel->getActivePositions(); } catch (Throwable $e) {}
     $categories = [];
     foreach ($templates as $slug => $tmpl) { $cat = $tmpl['category'] ?? 'Other'; if (!in_array($cat, $categories)) $categories[] = $cat; }
     sort($categories);
@@ -1313,7 +1593,6 @@ $router->get('/cv-builder/infos', ['middleware' => ['auth']], function () use ($
     $cv = $cvModel->getById($cvId);
     $bd = $cvModel->getBuilderData($cvId);
     $jobPositions = [];
-    try { $jpModel = new JobPositionModel($mysqli); $jobPositions = $jpModel->getActivePositions(); } catch (Throwable $e) {}
     $t = function_exists('cvGetTemplateAllowlist') ? cvGetTemplateAllowlist() : ['modern', 'minimal', 'ats', 'professional'];
     echo $twig->render('cv/form.twig', ['cv' => $cv, 'cv_id' => $cvId, 'builder_state' => $bd, 'job_positions' => $jobPositions,
         'templates' => $t, 'selected_template' => $cv['template'] ?? 'modern', 'page_title' => 'Build Your CV',

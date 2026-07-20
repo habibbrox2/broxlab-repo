@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carlos Mendez - Master Plumber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif']},colors:{plumb:{50:'#EFF6FF',100:'#DBEAFE',200:'#BFDBFE',300:'#93C5FD',400:'#60A5FA',500:'#3B82F6',600:'#2563EB',700:'#1D4ED8',800:'#1E40AF',900:'#1E3A8A'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .wave-divider { height: 4px; background: repeating-linear-gradient(90deg, #3B82F6, #3B82F6 10px, transparent 10px, transparent 20px); }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-blue-50 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <div class="bg-plumb-700 text-white px-8 py-6">
+        <div class="flex items-center gap-5">
+            <div class="w-20 h-20 rounded-full bg-plumb-500/30 border-2 border-white/40 flex items-center justify-center flex-shrink-0">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold">Carlos Mendez</h1>
+                <p class="text-blue-200 text-base font-medium">Master Plumber</p>
+                <p class="text-xs text-blue-300 mt-0.5">Licensed · 20+ Years Experience</p>
+            </div>
+        </div>
+    </div>
+    <div class="wave-divider"></div>
+    <div class="flex">
+        <aside class="w-[200px] flex-shrink-0 bg-plumb-50 p-6 border-r border-plumb-100">
+            <div class="mb-5"><h3 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-3">Contact</h3>
+                <div class="space-y-1 text-sm text-gray-600">
+                    <p>carlos.m@plumbpro.com</p><p>+1 (555) 234-5678</p><p>Phoenix, AZ</p>
+                </div>
+            </div>
+            <div class="mb-5"><h3 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-3">Licenses</h3>
+                <p class="font-semibold text-sm">Master Plumber</p><p class="text-xs text-gray-500">AZ License #MP-33442</p>
+                <p class="font-semibold text-sm mt-2">Backflow Cert</p><p class="text-xs text-gray-500">ABPA Certified</p>
+            </div>
+            <div class="mb-5"><h3 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-3">Skills</h3>
+                <div class="space-y-1">
+                    <div><div class="flex justify-between text-xs"><span>Pipe Installation</span><span>95%</span></div><div class="h-1.5 bg-blue-200"><div class="h-1.5 bg-plumb-600" style="width:95%"></div></div></div>
+                    <div><div class="flex justify-between text-xs"><span>Drain Systems</span><span>92%</span></div><div class="h-1.5 bg-blue-200"><div class="h-1.5 bg-plumb-600" style="width:92%"></div></div></div>
+                    <div><div class="flex justify-between text-xs"><span>Water Heaters</span><span>90%</span></div><div class="h-1.5 bg-blue-200"><div class="h-1.5 bg-plumb-600" style="width:90%"></div></div></div>
+                </div>
+            </div>
+        </aside>
+        <main class="flex-1 p-8">
+            <section class="mb-6"><h2 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-2">Summary</h2><p class="text-sm text-gray-700 leading-relaxed">Licensed Master Plumber with over 20 years of experience in residential, commercial, and industrial plumbing. Expert in new construction, remodeling, and emergency repairs. Committed to quality craftsmanship and customer satisfaction.</p></section>
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-4">Experience</h2>
+                <!-- START EXPERIENCE -->
+                <div class="mb-4 pb-4 border-b border-blue-100">
+                    <div class="flex justify-between"><h3 class="font-bold">Master Plumber</h3><span class="text-xs text-gray-500">2015-Present</span></div>
+                    <p class="text-sm text-plumb-600 font-medium">Mendez Plumbing & Rooter</p>
+                    <p class="text-sm text-gray-600 mt-1">Run successful plumbing business serving 500+ residential and commercial clients. Supervise 3 journeymen and 2 apprentices.</p>
+                </div>
+                <!-- END EXPERIENCE -->
+                <div class="mb-4 pb-4 border-b border-blue-100">
+                    <div class="flex justify-between"><h3 class="font-bold">Journeyman Plumber</h3><span class="text-xs text-gray-500">2008-2015</span></div>
+                    <p class="text-sm text-plumb-600 font-medium">Desert Plumbing Co.</p>
+                    <p class="text-sm text-gray-600 mt-1">Led commercial plumbing installations for new construction projects. Managed material ordering and crew scheduling.</p>
+                </div>
+                <div>
+                    <div class="flex justify-between"><h3 class="font-bold">Apprentice Plumber</h3><span class="text-xs text-gray-500">2003-2008</span></div>
+                    <p class="text-sm text-plumb-600 font-medium">PipePro Services</p>
+                    <p class="text-sm text-gray-600 mt-1">Completed 5-year apprenticeship under licensed master plumbers. Learned all aspects of residential and commercial plumbing.</p>
+                </div>
+            </section>
+            <section><h2 class="text-xs font-bold text-plumb-800 uppercase tracking-widest mb-4">Education</h2>
+                <!-- START EDUCATION -->
+                <div><h3 class="font-bold">Plumbing Apprenticeship Program</h3><p class="text-sm text-gray-600">UA Local 469, 2008</p></div>
+                <!-- END EDUCATION -->
+            </section>
+            <footer class="mt-6 pt-4 text-xs text-gray-400 no-print">References · carlos.m@plumbpro.com</footer>
+        </main>
+    </div>
+</div>
+</body>
+</html>

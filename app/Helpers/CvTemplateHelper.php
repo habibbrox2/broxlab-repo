@@ -120,6 +120,7 @@ if (!function_exists('cvTemplateIsDisabled')) {
 if (!function_exists('cvTemplateGetAll')) {
     /**
      * Get all templates with metadata merged from filesystem and JSON.
+     * Scans both .twig files AND subdirectories containing index.html.
      * Returns array of slug => metadata array.
      */
     function cvTemplateGetAll(bool $includeDeleted = false): array
@@ -128,11 +129,54 @@ if (!function_exists('cvTemplateGetAll')) {
         $metadata = cvTemplateReadMetadata();
         $templates = [];
 
+        // Auto-seed from marketplace templates.json (merge, never overwrite existing metadata)
+        static $seeded = false;
+        if (!$seeded) {
+            $marketplaceJson = $dir . '/templates.json';
+            if (file_exists($marketplaceJson)) {
+                $marketTemplates = json_decode(file_get_contents($marketplaceJson), true);
+                if (is_array($marketTemplates)) {
+                    $existing = $metadata['templates'] ?? [];
+                    $dirty = false;
+                    foreach ($marketTemplates as $t) {
+                        $slug = $t['id'] ?? '';
+                        if ($slug === '' || isset($existing[$slug])) continue;
+                        $existing[$slug] = [
+                            'name' => $t['name'] ?? ucfirst($slug),
+                            'description' => $t['description'] ?? '',
+                            'category' => $t['category'] ?? 'Professional',
+                            'primary_color' => $t['primaryColor'] ?? '#6B7280',
+                            'best_for' => $t['bestFor'] ?? '',
+                            'font' => $t['font'] ?? 'Inter',
+                            'version' => $t['version'] ?? '1.0.0',
+                            'is_premium' => !empty($t['is_premium']),
+                            'status' => 'active',
+                            'is_custom' => false,
+                            'is_html' => true,
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'updated_at' => date('Y-m-d H:i:s'),
+                        ];
+                        $dirty = true;
+                    }
+                    if ($dirty) {
+                        $metadata['templates'] = $existing;
+                        cvTemplateWriteMetadata($metadata);
+                    }
+                }
+            }
+            $seeded = true;
+        }
+
         if (is_dir($dir)) {
-            $files = scandir($dir);
-            foreach ($files as $file) {
-                if (pathinfo($file, PATHINFO_EXTENSION) === 'twig') {
-                    $slug = pathinfo($file, PATHINFO_FILENAME);
+            $entries = scandir($dir);
+
+            foreach ($entries as $entry) {
+                if ($entry === '.' || $entry === '..') continue;
+                $path = $dir . '/' . $entry;
+
+                // Case 1: .twig file
+                if (is_file($path) && pathinfo($entry, PATHINFO_EXTENSION) === 'twig') {
+                    $slug = pathinfo($entry, PATHINFO_FILENAME);
                     if ($slug === '' || $slug[0] === '_') {
                         continue;
                     }
@@ -142,9 +186,42 @@ if (!function_exists('cvTemplateGetAll')) {
                         'description' => '',
                         'status' => 'active',
                         'is_custom' => false,
+                        'is_html' => false,
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
+                    // Ensure twig templates have is_html = false
+                    $template['is_html'] = false;
+
+                    if (!$includeDeleted && !empty($template['deleted_at'])) {
+                        continue;
+                    }
+
+                    $templates[$slug] = $template;
+                }
+
+                // Case 2: Subdirectory with index.html
+                if (is_dir($path) && file_exists($path . '/index.html')) {
+                    $slug = $entry;
+                    if ($slug === '' || $slug[0] === '_') {
+                        continue;
+                    }
+
+                    $template = $metadata['templates'][$slug] ?? [
+                        'name' => ucwords(str_replace(['-', '_'], ' ', $slug)),
+                        'description' => 'HTML CV template',
+                        'category' => 'Professional',
+                        'status' => 'active',
+                        'is_custom' => false,
+                        'is_html' => true,
+                        'primary_color' => '#6B7280',
+                        'version' => '1.0.0',
+                        'is_premium' => false,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ];
+                    // Ensure html templates have is_html = true
+                    $template['is_html'] = true;
 
                     if (!$includeDeleted && !empty($template['deleted_at'])) {
                         continue;
@@ -154,6 +231,14 @@ if (!function_exists('cvTemplateGetAll')) {
                 }
             }
         }
+
+        // Add computed fields: layout_type and thumbnail_url
+        $thumbBaseUrl = '/api/cv/thumbnail/';
+        foreach ($templates as $slug => &$tmpl) {
+            $tmpl['layout_type'] = cvTemplateGetLayoutType($slug);
+            $tmpl['thumbnail_url'] = $thumbBaseUrl . urlencode($slug) . '.svg';
+        }
+        unset($tmpl);
 
         return $templates;
     }
@@ -303,6 +388,159 @@ if (!function_exists('cvTemplateToggleStatus')) {
         $metadata['templates'][$slug]['updated_at'] = date('Y-m-d H:i:s');
 
         return cvTemplateWriteMetadata($metadata);
+    }
+}
+
+if (!function_exists('cvTemplateGetLayoutType')) {
+    /**
+     * Determine the layout type for a template based on slug.
+     * Maps to: sidebar-left, sidebar-right, single-column, banner-header
+     */
+    function cvTemplateGetLayoutType(string $slug): string
+    {
+        $sidebarRight = ['dark-professional', 'sidebar-right'];
+        $singleColumn = ['apple-style', 'minimal-white', 'luxury', 'elegant-gold',
+            'japanese-minimal', 'ats-friendly', 'magazine-layout', 'card-based',
+            'two-timeline', 'infographic', 'magazine', 'swiss-style'];
+        $bannerHeader = ['swiss-style'];
+
+        if (in_array($slug, $sidebarRight, true)) return 'sidebar-right';
+        if (in_array($slug, $singleColumn, true)) return 'single-column';
+        if (in_array($slug, $bannerHeader, true)) return 'banner-header';
+        return 'sidebar-left';
+    }
+}
+
+if (!function_exists('cvTemplateGenerateThumbnailSvg')) {
+    /**
+     * Generate an SVG thumbnail for a template based on its layout type and colors.
+     * Creates a miniature A4 representation showing the template's layout and color scheme.
+     * Returns the raw SVG string for inline use or caching.
+     */
+    function cvTemplateGenerateThumbnailSvg(array $template): string
+    {
+        $slug = $template['slug'] ?? '';
+        $name = $template['name'] ?? ucfirst($slug);
+        $color = $template['primary_color'] ?? '#6B7280';
+        $layout = $template['layout_type'] ?? cvTemplateGetLayoutType($slug);
+
+        // Parse color to hex (strip #)
+        $hexColor = ltrim($color, '#');
+        $isDark = function ($hex) {
+            $hex = ltrim($hex, '#');
+            if (strlen($hex) === 3) $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+            return ($r * 0.299 + $g * 0.587 + $b * 0.114) < 128;
+        };
+        $textColor = $isDark($hexColor) ? '#ffffff' : '#1e293b';
+
+        // SVG dimensions (A4 proportions, scaled for thumbnail)
+        $w = 140;
+        $h = 196;
+        $pad = 6;
+        $r = 6;
+        $innerW = $w - 2 * $pad;
+        $innerH = $h - 2 * $pad;
+
+        // Layout-specific geometry
+        switch ($layout) {
+            case 'sidebar-right':
+                $sideW = 30;
+                $mainX = $pad;
+                $mainW = $innerW - $sideW;
+                $sideX = $pad + $mainW;
+                break;
+            case 'single-column':
+                $headerH = 36;
+                $sideW = 0;
+                $mainX = $pad;
+                $mainW = $innerW;
+                $sideX = $pad;
+                break;
+            case 'banner-header':
+                $headerH = 28;
+                $sideW = 0;
+                $mainX = $pad;
+                $mainW = $innerW;
+                $sideX = $pad;
+                break;
+            default: // sidebar-left
+                $sideW = 30;
+                $mainX = $pad + $sideW;
+                $mainW = $innerW - $sideW;
+                $sideX = $pad;
+        }
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' . $w . '" height="' . $h . '" viewBox="0 0 ' . $w . ' ' . $h . '">';
+        $svg .= '<defs>';
+        $svg .= '<filter id="thumb-shadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.15"/></filter>';
+        $svg .= '<linearGradient id="thumb-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' . $color . '" stop-opacity="0.08"/><stop offset="100%" stop-color="' . $color . '" stop-opacity="0.02"/></linearGradient>';
+        $svg .= '</defs>';
+
+        // Card background
+        $svg .= '<rect x="' . $pad . '" y="' . $pad . '" width="' . $innerW . '" height="' . $innerH . '" rx="' . $r . '" fill="url(#thumb-bg)" stroke="#e2e8f0" stroke-width="0.8" filter="url(#thumb-shadow)"/>';
+
+        if ($layout === 'sidebar-left' || $layout === 'sidebar-right') {
+            // Sidebar
+            $svg .= '<rect x="' . $sideX . '" y="' . ($pad + 0.5) . '" width="' . $sideW . '" height="' . ($innerH - 1) . '" rx="' . ($layout === 'sidebar-left' ? ($r - 0.5) . ' 0 0 ' . ($r - 0.5) : '0 ' . ($r - 0.5) . ' ' . ($r - 0.5) . ' 0') . '" fill="' . $color . '"/>';
+            // Sidebar content lines
+            $lineY = $pad + 14;
+            for ($i = 0; $i < 6; $i++) {
+                $lineW = $sideW - 10;
+                $svg .= '<rect x="' . ($sideX + 5) . '" y="' . $lineY . '" width="' . $lineW . '" height="2" rx="1" fill="' . $textColor . '" opacity="0.25"/>';
+                $lineY += 8;
+            }
+            // Sidebar avatar circle
+            $svg .= '<circle cx="' . ($sideX + $sideW / 2) . '" cy="' . ($pad + 24) . '" r="7" fill="' . $textColor . '" opacity="0.15"/>';
+
+            // Main content area
+            $mainTop = $pad + 10;
+            // Title bar
+            $svg .= '<rect x="' . ($mainX + 4) . '" y="' . $mainTop . '" width="' . ($mainW - 20) . '" height="4" rx="2" fill="' . $color . '" opacity="0.4"/>';
+            $svg .= '<rect x="' . ($mainX + 4) . '" y="' . ($mainTop + 7) . '" width="' . ($mainW - 40) . '" height="2" rx="1" fill="' . $color . '" opacity="0.2"/>';
+            // Content text lines
+            $lineY = $mainTop + 16;
+            for ($i = 0; $i < 8; $i++) {
+                $lineW = $mainW - 10 - ($i === 3 ? 20 : ($i === 5 ? 14 : 0));
+                $svg .= '<rect x="' . ($mainX + 4) . '" y="' . $lineY . '" width="' . $lineW . '" height="2" rx="1" fill="#cbd5e1" opacity="0.6"/>';
+                $lineY += 6;
+            }
+            // Section separator
+            $svg .= '<rect x="' . ($mainX + 4) . '" y="' . ($lineY + 2) . '" width="' . ($mainW - 8) . '" height="0.5" rx="0.25" fill="#e2e8f0"/>';
+            // More content
+            $lineY += 7;
+            for ($i = 0; $i < 4; $i++) {
+                $lineW = $mainW - 10 - ($i === 1 ? 18 : 0);
+                $svg .= '<rect x="' . ($mainX + 4) . '" y="' . $lineY . '" width="' . $lineW . '" height="2" rx="1" fill="#cbd5e1" opacity="0.6"/>';
+                $lineY += 6;
+            }
+        } elseif ($layout === 'single-column' || $layout === 'banner-header') {
+            // Header area
+            $hdrH = ($layout === 'single-column') ? 36 : 28;
+            $svg .= '<rect x="' . ($pad + 0.5) . '" y="' . ($pad + 0.5) . '" width="' . ($innerW - 1) . '" height="' . $hdrH . '" rx="' . ($r - 0.5) . ' ' . ($r - 0.5) . ' 0 0" fill="' . $color . '"/>';
+            // Header text
+            $svg .= '<rect x="' . ($pad + 12) . '" y="' . ($pad + 10) . '" width="60" height="4" rx="2" fill="' . $textColor . '" opacity="0.6"/>';
+            $svg .= '<rect x="' . ($pad + 12) . '" y="' . ($pad + 17) . '" width="40" height="2" rx="1" fill="' . $textColor . '" opacity="0.35"/>';
+
+            // Content area (below header)
+            $mainTop = $pad + $hdrH + 8;
+            for ($i = 0; $i < 12; $i++) {
+                $lineW = $innerW - 16 - ($i === 2 ? 30 : ($i === 7 ? 20 : 0));
+                $svg .= '<rect x="' . ($pad + 8) . '" y="' . $mainTop . '" width="' . $lineW . '" height="2" rx="1" fill="#cbd5e1" opacity="0.6"/>';
+                $mainTop += 6;
+            }
+        }
+
+        // Template name badge at bottom
+        $nameColor = $isDark($hexColor) ? 'rgba(255,255,255,0.85)' : 'rgba(30,41,59,0.7)';
+        $svg .= '<rect x="' . ($pad + 2) . '" y="' . ($h - $pad - 16) . '" width="' . ($innerW - 4) . '" height="14" rx="3" fill="' . $color . '" opacity="0.15"/>';
+        $nameDisplay = htmlspecialchars(strlen($name) > 18 ? substr($name, 0, 16) . '..' : $name, ENT_QUOTES, 'UTF-8');
+        $svg .= '<text x="' . ($w / 2) . '" y="' . ($h - $pad - 6) . '" text-anchor="middle" font-family="system-ui,sans-serif" font-size="6" font-weight="600" fill="' . $nameColor . '">' . $nameDisplay . '</text>';
+
+        $svg .= '</svg>';
+        return $svg;
     }
 }
 

@@ -164,15 +164,13 @@ class CvRendererService
             ];
         }
 
-        // Professional summary
+        // Professional summary (always included so every template shows it by default)
         $summary = $profile['professional_summary'] ?? '';
-        if (!empty($summary)) {
-            $sections[] = [
-                'type' => 'summary',
-                'title' => 'Professional Summary',
-                'items' => [['content' => $summary]],
-            ];
-        }
+        $sections[] = [
+            'type' => 'summary',
+            'title' => 'Professional Summary',
+            'items' => [['content' => $summary]],
+        ];
 
         // Education
         $educations = $cvData['educations'] ?? [];

@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `cv_infos` (
     `social_links_json` JSON DEFAULT NULL COMMENT 'Social links entries',
     `custom_sections_json` JSON DEFAULT NULL COMMENT 'Custom section entries',
     `references_json` JSON DEFAULT NULL COMMENT 'Reference entries',
+    `summary_json` JSON DEFAULT NULL COMMENT 'Professional summary / career objective',
     `profile_photo` VARCHAR(500) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `view_count` INT(11) NOT NULL DEFAULT 0,
@@ -95,6 +96,7 @@ SQL);
         $this->ensureColumnExists('cv_infos', 'social_links_json', "JSON DEFAULT NULL COMMENT 'Social links entries'");
         $this->ensureColumnExists('cv_infos', 'custom_sections_json', "JSON DEFAULT NULL COMMENT 'Custom section entries'");
         $this->ensureColumnExists('cv_infos', 'references_json', "JSON DEFAULT NULL COMMENT 'Reference entries'");
+        $this->ensureColumnExists('cv_infos', 'summary_json', "JSON DEFAULT NULL COMMENT 'Professional summary / career objective'");
     }
 
     private function runSql(string $sql): void

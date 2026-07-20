@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>David Kim - Senior Mechanical Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif']},colors:{eng:{50:'#EFF6FF',100:'#DBEAFE',200:'#BFDBFE',300:'#93C5FD',400:'#60A5FA',500:'#3B82F6',600:'#2563EB',700:'#1D4ED8',800:'#1E40AF',900:'#1E3A8A',950:'#0B1E4A'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .blueprint-grid { background-image: linear-gradient(#BFDBFE 1px, transparent 1px), linear-gradient(90deg, #BFDBFE 1px, transparent 1px); background-size: 20px 20px; }
+        .eng-border-bottom { border-bottom: 3px double #1E40AF; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <div class="eng-950 text-white px-10 py-6 flex items-center gap-6">
+        <div class="w-20 h-20 rounded border-2 border-eng-400 flex items-center justify-center flex-shrink-0">
+            <svg class="w-12 h-12 text-eng-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold">David Kim, PE</h1>
+            <p class="text-eng-300 text-base">Senior Mechanical Engineer</p>
+            <div class="flex gap-3 mt-1.5 text-xs text-eng-200">
+                <span>david.kim@engfirm.com</span>
+                <span>+1 (555) 890-1234</span>
+                <span>Chicago, IL</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-8 blueprint-grid">
+        <section class="mb-6 bg-white/90 p-4 rounded border border-eng-200">
+            <h2 class="text-xs font-bold text-eng-800 uppercase tracking-widest mb-2">Professional Summary</h2>
+            <p class="text-sm text-gray-700 leading-relaxed">Licensed Mechanical Engineer with 12+ years of experience in product design, thermal systems, and project management. Proven track record of delivering innovative engineering solutions for Fortune 500 manufacturing clients. Six Sigma Black Belt.</p>
+        </section>
+
+        <div class="flex gap-8">
+            <main class="flex-1">
+                <section class="mb-6 bg-white/90 p-4 rounded border border-eng-200">
+                    <h2 class="text-xs font-bold text-eng-800 uppercase tracking-widest mb-4">Experience</h2>
+                    <!-- START EXPERIENCE -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Senior Mechanical Engineer</h3>
+                                <p class="text-sm text-eng-600 font-medium">Advanced Manufacturing Corp.</p>
+                            </div>
+                            <span class="text-xs text-gray-500">2018-Present</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Lead design team of 8 engineers. Developed thermal management systems reducing energy consumption by 22%. Managed $5M+ R&D budget.</p>
+                    </div>
+                    <!-- END EXPERIENCE -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Mechanical Engineer</h3>
+                                <p class="text-sm text-eng-600 font-medium">TechIndustries Inc.</p>
+                            </div>
+                            <span class="text-xs text-gray-500">2013-2018</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Designed precision mechanical components for aerospace applications. Reduced production costs by 15% through design optimization.</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Junior Engineer</h3>
+                                <p class="text-sm text-eng-600 font-medium">Precision Parts Co.</p>
+                            </div>
+                            <span class="text-xs text-gray-500">2011-2013</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Assisted senior engineers with CAD modeling, FEA analysis, and prototype testing for automotive components.</p>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="w-48 flex-shrink-0">
+                <div class="bg-white/90 p-4 rounded border border-eng-200 mb-4">
+                    <h3 class="text-xs font-bold text-eng-800 uppercase tracking-widest mb-3">Skills</h3>
+                    <div class="space-y-2">
+                        <div><div class="flex justify-between text-xs"><span>CAD/SolidWorks</span><span>95%</span></div><div class="h-1 bg-eng-200"><div class="h-1 bg-eng-600" style="width:95%"></div></div></div>
+                        <div><div class="flex justify-between text-xs"><span>FEA Analysis</span><span>90%</span></div><div class="h-1 bg-eng-200"><div class="h-1 bg-eng-600" style="width:90%"></div></div></div>
+                        <div><div class="flex justify-between text-xs"><span>Project Mgmt</span><span>88%</span></div><div class="h-1 bg-eng-200"><div class="h-1 bg-eng-600" style="width:88%"></div></div></div>
+                        <div><div class="flex justify-between text-xs"><span>MATLAB</span><span>85%</span></div><div class="h-1 bg-eng-200"><div class="h-1 bg-eng-600" style="width:85%"></div></div></div>
+                    </div>
+                </div>
+                <div class="bg-white/90 p-4 rounded border border-eng-200">
+                    <h3 class="text-xs font-bold text-eng-800 uppercase tracking-widest mb-3">Licenses</h3>
+                    <div class="text-xs text-gray-600">
+                        <p class="font-medium">Professional Engineer</p>
+                        <p>IL License #PE-87654</p>
+                        <p class="font-medium mt-2">Six Sigma Black Belt</p>
+                        <p>ASQ Certified</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <section class="mt-6 bg-white/90 p-4 rounded border border-eng-200">
+            <h2 class="text-xs font-bold text-eng-800 uppercase tracking-widest mb-4">Education</h2>
+            <!-- START EDUCATION -->
+            <div class="mb-2">
+                <h3 class="font-bold text-gray-900">MS Mechanical Engineering</h3>
+                <p class="text-sm text-gray-600">Northwestern University, 2011</p>
+            </div>
+            <!-- END EDUCATION -->
+            <div>
+                <h3 class="font-bold text-gray-900">BS Mechanical Engineering</h3>
+                <p class="text-sm text-gray-600">University of Illinois at Urbana-Champaign, 2009</p>
+                <p class="text-xs text-gray-500">Tau Beta Pi Engineering Honor Society</p>
+            </div>
+        </section>
+
+        <footer class="mt-4 text-xs text-eng-400 no-print">References available · david.kim@engfirm.com</footer>
+    </div>
+</div>
+
+</body>
+</html>

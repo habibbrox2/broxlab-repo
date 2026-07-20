@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Morgan - Senior Software Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], display: ['Cormorant Garamond', 'Georgia', 'serif'] },
+                    colors: { luxury: { 400: '#D4AF37', 500: '#C5A028', 600: '#B08D22', 100: '#F9F1D8', 50: '#FDFBF5' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .luxury-bg { background: #FDFBF5; }
+        .luxury-border { border: 1px solid rgba(212, 175, 55, 0.25); }
+        .gold-divider { height: 1px; background: linear-gradient(90deg, transparent, #D4AF37, transparent); }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-luxury-50 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <!-- Luxury Header -->
+    <header class="relative px-10 pt-10 pb-8 text-center overflow-hidden">
+        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-luxury-400 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-luxury-400 to-transparent"></div>
+        <div class="w-20 h-20 rounded-full border-2 border-luxury-400 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-12 h-12 text-luxury-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-display font-bold text-gray-900 tracking-wide">Alex Morgan</h1>
+        <p class="text-luxury-600 font-display text-lg mt-1 italic">Senior Software Engineer</p>
+        <div class="flex justify-center gap-6 mt-4 text-xs text-gray-500">
+            <a href="#" class="hover:text-luxury-600 transition-colors">alex.morgan@email.com</a>
+            <span class="text-luxury-300">|</span>
+            <span>+1 (555) 123-4567</span>
+            <span class="text-luxury-300">|</span>
+            <span>San Francisco, CA</span>
+        </div>
+    </header>
+
+    <div class="gold-divider mx-10"></div>
+
+    <div class="px-10 py-8">
+        <section class="mb-8">
+            <h2 class="text-sm font-bold text-luxury-700 uppercase tracking-widest mb-3 font-display flex items-center gap-2">
+                <span class="w-6 h-px bg-luxury-400"></span>Professional Summary
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed font-sans">Results-driven Senior Software Engineer with 7+ years of experience designing and implementing scalable web applications. Expert in modern JavaScript ecosystems, cloud architecture, and agile methodologies. Proven track record of leading cross-functional teams to deliver high-impact solutions.</p>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-sm font-bold text-luxury-700 uppercase tracking-widest mb-4 font-display flex items-center gap-2">
+                <span class="w-6 h-px bg-luxury-400"></span>Work Experience
+            </h2>
+            <!-- START EXPERIENCE -->
+            <div class="mb-5 pl-5 border-l border-luxury-300">
+                <div class="absolute -left-[5px] top-1.5 w-2 h-2 bg-luxury-400 rounded-full"></div>
+                <div class="flex justify-between items-start mb-1">
+                    <div>
+                        <h3 class="font-bold text-gray-900 font-display">Senior Software Engineer</h3>
+                        <p class="text-luxury-600 font-sans text-sm font-medium">TechCorp Solutions</p>
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">2021 - Present</span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mt-2">Lead engineer for cloud-native platform serving 2M+ users. Architected microservices migration reducing latency by 35%. Mentored 4 junior developers.</p>
+            </div>
+            <!-- END EXPERIENCE -->
+            <div class="mb-5 pl-5 border-l border-luxury-300">
+                <div class="absolute -left-[5px] top-1.5 w-2 h-2 bg-luxury-400 rounded-full"></div>
+                <div class="flex justify-between items-start mb-1">
+                    <div>
+                        <h3 class="font-bold text-gray-900 font-display">Software Engineer</h3>
+                        <p class="text-luxury-600 font-sans text-sm font-medium">Digital Innovations Inc.</p>
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">2018 - 2021</span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mt-2">Developed customer-facing SaaS platform using React and Node.js. Implemented CI/CD pipelines.</p>
+            </div>
+            <div class="pl-5 border-l border-luxury-300">
+                <div class="absolute -left-[5px] top-1.5 w-2 h-2 bg-luxury-400 rounded-full"></div>
+                <div class="flex justify-between items-start mb-1">
+                    <div>
+                        <h3 class="font-bold text-gray-900 font-display">Junior Developer</h3>
+                        <p class="text-luxury-600 font-sans text-sm font-medium">StartupXYZ</p>
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">2016 - 2018</span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mt-2">Built responsive web applications and RESTful APIs. Collaborated with UX team.</p>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-sm font-bold text-luxury-700 uppercase tracking-widest mb-4 font-display flex items-center gap-2">
+                <span class="w-6 h-px bg-luxury-400"></span>Education
+            </h2>
+            <!-- START EDUCATION -->
+            <div class="mb-4 luxury-border rounded-lg p-4 bg-luxury-50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-gray-900 font-display">Master of Science in Computer Science</h3>
+                        <p class="text-sm text-gray-600 font-sans">Stanford University</p>
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">2014 - 2016</span>
+                </div>
+                <p class="text-sm text-gray-500 mt-1 font-sans">GPA: 3.9/4.0 | Focus: Distributed Systems</p>
+            </div>
+            <!-- END EDUCATION -->
+            <div class="luxury-border rounded-lg p-4 bg-luxury-50">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-gray-900 font-display">Bachelor of Science in Software Engineering</h3>
+                        <p class="text-sm text-gray-600 font-sans">University of California, Berkeley</p>
+                    </div>
+                    <span class="text-xs text-gray-500 font-medium">2010 - 2014</span>
+                </div>
+                <p class="text-sm text-gray-500 mt-1 font-sans">GPA: 3.8/4.0 | Magna Cum Laude</p>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-sm font-bold text-luxury-700 uppercase tracking-widest mb-4 font-display flex items-center gap-2">
+                <span class="w-6 h-px bg-luxury-400"></span>Key Projects
+            </h2>
+            <!-- START PROJECTS -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="luxury-border rounded-lg p-4 bg-luxury-50">
+                    <h4 class="font-bold text-sm text-gray-900 font-display">CloudSync Platform</h4>
+                    <p class="text-xs text-gray-500 mt-1 font-sans">Real-time data synchronization across microservices</p>
+                    <span class="text-xs text-luxury-600 font-semibold mt-2 inline-block font-sans">AWS, Kafka, Go</span>
+                </div>
+                <div class="luxury-border rounded-lg p-4 bg-luxury-50">
+                    <h4 class="font-bold text-sm text-gray-900 font-display">DevMetrics Dashboard</h4>
+                    <p class="text-xs text-gray-500 mt-1 font-sans">Engineering analytics platform with predictive insights</p>
+                    <span class="text-xs text-luxury-600 font-semibold mt-2 inline-block font-sans">React, D3.js, Python</span>
+                </div>
+            </div>
+            <!-- END PROJECTS -->
+        </section>
+
+        <footer class="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between items-center no-print">
+            <span>Reference available upon request</span>
+            <span>Alex Morgan | alex.morgan@email.com</span>
+        </footer>
+    </div>
+</div>
+
+</body>
+</html>

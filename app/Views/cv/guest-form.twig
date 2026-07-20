@@ -19,19 +19,6 @@
       </div>
     </div>
 
-    {# Job Position Selector #}
-    <div class="mb-6">
-      <select id="bld-job-title" data-action="select-job"
-              class="w-full px-5 py-3.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-base font-medium cursor-pointer appearance-none transition-all duration-300 hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
-              style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2720%27 height=%2720%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23334155%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27%3E%3C/polyline%3E%3C/svg%3E');
-                     background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.25rem; padding-right: 3rem;">
-        <option value="">Select your job title for suggestions...</option>
-        {% for pos in job_positions %}
-        <option value="{{ pos.slug }}">{{ pos.title }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
     {# Progress Bar #}
     <div class="bg-white rounded-2xl p-6 mb-6 border border-slate-200 shadow-sm">
       <div class="flex justify-between items-center mb-3.5">
@@ -101,7 +88,6 @@
 window.__bldData = {{ builder_state|json_encode|raw }};
 window.__bldCvId = {{ cv_id|raw }};
 window.__bldCsrf = '{{ csrf_token|default('') }}';
-window.__bldJobPositions = {{ job_positions|json_encode|raw }};
 window.__bldTemplates = ['minimal'];
 window.__bldSelectedTemplate = 'minimal';
 window.__bldProfilePhoto = '';

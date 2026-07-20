@@ -25,6 +25,7 @@ class CvModel
         'social_links' => 'social_links_json',
         'custom_sections' => 'custom_sections_json',
         'references' => 'references_json',
+        'summary' => 'summary_json',
     ];
 
     private CvPersonalInfoModel $piModel;
@@ -499,6 +500,7 @@ class CvPersonalInfoModel
             'social_links_json',
             'custom_sections_json',
             'references_json',
+            'summary_json',
         ];
         $values = [];
         $params = [$userId];
@@ -608,6 +610,7 @@ class CvPersonalInfoModel
             'social_links_json',
             'custom_sections_json',
             'references_json',
+            'summary_json',
         ];
 
         $sets = [];

@@ -1,0 +1,468 @@
+{# app/Views/cv/live-builder.twig — Live CV Builder (Two-Column, Tailwind + Lucide) #}
+{% extends 'layout.twig' %}
+
+{% block title %}{{ page_title|default('Live CV Builder') }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+/* ── Animations, keyframes & JS-rendered element styles (JS-dependent, not replaceable by Tailwind) ── */
+@keyframes tagIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes previewFadeIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes lbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── JS-dependent class states (visual only) ── */
+.lb-section-toggle.collapsed { transform: rotate(-90deg); }
+.lb-section-body.collapsed { max-height: 0 !important; opacity: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+.lb-tpl-none.show { display: block !important; }
+.lb-tpl-form-card.hidden { display: none !important; }
+.lb-preview-frame.fade-in { animation: previewFadeIn 0.4s cubic-bezier(0.16,1,0.3,1); }
+.lb-save-indicator.saving { color: #f59e0b !important; }
+.lb-save-indicator.saved { color: #10b981 !important; }
+.lb-toolbar-btn-zoom-fit.active { background: #eef2ff !important; border-color: #a5b4fc !important; color: #4f46e5 !important; }
+
+/* ── Live Preview Updating Indicator ── */
+.lb-preview-canvas.lb-updating::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #6366f1, #8b5cf6, transparent);
+  background-size: 200% 100%;
+  animation: lbUpdatingSlide 1.2s ease-in-out infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+@keyframes lbUpdatingSlide {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.lb-preview-canvas.lb-updating { position: relative; }
+
+/* ── Template card internal elements (JS injects HTML with these classes) ── */
+.lb-tpl-card-pattern {
+  position: absolute; inset: 0; opacity: 0.08;
+  background-image: linear-gradient(45deg, currentColor 25%, transparent 25%), linear-gradient(-45deg, currentColor 25%, transparent 25%), linear-gradient(45deg, transparent 75%, currentColor 75%), linear-gradient(-45deg, transparent 75%, currentColor 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  pointer-events: none;
+}
+.lb-layout-svg { width: 100%; height: 100%; }
+
+.lb-tpl-form-card-thumb::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.4));
+  pointer-events: none;
+}
+.lb-tpl-form-card-thumb { height: 70px; position: relative; display: flex; align-items: center; justify-content: center; color: white; overflow: hidden; }
+.lb-tpl-form-card-name { position: absolute; bottom: 0.2rem; left: 0.35rem; right: 0.35rem; z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-tpl-form-card-badge { position: absolute; top: 0.2rem; right: 0.2rem; z-index: 1; }
+.lb-tpl-form-card-layout { position: absolute; top: 0.35rem; right: 0.25rem; width: 20px; height: 14px; z-index: 1; opacity: 0.45; }
+
+/* ── Spinner (JS injects) ── */
+.lb-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1; border-right-color: #a5b4fc;
+  border-radius: 50%;
+  animation: spin 0.8s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+
+/* ── JS state toggles: active pills & selected cards ── */
+.lb-tpl-cat-pill.active {
+  background: #6366f1 !important;
+  color: white !important;
+  border-color: #6366f1 !important;
+}
+.lb-tpl-form-card.selected {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.2) !important;
+}
+
+/* ── Scrollbar styling ── */
+.lb-form-panel::-webkit-scrollbar { width: 5px; }
+.lb-form-panel::-webkit-scrollbar-track { background: transparent; }
+.lb-form-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.lb-form-panel::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.lb-preview-canvas::-webkit-scrollbar { width: 6px; }
+.lb-preview-canvas::-webkit-scrollbar-track { background: transparent; }
+.lb-preview-canvas::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.lb-tpl-form-grid::-webkit-scrollbar { width: 3px; }
+.lb-tpl-form-grid::-webkit-scrollbar-track { background: transparent; }
+.lb-tpl-form-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .lb-root { flex-direction: column !important; height: auto !important; }
+  .lb-form-panel { width: 100% !important; min-width: unset !important; max-width: unset !important; border-right: none !important; border-bottom-width: 1px !important; max-height: 60vh !important; }
+  .lb-preview-panel { min-height: 500px !important; }
+  .lb-preview-frame { width: 100% !important; min-height: auto !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lb-root flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50" id="lb-app">
+
+  {# ═══ LEFT: Form Panel ═══ #}
+  <div class="lb-form-panel w-[42%] min-w-[420px] max-w-[560px] overflow-y-auto border-r border-slate-200 bg-white shadow-sm">
+
+    {# ── Sticky Header ── #}
+    <div class="lb-form-header sticky top-0 z-20 bg-gradient-to-br from-indigo-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200 px-5 py-4">
+      <h1 class="flex items-center gap-2 text-lg font-bold text-slate-900 m-0">
+        <i class="lucide lucide-file-pen-line text-indigo-600" style="width:1.25em;height:1.25em"></i>
+        CV Builder
+        <span class="lb-badge text-[0.55rem] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-gradient-to-r from-indigo-500 to-violet-600 text-white">Live</span>
+      </h1>
+      <p class="flex items-center gap-1 mt-1 text-xs text-slate-400">
+        <i class="lucide lucide-eye" style="width:0.85em;height:0.85em"></i>
+        Preview updates live
+        <span class="inline-flex items-center gap-1 ml-2 text-[0.6rem] text-slate-400">
+          <kbd class="px-1 py-px rounded bg-slate-100 border border-slate-200 font-sans text-[0.55rem] font-semibold text-slate-500">⌘</kbd>
+          +
+          <kbd class="px-1 py-px rounded bg-slate-100 border border-slate-200 font-sans text-[0.55rem] font-semibold text-slate-500">S</kbd>
+          <span>to save</span>
+        </span>
+      </p>
+    </div>
+
+    {# ── Form Body ── #}
+    <div class="lb-form-body p-5">
+      <form id="lb-form" onsubmit="return false;">
+
+        {# ── Personal Info ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-user" style="width:0.9em;height:0.9em"></i>
+            Personal Info
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60 group-hover:opacity-100">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div class="lb-field mb-3">
+              <label for="lb-full-name" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">Full Name</label>
+              <input type="text" id="lb-full-name" data-bld="full_name" placeholder="e.g. John Doe" value="{{ cv.full_name ?? builder_data.personal.full_name ?? '' }}"
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+            </div>
+            <div class="lb-row grid grid-cols-2 gap-3">
+              <div class="lb-field mb-3">
+                <label for="lb-job-title" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">Job Title</label>
+                <input type="text" id="lb-job-title" data-bld="job_title" placeholder="e.g. Senior Developer" value="{{ cv.job_title ?? builder_data.personal.job_title ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+              <div class="lb-field mb-3">
+                <label for="lb-email" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">Email</label>
+                <input type="email" id="lb-email" data-bld="email" placeholder="john@example.com" value="{{ cv.email ?? builder_data.personal.email ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+            </div>
+            <div class="lb-row grid grid-cols-2 gap-3">
+              <div class="lb-field mb-3">
+                <label for="lb-phone" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-phone inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Phone
+                </label>
+                <input type="tel" id="lb-phone" data-bld="phone" placeholder="+1 (555) 000-0000" value="{{ cv.phone ?? builder_data.personal.phone ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+              <div class="lb-field mb-3">
+                <label for="lb-address" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-map-pin inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Address
+                </label>
+                <input type="text" id="lb-address" data-bld="address" placeholder="City, Country" value="{{ cv.address ?? builder_data.personal.address ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+            </div>
+            <div class="lb-row grid grid-cols-2 gap-3">
+              <div class="lb-field mb-3">
+                <label for="lb-website" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-globe inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Website
+                </label>
+                <input type="url" id="lb-website" data-bld="website" placeholder="example.com" value="{{ builder_data.personal.website ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+              <div class="lb-field mb-3">
+                <label for="lb-linkedin" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-linkedin inline-flex mr-1" style="width:0.8em;height:0.8em"></i>LinkedIn
+                </label>
+                <input type="url" id="lb-linkedin" data-bld="linkedin" placeholder="linkedin.com/in/..." value="{{ builder_data.personal.linkedin ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+            </div>
+            <div class="lb-row grid grid-cols-2 gap-3">
+              <div class="lb-field mb-3">
+                <label for="lb-github" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-github inline-flex mr-1" style="width:0.8em;height:0.8em"></i>GitHub
+                </label>
+                <input type="url" id="lb-github" data-bld="github" placeholder="github.com/..." value="{{ builder_data.personal.github ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+              <div class="lb-field mb-3">
+                <label for="lb-portfolio" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                  <i class="lucide lucide-briefcase inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Portfolio
+                </label>
+                <input type="url" id="lb-portfolio" data-bld="portfolio" placeholder="my.portfolio.com" value="{{ builder_data.personal.portfolio ?? '' }}"
+                  class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Professional Summary ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-message-square-quote" style="width:0.9em;height:0.9em"></i>
+            Professional Summary
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div class="lb-field mb-3">
+              <label for="lb-summary" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">Summary</label>
+              <textarea id="lb-summary" data-bld="summary" rows="4" placeholder="Brief professional summary..."
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans min-h-[60px] resize-y leading-relaxed">{{ builder_data.summary.professional_summary ?? builder_data.summary.text ?? '' }}</textarea>
+            </div>
+            <div class="lb-field mb-3">
+              <label for="lb-objective" class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">Career Objective</label>
+              <textarea id="lb-objective" data-bld="objective" rows="2" placeholder="Optional career objective..."
+                class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-800 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans min-h-[60px] resize-y leading-relaxed">{{ builder_data.summary.career_objective ?? '' }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        {# ── Experience ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]" id="lb-experience-section">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-briefcase" style="width:0.9em;height:0.9em"></i>
+            Experience
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div id="lb-experience-list"></div>
+            <button type="button" class="lb-add-btn flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg border-2 border-dashed border-indigo-300 bg-transparent text-indigo-500 text-xs font-semibold cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:border-indigo-400 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(99,102,241,0.1)] active:translate-y-0 mt-1" data-action="add-experience">
+              <i class="lucide lucide-plus" style="width:1em;height:1em"></i>
+              Add Experience
+            </button>
+          </div>
+        </div>
+
+        {# ── Education ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]" id="lb-education-section">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-graduation-cap" style="width:0.9em;height:0.9em"></i>
+            Education
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div id="lb-education-list"></div>
+            <button type="button" class="lb-add-btn flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg border-2 border-dashed border-indigo-300 bg-transparent text-indigo-500 text-xs font-semibold cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:border-indigo-400 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(99,102,241,0.1)] active:translate-y-0 mt-1" data-action="add-education">
+              <i class="lucide lucide-plus" style="width:1em;height:1em"></i>
+              Add Education
+            </button>
+          </div>
+        </div>
+
+        {# ── Skills ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-wand-sparkles" style="width:0.9em;height:0.9em"></i>
+            Skills
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div class="lb-field mb-3">
+              <label class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                <i class="lucide lucide-code inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Technical Skills
+                <span class="text-slate-400 font-normal ml-1">(press Enter to add)</span>
+              </label>
+              <div class="lb-tags flex flex-wrap gap-1.5 mt-1 min-h-[2rem]" id="lb-technical-skills"></div>
+              <input type="text" class="lb-tag-input mt-1.5 w-full px-3 py-2 text-xs rounded-full border-2 border-dashed border-slate-300 bg-transparent min-w-[100px] transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:border-solid focus:bg-white placeholder:text-slate-400" id="lb-technical-input" placeholder="Type a skill and press Enter...">
+            </div>
+            <div class="lb-field mb-3">
+              <label class="block text-xs font-semibold text-slate-700 mb-1 tracking-tight">
+                <i class="lucide lucide-heart inline-flex mr-1" style="width:0.8em;height:0.8em"></i>Soft Skills
+              </label>
+              <div class="lb-tags flex flex-wrap gap-1.5 mt-1 min-h-[2rem]" id="lb-soft-skills"></div>
+              <input type="text" class="lb-tag-input mt-1.5 w-full px-3 py-2 text-xs rounded-full border-2 border-dashed border-slate-300 bg-transparent min-w-[100px] transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:border-solid focus:bg-white placeholder:text-slate-400" id="lb-soft-input" placeholder="Type a skill and press Enter...">
+            </div>
+          </div>
+        </div>
+
+        {# ── Languages ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-languages" style="width:0.9em;height:0.9em"></i>
+            Languages
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div class="lb-field mb-3">
+              <div class="lb-tags flex flex-wrap gap-1.5 mt-1 min-h-[2rem]" id="lb-languages-list"></div>
+              <div class="flex items-center gap-2 mt-2">
+                <input type="text" class="lb-tag-input flex-[2] px-3 py-2 text-xs rounded-full border-2 border-dashed border-slate-300 bg-transparent transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:border-solid focus:bg-white placeholder:text-slate-400" id="lb-language-input" placeholder="Language...">
+                <select id="lb-proficiency-select" class="flex-1 px-2.5 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-150">
+                  <option value="Native">Native</option>
+                  <option value="Fluent" selected>Fluent</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Basic">Basic</option>
+                </select>
+                <button type="button" class="lb-toolbar-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold cursor-pointer transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 whitespace-nowrap" id="lb-add-language-btn">
+                  <i class="lucide lucide-plus" style="width:0.85em;height:0.85em"></i>
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ── Projects ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]" id="lb-projects-section">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-folder-kanban" style="width:0.9em;height:0.9em"></i>
+            Projects
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div id="lb-projects-list"></div>
+            <button type="button" class="lb-add-btn flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg border-2 border-dashed border-indigo-300 bg-transparent text-indigo-500 text-xs font-semibold cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:border-indigo-400 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(99,102,241,0.1)] active:translate-y-0 mt-1" data-action="add-project">
+              <i class="lucide lucide-plus" style="width:1em;height:1em"></i>
+              Add Project
+            </button>
+          </div>
+        </div>
+
+        {# ── Certificates ── #}
+        <div class="lb-section mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]" id="lb-certificates-section">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-certificate" style="width:0.9em;height:0.9em"></i>
+            Certificates
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-hidden max-h-[2000px] opacity-100">
+            <div id="lb-certificates-list"></div>
+            <button type="button" class="lb-add-btn flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg border-2 border-dashed border-indigo-300 bg-transparent text-indigo-500 text-xs font-semibold cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:border-indigo-400 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(99,102,241,0.1)] active:translate-y-0 mt-1" data-action="add-certificate">
+              <i class="lucide lucide-plus" style="width:1em;height:1em"></i>
+              Add Certificate
+            </button>
+          </div>
+        </div>
+
+        {# ── Template Selection Grid ── #}
+        <div class="lb-section lb-section-template mb-5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-indigo-50/30 px-4 pt-3.5 pb-2 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(99,102,241,0.06)]" id="lb-template-section">
+          <div class="lb-section-title flex items-center gap-1.5 text-[0.68rem] font-bold uppercase tracking-widest text-indigo-500 pb-2 mb-3.5 border-b-2 border-indigo-100 cursor-pointer select-none transition-colors duration-200 hover:text-indigo-600" data-toggle-section>
+            <i class="lucide lucide-layout-dashboard" style="width:0.9em;height:0.9em"></i>
+            Choose Template
+            <span class="lb-section-toggle ml-auto text-[0.55rem] text-indigo-300 transition-transform duration-200 opacity-60">▼</span>
+          </div>
+          <div class="lb-section-body transition-all duration-300 ease-out overflow-visible max-h-none">
+            <div class="lb-tpl-search-mini mb-3">
+              <div class="relative">
+                <i class="lucide lucide-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" style="width:0.85em;height:0.85em"></i>
+                <input type="text" class="lb-tpl-search-input w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:bg-white placeholder:text-slate-400 mb-2" id="lb-form-tpl-search" placeholder="Search templates..." autocomplete="off">
+              </div>
+              <div class="lb-tpl-cats-mini flex gap-1 overflow-x-auto scrollbar-none pb-0.5" id="lb-form-tpl-cats">
+                <button type="button" class="lb-tpl-cat-pill flex-shrink-0 px-2.5 py-1 rounded-full border border-slate-200 bg-white text-[0.65rem] font-semibold text-slate-500 cursor-pointer transition-all duration-150 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 active:scale-95 capitalize" data-cat="all">All</button>
+                {% for cat in categories|default([]) %}
+                <button type="button" class="lb-tpl-cat-pill flex-shrink-0 px-2.5 py-1 rounded-full border border-slate-200 bg-white text-[0.65rem] font-semibold text-slate-500 cursor-pointer transition-all duration-150 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 active:scale-95 capitalize" data-cat="{{ cat|lower|e('html_attr') }}">{{ cat }}</button>
+                {% endfor %}
+              </div>
+            </div>
+            {# JS populates lb-tpl-form-grid #}
+            <div class="lb-tpl-form-grid grid grid-cols-3 gap-1.5 max-h-[420px] overflow-y-auto py-0.5" id="lb-form-tpl-grid"></div>
+            <div class="lb-tpl-none hidden text-center py-8 text-slate-400 text-xs col-span-full" id="lb-form-tpl-none">
+              <i class="lucide lucide-search-x mb-2" style="width:1.5em;height:1.5em"></i>
+              <p>No templates match</p>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {# ═══ RIGHT: Preview Panel ═══ #}
+  <div class="lb-preview-panel flex-1 flex flex-col bg-gradient-to-br from-indigo-50/70 via-slate-50 to-slate-100 overflow-hidden relative">
+
+    {# ── Preview Toolbar (NOW OUTSIDE canvas — fixed) ── #}
+    <div class="lb-preview-toolbar flex items-center gap-2 px-5 py-2.5 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 flex-shrink-0 flex-wrap z-10 shadow-sm">
+      <span class="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-400 mr-1">
+        <i class="lucide lucide-monitor mr-1" style="width:0.85em;height:0.85em"></i>Preview
+      </span>
+
+      <div class="lb-toolbar-divider w-px h-5 bg-slate-200 flex-shrink-0"></div>
+
+      <div class="lb-zoom-controls flex items-center gap-px px-1.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+        <button type="button" data-action="zoom-out" title="Zoom Out"
+          class="w-7 h-7 flex items-center justify-center rounded-md border-0 bg-transparent text-slate-500 cursor-pointer transition-all duration-150 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95">
+          <i class="lucide lucide-zoom-out" style="width:1em;height:1em"></i>
+        </button>
+        <span class="lb-zoom-label min-w-[42px] text-center text-[0.7rem] font-bold text-indigo-600 tabular-nums cursor-pointer px-1 rounded transition-all duration-150 hover:bg-indigo-50 select-none active:scale-95"
+          id="lb-zoom-label"
+          title="Click to cycle zoom presets (Fit Page → Fit Width → 100% → 75% → 50%)">Fit Page</span>
+        <button type="button" data-action="zoom-in" title="Zoom In"
+          class="w-7 h-7 flex items-center justify-center rounded-md border-0 bg-transparent text-slate-500 cursor-pointer transition-all duration-150 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95">
+          <i class="lucide lucide-zoom-in" style="width:1em;height:1em"></i>
+        </button>
+      </div>
+
+      <button type="button" class="lb-toolbar-btn lb-toolbar-btn-zoom-fit active inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 text-[0.7rem] font-semibold cursor-pointer transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 active:scale-95" data-action="zoom-fit" title="Fit to page">
+        <i class="lucide lucide-maximize" style="width:0.9em;height:0.9em"></i>
+        Fit
+      </button>
+
+      <button type="button" class="lb-toolbar-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 text-[0.7rem] font-semibold cursor-pointer transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 active:scale-95" data-action="reset-zoom" title="Reset to Fit Page">
+        <i class="lucide lucide-rotate-ccw" style="width:0.9em;height:0.9em"></i>
+      </button>
+
+      <div class="lb-toolbar-divider w-px h-5 bg-slate-200 flex-shrink-0"></div>
+
+      <button type="button" class="lb-toolbar-btn lb-toolbar-btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-0 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[0.7rem] font-semibold cursor-pointer transition-all duration-150 hover:from-indigo-600 hover:to-violet-700 active:scale-95 shadow-[0_1px_3px_rgba(99,102,241,0.25)] hover:shadow-[0_2px_6px_rgba(99,102,241,0.3)]" data-action="export-pdf" title="Download as PDF">
+        <i class="lucide lucide-file-down" style="width:0.9em;height:0.9em"></i>
+        PDF
+      </button>
+
+      <span class="lb-save-indicator ml-auto text-[0.7rem] text-slate-400 inline-flex items-center gap-1.5 transition-colors duration-200" id="lb-save-indicator">
+        <i class="lucide lucide-check-circle" style="width:0.8em;height:0.8em"></i>
+        Ready
+      </span>
+    </div>
+
+    {# ── Preview Canvas ── #}
+    <div class="lb-preview-canvas flex-1 overflow-auto px-4 py-8 flex items-start justify-center relative bg-[radial-gradient(circle_at_1px_1px,rgba(99,102,241,0.06)_1px,transparent_0)] bg-[length:20px_20px]" id="lb-preview-canvas">
+
+      {# ── Loading State ── #}
+      <div class="lb-preview-loading flex flex-col items-center justify-center gap-5 text-slate-400 text-xs min-h-[300px]" id="lb-preview-loading">
+        <div class="lb-spinner"></div>
+        <span class="text-slate-400 animate-pulse">Loading preview...</span>
+      </div>
+
+      {# ── Preview Iframe ── #}
+      <iframe class="lb-preview-frame w-[210mm] min-h-[297mm] bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] border-0 origin-top-center transition-transform duration-200 ease-out rounded-sm overflow-hidden hover:shadow-[0_8px_28px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.02)]"
+        id="lb-preview-frame"
+        sandbox="allow-scripts allow-same-origin"
+        style="display:none;"></iframe>
+
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/assets/js/dist/cv-live-builder.js?v={{ random() }}"></script>
+<script>
+window.__lbData = {{ builder_data|json_encode|raw }};
+window.__lbCvId = {{ cv_id|default('null')|raw }};
+window.__lbCsrf = '{{ csrf_token|default('') }}';
+window.__lbTemplates = {{ templates|json_encode|raw }};
+window.__lbSelectedTemplate = '{{ selected_template|default('modern-blue') }}';
+window.__lbPreviewUrl = '{{ preview_api_url|default('/api/cv/live-preview') }}';
+window.__lbPdfUrl = '{{ pdf_export_url|default('') }}';
+window.__lbGuestMode = {{ is_guest ? 'true' : 'false' }};
+</script>
+{% endblock %}

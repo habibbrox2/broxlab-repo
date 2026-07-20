@@ -647,20 +647,6 @@
     <span class="mkt-ai-badge"><i class="lucide lucide-bot" style="width:1em;height:1em;"></i> Powered by AI</span>
   </div>
 
-  <!-- ─── QUICK START ─── -->
-  {% if job_positions is defined and job_positions|length > 0 %}
-  <div class="mkt-quick-start">
-    <h3><i class="lucide lucide-zap" style="width:1em;height:1em;"></i> Quick Start — Select Your Profession</h3>
-    <div class="mkt-quick-options">
-      {% for pos in job_positions %}
-          <a href="/cv-builder/infos?profession={{ pos.slug }}" class="mkt-quick-option">
-        <i class="lucide lucide-briefcase" style="width:1em;height:1em;"></i> {{ pos.title }}
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
   <!-- ─── FEATURED TEMPLATES (TOP PICKS) ─── -->
   {% if featured_templates is defined and featured_templates|length > 0 %}
   <div class="mkt-featured">
@@ -762,8 +748,8 @@
       </div>
 
       <div class="mkt-card-preview" style="background:{{ tmpl.gradient }};">
-        {% if tmpl.thumbnail is defined %}
-        <img src="{{ tmpl.thumbnail }}" alt="{{ tmpl.name }}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" loading="lazy">
+        {% if tmpl.thumbnail_url is defined %}
+        <img src="{{ tmpl.thumbnail_url }}" alt="{{ tmpl.name }}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" loading="lazy">
         {% else %}
         <i class="lucide lucide-{{ tmpl.icon }}" style="width:5rem;height:5rem;"></i>
         {% endif %}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Morgan - Senior Software Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: { navy: { 50: '#F0F3F8', 100: '#D9E2EC', 200: '#BCCCDC', 300: '#9FB3C8', 400: '#829AB1', 500: '#627D98', 600: '#486581', 700: '#334E68', 800: '#243B53', 900: '#102A43' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .double-line { height: 3px; border-top: 2px solid #243B53; border-bottom: 1px solid #BCCCDC; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-100 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <!-- START HEADER -->
+    <div class="bg-navy-800 text-white px-8 py-6">
+        <div class="flex items-center gap-5">
+            <div class="w-20 h-20 rounded bg-navy-600 border-2 border-navy-400 flex items-center justify-center flex-shrink-0">
+                <svg class="w-12 h-12 text-navy-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold">Alex Morgan</h1>
+                <p class="text-navy-200 text-sm">Senior Software Engineer</p>
+            </div>
+            <div class="text-right text-xs text-navy-300">
+                <p>San Francisco, CA</p>
+                <p>alex.morgan@email.com</p>
+                <p>+1 (555) 123-4567</p>
+            </div>
+        </div>
+    </div>
+    <!-- END HEADER -->
+
+    <div class="p-8">
+        <!-- Summary & Skills row -->
+        <div class="flex gap-8 mb-8">
+            <div class="flex-1">
+                <div class="double-line mb-3"></div>
+                <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-2">Summary</h2>
+                <p class="text-sm text-gray-600 leading-relaxed">Results-driven Senior Software Engineer with 7+ years of experience designing scalable web applications. Expert in modern JavaScript ecosystems, cloud architecture, and agile methodologies.</p>
+            </div>
+            <div class="w-48 flex-shrink-0">
+                <div class="double-line mb-3"></div>
+                <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-2">Skills</h2>
+                <div class="flex flex-wrap gap-1.5">
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">JavaScript</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">TypeScript</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">React</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">Node.js</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">PHP</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">Python</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">AWS</span>
+                    <span class="px-2 py-0.5 bg-navy-50 text-navy-700 rounded text-xs border border-navy-200">Docker</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-8">
+            <!-- Main Content - Left Column -->
+            <div class="flex-1">
+                <section class="mb-8">
+                    <div class="double-line mb-3"></div>
+                    <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-4">Experience</h2>
+                    <!-- START EXPERIENCE -->
+                    <div class="mb-5 pb-5 border-b border-gray-100">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Senior Software Engineer</h3>
+                                <p class="text-navy-600 text-sm font-medium">TechCorp Solutions</p>
+                            </div>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">2021 - Present</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Lead engineer for cloud-native platform serving 2M+ users. Architected microservices migration.</p>
+                    </div>
+                    <!-- END EXPERIENCE -->
+                    <div class="mb-5 pb-5 border-b border-gray-100">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Software Engineer</h3>
+                                <p class="text-navy-600 text-sm font-medium">Digital Innovations Inc.</p>
+                            </div>
+                            <span class="text-xs text-gray-500">2018 - 2021</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Developed SaaS platform using React and Node.js. Implemented CI/CD pipelines.</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-gray-900">Junior Developer</h3>
+                                <p class="text-navy-600 text-sm font-medium">StartupXYZ</p>
+                            </div>
+                            <span class="text-xs text-gray-500">2016 - 2018</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Built responsive web applications and RESTful APIs.</p>
+                    </div>
+                </section>
+
+                <section class="mb-8">
+                    <div class="double-line mb-3"></div>
+                    <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-4">Education</h2>
+                    <!-- START EDUCATION -->
+                    <div class="mb-3 flex justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-900">MSc Computer Science</h3>
+                            <p class="text-sm text-navy-600">Stanford University</p>
+                        </div>
+                        <span class="text-xs text-gray-500">2014-2016</span>
+                    </div>
+                    <!-- END EDUCATION -->
+                    <div class="flex justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-900">BSc Software Engineering</h3>
+                            <p class="text-sm text-navy-600">UC Berkeley</p>
+                        </div>
+                        <span class="text-xs text-gray-500">2010-2014</span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column -->
+            <div class="w-48 flex-shrink-0">
+                <section class="mb-8">
+                    <div class="double-line mb-3"></div>
+                    <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-3">Languages</h2>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-navy-600 rounded-full"></span>
+                            <span>English <span class="text-xs text-gray-500">Native</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-navy-400 rounded-full"></span>
+                            <span>Spanish <span class="text-xs text-gray-500">Professional</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-navy-200 rounded-full"></span>
+                            <span>French <span class="text-xs text-gray-500">Elementary</span></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-8">
+                    <div class="double-line mb-3"></div>
+                    <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-3">Certificates</h2>
+                    <div class="space-y-2 text-xs">
+                        <p class="font-medium">AWS Solutions Architect</p>
+                        <p class="text-gray-500">AWS · 2023</p>
+                        <p class="font-medium mt-2">Google Cloud Developer</p>
+                        <p class="text-gray-500">GCP · 2022</p>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="double-line mb-3"></div>
+                    <h2 class="text-xs font-bold text-navy-800 uppercase tracking-widest mb-3">Interests</h2>
+                    <div class="space-y-1 text-xs text-gray-600">
+                        <p>Open Source</p>
+                        <p>Artificial Intelligence</p>
+                        <p>Photography</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <footer class="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 flex justify-between no-print">
+            <span>References available upon request</span>
+            <span>Alex Morgan</span>
+        </footer>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Morgan - Senior Software Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],display:['Orbitron','monospace']},colors:{bold:{50:'#FDF2F8',100:'#FCE7F3',200:'#FBCFE8',300:'#F9A8D4',400:'#F472B6',500:'#EC4899',600:'#DB2777',700:'#BE185D',800:'#9D174D',900:'#831843'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .gradient-bg { background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #6366F1 100%); }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-100 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <!-- Bold Gradient Header -->
+    <header class="gradient-bg text-white px-10 py-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+        <div class="absolute bottom-0 left-0 w-64 h-64 bg-black/5 rounded-full -ml-32 -mb-32"></div>
+        <div class="relative">
+            <div class="flex items-center gap-6">
+                <div class="w-24 h-24 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 rotate-45 overflow-hidden">
+                    <div class="-rotate-45">
+                        <svg class="w-14 h-14 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-display uppercase tracking-[0.3em] text-white/70 mb-1">Portfolio</p>
+                    <h1 class="text-3xl font-black tracking-tight">Alex Morgan</h1>
+                    <p class="text-white/90 text-lg font-medium">Senior Software Engineer</p>
+                    <div class="flex gap-4 mt-3 text-sm text-white/70">
+                        <span>alex.morgan@email.com</span>
+                        <span>+1 (555) 123-4567</span>
+                        <span>San Francisco, CA</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+        <aside class="w-[200px] flex-shrink-0 bg-bold-50 p-6">
+            <div class="mb-6">
+                <h3 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-3">Skills</h3>
+                <div class="space-y-3">
+                    <div><div class="flex justify-between text-xs mb-0.5"><span>JavaScript</span><span class="font-bold text-bold-600">95%</span></div><div class="h-2 bg-white rounded"><div class="h-2 bg-gradient-to-r from-bold-400 to-purple-500" style="width:95%"></div></div></div>
+                    <div><div class="flex justify-between text-xs mb-0.5"><span>React</span><span class="font-bold text-bold-600">90%</span></div><div class="h-2 bg-white rounded"><div class="h-2 bg-gradient-to-r from-bold-400 to-purple-500" style="width:90%"></div></div></div>
+                    <div><div class="flex justify-between text-xs mb-0.5"><span>Node.js</span><span class="font-bold text-bold-600">88%</span></div><div class="h-2 bg-white rounded"><div class="h-2 bg-gradient-to-r from-bold-400 to-purple-500" style="width:88%"></div></div></div>
+                    <div><div class="flex justify-between text-xs mb-0.5"><span>PHP</span><span class="font-bold text-bold-600">85%</span></div><div class="h-2 bg-white rounded"><div class="h-2 bg-gradient-to-r from-bold-400 to-purple-500" style="width:85%"></div></div></div>
+                </div>
+            </div>
+            <div class="mb-6">
+                <h3 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-3">Connect</h3>
+                <div class="space-y-2 text-xs">
+                    <p class="font-medium">linkedin.com/in/alex</p>
+                    <p class="font-medium">github.com/alex</p>
+                    <p class="font-medium">alexmorgan.dev</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-3">Languages</h3>
+                <div class="space-y-1 text-xs">
+                    <p>English <span class="text-bold-600 font-bold">Native</span></p>
+                    <p>Spanish <span class="text-bold-600 font-bold">Professional</span></p>
+                    <p>French <span class="text-bold-600 font-bold">Elementary</span></p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8">
+            <section class="mb-8">
+                <h2 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-3">Summary</h2>
+                <p class="text-sm text-gray-600 leading-relaxed">Results-driven Senior Software Engineer with 7+ years of experience designing scalable web applications. Expert in modern JavaScript ecosystems, cloud architecture, and agile methodologies.</p>
+            </section>
+
+            <section class="mb-8">
+                <h2 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-4">Experience</h2>
+                <!-- START EXPERIENCE -->
+                <div class="mb-4 relative pl-6">
+                    <div class="absolute left-0 top-1 w-3 h-3 bg-gradient-to-br from-bold-400 to-purple-500 rounded-full"></div>
+                    <div class="absolute left-[5px] top-4 bottom-0 w-0.5 bg-bold-200"></div>
+                    <div>
+                        <div class="flex justify-between"><h3 class="font-bold">Senior Software Engineer</h3><span class="text-xs text-gray-500">2021-Present</span></div>
+                        <p class="text-sm text-bold-600 font-medium">TechCorp Solutions</p>
+                        <p class="text-sm text-gray-600 mt-1">Lead engineer for cloud-native platform. Architected microservices migration.</p>
+                    </div>
+                </div>
+                <!-- END EXPERIENCE -->
+                <div class="mb-4 relative pl-6">
+                    <div class="absolute left-0 top-1 w-3 h-3 bg-bold-300 rounded-full"></div>
+                    <div class="absolute left-[5px] top-4 bottom-0 w-0.5 bg-bold-200"></div>
+                    <div>
+                        <div class="flex justify-between"><h3 class="font-bold">Software Engineer</h3><span class="text-xs text-gray-500">2018-2021</span></div>
+                        <p class="text-sm text-bold-600 font-medium">Digital Innovations Inc.</p>
+                        <p class="text-sm text-gray-600 mt-1">Developed SaaS platform using React and Node.js. Implemented CI/CD.</p>
+                    </div>
+                </div>
+                <div class="relative pl-6">
+                    <div class="absolute left-0 top-1 w-3 h-3 bg-bold-300 rounded-full"></div>
+                    <div>
+                        <div class="flex justify-between"><h3 class="font-bold">Junior Developer</h3><span class="text-xs text-gray-500">2016-2018</span></div>
+                        <p class="text-sm text-bold-600 font-medium">StartupXYZ</p>
+                        <p class="text-sm text-gray-600 mt-1">Built responsive web applications and RESTful APIs.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-6">
+                <h2 class="text-xs font-display font-bold text-bold-700 uppercase tracking-widest mb-4">Projects</h2>
+                <!-- START PROJECTS -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-gradient-to-br from-bold-50 to-white rounded-xl p-4 border border-bold-100">
+                        <h4 class="font-bold text-sm">CloudSync</h4>
+                        <p class="text-xs text-gray-500">Real-time data synchronization</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-bold-50 to-white rounded-xl p-4 border border-bold-100">
+                        <h4 class="font-bold text-sm">DevMetrics</h4>
+                        <p class="text-xs text-gray-500">Analytics platform</p>
+                    </div>
+                </div>
+                <!-- END PROJECTS -->
+            </section>
+
+            <footer class="mt-6 pt-4 text-xs text-gray-400 no-print">References available</footer>
+        </main>
+    </div>
+</div>
+
+</body>
+</html>

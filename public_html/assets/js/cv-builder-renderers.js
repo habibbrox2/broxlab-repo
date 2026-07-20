@@ -57,6 +57,22 @@ export function createCvBuilderRenderers(deps) {
           `<div class="bld-form-group"><label class="bld-label">Religion</label><select class="bld-select" id="bld-field-religion"><option value="">Select...</option><option value="islam"${d.religion === 'islam' ? ' selected' : ''}>Islam</option><option value="hinduism"${d.religion === 'hinduism' ? ' selected' : ''}>Hinduism</option><option value="christianity"${d.religion === 'christianity' ? ' selected' : ''}>Christianity</option><option value="buddhism"${d.religion === 'buddhism' ? ' selected' : ''}>Buddhism</option><option value="other"${d.religion === 'other' ? ' selected' : ''}>Other</option></select></div></div>`;
       }
 
+      case 'summary': {
+        const s = STATE.data.summary || {};
+        const summaryVal = escHtml(s.professional_summary || '');
+        const objectiveVal = escHtml(s.career_objective || '');
+        return '<div style="margin-bottom:2rem;">' +
+          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          '<i class="lucide lucide-file-text" style="width:1.2em;height:1.2em;color:#f59e0b;"></i> Professional Summary</h3>' +
+          '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Write a short summary that highlights your experience, strengths, and what you bring to a role. This appears near the top of your CV.</p>' +
+          '<div class="bld-form-group"><label class="bld-label">Professional Summary</label>' +
+          `<textarea class="bld-textarea" id="bld-field-professional_summary" style="min-height:140px;" placeholder="e.g. Results-driven Software Engineer with 6+ years building scalable web apps">${summaryVal}</textarea>` +
+          '<div style="font-size:0.75rem;color:#9ca3af;margin-top:0.35rem;"><span id="bld-summary-count">0</span> characters</div></div>' +
+          '<div class="bld-form-group"><label class="bld-label">Career Objective <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>' +
+          `<textarea class="bld-textarea" id="bld-field-career_objective" style="min-height:90px;" placeholder="e.g. Seeking a backend role to leverage cloud and systems expertise">${objectiveVal}</textarea></div>` +
+          '</div>';
+      }
+
       case 'professional': {
         const exps = Array.isArray(STATE.data.experience) ? STATE.data.experience : [];
         let expHtml = '';

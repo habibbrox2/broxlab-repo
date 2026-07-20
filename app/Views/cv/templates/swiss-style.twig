@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ cv.full_name|default('CV') }} - {{ cv.job_title|default('Professional') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{swiss:{900:'#000000',800:'#1A1A1A',700:'#333333',600:'#4D4D4D',500:'#666666',400:'#808080',100:'#E5E5E5',50:'#F5F5F5'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-100 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <!-- Swiss Style Header -->
+    <header class="bg-swiss-900 text-white px-10 py-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter uppercase">{{ cv.full_name|default('Your Name')|split(' ')|first }}<br>{{ cv.full_name|default('')|split(' ')|slice(1)|join(' ') }}</h1>
+                <p class="text-swiss-100 text-sm mt-2 font-mono tracking-widest uppercase">{{ cv.job_title|default('Professional Title') }}</p>
+            </div>
+            <div class="text-right text-xs text-swiss-400 font-mono">
+                {% if cv.location %}<p>{{ cv.location }}</p>{% endif %}
+                {% if cv.email %}<p>{{ cv.email }}</p>{% endif %}
+                {% if cv.phone %}<p>{{ cv.phone }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="h-1 bg-white mt-6 w-full"></div>
+    </header>
+
+    <div class="flex">
+        <!-- START SIDEBAR -->
+        <aside class="w-[240px] flex-shrink-0 bg-swiss-50 p-6 border-r border-swiss-100">
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono pb-1 border-b-2 border-swiss-900">Contact</h3>
+                <div class="space-y-2 text-xs text-gray-700 font-mono">
+                    {% if cv.email %}<p>{{ cv.email }}</p>{% endif %}
+                    {% if cv.phone %}<p>{{ cv.phone }}</p>{% endif %}
+                    {% if cv.location %}<p>{{ cv.location }}</p>{% endif %}
+                    {% if cv.website %}<p>{{ cv.website }}</p>{% endif %}
+                </div>
+            </div>
+
+            {% set techSkills = [] %}
+            {% for section in sections %}
+                {% if section.section_type == 'skills' %}
+                    {% for item in section.items %}
+                        {% set techSkills = techSkills|merge([item.content.name]) %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            {% if techSkills|length > 0 %}
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono pb-1 border-b-2 border-swiss-900">Technical Skills</h3>
+                <div class="space-y-2">
+                    {% for skill in techSkills|slice(0, 6) %}
+                    <div class="flex justify-between text-xs font-mono"><span class="text-gray-700">{{ skill }}</span><span class="text-swiss-900 font-bold">{{ 100 - (loop.index0 * 6) }}%</span></div>
+                    <div class="h-2 bg-swiss-100"><div class="h-2 bg-swiss-900" style="width:{{ 100 - (loop.index0 * 6) }}%"></div></div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% set langSection = sections|filter(s => s.section_type == 'languages')|first %}
+            {% if langSection and langSection.items|length > 0 %}
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono pb-1 border-b-2 border-swiss-900">Languages</h3>
+                <div class="space-y-1.5 text-xs text-gray-700 font-mono">
+                    {% for item in langSection.items %}
+                    <div class="flex justify-between"><span>{{ item.content.name|default('') }}</span><span class="text-swiss-900 font-bold">{{ item.content.proficiency|default('Fluent') }}</span></div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <!-- END SIDEBAR -->
+        </aside>
+
+        <!-- START MAIN CONTENT -->
+        <main class="flex-1 p-8">
+            {% for section in sections %}
+            {% if section.section_type == 'summary' and section.is_visible %}
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-2 font-mono">Professional Summary</h2>
+                {% for item in section.items %}
+                <p class="text-sm text-gray-700 leading-relaxed font-mono">{{ item.content.summary|default(item.content.text|default('')) }}</p>
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if section.section_type == 'experience' and section.is_visible %}
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono">Work Experience</h2>
+                {% for item in section.items %}
+                <!-- START EXPERIENCE -->
+                <div class="mb-4 pb-4 border-b-2 border-swiss-100">
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <h3 class="font-bold text-swiss-900">{{ item.content.position|default('Position') }}</h3>
+                            <p class="text-sm text-swiss-600 font-mono">{{ item.content.company|default('') }}</p>
+                        </div>
+                        <span class="text-xs text-swiss-500 font-mono whitespace-nowrap">{{ item.content.start_date|default('') }}{% if item.content.end_date %} - {{ item.content.end_date }}{% endif %}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-2 leading-relaxed font-mono">{{ item.content.description|default('') }}</p>
+                </div>
+                <!-- END EXPERIENCE -->
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if section.section_type == 'education' and section.is_visible %}
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono">Education</h2>
+                {% for item in section.items %}
+                <!-- START EDUCATION -->
+                <div class="mb-3 pb-3 border-b-2 border-swiss-100">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-swiss-900">{{ item.content.degree|default('Degree') }}</h3>
+                            <p class="text-sm text-gray-700 font-mono">{{ item.content.institution|default('') }}</p>
+                        </div>
+                        <span class="text-xs text-swiss-500 font-mono">{{ item.content.start_date|default('') }}{% if item.content.end_date %} - {{ item.content.end_date }}{% endif %}</span>
+                    </div>
+                </div>
+                <!-- END EDUCATION -->
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if section.section_type == 'projects' and section.is_visible %}
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono">Projects</h2>
+                <!-- START PROJECTS -->
+                <div class="grid grid-cols-2 gap-3">
+                    {% for item in section.items %}
+                    <div class="border-2 border-swiss-100 p-3">
+                        <h3 class="font-bold text-sm text-swiss-900">{{ item.content.name|default('Project') }}</h3>
+                        <p class="text-xs text-gray-600 mt-1 font-mono">{{ item.content.description|default('') }}</p>
+                        {% if item.content.technologies %}
+                        <span class="text-xs text-swiss-600 font-semibold mt-1 inline-block font-mono">{{ item.content.technologies }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- END PROJECTS -->
+            </section>
+            {% endif %}
+
+            {% if section.section_type == 'certifications' and section.is_visible %}
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-swiss-900 uppercase tracking-widest mb-3 font-mono">Certificates</h2>
+                <!-- START CERTIFICATES -->
+                <div class="space-y-2">
+                    {% for item in section.items %}
+                    <div class="border-2 border-swiss-100 p-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm text-swiss-900">{{ item.content.name|default('Certificate') }}</h3>
+                                {% if item.content.organization %}<p class="text-xs text-gray-600 mt-0.5 font-mono">{{ item.content.organization }}{% if item.content.date %} | {{ item.content.date }}{% endif %}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- END CERTIFICATES -->
+            </section>
+            {% endif %}
+            {% endfor %}
+
+            <footer class="mt-6 pt-4 border-t-2 border-swiss-100 text-xs text-swiss-500 flex justify-between items-center no-print font-mono">
+                <span>Reference available upon request</span>
+                {% if cv.email %}<span>{{ cv.email }}</span>{% endif %}
+            </footer>
+        </main>
+    </div>
+</div>
+
+</body>
+</html>

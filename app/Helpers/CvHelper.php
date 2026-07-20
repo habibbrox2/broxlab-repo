@@ -15,51 +15,156 @@ if (!function_exists('cvGetTemplateAllowlist')) {
     function cvGetTemplateAllowlist(): array
     {
         $userId = getCurrentUserId();
+        $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
 
-        // Admin sees all templates (including disabled)
-        if ($userId && function_exists('isAdminUser') && isAdminUser()) {
-            $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
-            $files = glob($dir . '/*.twig') ?: [];
+        // Helper: scan for .twig files and subdirectory-based (index.html) templates
+        $scanTemplates = function (string $directory) use ($userId): array {
             $templates = [];
+            // Scan .twig files (legacy)
+            $files = glob($directory . '/*.twig') ?: [];
             foreach ($files as $file) {
                 $name = basename($file, '.twig');
                 if ($name === '' || $name[0] === '_') continue;
-                $templates[] = $name;
+                if (function_exists('cvTemplateIsDisabled') && cvTemplateIsDisabled($name)) continue;
+                $templates[$name] = true;
             }
+            // Scan subdirectories with index.html (new HTML templates)
+            $subdirs = glob($directory . '/*', GLOB_ONLYDIR) ?: [];
+            foreach ($subdirs as $subdir) {
+                if (file_exists($subdir . '/index.html')) {
+                    $name = basename($subdir);
+                    if ($name === '' || $name[0] === '_') continue;
+                    $templates[$name] = true;
+                }
+            }
+            return array_keys($templates);
+        };
+
+        // Admin sees all templates (including disabled)
+        if ($userId && function_exists('isAdminUser') && isAdminUser()) {
+            $templates = $scanTemplates($dir);
             $templates = array_values(array_unique($templates));
             sort($templates);
             return $templates;
         }
 
-        // Guest (unauthenticated) sees only 'minimal'
+        // Guest (unauthenticated) sees only 'minimal' or 'modern'
         if (!$userId) {
-            $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
-            $files = glob($dir . '/*.twig') ?: [];
-            $allTemplates = [];
-            foreach ($files as $file) {
-                $name = basename($file, '.twig');
-                if ($name === '' || $name[0] === '_') continue;
-                $allTemplates[] = $name;
-            }
+            $allTemplates = $scanTemplates($dir);
+            // Guests get minimal (twig) or modern (html) as default
             if (in_array('minimal', $allTemplates, true)) {
                 return ['minimal'];
+            }
+            if (in_array('modern-blue', $allTemplates, true)) {
+                return ['modern-blue'];
             }
             return [];
         }
 
         // Authenticated regular users: normal behavior
-        $dir = dirname(__DIR__, 1) . '/Views/cv/templates';
-        $files = glob($dir . '/*.twig') ?: [];
-        $templates = [];
-        foreach ($files as $file) {
-            $name = basename($file, '.twig');
-            if ($name === '' || $name[0] === '_') continue;
-            if (function_exists('cvTemplateIsDisabled') && cvTemplateIsDisabled($name)) continue;
-            $templates[] = $name;
-        }
+        $templates = $scanTemplates($dir);
         $templates = array_values(array_unique($templates));
         sort($templates);
         return $templates;
+    }
+}
+
+if (!function_exists('cvLoadTemplatesFromJson')) {
+    /**
+     * Load template metadata from the templates.json file.
+     * Returns an associative array keyed by template slug.
+     */
+    function cvLoadTemplatesFromJson(): array
+    {
+        $jsonPath = dirname(__DIR__, 1) . '/Views/cv/templates/templates.json';
+        if (!file_exists($jsonPath)) {
+            return [];
+        }
+        $content = @file_get_contents($jsonPath);
+        if (empty($content)) {
+            return [];
+        }
+        $data = @json_decode($content, true);
+        if (!is_array($data)) {
+            return [];
+        }
+        $result = [];
+        foreach ($data as $entry) {
+            if (isset($entry['id'])) {
+                $result[$entry['id']] = $entry;
+            }
+        }
+        return $result;
+    }
+}
+
+if (!function_exists('cvIsHtmlTemplate')) {
+    /**
+     * Check if a template slug refers to a subdirectory-based HTML template (not a .twig file).
+     */
+    function cvIsHtmlTemplate(string $slug): bool
+    {
+        $dir = dirname(__DIR__, 1) . '/Views/cv/templates/' . $slug;
+        return is_dir($dir) && file_exists($dir . '/index.html');
+    }
+}
+
+if (!function_exists('cvRenderHtmlTemplate')) {
+    /**
+     * Render an HTML template by reading its index.html content.
+     * For now, this simply returns the raw HTML content.
+     * Future enhancement: dynamic data injection via JavaScript/PHP.
+     */
+    function cvRenderHtmlTemplate(string $slug): string
+    {
+        $path = dirname(__DIR__, 1) . '/Views/cv/templates/' . $slug . '/index.html';
+        if (!file_exists($path)) {
+            return '<p>Template not found: ' . htmlspecialchars($slug) . '</p>';
+        }
+        $content = @file_get_contents($path);
+        if ($content === false) {
+            return '<p>Failed to read template: ' . htmlspecialchars($slug) . '</p>';
+        }
+        return $content;
+    }
+}
+
+if (!function_exists('adjustBrightness')) {
+    /**
+     * Adjust the brightness of a hex color by a percentage.
+     * Positive values lighten, negative values darken.
+     */
+    function adjustBrightness(string $hex, int $percent): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $r = max(0, min(255, $r + ($r * $percent / 100)));
+        $g = max(0, min(255, $g + ($g * $percent / 100)));
+        $b = max(0, min(255, $b + ($b * $percent / 100)));
+        return sprintf('#%02x%02x%02x', (int)$r, (int)$g, (int)$b);
+    }
+}
+
+if (!function_exists('cvHtmlTemplatePreviewRoute')) {
+    /**
+     * Route handler for serving HTML template previews.
+     * This is called from the router when an HTML template needs to be previewed.
+     */
+    function cvHandleHtmlTemplatePreview(string $slug): void
+    {
+        $slug = sanitize_input(basename($slug));
+        if (function_exists('cvIsHtmlTemplate') && cvIsHtmlTemplate($slug)) {
+            $html = cvRenderHtmlTemplate($slug);
+            echo $html;
+            exit;
+        }
+        // Not an HTML template, let normal Twig rendering handle it
+        return;
     }
 }
 
@@ -204,36 +309,34 @@ if (!function_exists('cvBuildSectionsFromCvData')) {
         $sections = [];
         $idx = 0;
 
-        // ── Summary Section ──
+        // ── Summary Section (always included so every template shows it by default) ──
         $summaryText = $builderData['summary']['professional_summary'] ?? '';
         $objective = $builderData['summary']['career_objective'] ?? '';
         $personal = $builderData['personal'] ?? [];
         if (!empty($personalInfo)) {
             $personal = array_merge($personal, $personalInfo);
         }
-        if (!empty($summaryText) || !empty($objective) || !empty($personal)) {
-            $idx++;
-            $summaryContent = [
-                'full_name' => $personal['full_name'] ?? $personalInfo['full_name'] ?? '',
-                'job_title' => $personal['job_title'] ?? '',
-                'email' => $personal['email'] ?? $personalInfo['email'] ?? '',
-                'phone' => $personal['phone'] ?? $personalInfo['phone'] ?? '',
-                'address' => $personal['address'] ?? $personalInfo['address'] ?? '',
-                'website' => $personal['website'] ?? $personalInfo['website'] ?? '',
-                'linkedin' => $personal['linkedin'] ?? $personalInfo['linkedin'] ?? '',
-                'github' => $personal['github'] ?? $personalInfo['github'] ?? '',
-                'summary' => $summaryText,
-                'objective' => $objective,
-                'text' => $summaryText,
-            ];
-            $sections[] = [
-                'id' => $idx,
-                'title' => 'Professional Summary',
-                'section_type' => 'summary',
-                'is_visible' => 1,
-                'items' => [['id' => 1, 'content' => array_filter($summaryContent, fn($v) => $v !== '' && $v !== null)]],
-            ];
-        }
+        $idx++;
+        $summaryContent = [
+            'full_name' => $personal['full_name'] ?? $personalInfo['full_name'] ?? '',
+            'job_title' => $personal['job_title'] ?? '',
+            'email' => $personal['email'] ?? $personalInfo['email'] ?? '',
+            'phone' => $personal['phone'] ?? $personalInfo['phone'] ?? '',
+            'address' => $personal['address'] ?? $personalInfo['address'] ?? '',
+            'website' => $personal['website'] ?? $personalInfo['website'] ?? '',
+            'linkedin' => $personal['linkedin'] ?? $personalInfo['linkedin'] ?? '',
+            'github' => $personal['github'] ?? $personalInfo['github'] ?? '',
+            'summary' => $summaryText,
+            'objective' => $objective,
+            'text' => $summaryText,
+        ];
+        $sections[] = [
+            'id' => $idx,
+            'title' => 'Professional Summary',
+            'section_type' => 'summary',
+            'is_visible' => 1,
+            'items' => [['id' => 1, 'content' => array_filter($summaryContent, fn($v) => $v !== '' && $v !== null)]],
+        ];
 
         // ── Experience Section ──
         $experienceEntries = $builderData['experience'] ?? [];

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Morgan - Senior Software Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],jp:['Noto Sans JP','sans-serif']},colors:{jp:{400:'#78716C',500:'#57534E',600:'#44403C',900:'#1C1917',50:'#FAFAF9',100:'#F5F5F4'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        body { background: #FAFAF9; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-lg my-4" style="min-height: 297mm;">
+    <!-- Japanese Minimal Header -->
+    <header class="px-12 pt-12 pb-8 text-center">
+        <div class="w-20 h-20 rounded-full bg-gray-100 mx-auto mb-5 flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-light text-gray-900 tracking-wide font-jp">Alex Morgan</h1>
+        <p class="text-sm text-gray-500 mt-1 font-light">Senior Software Engineer</p>
+        <div class="flex justify-center gap-6 mt-4 text-xs text-gray-400 font-light">
+            <span>alex.morgan@email.com</span>
+            <span class="text-gray-300">|</span>
+            <span>+1 (555) 123-4567</span>
+            <span class="text-gray-300">|</span>
+            <span>San Francisco, CA</span>
+        </div>
+        <div class="w-8 h-px bg-gray-300 mx-auto mt-6"></div>
+    </header>
+
+    <div class="px-12 pb-12">
+        <section class="mb-8 text-center">
+            <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3 font-jp">Professional Summary</h2>
+            <p class="text-sm text-gray-600 leading-relaxed font-light max-w-lg mx-auto">Results-driven Senior Software Engineer with 7+ years of experience designing and implementing scalable web applications. Expert in modern JavaScript ecosystems, cloud architecture, and agile methodologies.</p>
+        </section>
+
+        <div class="grid grid-cols-2 gap-12">
+            <!-- Experience -->
+            <section>
+                <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4 font-jp text-center">Work Experience</h2>
+                <!-- START EXPERIENCE -->
+                <div class="mb-5 text-center">
+                    <h3 class="font-medium text-gray-900 text-sm">Senior Software Engineer</h3>
+                    <p class="text-xs text-gray-500">TechCorp Solutions</p>
+                    <span class="text-xs text-gray-400">2021 - Present</span>
+                    <p class="text-xs text-gray-500 mt-1 leading-relaxed">Lead engineer for cloud-native platform serving 2M+ users. Architected microservices migration.</p>
+                </div>
+                <!-- END EXPERIENCE -->
+                <div class="mb-5 text-center">
+                    <h3 class="font-medium text-gray-900 text-sm">Software Engineer</h3>
+                    <p class="text-xs text-gray-500">Digital Innovations Inc.</p>
+                    <span class="text-xs text-gray-400">2018 - 2021</span>
+                    <p class="text-xs text-gray-500 mt-1 leading-relaxed">Developed customer-facing SaaS platform using React and Node.js. Implemented CI/CD pipelines.</p>
+                </div>
+                <div class="text-center">
+                    <h3 class="font-medium text-gray-900 text-sm">Junior Developer</h3>
+                    <p class="text-xs text-gray-500">StartupXYZ</p>
+                    <span class="text-xs text-gray-400">2016 - 2018</span>
+                    <p class="text-xs text-gray-500 mt-1 leading-relaxed">Built responsive web applications and RESTful APIs. Collaborated with UX team.</p>
+                </div>
+            </section>
+
+            <!-- Education -->
+            <section>
+                <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4 font-jp text-center">Education</h2>
+                <!-- START EDUCATION -->
+                <div class="mb-5 text-center">
+                    <h3 class="font-medium text-gray-900 text-sm">Master of Science in Computer Science</h3>
+                    <p class="text-xs text-gray-500">Stanford University</p>
+                    <span class="text-xs text-gray-400">2014 - 2016</span>
+                    <p class="text-xs text-gray-400 mt-1">GPA: 3.9/4.0</p>
+                </div>
+                <!-- END EDUCATION -->
+                <div class="text-center">
+                    <h3 class="font-medium text-gray-900 text-sm">Bachelor of Science in Software Engineering</h3>
+                    <p class="text-xs text-gray-500">University of California, Berkeley</p>
+                    <span class="text-xs text-gray-400">2010 - 2014</span>
+                    <p class="text-xs text-gray-400 mt-1">GPA: 3.8/4.0</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Skills -->
+        <section class="mt-8 text-center">
+            <h2 class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-4 font-jp">Skills</h2>
+            <div class="flex flex-wrap justify-center gap-2">
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">JavaScript</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">TypeScript</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">React</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">Next.js</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">Node.js</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">Laravel</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">MySQL</span>
+                <span class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs border border-gray-200 font-light">AWS</span>
+            </div>
+        </section>
+
+        <footer class="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-300 flex justify-between items-center no-print">
+            <span>Reference available upon request</span>
+            <span>Alex Morgan | alex.morgan@email.com</span>
+        </footer>
+    </div>
+</div>
+
+</body>
+</html>

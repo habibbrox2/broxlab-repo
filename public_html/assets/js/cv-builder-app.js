@@ -17,6 +17,7 @@ const STATE = {
 
 const STEPS = [
   { id: 'personal', title: 'Personal Information', icon: 'user', desc: 'Tell us about yourself', },
+  { id: 'summary', title: 'Professional Summary', icon: 'file-text', desc: 'Summarize your career highlights', },
   { id: 'professional', title: 'Professional Details', icon: 'briefcase', desc: 'Experience, education, skills & languages', },
   { id: 'extras', title: 'Social, Sections & References', icon: 'share-2', desc: 'Social links, custom sections & references', },
   { id: 'review', title: 'Review & Finish', icon: 'eye', desc: 'Preview, apply template & download', },
@@ -48,6 +49,11 @@ function collectStepData(stepId) {
   switch (stepId) {
     case 'personal':
       return { full_name: val('bld-field-full_name'), job_title: val('bld-field-job_title'), email: val('bld-field-email'), phone: val('bld-field-phone'), date_of_birth: val('bld-field-dob'), nationality: val('bld-field-nationality'), gender: val('bld-field-gender'), address: val('bld-field-address'), website: val('bld-field-website'), linkedin: val('bld-field-linkedin'), github: val('bld-field-github'), twitter: val('bld-field-twitter'), national_id_no: val('bld-field-national_id_no'), passport_no: val('bld-field-passport_no'), birth_certificate_no: val('bld-field-birth_certificate_no'), religion: val('bld-field-religion'), };
+    case 'summary':
+      return {
+        professional_summary: val('bld-field-professional_summary'),
+        career_objective: val('bld-field-career_objective'),
+      };
     case 'professional': {
       // Only read from DOM when cards are in editing mode (have input fields).
       // Collapsed cards display data as text, not inputs — reading from them
@@ -240,6 +246,8 @@ function completeBuilder() {
         STATE.data.skills = STATE.data.skills || { technical: [], soft: [], };
         STATE.data.languages = STATE.data.languages || [];
         STATE.data.professional = { _combined: true, };
+      } else if (sid === 'summary') {
+        STATE.data[sid] = { professional_summary: '', career_objective: '', };
       } else {
         STATE.data[sid] = [];
       }

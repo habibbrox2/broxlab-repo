@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ cv.full_name|default('CV') }} - {{ cv.job_title|default('Professional') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'] },
+                    colors: { apple: { 50: '#F5F5F7', 100: '#E8E8ED', 200: '#D2D2D7', 300: '#AEAEB2', 400: '#8E8E93', 500: '#636366', 600: '#48484A', 700: '#363639', 800: '#2C2C2E', 900: '#1C1C1E' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .apple-divider { height: 1px; background: linear-gradient(90deg, transparent, #D2D2D7, transparent); }
+        .apple-header { border-bottom: 1px solid #D2D2D7; }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-apple-50 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white my-4 shadow-sm" style="min-height: 297mm;">
+    <!-- START HEADER - Apple Style -->
+    <div class="px-10 pt-12 pb-8 text-center apple-header">
+        <div class="w-24 h-24 rounded-full bg-apple-50 mx-auto mb-5 flex items-center justify-center border border-apple-200 overflow-hidden">
+            {% if cv.profile_photo %}
+            <img src="{{ cv.profile_photo }}" alt="{{ cv.full_name|default('Profile') }}" class="w-full h-full object-cover">
+            {% else %}
+            <svg class="w-14 h-14 text-apple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            {% endif %}
+        </div>
+        <h1 class="text-[40px] font-light text-gray-900 tracking-tight leading-tight">{{ cv.full_name|default('Your Name') }}</h1>
+        <p class="text-lg text-apple-500 font-normal mt-1">{{ cv.job_title|default('Professional Title') }}</p>
+        <div class="flex justify-center gap-6 mt-5 text-xs text-apple-400">
+            {% if cv.email %}<span>{{ cv.email }}</span>{% endif %}
+            {% if cv.email and cv.phone %}<span class="text-apple-200">·</span>{% endif %}
+            {% if cv.phone %}<span>{{ cv.phone }}</span>{% endif %}
+            {% if cv.phone and cv.location %}<span class="text-apple-200">·</span>{% endif %}
+            {% if cv.location %}<span>{{ cv.location }}</span>{% endif %}
+        </div>
+        {% if cv.linkedin or cv.github %}
+        <div class="flex justify-center gap-6 mt-2 text-xs text-apple-400">
+            {% if cv.linkedin %}<a href="{{ cv.linkedin }}" class="hover:text-apple-600 transition-colors" target="_blank">{{ cv.linkedin|replace({'https://': '', 'http://': ''}) }}</a>{% endif %}
+            {% if cv.github %}<a href="{{ cv.github }}" class="hover:text-apple-600 transition-colors" target="_blank">{{ cv.github|replace({'https://': '', 'http://': ''}) }}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <!-- END HEADER -->
+
+    <div class="px-10 pb-10">
+        {% for section in sections %}
+        {% if section.section_type == 'summary' and section.is_visible %}
+        <!-- Summary -->
+        <section class="mb-10">
+            <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-3">Profile</h2>
+            {% for item in section.items %}
+            <p class="text-sm text-apple-700 leading-relaxed">{{ item.content.summary|default(item.content.text|default('')) }}</p>
+            {% endfor %}
+        </section>
+
+        <div class="apple-divider mb-8"></div>
+        {% endif %}
+
+        {% if section.section_type == 'experience' and section.is_visible %}
+        <!-- Experience -->
+        <section class="mb-10">
+            <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-5">Experience</h2>
+            {% for item in section.items %}
+            <!-- START EXPERIENCE -->
+            <div class="mb-6">
+                <div class="flex justify-between items-baseline mb-2">
+                    <div>
+                        <h3 class="font-semibold text-apple-900 text-sm">{{ item.content.position|default('Position') }}</h3>
+                        <p class="text-sm text-apple-500">{{ item.content.company|default('') }}</p>
+                    </div>
+                    <span class="text-xs text-apple-300 whitespace-nowrap">{{ item.content.start_date|default('') }}{% if item.content.end_date %} — {{ item.content.end_date }}{% endif %}</span>
+                </div>
+                <p class="text-sm text-apple-600 leading-relaxed">{{ item.content.description|default('') }}</p>
+            </div>
+            <!-- END EXPERIENCE -->
+            {% endfor %}
+        </section>
+
+        <div class="apple-divider mb-8"></div>
+        {% endif %}
+        {% endfor %}
+
+        <!-- Two Column: Skills + Education -->
+        <div class="flex gap-10">
+            <div class="flex-1">
+                {% set techSkills = [] %}
+                {% for section in sections %}
+                    {% if section.section_type == 'skills' %}
+                        {% for item in section.items %}
+                            {% set techSkills = techSkills|merge([item.content.name]) %}
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+                {% if techSkills|length > 0 %}
+                <section class="mb-8">
+                    <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-4">Skills</h2>
+                    <div class="space-y-2.5">
+                        {% for skill in techSkills|slice(0, 8) %}
+                        <div>
+                            <div class="flex justify-between text-xs mb-1"><span class="text-apple-800 font-medium">{{ skill }}</span><span class="text-apple-400">{{ 100 - (loop.index0 * 5) }}%</span></div>
+                            <div class="h-1 bg-apple-100 rounded-full"><div class="h-1 bg-apple-800 rounded-full" style="width:{{ 100 - (loop.index0 * 5) }}%"></div></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+            <div class="flex-1">
+                {% for section in sections %}
+                {% if section.section_type == 'education' and section.is_visible %}
+                <section class="mb-8">
+                    <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-4">Education</h2>
+                    {% for item in section.items %}
+                    <!-- START EDUCATION -->
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-apple-900 text-sm">{{ item.content.degree|default('Degree') }}</h3>
+                        <p class="text-xs text-apple-500">{{ item.content.institution|default('') }}{% if item.content.start_date %} · {{ item.content.start_date }}{% endif %}{% if item.content.end_date %}—{{ item.content.end_date }}{% endif %}</p>
+                        {% if item.content.gpa or item.content.field %}
+                        <p class="text-xs text-apple-400 mt-0.5">{{ item.content.field ? item.content.field : '' }}{% if item.content.gpa and item.content.field %} · {% endif %}{% if item.content.gpa %}GPA: {{ item.content.gpa }}{% endif %}</p>
+                        {% endif %}
+                    </div>
+                    <!-- END EDUCATION -->
+                    {% endfor %}
+                </section>
+                {% endif %}
+
+                {% set langSection = sections|filter(s => s.section_type == 'languages')|first %}
+                {% if langSection and langSection.items|length > 0 %}
+                <section>
+                    <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-3">Languages</h2>
+                    <div class="space-y-1 text-sm">
+                        {% for item in langSection.items %}
+                        <div class="flex justify-between"><span>{{ item.content.name|default('') }}</span><span class="text-apple-400 text-xs">{{ item.content.proficiency|default('Fluent') }}</span></div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="apple-divider my-8"></div>
+
+        {% for section in sections %}
+        {% if section.section_type == 'projects' and section.is_visible %}
+        <section>
+            <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-4">Projects</h2>
+            <!-- START PROJECTS -->
+            <div class="grid grid-cols-2 gap-4">
+                {% for item in section.items %}
+                <div class="bg-apple-50 rounded-xl p-4">
+                    <h4 class="font-semibold text-apple-900 text-sm">{{ item.content.name|default('Project') }}</h4>
+                    <p class="text-xs text-apple-500 mt-1">{{ item.content.description|default('') }}</p>
+                    {% if item.content.technologies %}
+                    <span class="text-xs text-apple-400 mt-2 inline-block">{{ item.content.technologies|replace({', ': ' · '}) }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <!-- END PROJECTS -->
+        </section>
+        {% endif %}
+
+        {% if section.section_type == 'certifications' and section.is_visible %}
+        <section class="mt-8">
+            <h2 class="text-[11px] font-semibold text-apple-400 uppercase tracking-[0.2em] mb-4">Certificates</h2>
+            <!-- START CERTIFICATES -->
+            <div class="grid grid-cols-2 gap-4">
+                {% for item in section.items %}
+                <div class="bg-apple-50 rounded-xl p-4">
+                    <h4 class="font-semibold text-apple-900 text-sm">{{ item.content.name|default('Certificate') }}</h4>
+                    {% if item.content.organization %}<p class="text-xs text-apple-500 mt-1">{{ item.content.organization }}{% if item.content.date %} · {{ item.content.date }}{% endif %}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <!-- END CERTIFICATES -->
+        </section>
+        {% endif %}
+        {% endfor %}
+
+        <footer class="mt-8 pt-5 border-t border-apple-100 text-xs text-apple-300 flex justify-between no-print">
+            <span>Reference available upon request</span>
+            {% if cv.website %}<span class="text-apple-400">{{ cv.website }}</span>{% endif %}
+        </footer>
+    </div>
+</div>
+
+</body>
+</html>

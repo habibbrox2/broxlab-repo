@@ -11,8 +11,8 @@
                 </div>
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Infos</p>
-                    <h1 class="text-xl font-bold text-white">CV Information</h1>
-                    <p class="text-sm text-white/60 mt-0.5">Manage resume personal details.</p>
+                    <h1 class="text-xl font-bold text-white">All Resumes</h1>
+                    <p class="text-sm text-white/60 mt-0.5">Browse every created resume across the platform.</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -23,92 +23,160 @@
         </div>
     </div>
 
-    {# Table Card #}
-    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+    {# Toolbar #}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm mb-5">
+        <div class="px-5 py-4">
+            <form method="GET" action="/admin/cv-infos" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Search</label>
+                    <input type="text" name="search" value="{{ filters.search|default('')|e('html_attr') }}" placeholder="Name, email, phone, nationality..."
+                           class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Sort</label>
+                    <select name="sort" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
+                        <option value="updated_at" {{ filters.sort == 'updated_at' ? 'selected' : '' }}>Recently Updated</option>
+                        <option value="created_at" {{ filters.sort == 'created_at' ? 'selected' : '' }}>Recently Created</option>
+                        <option value="full_name" {{ filters.sort == 'full_name' ? 'selected' : '' }}>Name</option>
+                        <option value="id" {{ filters.sort == 'id' ? 'selected' : '' }}>ID</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Order</label>
+                    <select name="order" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
+                        <option value="desc" {{ filters.order == 'desc' ? 'selected' : '' }}>Descending</option>
+                        <option value="asc" {{ filters.order == 'asc' ? 'selected' : '' }}>Ascending</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150">
+                        <i class="lucide lucide-filter w-4 h-4"></i> Apply
+                    </button>
+                    {% if filters.search or filters.sort != 'updated_at' or filters.order != 'desc' %}
+                    <a href="/admin/cv-infos" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-150">
+                        <i class="lucide lucide-rotate-ccw w-4 h-4"></i> Clear
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
             <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                    <i class="lucide lucide-file-user w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    <i class="lucide lucide-layout-grid w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">CV Info Records</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ records|length }}</span>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Resumes</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">{{ pagination.total }}</span>
             </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Page {{ pagination.current_page }} of {{ pagination.total_pages }}</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b border-slate-100 dark:border-slate-800">
-                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">ID</th>
-                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Name</th>
-                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Email</th>
-                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Phone</th>
-                        <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-600 whitespace-nowrap">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                    {% if records is defined and records|length > 0 %}
-                        {% for item in records %}
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors duration-100">
-                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ item.id }}</td>
-                            <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{{ item.full_name ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ item.email ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ item.phone ?? 'N/A' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-1">
-                                    <a href="/admin/cv-infos/view/{{ item.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="View">
-                                        <i class="lucide lucide-eye w-3.5 h-3.5"></i>
-                                    </a>
-                                    <a href="/admin/cv-infos/edit/{{ item.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="Edit">
-                                        <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
-                                    </a>
-                                    <form method="POST" action="/admin/cv-infos/{{ item.id }}/delete" data-action="confirm-delete-cv-info" class="inline">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
-                                            <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" class="px-4 py-16">
-                                <div class="flex flex-col items-center justify-center text-center">
-                                    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                                        <i class="lucide lucide-file-user w-7 h-7 text-slate-400 dark:text-slate-600"></i>
-                                    </div>
-                                    <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No records found</h3>
-                                    <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Create your first CV info entry to get started.</p>
-                                    <a href="/admin/cv-infos/create" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 transition-all duration-150">
-                                        <i class="lucide lucide-plus w-4 h-4"></i> Create Entry
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-        {% if pagination.total_pages > 1 %}
-        <div class="px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-                Page {{ pagination.current_page }} of {{ pagination.total_pages }} ({{ pagination.total }} records)
-            </p>
-            <div class="flex flex-wrap gap-2">
-                {% set commonQuery = '&limit=' ~ pagination.per_page ~ '&search=' ~ (filters.search|url_encode) ~ '&sort=' ~ filters.sort ~ '&order=' ~ filters.order %}
-                <a href="/admin/cv-infos?page={{ pagination.current_page > 1 ? pagination.current_page - 1 : 1 }}{{ commonQuery }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 {{ pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : '' }}">
-                    <i class="lucide lucide-chevron-left w-4 h-4"></i> Prev
-                </a>
-                <span class="inline-flex items-center rounded-xl bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Page {{ pagination.current_page }} of {{ pagination.total_pages }}
-                </span>
-                <a href="/admin/cv-infos?page={{ pagination.current_page < pagination.total_pages ? pagination.current_page + 1 : pagination.total_pages }}{{ commonQuery }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 {{ pagination.current_page >= pagination.total_pages ? 'pointer-events-none opacity-50' : '' }}">
-                    Next <i class="lucide lucide-chevron-right w-4 h-4"></i>
-                </a>
-            </div>
-        </div>
-        {% endif %}
     </div>
+
+    {# Grid View #}
+    {% if records is defined and records|length > 0 %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for item in records %}
+        <div class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700 transition-all duration-150">
+            {# Card Header / Preview #}
+            <div class="relative h-24 bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 flex items-center justify-center">
+                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.25),transparent_55%)]" aria-hidden="true"></div>
+                {% if item.profile_photo %}
+                <img src="{{ item.profile_photo }}" alt="{{ item.full_name|default('')|e('html_attr') }}" class="relative w-16 h-16 rounded-full object-cover border-2 border-white/80 shadow-lg">
+                {% else %}
+                <div class="relative w-16 h-16 rounded-full bg-white/15 border-2 border-white/40 flex items-center justify-center text-white text-xl font-bold">
+                    {{ (item.full_name|default(item.owner_name|default('?'))[:1])|upper }}
+                </div>
+                {% endif %}
+                <span class="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {{ item.is_active ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-slate-500/20 text-slate-300 border border-slate-400/30' }}">
+                    {{ item.is_active ? 'Active' : 'Inactive' }}
+                </span>
+            </div>
+
+            {# Card Body #}
+            <div class="flex flex-col flex-1 p-4">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-slate-900 dark:text-white truncate" title="{{ item.full_name|default('N/A')|e('html_attr') }}">
+                            {{ item.full_name|default('N/A') }}
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ item.job_title|default('—') }}</p>
+                    </div>
+                    <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+                        {{ item.template_label|default('N/A') }}
+                    </span>
+                </div>
+
+                <div class="mt-3 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-1.5 truncate" title="{{ item.email|default('')|e('html_attr') }}">
+                        <i class="lucide lucide-mail w-3.5 h-3.5 shrink-0"></i>
+                        <span class="truncate">{{ item.email|default('N/A') }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 truncate">
+                        <i class="lucide lucide-user w-3.5 h-3.5 shrink-0"></i>
+                        <span class="truncate">{{ item.owner_name|default('N/A') }}</span>
+                        {% if not item.has_owner %}<span class="text-[10px] text-amber-500">(guest)</span>{% endif %}
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="lucide lucide-calendar w-3.5 h-3.5 shrink-0"></i>
+                        <span>{{ item.created_at|default('') ? item.created_at|date('d M Y') : 'N/A' }}</span>
+                    </div>
+                </div>
+
+                {# Actions #}
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1">
+                        <a href="/admin/cv-infos/view/{{ item.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="View">
+                            <i class="lucide lucide-eye w-3.5 h-3.5"></i>
+                        </a>
+                        <a href="/admin/cv-infos/edit/{{ item.id }}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="Edit">
+                            <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                    <form method="POST" action="/admin/cv-infos/{{ item.id }}/delete" data-action="confirm-delete-cv-info" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+                            <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="flex flex-col items-center justify-center text-center py-20">
+            <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                <i class="lucide lucide-file-user w-7 h-7 text-slate-400 dark:text-slate-600"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No resumes found</h3>
+            <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">No CV records have been created yet.</p>
+            <a href="/admin/cv-infos/create" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 transition-all duration-150">
+                <i class="lucide lucide-plus w-4 h-4"></i> Create Entry
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Pagination #}
+    {% if pagination.total_pages > 1 %}
+    <div class="mt-5 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Page {{ pagination.current_page }} of {{ pagination.total_pages }} ({{ pagination.total }} records)
+        </p>
+        <div class="flex flex-wrap gap-2">
+            {% set commonQuery = '&limit=' ~ pagination.per_page ~ '&search=' ~ (filters.search|url_encode) ~ '&sort=' ~ filters.sort ~ '&order=' ~ filters.order %}
+            <a href="/admin/cv-infos?page={{ pagination.current_page > 1 ? pagination.current_page - 1 : 1 }}{{ commonQuery }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 {{ pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : '' }}">
+                <i class="lucide lucide-chevron-left w-4 h-4"></i> Prev
+            </a>
+            <span class="inline-flex items-center rounded-xl bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Page {{ pagination.current_page }} of {{ pagination.total_pages }}
+            </span>
+            <a href="/admin/cv-infos?page={{ pagination.current_page < pagination.total_pages ? pagination.current_page + 1 : pagination.total_pages }}{{ commonQuery }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 {{ pagination.current_page >= pagination.total_pages ? 'pointer-events-none opacity-50' : '' }}">
+                Next <i class="lucide lucide-chevron-right w-4 h-4"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

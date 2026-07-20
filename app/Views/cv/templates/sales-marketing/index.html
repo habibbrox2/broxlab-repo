@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jessica Torres - VP of Sales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif']},colors:{sale:{50:'#FFF1F2',100:'#FFE4E6',200:'#FECDD3',300:'#FDA4AF',400:'#FB7185',500:'#F43F5E',600:'#E11D48',700:'#BE123C',800:'#9F1239',900:'#881337'}}}}}</script>
+    <style>
+        @media print { @page { size: A4; margin: 0; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+        .sale-bar { background: repeating-linear-gradient(90deg, #E11D48, #E11D48 4px, transparent 4px, transparent 8px); }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-50 min-h-screen">
+
+<div class="max-w-[210mm] mx-auto bg-white shadow-xl my-4" style="min-height: 297mm;">
+    <div class="sale-bar h-1"></div>
+    <div class="bg-gray-900 text-white px-10 py-6">
+        <div class="flex items-center gap-5">
+            <div class="w-20 h-20 rounded bg-sale-700 border border-sale-500 flex items-center justify-center flex-shrink-0">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h1 class="text-3xl font-black uppercase tracking-wide">Jessica Torres</h1>
+                <p class="text-sale-400 text-lg font-semibold">VP of Sales</p>
+                <div class="flex gap-4 mt-1 text-xs text-gray-400">
+                    <span>jessica.torres@sales.com</span><span>+1 (555) 456-7891</span><span>San Diego, CA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex">
+        <aside class="w-[200px] flex-shrink-0 bg-sale-50 p-6 border-r border-sale-100">
+            <div class="mb-5">
+                <h3 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-2">Metrics</h3>
+                <div class="space-y-2">
+                    <div class="bg-white p-2 rounded border border-sale-200 text-center">
+                        <p class="text-xl font-black text-sale-600">$12M</p>
+                        <p class="text-xs text-gray-500">Annual Revenue</p>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-sale-200 text-center">
+                        <p class="text-xl font-black text-sale-600">140%</p>
+                        <p class="text-xs text-gray-500">Quota Attainment</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-5">
+                <h3 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-2">Skills</h3>
+                <div class="space-y-1 text-xs">
+                    <div><div class="flex justify-between"><span>Strategic Selling</span><span class="font-bold">95%</span></div><div class="h-1 bg-gray-200"><div class="h-1 bg-sale-600" style="width:95%"></div></div></div>
+                    <div><div class="flex justify-between"><span>CRM Management</span><span class="font-bold">90%</span></div><div class="h-1 bg-gray-200"><div class="h-1 bg-sale-600" style="width:90%"></div></div></div>
+                    <div><div class="flex justify-between"><span>Negotiation</span><span class="font-bold">92%</span></div><div class="h-1 bg-gray-200"><div class="h-1 bg-sale-600" style="width:92%"></div></div></div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-2">Awards</h3>
+                <div class="text-xs space-y-1">
+                    <p class="font-semibold">🏆 President's Club</p>
+                    <p class="text-gray-500">2022, 2023, 2024</p>
+                    <p class="font-semibold">⭐ Top Performer</p>
+                    <p class="text-gray-500">8 consecutive quarters</p>
+                </div>
+            </div>
+        </aside>
+        <main class="flex-1 p-8">
+            <section class="mb-6"><h2 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-2">Summary</h2><p class="text-sm text-gray-700 leading-relaxed">High-impact sales executive with 12+ years of experience driving revenue growth in SaaS and enterprise technology. Built and led teams that consistently exceed quotas and expand market share.</p></section>
+            <section class="mb-6">
+                <h2 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-4">Experience</h2>
+                <!-- START EXPERIENCE -->
+                <div class="mb-4 border-l-2 border-sale-500 pl-4">
+                    <div class="flex justify-between"><h3 class="font-bold">VP of Sales</h3><span class="text-xs text-gray-500">2020-Present</span></div>
+                    <p class="text-xs text-sale-600 font-semibold">TechGrowth Inc.</p>
+                    <p class="text-sm text-gray-600 mt-1">Grew ARR from $4M to $12M. Built 20-person sales org. Expanded into 3 new markets.</p>
+                </div>
+                <!-- END EXPERIENCE -->
+                <div class="mb-4 border-l-2 border-sale-300 pl-4">
+                    <div class="flex justify-between"><h3 class="font-bold">Regional Sales Director</h3><span class="text-xs text-gray-500">2016-2020</span></div>
+                    <p class="text-xs text-sale-600 font-semibold">CloudServe Corp.</p>
+                    <p class="text-sm text-gray-600 mt-1">Managed $8M territory. Exceeded quota 4 consecutive years averaging 135% attainment.</p>
+                </div>
+                <div class="border-l-2 border-sale-300 pl-4">
+                    <div class="flex justify-between"><h3 class="font-bold">Enterprise Account Executive</h3><span class="text-xs text-gray-500">2013-2016</span></div>
+                    <p class="text-xs text-sale-600 font-semibold">DataFlow Systems</p>
+                    <p class="text-sm text-gray-600 mt-1">Closed $500K+ enterprise deals. Top 5% performer nationally.</p>
+                </div>
+            </section>
+            <section><h2 class="text-xs font-bold text-sale-700 uppercase tracking-widest mb-4">Education</h2>
+                <!-- START EDUCATION -->
+                <div><h3 class="font-bold text-gray-900">MBA, Marketing</h3><p class="text-sm text-gray-600">UCLA Anderson, 2013</p></div>
+                <!-- END EDUCATION -->
+                <div class="mt-2"><h3 class="font-bold text-gray-900">BA Communications</h3><p class="text-sm text-gray-600">University of Florida, 2009</p></div>
+            </section>
+            <footer class="mt-6 pt-4 text-xs text-gray-400 no-print">References available</footer>
+        </main>
+    </div>
+</div>
+</body>
+</html>

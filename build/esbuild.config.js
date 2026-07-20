@@ -50,6 +50,7 @@ const ENTRY_POINTS = {
   'feed-discovery': join(ROOT_DIR, 'public_html', 'assets', 'js', 'feed-discovery.js'),
   'photo-studio/editor': join(ROOT_DIR, 'public_html', 'assets', 'js', 'photo-studio', 'editor.js'),
   'cv-dashboard': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-dashboard.js'),
+  'cv-live-builder': join(ROOT_DIR, 'public_html', 'assets', 'js', 'cv-live-builder.js'),
   'form-enhancements': join(ROOT_DIR, 'public_html', 'assets', 'js', 'admin', 'form-enhancements.js'),
   'services-dashboard': join(ROOT_DIR, 'public_html', 'assets', 'js', 'modules', 'services-dashboard.js'),
 };
