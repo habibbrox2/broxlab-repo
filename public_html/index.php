@@ -73,6 +73,38 @@ if ($isStaticFile) {
     exit;
 }
 
+// ============================================================================
+// LARAVEL MIGRATION BRIDGE (strangler fig)
+// ============================================================================
+// Delegates migrated routes to the Laravel app in /laravel. The allowlist is
+// maintained in laravel/bridge.php — add paths here only after the Laravel
+// route + Blade view exist and are smoke-tested (see migration/PLAN.md).
+$bridgeFile = dirname(__DIR__) . '/laravel/bridge.php';
+if (is_file($bridgeFile)) {
+    $laravelPaths = require $bridgeFile;
+    $bridgePath = rtrim($requestPath, '/');
+    if ($bridgePath === '') {
+        $bridgePath = '/';
+    }
+
+    $isLaravelRequest = false;
+    if (isset($laravelPaths['paths']) && in_array($bridgePath, $laravelPaths['paths'], true)) {
+        $isLaravelRequest = true;
+    } elseif (isset($laravelPaths['prefixes']) && is_array($laravelPaths['prefixes'])) {
+        foreach ($laravelPaths['prefixes'] as $prefix) {
+            if (str_starts_with($bridgePath . '/', rtrim($prefix, '/') . '/')) {
+                $isLaravelRequest = true;
+                break;
+            }
+        }
+    }
+
+    if ($isLaravelRequest) {
+        require dirname(__DIR__) . '/laravel/public/index.php';
+        exit;
+    }
+}
+
 // Enable output buffering to prevent "headers already sent" errors
 ob_start();
 

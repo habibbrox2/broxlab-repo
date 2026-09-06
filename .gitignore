@@ -13,6 +13,11 @@
 # ─────────────────────────────────────────────────────────────────
 /vendor/
 /node_modules/
+/laravel/vendor/
+/laravel/node_modules/
+/laravel/storage/
+/laravel/bootstrap/cache/
+/laravel/.env
 
 yarn.lock
 
@@ -114,6 +119,7 @@ deployment.log
 # Temporary files
 *.tmp
 .tmp.*
+.tmp.driveupload/
 tmp/
 temp/
 

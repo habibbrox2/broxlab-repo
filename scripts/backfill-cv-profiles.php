@@ -21,7 +21,7 @@ define('BASE_PATH', dirname(__DIR__));
 require_once BASE_PATH . '/Config/Db.php';
 require_once BASE_PATH . '/app/Services/CvSchemaBootstrapService.php';
 require_once BASE_PATH . '/app/Services/CvProfileService.php';
-require_once BASE_PATH . '/app/Models/CvModels.php';
+require_once BASE_PATH . '/app/Models/CvModel.php';
 
 $isDryRun = !in_array('--execute', $argv ?? [], true);
 

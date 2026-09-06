@@ -35,7 +35,7 @@ $securityManager = new SecurityManager($mysqli);
  */
 function autoClaimGuestCvs(int $userId, \mysqli $mysqli): int
 {
-    $cvModelFile = dirname(__DIR__, 1) . '/Models/CvModels.php';
+    $cvModelFile = dirname(__DIR__, 1) . '/Models/CvModel.php';
     if (!file_exists($cvModelFile)) {
         return 0;
     }

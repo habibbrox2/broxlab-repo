@@ -31,3 +31,16 @@ Full-stack PHP (Twig) application. PHP-only deployment; Node.js tooling retained
 - App: `php -S localhost:8000 -t public_html`
 - Frontend watch: `npm run dev`
 - Full verify: `npm run validate`
+
+## Migration to Laravel (in progress)
+
+This application is being incrementally migrated to **Laravel + Blade + Alpine.js** using the
+strangler-fig pattern: the Laravel app lives in [`laravel/`](laravel/) and the legacy
+`public_html/index.php` delegates allowlisted routes to it (see [`laravel/bridge.php`](laravel/bridge.php)).
+
+- Plan: [`migration/PLAN.md`](migration/PLAN.md)
+- Progress: [`migration/CHANGELOG.md`](migration/CHANGELOG.md)
+- Live checklist: [`migration/REMAINING_STEPS.md`](migration/REMAINING_STEPS.md)
+
+Laravel frontend bundle: `cd laravel && npm run build` (emits to `public_html/assets/laravel/dist/`).
+Laravel tests: `cd laravel && php artisan test` (reads the shared MySQL schema).
