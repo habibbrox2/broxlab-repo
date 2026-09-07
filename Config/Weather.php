@@ -1,56 +1,35 @@
 <?php
 
-/**
- * Weather API Configuration
- * 
- * @package BroxLab
- */
-
 return [
-    /**
-     * Weather API Provider
-     * Currently supports: openweathermap
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Weather Provider
+    |--------------------------------------------------------------------------
+    | Currently supports: openweathermap (or "mock" for deterministic local
+    | data — legacy default). Ported from legacy Config/Weather.php.
+    */
+
     'provider' => env('WEATHER_PROVIDER', 'mock'),
 
-    /**
-     * OpenWeatherMap API Configuration
-     * Get your free API key from: https://openweathermap.org/api
-     */
     'openweathermap' => [
         'api_key' => env('OPENWEATHER_API_KEY', ''),
         'base_url' => 'https://api.openweathermap.org/data/2.5',
         'geocoding_url' => 'https://api.openweathermap.org/geo/1.0',
-        'units' => 'metric', // metric (Celsius) or imperial (Fahrenheit)
-        'lang' => 'en', // Language for descriptions
+        'units' => 'metric',
+        'lang' => 'en',
     ],
 
-    /**
-     * Cache Configuration
-     * Weather data is cached to reduce API calls (free tier: 60 calls/minute)
-     */
     'cache' => [
         'enabled' => true,
-        'duration' => 600, // 10 minutes in seconds
+        'duration' => 600, // 10 minutes
         'prefix' => 'weather_',
     ],
 
-    /**
-     * Default Location (fallback when geolocation fails)
-     */
     'default_location' => [
-        'city' => env('WEATHER_DEFAULT_CITY', 'Dhaka'),
-        'lat' => env('WEATHER_DEFAULT_LAT', 23.8103),
-        'lon' => env('WEATHER_DEFAULT_LON', 90.4125),
-        'country' => 'BD',
+        'city' => 'Dhaka',
+        'lat' => 23.8103,
+        'lon' => 90.4125,
     ],
 
-    /**
-     * Rate Limiting
-     */
-    'rate_limit' => [
-        'enabled' => true,
-        'max_requests' => 30, // per IP per minute
-        'window' => 60, // seconds
-    ],
 ];

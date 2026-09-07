@@ -13,11 +13,14 @@
 # ─────────────────────────────────────────────────────────────────
 /vendor/
 /node_modules/
-/laravel/vendor/
-/laravel/node_modules/
-/laravel/storage/
-/laravel/bootstrap/cache/
-/laravel/.env
+/bootstrap/cache/
+/.env
+/old/vendor/
+/old/.env
+/old/storage/
+/.phpunit.result.cache
+/public/hot
+/public/storage
 
 yarn.lock
 

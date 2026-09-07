@@ -242,14 +242,24 @@ fi
 cd "$NEW_RELEASE"
 
 log_section "LINKING SHARED RESOURCES"
-mkdir -p Config storage public_html
-ln -sfn "$SHARED/.env" .env
-ln -sfn "$SHARED/.env" "Config/.env"
+# Phase 8 layout: the Laravel app lives at the repo root (no laravel/ subdir,
+# no legacy Config/). The legacy front controller is retired; public_html is
+# the shared assets/uploads store only. Rollback = redeploy a pre-Phase-8
+# release (USE_LEGACY_DOCROOT was removed with the legacy app).
+mkdir -p storage/firebase public_html
+# Root .env is the Laravel app's env (APP_KEY, DB, queues, FCM flags...). It is
+# provisioned on the server (it is gitignored). Only symlink the shared legacy
+# .env when no root .env exists yet, and warn: the shared file predates Laravel
+# and may lack APP_KEY — add it before serving traffic.
+if [[ ! -f .env && ! -L .env ]]; then
+    ln -sfn "$SHARED/.env" .env
+    log_warn "Root .env missing — symlinked shared legacy .env; verify APP_KEY and Laravel vars are present"
+fi
 
 if [[ -f "$SHARED/Config/broxlab-firebase.json" ]]; then
-    ln -sfn "$SHARED/Config/broxlab-firebase.json" "Config/broxlab-firebase.json"
+    ln -sfn "$SHARED/Config/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
 elif [[ -f "$SHARED/broxlab-firebase.json" ]]; then
-    ln -sfn "$SHARED/broxlab-firebase.json" "Config/broxlab-firebase.json"
+    ln -sfn "$SHARED/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
 fi
 
 ln -sfn "$STORAGE/uploads" "public_html/uploads"
@@ -259,7 +269,11 @@ ln -sfn "$STORAGE/tmp" "storage/tmp"
 ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
 ln -sfn "$STORAGE/sessions" "storage/sessions"
 
+
+
 log_section "INSTALLING DEPENDENCIES"
+# Phase 8: the root composer.json IS the Laravel app's composer.json — one
+# install covers everything. The legacy composer.json moved to /old/.
 if command -v composer >/dev/null 2>&1; then
     composer install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
 elif [[ -f "$SHARED/composer" ]]; then
@@ -284,11 +298,29 @@ else
     fi
 fi
 
+# Phase 8: build the Laravel frontend bundle (Alpine + Vite) from the merged
+# root package.json.
+if [[ "${SKIP_BUILD}" == "false" ]]; then
+    if command -v npm >/dev/null 2>&1 && [[ -f "node_modules/.bin/vite" ]]; then
+        npm run build:laravel 2>&1 | tee -a "$LOG_FILE" || log_warn "Laravel asset build reported warnings/errors"
+    else
+        log_warn "vite not found in node_modules; skipping Laravel asset build (npm install first)"
+    fi
+else
+    log_info "SKIP_BUILD=true — skipping Laravel asset build"
+fi
+
 log_section "VALIDATING PHP"
 if command -v php >/dev/null 2>&1; then
     while IFS= read -r php_file; do
         php -l "$php_file" >/dev/null
-    done < <(find app Config -name "*.php" -type f 2>/dev/null)
+    done < <(find app -name "*.php" -type f 2>/dev/null)
+
+    # Phase 8: lint the Laravel framework/config/routes/database PHP too —
+    # the app now lives at the repo root.
+    while IFS= read -r php_file; do
+        php -l "$php_file" >/dev/null
+    done < <(find config routes bootstrap database -name "*.php" -type f 2>/dev/null)
 fi
 
 log_section "UPDATING VERSION"
@@ -315,9 +347,50 @@ EOF
 
 log_section "SWITCHING RELEASE"
 ln -sfn "$NEW_RELEASE" "$CURRENT"
-# Web server document root — symlink points to current release's public_html
+
+# Shared uploads must remain publicly reachable after the docroot is switched
+# to public/. The Laravel uploads disk still points at public_html/uploads
+# (lowest-risk option, unchanged), so the shared storage is reachable from both
+# the public_html asset path and the Laravel disk. For public/ to serve
+# /uploads/*, deploy creates public/uploads -> $STORAGE/uploads (same shared
+# storage target as public_html/uploads). Fail loudly so a broken uploads path
+# is visible in deploy logs.
+mkdir -p storage public
+ln -sfn "$STORAGE/uploads" storage/uploads
+log_info "Storage uploads symlinked: storage/uploads -> $STORAGE/uploads"
+if [[ -L "public/uploads" || -d "public/uploads" ]]; then
+    rm -f public/uploads
+fi
+ln -sfn "$STORAGE/uploads" public/uploads
+log_info "Public uploads symlinked: public/uploads -> $STORAGE/uploads"
+
+# Site assets/uploads live in public_html/ (shared static store, also used by
+# the legacy app pre-Phase-8). The docroot public/ serves them through
+# relative symlinks so the same files are reachable at their historical URLs
+# (/assets/*, /cdn/*, /rtceditor/*, /uploads/*, ...).
+for shared_dir in assets cdn rtceditor smart_design_assets ai uploads; do
+    ln -sfn "../public_html/$shared_dir" "public/$shared_dir"
+done
+ln -sfn "../public_html/robots.txt" "public/robots.txt"
+ln -sfn "../public_html/firebase-messaging-sw.js" "public/firebase-messaging-sw.js"
+log_info "Shared asset symlinks created in public/ (assets, cdn, rtceditor, smart_design_assets, ai, uploads, robots.txt, firebase-messaging-sw.js)"
+
+# Optimize the legacy release size by removing local copy of node_modules if
+# they exist in the repo root; the deploy keeps them only when explicitly needed.
+if [[ -d "node_modules" && "${KEEP_NODE_MODULES:-false}" != "true" ]]; then
+    log_info "Removing repo-root node_modules from release (not required for deploy)"
+    rm -rf node_modules
+fi
+
+# Web server document root — symlink points to current release.
+# Phase 8: the document root is public/ (the Laravel front controller at the
+# repo root). The legacy app moved to /old/ and is no longer deployable;
+# USE_LEGACY_DOCROOT was removed with it. Rollback = redeploy the previous
+# release directory ($BASE/releases/<date>) or git revert the Phase 8 commit.
 PUBLIC_HTML_BASE="$BASE/public_html"
-PUBLIC_HTML_TARGET="$CURRENT/public_html"
+PUBLIC_HTML_TARGET="$CURRENT/public"
+log_info "Docroot set to public/ (Laravel-only, Phase 8)"
+
 if [[ -L "$PUBLIC_HTML_BASE" ]]; then
     rm -f "$PUBLIC_HTML_BASE"
 elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
@@ -329,6 +402,32 @@ if [[ "$SKIP_CLEANUP" == "false" ]]; then
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
         BASE_PATH="$BASE" "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE" || log_warn "Cleanup reported warnings"
+    fi
+fi
+
+# Laravel cache: clear before deploy, then bootstrap/cache from the new release.
+# This is the production default; skip only when SKIP_LARAVEL_CACHE is set or
+# ./artisan is absent.
+#
+# NOTE: `php artisan migrate --force` is INTENTIONALLY NOT run here. The
+# database schema is frozen (shared with the legacy data model); the Laravel
+# scaffold migrations (users/cache/jobs) are never executed against the
+# shared DB — the tables already exist. Adding migrations requires an
+# explicit review, not a deploy step.
+if [[ -f "artisan" ]]; then
+    log_section "UPDATING LARAVEL CACHE"
+    if [[ "${SKIP_LARAVEL_CACHE:-false}" != "true" ]]; then
+        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
+        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
+        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
+        php artisan config:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:cache failed"
+        php artisan route:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:cache failed"
+        php artisan view:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:cache failed"
+    else
+        log_info "SKIP_LARAVEL_CACHE=true — clearing Laravel cache only"
+        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
+        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
+        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
     fi
 fi
 

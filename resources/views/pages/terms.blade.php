@@ -1,0 +1,71 @@
+@extends('layouts.app')
+
+@section('title', t('Terms of Service').' — '.($appSettings['site_name'] ?? 'BroxLab'))
+
+@section('content')
+<div class="py-6 md:py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section class="mb-6 rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-6 text-white sm:p-10">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-3xl">
+                    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+                        <i class="lucide lucide-file-text h-3.5 w-3.5" aria-hidden="true"></i>
+                        {{ t('Platform terms') }}
+                    </div>
+                    <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{{ t('Terms of Service') }}</h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">{{ t('Please read these terms carefully before using our platform.') }}</p>
+                </div>
+                <div class="hidden text-indigo-300 lg:block" aria-hidden="true">
+                    <i class="lucide lucide-book-open h-16 w-16"></i>
+                </div>
+            </div>
+        </section>
+
+        <div class="mx-auto max-w-4xl">
+            <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
+                <i class="lucide lucide-alert-triangle mr-2" aria-hidden="true"></i>
+                <strong>{{ t('Important:') }}</strong> {{ t('By using this platform, you agree to these terms and conditions.') }}
+            </div>
+
+            <article class="prose prose-sm max-w-none">
+                <h2>{{ t('1. Acceptance of Terms') }}</h2>
+                <p>{{ t('By accessing and using') }} {{ $appSettings['site_name'] ?? 'BroxLab' }}{{ t(', you accept and agree to be bound by this agreement.') }}</p>
+
+                <h2>{{ t('2. Use License') }}</h2>
+                <p>{{ t('Permission is granted to temporarily view materials for personal, non-commercial use only. Under this license you may not:') }}</p>
+                <ul>
+                    <li>{{ t('Modify or copy materials without authorization.') }}</li>
+                    <li>{{ t('Use materials for commercial public display.') }}</li>
+                    <li>{{ t('Attempt to decompile or reverse engineer platform software.') }}</li>
+                    <li>{{ t('Remove copyright or proprietary notices.') }}</li>
+                    <li>{{ t('Mirror materials on another server without permission.') }}</li>
+                    <li>{{ t('Violate the rights of others.') }}</li>
+                    <li>{{ t('Publish false or misleading information.') }}</li>
+                </ul>
+
+                <h2>{{ t('3. Disclaimer') }}</h2>
+                <p>{{ t('All materials are provided') }} "as is" {{ t('without warranties of any kind, either expressed or implied.') }}</p>
+
+                <h2>{{ t('4. Limitations') }}</h2>
+                <p>{{ t('We are not liable for damages arising from use or inability to use the website, including loss of data or business interruption.') }}</p>
+
+                <h2>{{ t('5. Accuracy of Materials') }}</h2>
+                <p>{{ t('Content may contain errors or outdated information. We may revise materials at any time without notice.') }}</p>
+
+                <h2>{{ t('6. Links') }}</h2>
+                <p>{{ t('We are not responsible for third-party sites linked from this platform. Use external links at your own risk.') }}</p>
+
+                <h2>{{ t('7. Modifications') }}</h2>
+                <p>{{ t('We may revise these terms at any time. Continued use of the website means acceptance of the updated terms.') }}</p>
+
+                <h2>{{ t('8. Governing Law') }}</h2>
+                <p>{{ t('These terms are governed by the laws of Bangladesh and subject to the jurisdiction of local courts.') }}</p>
+
+                <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                    <strong>{{ t('Last Updated:') }}</strong> {{ now()->format('F d, Y') }}
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+@endsection
