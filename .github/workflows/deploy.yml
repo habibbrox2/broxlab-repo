@@ -24,6 +24,16 @@ jobs:
           chmod 600 /tmp/ssh/deploy_key
         shell: bash
 
+      - name: Upload deploy script
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key_path: /tmp/ssh/deploy_key
+          port: 22
+          source: "web-host/scripts/deploy.sh"
+          target: "/tmp/broxlab-deploy"
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
@@ -35,6 +45,11 @@ jobs:
           command_timeout: 25m
           script: |
             cd /home/tdhuedhn/broxlab
+            # Refresh the local copy from the pushed commit first: the old
+            # scripts/deploy.sh is only refreshed AFTER validation passes,
+            # so a broken copy would otherwise block every future deploy.
+            cp -f /tmp/broxlab-deploy/web-host/scripts/deploy.sh scripts/deploy.sh
+            chmod +x scripts/deploy.sh
             bash scripts/deploy.sh
 
       - name: Post-Deployment Status

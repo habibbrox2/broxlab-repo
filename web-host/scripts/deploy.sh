@@ -157,11 +157,33 @@ if [[ -z "${AVAILABLE_KB:-}" || "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]]; then
 fi
 log_info "Disk space check passed ($((AVAILABLE_KB / 1024 / 1024))GB available)"
 
+# Node.js is optional on this host: when node/npm are unavailable the deploy
+# falls back to PHP-only mode (USE_PHP_ONLY=true, same as the explicit flag)
+# and skips the esbuild/Vite asset builds. Non-interactive SSH shells (GitHub
+# Actions) often miss the nvm/profile PATH entries, so bootstrap Node before
+# validating instead of failing outright.
+if [[ "${USE_PHP_ONLY:-false}" != "true" ]]; then
+    for node_profile in "$HOME/.nvm/nvm.sh" "$HOME/.profile" "$HOME/.bash_profile" "/etc/profile.d/nvm.sh"; do
+        if [[ -f "$node_profile" ]]; then
+            # shellcheck disable=SC1090
+            source "$node_profile" >/dev/null 2>&1 || true
+        fi
+    done
+
+    if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+        log_warn "node/npm not found in PATH — falling back to PHP-only deployment (USE_PHP_ONLY=true)"
+        log_warn "Frontend asset builds (esbuild/vite) will be SKIPPED; install Node or set USE_PHP_ONLY=false to enable them"
+        USE_PHP_ONLY=true
+    fi
+fi
+
 require_command git
-require_command node
-require_command npm
 require_command php
-log_info "All required commands found"
+if [[ "${USE_PHP_ONLY:-false}" != "true" ]]; then
+    require_command node
+    require_command npm
+fi
+log_info "All required commands found${USE_PHP_ONLY:+ (PHP-only mode — Node skipped)}"
 
 ensure_env_secret() {
     local key="$1"
