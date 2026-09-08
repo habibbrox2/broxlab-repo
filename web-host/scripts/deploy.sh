@@ -160,15 +160,33 @@ log_info "Disk space check passed ($((AVAILABLE_KB / 1024 / 1024))GB available)"
 # Node.js is optional on this host: when node/npm are unavailable the deploy
 # falls back to PHP-only mode (USE_PHP_ONLY=true, same as the explicit flag)
 # and skips the esbuild/Vite asset builds. Non-interactive SSH shells (GitHub
-# Actions) often miss the nvm/profile PATH entries, so bootstrap Node before
+# Actions) often miss the nvm PATH entries, so bootstrap Node before
 # validating instead of failing outright.
-if [[ "${USE_PHP_ONLY:-false}" != "true" ]]; then
-    for node_profile in "$HOME/.nvm/nvm.sh" "$HOME/.profile" "$HOME/.bash_profile" "/etc/profile.d/nvm.sh"; do
-        if [[ -f "$node_profile" ]]; then
-            # shellcheck disable=SC1090
-            source "$node_profile" >/dev/null 2>&1 || true
-        fi
-    done
+#
+# Only nvm.sh is sourced — profile files (.profile/.bash_profile and
+# /etc/profile.d/nvm.sh) may `exit` or return a failing status, which under
+# `set -e` kills the deploy silently. Everything else uses PATH scanning.
+if [[ "${USE_PHP_ONLY:-false}" != "true" ]] && ! command -v node >/dev/null 2>&1; then
+    if [[ -n "${HOME:-}" && -s "$HOME/.nvm/nvm.sh" ]]; then
+        # shellcheck disable=SC1091
+        source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1 || true
+    fi
+
+    if ! command -v node >/dev/null 2>&1; then
+        for node_dir in \
+            "${HOME:-}/.nvm/versions/node"/*/bin \
+            /opt/alt/*/usr/bin \
+            /usr/local/nodejs/bin \
+            /usr/local/lib/nodejs/bin \
+            /opt/nodejs/bin \
+            /usr/local/bin \
+            /usr/bin; do
+            if [[ -x "$node_dir/node" ]]; then
+                PATH="$node_dir:$PATH"
+                break
+            fi
+        done
+    fi
 
     if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
         log_warn "node/npm not found in PATH — falling back to PHP-only deployment (USE_PHP_ONLY=true)"
