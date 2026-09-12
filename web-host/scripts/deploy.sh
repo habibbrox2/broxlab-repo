@@ -287,6 +287,7 @@ log_section "LINKING SHARED RESOURCES"
 # the shared assets/uploads store only. Rollback = redeploy a pre-Phase-8
 # release (USE_LEGACY_DOCROOT was removed with the legacy app).
 mkdir -p storage/firebase public_html
+mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views
 # Root .env is the Laravel app's env (APP_KEY, DB, queues, FCM flags...). It is
 # provisioned on the server (it is gitignored). Only symlink the shared legacy
 # .env when no root .env exists yet, and warn: the shared file predates Laravel
