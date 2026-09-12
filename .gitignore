@@ -16,6 +16,7 @@
 /bootstrap/cache/
 /.env
 /old/
+/old/*
 /old/vendor/
 /old/.env
 /old/storage/
