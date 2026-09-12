@@ -96,24 +96,27 @@
       {{-- MOBILE HAMBURGER --}}
       <button type="button"
               id="mobileMenuToggle"
-              data-brox-toggle="collapse"
-              data-brox-target="#broxMainNav"
               aria-controls="broxMainNav"
-              aria-expanded="false"
+              x-bind:aria-expanded="open"
               aria-label="Toggle navigation menu"
+              x-data="mobileMenu()"
+              @click="toggle()"
               class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-indigo-500/30 bg-[rgb(var(--surface-soft))] text-indigo-600 hover:bg-[rgb(var(--surface))] hover:text-indigo-500 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
-        <svg data-icon-hamburger class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon-hamburger x-show="!open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <svg data-icon-close class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon-close x-show="open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
 
       {{-- MAIN NAV MENU --}}
       <div id="broxMainNav"
-           data-mobile-menu
-           data-expanded="false"
+           x-data="mobileMenu()"
+           x-show="open"
+           @click.outside="close()"
+           @keydown.escape.window="close()"
+           x-effect="document.body.style.overflow = open ? 'hidden' : ''"
            role="menubar"
            class="flex absolute lg:static top-16 lg:top-auto left-0 lg:left-auto right-0 lg:right-auto w-full lg:w-auto lg:flex-1 flex-col lg:flex-row bg-[rgb(var(--surface))] dark:bg-slate-900/95 lg:bg-transparent dark:lg:bg-transparent border-b lg:border-0 border-[rgb(var(--border))] shadow-lg lg:shadow-none lg:gap-1 max-h-0 lg:max-h-none overflow-hidden lg:overflow-visible transition-[max-height] duration-300 ease-in-out data-[expanded=true]:max-h-screen data-[expanded=true]:overflow-y-auto data-[expanded=true]:py-2 z-40 lg:z-auto lg:justify-center">
 
@@ -177,13 +180,14 @@
 
         {{-- Notifications (authenticated only) --}}
         @auth
-          <div class="relative" data-notification-menu>
+          <div class="relative" x-data="notifications()">
             <button type="button"
                     id="broxNotificationBell"
-                    aria-expanded="false"
+                    x-bind:aria-expanded="open"
                     aria-haspopup="true"
                     aria-label="View notifications"
                     title="Notifications"
+                    @click="toggle()"
                     class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
               <i class="lucide lucide-bell w-5 h-5 group-hover:scale-110 transition-transform duration-300" aria-hidden="true"></i>
               @if($unread > 0)
@@ -194,10 +198,18 @@
             </button>
 
             <div id="notificationDropdown"
-                 data-notification-dropdown
-                 data-user-id="{{ auth()->id() }}"
+                 x-show="open"
+                 @click.outside="close()"
+                 @keydown.escape.window="close()"
+                 x-ref="list"
                  aria-labelledby="broxNotificationBell"
-                 class="hidden fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-96 max-h-[85vh] sm:max-h-96 rounded-t-3xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200 flex flex-col">
+                 class="fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-96 max-h-[85vh] sm:max-h-96 rounded-t-3xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200 flex flex-col"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95">
 
               <div class="sticky top-0 flex items-center justify-between px-4 py-3.5 border-b border-[rgb(var(--border))] bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/60 dark:to-slate-800/40 backdrop-blur-sm rounded-t-3xl sm:rounded-t-xl">
                 <div class="flex items-center gap-2">
@@ -271,13 +283,14 @@
 
         {{-- User menu (authenticated) / Auth links (guest) --}}
         @auth
-          <div class="relative" data-user-menu>
+          <div class="relative" x-data="userMenu()">
             <button type="button"
                     id="broxNavbarUser"
-                    aria-expanded="false"
+                    x-bind:aria-expanded="open"
                     aria-haspopup="true"
                     aria-label="Account menu"
                     title="Account menu"
+                    @click="toggle()"
                     class="inline-flex items-center justify-center gap-1.5 w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
               @if(!empty($authUser->profile_pic))
                 <img src="{{ $authUser->profile_pic }}"
@@ -294,8 +307,17 @@
             </button>
 
             <div id="userDropdown"
+                 x-show="open"
+                 @click.outside="close()"
+                 @keydown.escape.window="close()"
                  aria-labelledby="broxNavbarUser"
-                 class="hidden fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-72 rounded-t-2xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200">
+                 class="fixed sm:absolute bottom-0 sm:bottom-auto top-auto sm:top-full left-0 right-0 sm:left-auto sm:right-0 sm:mt-2 w-full sm:w-72 rounded-t-2xl sm:rounded-2xl border-t sm:border border-[rgb(var(--border))] bg-white dark:bg-slate-900 shadow-2xl dark:shadow-black/50 overflow-hidden z-50 opacity-0 invisible scale-95 sm:scale-100 origin-top-right transition-all duration-200"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95">
 
               <div class="px-4 py-4 border-b border-[rgb(var(--border))] bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/60 dark:to-slate-800/30 rounded-t-2xl sm:rounded-t-xl">
                 <div class="flex items-center gap-3">

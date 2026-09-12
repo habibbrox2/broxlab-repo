@@ -8,9 +8,9 @@
 
 module.exports = {
   content: [
-    './public_html/**/*.php',
+    './public/**/*.php',
     './app/Views/**/*.{php,html,twig}',
-    './public_html/assets/**/*.{js,mjs}',
+    './public/assets/**/*.{js,mjs}',
   ],
   // Dark mode handled via @custom-variant dark in tailwind-input.css
   theme: {

@@ -33,7 +33,8 @@ class AdminNotificationController extends Controller
             type: $type
         );
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.notifications.index', [
             'title' => 'Notifications',
@@ -51,7 +52,8 @@ class AdminNotificationController extends Controller
 
     public function create(): View
     {
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.notifications.create', [
             'title' => 'Send Notification',
@@ -77,7 +79,8 @@ class AdminNotificationController extends Controller
 
     public function scheduleForm(): View
     {
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.notifications.schedule', [
             'title' => 'Schedule Notification',
@@ -101,7 +104,7 @@ class AdminNotificationController extends Controller
             ->with('status', $result['status']);
     }
 
-    public function view(Request $request, int $id): View
+    public function view(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -115,7 +118,8 @@ class AdminNotificationController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.notifications.view', [
             'title' => 'View Notification',
@@ -125,7 +129,7 @@ class AdminNotificationController extends Controller
         ]);
     }
 
-    public function deleteConfirm(Request $request, int $id): View
+    public function deleteConfirm(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -139,7 +143,8 @@ class AdminNotificationController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.notifications.delete', [
             'title' => 'Delete Notification',
@@ -149,7 +154,7 @@ class AdminNotificationController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {

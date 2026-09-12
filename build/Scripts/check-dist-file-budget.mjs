@@ -15,7 +15,7 @@ const CONFIG = {
   // Distribution directories to check
   distDirs: [
     {
-      path: 'public_html/assets/js/dist',
+      path: 'public/assets/js/dist',
       budgets: {
         'admin.js': 300 * 1024, // 300KB
         'script.js': 50 * 1024, // 50KB
@@ -46,7 +46,7 @@ const CONFIG = {
       totalBudget: 1000 * 1024, // 1MB total (includes new standalone scripts)
     },
     {
-      path: 'public_html/assets/css/dist',
+      path: 'public/assets/css/dist',
       budgets: {
         'tailwind-public.css': 260 * 1024, // 260KB
         'tailwind-admin.css': 260 * 1024, // 260KB
@@ -54,7 +54,7 @@ const CONFIG = {
       totalBudget: 700 * 1024, // 700KB total
     },
     {
-      path: 'public_html/assets/firebase/v2/dist',
+      path: 'public/assets/firebase/v2/dist',
       budgets: {
         'firebase-app.js': 50 * 1024, // 50KB
         'firebase-auth.js': 100 * 1024, // 100KB

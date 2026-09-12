@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../public_html/_db.php';
+require_once __DIR__ . '/../public/_db.php';
 $r = db()->query('SHOW TABLES');
 while ($row = $r->fetch_array()) {
     $name = $row[0];

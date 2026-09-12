@@ -144,7 +144,7 @@ class ProfileController extends Controller
             'linkedin_url' => $validated['linkedin_url'] ?? null,
         ];
 
-        // Profile picture upload — same public_html/uploads/profiles dir as
+        // Profile picture upload — same public/uploads/profiles dir as
         // the legacy UploadService 'profiles' category (filesystem-only).
         if ($request->hasFile('profile_pic') && $request->file('profile_pic')->isValid()) {
             try {

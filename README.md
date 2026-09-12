@@ -1,46 +1,56 @@
 # BroxLab
 
-Full-stack PHP (Twig) application. PHP-only deployment; Node.js tooling retained in repo but optional.
+Laravel 12 application migrated from a legacy PHP/Twig codebase using the strangler-fig pattern.
 
 ## Stack
 
-- Backend: PHP 8.2+, MySQL / MariaDB
-- Frontend: Tailwind CSS, vanilla JS
-- Templating: Twig
-- Optional: Node.js services (`src/`) and build tooling (`build/`)
+- Backend: PHP 8.2+, Laravel 12, MySQL / MariaDB
+- Frontend: Tailwind CSS 4, Vite, Alpine.js
+- Templating: Blade
+- Testing: PHPUnit, Playwright
+- Optional: Node.js tooling for legacy assets
 
 ## Layout
 
-- `public_html/index.php` — bootstrap, static file serving, routing
-- `app/Controllers/` — 50 controllers with procedural route definitions (closures, not classes)
-- `app/Models/` — 44 data models (Mysqli, prepared statements)
-- `app/Helpers/` — 26 shared helpers
-- `app/Views/` — 261 Twig templates
-- `app/Middleware/` — auth, CSRF, rate limiting
-- `app/Services/` — 14 business logic services
-- `app/Modules/` — specialized modules (PdfTools, AISystem)
-- `app/Router/` — custom regex router with middleware support
-- `Config/` — 9 app configuration files (Twig, DB, uploads, constants)
-- `Database/` — 82 SQL schema files (one per table, soft deletes universal)
-- `public_html/assets/` — frontend source (never edit `dist/`)
-- `public_html/rtceditor/` — Rich Text Editor (esbuild bundle)
-- `system/prompts/` — AI prompts and config
+- `app/` — Laravel application code (Auth, Http, Jobs, Mail, Models, Providers, Support, View)
+- `bootstrap/` — framework bootstrap
+- `config/` — 11 configuration files
+- `database/` — migrations, factories, seeders
+- `public/` — Laravel web root (`index.php`) and static assets
+- `resources/` — 114 Blade views and frontend source
+- `routes/` — HTTP and console route definitions
+- `tests/` — 15 PHPUnit feature and unit tests
+- `old/` — archived legacy codebase (controllers, models, views, helpers)
+- `migration/` — migration plan, changelog, and remaining steps
 
 ## Run
 
-- App: `php -S localhost:8000 -t public_html`
-- Frontend watch: `npm run dev`
-- Full verify: `npm run validate`
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --force
+npm install
+npm run build
+php artisan serve
+```
 
-## Migration to Laravel (in progress)
+Watch mode:
+```bash
+npm run dev
+```
 
-This application is being incrementally migrated to **Laravel + Blade + Alpine.js** using the
-strangler-fig pattern: the Laravel app lives in [`laravel/`](laravel/) and the legacy
-`public_html/index.php` delegates allowlisted routes to it (see [`laravel/bridge.php`](laravel/bridge.php)).
+Tests:
+```bash
+php artisan test
+npm test
+```
 
-- Plan: [`migration/PLAN.md`](migration/PLAN.md)
-- Progress: [`migration/CHANGELOG.md`](migration/CHANGELOG.md)
-- Live checklist: [`migration/REMAINING_STEPS.md`](migration/REMAINING_STEPS.md)
+Full validation:
+```bash
+npm run validate
+```
 
-Laravel frontend bundle: `cd laravel && npm run build` (emits to `public_html/assets/laravel/dist/`).
-Laravel tests: `cd laravel && php artisan test` (reads the shared MySQL schema).
+## Migration Notes
+
+The legacy Twig-based application has been incrementally migrated to Laravel. The old codebase is preserved in `old/` for reference. See `migration/PLAN.md` for the migration strategy and `migration/REMAINING_STEPS.md` for the live checklist.

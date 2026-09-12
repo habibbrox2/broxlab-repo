@@ -141,7 +141,7 @@ class LanguageHelper
     /**
      * Get all translations for a language as a flat key-value map
      */
-    public static function getTranslations(string $lang = null): array
+    public static function getTranslations(?string $lang = null): array
     {
         if ($lang === null) {
             $lang = self::getCurrentLang();
@@ -152,7 +152,7 @@ class LanguageHelper
     /**
      * Translate text using JSON files first, then AI as fallback
      */
-    public static function translate(string $text, string $from = 'en', string $to = null, bool $useAI = true): string
+    public static function translate(string $text, string $from = 'en', ?string $to = null, bool $useAI = true): string
     {
         if ($to === null) {
             $to = self::getCurrentLang();

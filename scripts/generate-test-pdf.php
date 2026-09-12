@@ -80,7 +80,7 @@ echo "1. Rendering Twig template...\n";
 $html = $twig->render('pdf/kharij-form.twig', $templateData);
 echo "   HTML: " . strlen($html) . " bytes\n";
 
-file_put_contents(__DIR__ . '/../public_html/test-pdf-preview.html', $html);
+file_put_contents(__DIR__ . '/../public/test-pdf-preview.html', $html);
 echo "   ✓ Saved: test-pdf-preview.html\n";
 
 echo "2. Generating PDF via mPDF...\n";
@@ -100,7 +100,7 @@ $mpdf->SetHTMLFooter('<table width="100%"><tr><td width="333px"></td><td width="
 $mpdf->SetTitle('খারিজ ফর্ম - টেস্ট');
 $mpdf->WriteHTML(mpdf_optimize_html($html));
 
-$outputPath = __DIR__ . '/../public_html/test-kharij-output.pdf';
+$outputPath = __DIR__ . '/../public/test-kharij-output.pdf';
 $mpdf->Output($outputPath, \Mpdf\Output\Destination::FILE);
 echo "   ✓ Saved: test-kharij-output.pdf\n";
 $size = file_exists($outputPath) ? filesize($outputPath) : 0;

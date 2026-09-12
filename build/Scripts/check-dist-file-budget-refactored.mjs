@@ -14,7 +14,7 @@ import { getRelativePath } from '../lib/fs-utils.mjs';
 const CONFIG = {
   distDirs: [
     {
-      path: 'public_html/assets/js/dist',
+      path: 'public/assets/js/dist',
       budgets: {
         'admin.js': 300 * 1024,
         'script.js': 50 * 1024,
@@ -45,7 +45,7 @@ const CONFIG = {
       totalBudget: 1000 * 1024,
     },
     {
-      path: 'public_html/assets/css/dist',
+      path: 'public/assets/css/dist',
       budgets: {
         'tailwind-public.css': 260 * 1024,
         'tailwind-admin.css': 260 * 1024,
@@ -53,7 +53,7 @@ const CONFIG = {
       totalBudget: 700 * 1024,
     },
     {
-      path: 'public_html/assets/firebase/v2/dist',
+      path: 'public/assets/firebase/v2/dist',
       budgets: {
         'init.js': 500 * 1024,
         'auth.js': 600 * 1024,

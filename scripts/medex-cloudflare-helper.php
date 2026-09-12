@@ -6,7 +6,7 @@ if (defined('MEDEX_CLOUDFLARE_HELPER_LOADED')) {
 
 define('MEDEX_CLOUDFLARE_HELPER_LOADED', true);
 
-define('MEDEX_CLOUDFLARE_COOKIE_CACHE', __DIR__ . '/../public_html/uploads/medex/medex_browser_cookies.json');
+define('MEDEX_CLOUDFLARE_COOKIE_CACHE', __DIR__ . '/../public/uploads/medex/medex_browser_cookies.json');
 
 define('MEDEX_CLOUDFLARE_USER_AGENTS', [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

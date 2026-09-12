@@ -1,6 +1,6 @@
 /**
  * BroxBhai AI SYSTEM - Chat Management Dashboard (2026 Admin)
- * Path: /public_html/ai/js/ai-chat-manager.js
+ * Path: /public/ai/js/ai-chat-manager.js
  *
  * Features:
  *   - Conversation list with search/filter

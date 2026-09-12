@@ -1,0 +1,139 @@
+@extends('layouts.app')
+
+@section('title', t('Contact').' '.($appSettings['site_name'] ?? 'BroxLab').' — '.t('Get in touch'))
+
+@php
+    $breadcrumbs = [['label' => 'Contact Us', 'url' => '/contact', 'icon' => 'envelope']];
+@endphp
+
+@section('schema')
+@php
+    $contactSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'LocalBusiness',
+        'name' => $appSettings['site_name'] ?? 'BroxLab',
+        'url' => url()->current(),
+        'telephone' => $appSettings['contact_phone'] ?? '',
+        'email' => $appSettings['contact_email'] ?? '',
+        'description' => 'Contact ' . ($appSettings['site_name'] ?? 'BroxLab') . ' for inquiries and support',
+        'contactPoint' => [
+            '@type' => 'ContactPoint',
+            'contactType' => 'Customer Service',
+            'telephone' => $appSettings['contact_phone'] ?? '',
+            'email' => $appSettings['contact_email'] ?? '',
+        ],
+    ];
+@endphp
+<script type="application/ld+json">
+{!! json_encode($contactSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+@endsection
+
+@section('content')
+<div class="public-static-page py-6 md:py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section class="hero-section mb-6 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-3xl">
+                    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+                        <i class="lucide lucide-mail h-3.5 w-3.5" aria-hidden="true"></i>
+                        <span data-i18n="Contact">{{ t('Contact') }}</span>
+                    </div>
+                    <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl" data-i18n="Get in touch">{{ t('Get in touch') }}</h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base" data-i18n="Have questions, suggestions, or partnership ideas? We would love to hear from you.">
+                        {{ t('Have questions, suggestions, or partnership ideas? We would love to hear from you.') }}
+                    </p>
+                </div>
+                <div class="public-hero-icon" aria-hidden="true">
+                    <i class="lucide lucide-message-circle"></i>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid gap-6 lg:grid-cols-12">
+            <div class="lg:col-span-7">
+                <div class="surface-card">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900" data-i18n="Send a message">{{ t('Send a message') }}</h2>
+                        <p class="mt-2 text-sm text-slate-600" data-i18n="We usually reply as soon as possible during business hours.">{{ t('We usually reply as soon as possible during business hours.') }}</p>
+                    </div>
+
+                    @if(!empty($success))
+                    <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700" role="alert">
+                        <i class="lucide lucide-check-circle mr-2" aria-hidden="true"></i>{{ $success }}
+                    </div>
+                    @endif
+
+                    @if(!empty($errors))
+                    <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                        <p class="mb-2 font-semibold" data-i18n="Please fix the following:">{{ t('Please fix the following:') }}</p>
+                        <ul class="list-disc space-y-1 pl-5">
+                            @foreach($errors as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
+                    <form method="post" action="/contact" novalidate>
+                        @csrf
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="name" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Your Name">{{ t('Your Name') }}</label>
+                                <input type="text" id="name" name="name" value="{{ $old['name'] ?? '' }}" placeholder="John Doe" required>
+                            </div>
+                            <div>
+                                <label for="email" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Email">{{ t('Email') }}</label>
+                                <input type="email" id="email" name="email" value="{{ $old['email'] ?? '' }}" placeholder="you@example.com" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="subject" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Subject">{{ t('Subject') }}</label>
+                            <input type="text" id="subject" name="subject" value="{{ $old['subject'] ?? '' }}" placeholder="Message subject" required>
+                        </div>
+
+                        <div>
+                            <label for="message" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Message">{{ t('Message') }}</label>
+                            <textarea id="message" name="message" rows="6" placeholder="Write your message here..." required>{{ $old['message'] ?? '' }}</textarea>
+                        </div>
+
+                        <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                            <i class="lucide lucide-send h-4 w-4" aria-hidden="true"></i>
+                            <span data-i18n="Send Message">{{ t('Send Message') }}</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="lg:col-span-5">
+                <div class="space-y-4">
+                    <div class="info-card">
+                        <h3 class="text-lg font-bold text-slate-900" data-i18n="Contact details">{{ t('Contact details') }}</h3>
+                        <div class="mt-4 space-y-3 text-sm text-slate-600">
+                            @if(!empty($appSettings['contact_phone']))
+                            <p class="flex items-center gap-2"><i class="lucide lucide-phone h-4 w-4 text-emerald-600" aria-hidden="true"></i>{{ $appSettings['contact_phone'] }}</p>
+                            @endif
+                            @if(!empty($appSettings['contact_email']))
+                            <p class="flex items-center gap-2"><i class="lucide lucide-mail h-4 w-4 text-indigo-600" aria-hidden="true"></i>{{ $appSettings['contact_email'] }}</p>
+                            @endif
+                            @if(!empty($appSettings['contact_address']))
+                            <p class="flex items-start gap-2"><i class="lucide lucide-map-pin h-4 w-4 text-red-500 mt-0.5" aria-hidden="true"></i><span>{{ $appSettings['contact_address'] }}</span></p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="support-card">
+                        <h3 class="text-lg font-bold text-slate-900" data-i18n="What to include">{{ t('What to include') }}</h3>
+                        <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                            <li class="flex gap-2"><i class="lucide lucide-check h-4 w-4 text-indigo-600 mt-0.5" aria-hidden="true"></i><span data-i18n="Clear subject line">{{ t('Clear subject line') }}</span></li>
+                            <li class="flex gap-2"><i class="lucide lucide-check h-4 w-4 text-indigo-600 mt-0.5" aria-hidden="true"></i><span data-i18n="Relevant links or screenshots">{{ t('Relevant links or screenshots') }}</span></li>
+                            <li class="flex gap-2"><i class="lucide lucide-check h-4 w-4 text-indigo-600 mt-0.5" aria-hidden="true"></i><span data-i18n="Your preferred reply contact">{{ t('Your preferred reply contact') }}</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+@endsection

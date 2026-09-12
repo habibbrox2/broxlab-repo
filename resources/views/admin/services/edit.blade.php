@@ -3,7 +3,7 @@
 @section('title', 'Edit Service — '.($appSettings['site_name'] ?? 'BroxLab'))
 
 @push('styles')
-<link href="/rtceditor/editor.css?v={{ filemtime(base_path('public_html/rtceditor/editor.bundle.js')) ?: time() }}" rel="stylesheet">
+<link href="/rtceditor/editor.css?v={{ filemtime(base_path('public/rtceditor/editor.bundle.js')) ?: time() }}" rel="stylesheet">
 @endpush
 
 @section('content')

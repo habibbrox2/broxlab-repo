@@ -2,7 +2,7 @@
 
 /**
  * Check Asset Duplicates Script (Refactored)
- * Finds duplicate assets in the public_html/assets directory
+ * Finds duplicate assets in the public/assets directory
  * Uses shared build utilities for cleaner, more maintainable code
  */
 
@@ -13,10 +13,10 @@ import { Logger, exit, formatSize } from '../lib/utils.mjs';
 
 const CONFIG = {
   assetDirs: [
-    'public_html/assets/css',
-    'public_html/assets/js',
-    'public_html/assets/images',
-    'public_html/assets/fonts',
+    'public/assets/css',
+    'public/assets/js',
+    'public/assets/images',
+    'public/assets/fonts',
   ],
 
   checkExtensions: [

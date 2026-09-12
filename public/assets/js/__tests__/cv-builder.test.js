@@ -1,8 +1,8 @@
 /**
  * Unit tests for CV Builder — template selection, preview, and step navigation
  *
- * @see public_html/assets/js/cv-builder-renderers.js
- * @see public_html/assets/js/cv-builder-app.js
+ * @see public/assets/js/cv-builder-renderers.js
+ * @see public/assets/js/cv-builder-app.js
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';

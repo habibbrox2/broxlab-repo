@@ -18,12 +18,12 @@ export function getProjectDirs() {
     return {
         root: rootDir,
         build: path.join(rootDir, 'build'),
-        public: path.join(rootDir, 'public_html'),
-        assets: path.join(rootDir, 'public_html', 'assets'),
-        jsAssets: path.join(rootDir, 'public_html', 'assets', 'js'),
-        cssAssets: path.join(rootDir, 'public_html', 'assets', 'css'),
-        firebaseAssets: path.join(rootDir, 'public_html', 'assets', 'firebase'),
-        aiAssets: path.join(rootDir, 'public_html', 'assets', 'ai', 'ai-assistant'),
+        public: path.join(rootDir, 'public'),
+        assets: path.join(rootDir, 'public', 'assets'),
+        jsAssets: path.join(rootDir, 'public', 'assets', 'js'),
+        cssAssets: path.join(rootDir, 'public', 'assets', 'css'),
+        firebaseAssets: path.join(rootDir, 'public', 'assets', 'firebase'),
+        aiAssets: path.join(rootDir, 'public', 'assets', 'ai', 'ai-assistant'),
     };
 }
 

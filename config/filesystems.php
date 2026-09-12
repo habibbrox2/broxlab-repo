@@ -47,12 +47,12 @@ return [
             'report' => false,
         ],
 
-        // Shared uploads dir used by legacy app. Migrated profile picture uploads
-        // write here directly (same public_html/uploads/profiles dir) so both apps
-        // see the same files without symlinks or copy steps.
+        // Shared uploads dir. Migrated profile picture uploads write here
+        // directly (public/uploads/profiles) so all writers see the same files
+        // without symlinks or copy steps.
         'uploads' => [
             'driver' => 'local',
-            'root' => base_path('public_html/uploads'),
+            'root' => base_path('public/uploads'),
             'url' => '/uploads',
             'visibility' => 'public',
             'throw' => false,

@@ -43,6 +43,23 @@ class LanguageService
         return in_array($lang, self::VALID_LANGS, true);
     }
 
+    /**
+     * Explicitly switch the active language (mirrors legacy
+     * LanguageHelper::setCurrentLang): validates, then persists to the shared
+     * legacy session + brox_lang cookie.
+     */
+    public function setCurrentLang(string $lang): bool
+    {
+        if (! $this->isValid($lang)) {
+            return false;
+        }
+
+        $this->current = $lang;
+        $this->persist($lang);
+
+        return true;
+    }
+
     protected function detect(): string
     {
         // 1. GET param

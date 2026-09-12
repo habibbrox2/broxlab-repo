@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Starts the native PHP session exactly like the legacy app does
- * (app/Models/SessionManager.php + public_html/index.php) BEFORE Laravel's own
+ * (app/Models/SessionManager.php + the legacy front controller) BEFORE Laravel's own
  * session middleware runs.
  *
  * The legacy stack stores login state in native PHP sessions

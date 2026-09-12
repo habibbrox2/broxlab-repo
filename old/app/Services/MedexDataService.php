@@ -446,7 +446,7 @@ class MedexDataService
     /**
      * Load detailed brands for one specific company from its individual JSON file.
      */
-    public function getCompanyDetailedBrands(int $companyId, string $companySlug = null): ?array
+    public function getCompanyDetailedBrands(int $companyId, ?string $companySlug = null): ?array
     {
         $dir = $this->getCompaniesDetailedDir();
         if (!is_dir($dir)) return null;
@@ -639,7 +639,7 @@ class MedexDataService
         return max(0, time() - filemtime($path));
     }
 
-    public function isDetailedDataStale(int $thresholdSeconds = null): bool
+    public function isDetailedDataStale(?int $thresholdSeconds = null): bool
     {
         if ($thresholdSeconds === null) {
             $thresholdSeconds = $this->getRefreshDataTtl();
@@ -649,7 +649,7 @@ class MedexDataService
         return !file_exists($path) || $this->getDetailedDataFileAgeSeconds() > $thresholdSeconds;
     }
 
-    public function refreshDetailedDataIfStale(int $thresholdSeconds = null): bool
+    public function refreshDetailedDataIfStale(?int $thresholdSeconds = null): bool
     {
         if ($thresholdSeconds === null) {
             $thresholdSeconds = $this->getRefreshDataTtl();
@@ -723,7 +723,7 @@ class MedexDataService
         return (int)($_ENV['MEDEX_REFRESH_TTL_SECONDS'] ?? self::REFRESH_DATA_TTL);
     }
 
-    public function isDataStale(int $thresholdSeconds = null): bool
+    public function isDataStale(?int $thresholdSeconds = null): bool
     {
         if ($thresholdSeconds === null) {
             $thresholdSeconds = $this->getRefreshDataTtl();
@@ -763,7 +763,7 @@ class MedexDataService
         }
     }
 
-    public function refreshDataIfStale(int $thresholdSeconds = null): bool
+    public function refreshDataIfStale(?int $thresholdSeconds = null): bool
     {
         if ($thresholdSeconds === null) {
             $thresholdSeconds = $this->getRefreshDataTtl();

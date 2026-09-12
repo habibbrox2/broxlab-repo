@@ -39,7 +39,7 @@ Consolidated file system utilities for consistent file handling.
 ```javascript
 import { scanDirectory, calculateFileHash } from '../lib/fs-utils.mjs';
 
-const files = scanDirectory('public_html/assets/js', {
+const files = scanDirectory('public/assets/js', {
   extensions: ['.js'],
   ignoreDirs: ['node_modules'],
 });

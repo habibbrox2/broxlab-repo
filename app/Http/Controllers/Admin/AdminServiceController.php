@@ -126,7 +126,7 @@ class AdminServiceController extends Controller
 
     // ---------- Edit form ----------
 
-    public function edit(Request $request, int $id): View
+    public function edit(Request $request, ?int $id = null): View
     {
         // Support /admin/services/edit?id=<id> legacy
         if ($id <= 0) {
@@ -154,7 +154,7 @@ class AdminServiceController extends Controller
 
     // ---------- Update ----------
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, ?int $id = null): RedirectResponse
     {
         // Support legacy POST with ?id= override
         $postedId = (int) ($request->input('id', 0));
@@ -192,7 +192,7 @@ class AdminServiceController extends Controller
 
     // ---------- Delete confirmation ----------
 
-    public function deleteConfirm(Request $request, int $id): View
+    public function deleteConfirm(Request $request, ?int $id = null): View
     {
         // Support legacy GET /admin/services/delete?id=<id>
         if ($id <= 0) {
@@ -220,7 +220,7 @@ class AdminServiceController extends Controller
 
     // ---------- Delete ----------
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, ?int $id = null): RedirectResponse
     {
         // Support legacy POST /admin/services/delete with ?id= override
         $postedId = (int) ($request->input('id', 0));

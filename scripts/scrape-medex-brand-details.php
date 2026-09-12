@@ -289,7 +289,7 @@ if (!defined('MEDEX_BRAND_PARSER_LOADED')) {
 
     function getUploadsMedexDir(): string
     {
-        $base = realpath(__DIR__ . '/../public_html/uploads') ?: (__DIR__ . '/../public_html/uploads');
+        $base = realpath(__DIR__ . '/../public/uploads') ?: (__DIR__ . '/../public/uploads');
         $dir = rtrim(str_replace('\\', '/', $base), '/') . '/medex';
         ensureDir($dir);
         return $dir;

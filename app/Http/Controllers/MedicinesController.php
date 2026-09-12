@@ -31,7 +31,7 @@ use Illuminate\View\View;
  *  - POST /api/medicines/save-data      accept JS-collected JSON (CSRF/token)
  *
  * Data files are the same shared JSON files the legacy app used
- * (public_html/uploads/medex/medex_herbal_companies.json + detailed files).
+ * (public/uploads/medex/medex_herbal_companies.json + detailed files).
  */
 class MedicinesController extends Controller
 {

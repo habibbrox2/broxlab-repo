@@ -18,9 +18,9 @@ const __dirname = path.dirname(__filename);
 const args = process.argv.slice(2);
 const isMinify = !args.includes('--dev');
 
-const OUTDIR = 'public_html/assets/css/dist';
-const TAILWIND_INPUT = 'public_html/assets/css/tailwind-input.css';
-const TAILWIND_OUTPUT = 'public_html/assets/css/tailwind-output.css';
+const OUTDIR = 'public/assets/css/dist';
+const TAILWIND_INPUT = 'public/assets/css/tailwind-input.css';
+const TAILWIND_OUTPUT = 'public/assets/css/tailwind-output.css';
 
 async function ensureDir(dir) {
   await fs.promises.mkdir(path.resolve(__dirname, '..', dir), { recursive: true });
@@ -33,7 +33,7 @@ function runTailwind() {
     execSync(cmd, { stdio: 'inherit', cwd: path.resolve(__dirname, '..') });
 
     const outputPath = path.resolve(__dirname, '..', TAILWIND_OUTPUT);
-    const canonicalPath = path.resolve(__dirname, '..', 'public_html/assets/css/tailwind.css');
+    const canonicalPath = path.resolve(__dirname, '..', 'public/assets/css/tailwind.css');
     fs.copyFileSync(outputPath, canonicalPath);
 
     const sizeKB = (fs.statSync(outputPath).size / 1024).toFixed(2);

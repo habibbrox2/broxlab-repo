@@ -2,7 +2,7 @@
 
 /**
  * Check Asset Duplicates Script
- * Finds duplicate assets in the public_html/assets directory
+ * Finds duplicate assets in the public/assets directory
  */
 
 import { readdirSync, statSync, readFileSync } from 'fs';
@@ -15,10 +15,10 @@ const __filename = fileURLToPath(import.meta.url);
 const CONFIG = {
   // Asset directories to check
   assetDirs: [
-    'public_html/assets/css',
-    'public_html/assets/js',
-    'public_html/assets/images',
-    'public_html/assets/fonts',
+    'public/assets/css',
+    'public/assets/js',
+    'public/assets/images',
+    'public/assets/fonts',
   ],
 
   // File extensions to check for duplicates

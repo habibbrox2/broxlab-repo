@@ -14,7 +14,7 @@
  *
  * Result: Individual files like companies/aci-limited.json, companies/acme-laboratories-ltd.json etc.
  *
- * Output: One JSON file per company in public_html/uploads/medex/companies/{company-slug}.json
+ * Output: One JSON file per company in public/uploads/medex/companies/{company-slug}.json
  *         + companies/index.json for discovery.
  *         (No more single huge file — per-company storage for efficient frontend fetching)
  *
@@ -36,9 +36,9 @@ if (PHP_SAPI !== 'cli') {
 $root = dirname(__DIR__);
 require_once __DIR__ . '/scrape-medex-brand-details.php';   // brings in extract_brand_details() etc.
 
-const INPUT_COMPANIES = __DIR__ . '/../public_html/uploads/medex/medex_herbal_companies.json';
-const PER_COMPANY_DIR   = __DIR__ . '/../public_html/uploads/medex/companies';
-const PROGRESS_FILE     = __DIR__ . '/../public_html/uploads/medex/medex_brand_details_progress.json';
+const INPUT_COMPANIES = __DIR__ . '/../public/uploads/medex/medex_herbal_companies.json';
+const PER_COMPANY_DIR   = __DIR__ . '/../public/uploads/medex/companies';
+const PROGRESS_FILE     = __DIR__ . '/../public/uploads/medex/medex_brand_details_progress.json';
 
 // Legacy big file is no longer used (per-company files are the new standard)
 
@@ -74,7 +74,7 @@ if ($options['help']) {
 
 echo "=== MedEx Full Brand Details Collector (from companies JSON) ===\n";
 echo "Input companies: " . INPUT_COMPANIES . "\n";
-echo "Mode: Per-company files (public_html/uploads/medex/companies/)\n";
+echo "Mode: Per-company files (public/uploads/medex/companies/)\n";
 echo "Bilingual: " . ($options['bilingual'] ? 'yes' : 'no') . " | Rate: {$options['rate']}s\n\n";
 
 // Load companies

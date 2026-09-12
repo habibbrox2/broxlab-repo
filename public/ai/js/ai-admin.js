@@ -1,6 +1,6 @@
 /**
  * BroxBhai AI SYSTEM - Admin Panel Copilot (2026 Premium Redesign)
- * Path: /public_html/ai/js/ai-admin.js
+ * Path: /public/ai/js/ai-admin.js
  *
  * Features:
  *  - 100% Vanilla JS — no jQuery dependency

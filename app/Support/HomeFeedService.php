@@ -219,6 +219,8 @@ class HomeFeedService
         foreach ($rows as &$row) {
             $row['title'] = $row['name'] ?? 'Service';
             $img = trim((string) ($row['image'] ?? ''));
+            // Legacy rows may still carry the retired /public_html web-root
+            // prefix; normalise it to the current web root.
             if (str_starts_with($img, '/public_html/')) {
                 $img = substr($img, strlen('/public_html'));
             } elseif (str_starts_with($img, '/public/')) {

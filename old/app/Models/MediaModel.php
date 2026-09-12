@@ -125,7 +125,7 @@ class MediaModel {
     /**
      * Get statistics
      */
-    public function getStats(int $userId = null): array {
+    public function getStats(?int $userId = null): array {
         $where = 'WHERE deleted_at IS NULL';
         $params = [];
         $types = '';

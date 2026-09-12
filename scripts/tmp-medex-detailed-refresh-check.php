@@ -3,7 +3,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../Config/Constants.php';
 
 $root = dirname(__DIR__);
-$uploadsDir = $root . '/public_html/uploads/medex';
+$uploadsDir = $root . '/public/uploads/medex';
 $outputFile = $uploadsDir . '/medex_herbal_companies_detailed.json';
 
 if (!is_dir($uploadsDir)) {

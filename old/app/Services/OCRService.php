@@ -12,7 +12,7 @@ class OCRService
     private int $timeout;
     private array $supportedLanguages = ['eng', 'ben', 'eng+ben'];
 
-    public function __construct(string $apiKey = null, int $timeout = 30)
+    public function __construct(?string $apiKey = null, int $timeout = 30)
     {
         $this->ocrSpaceApiKey = $apiKey ?: getenv('OCR_SPACE_API_KEY') ?: '';
         $this->timeout = $timeout;

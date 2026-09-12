@@ -21,7 +21,7 @@ import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const RTE_DIR = join(ROOT_DIR, 'public_html', 'rtceditor');
+const RTE_DIR = join(ROOT_DIR, 'public', 'rtceditor');
 
 const EAGER_MODULES = [
   'editor.js',

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
-const srcDir = path.join(rootDir, 'public_html', 'assets', 'firebase', 'v2');
+const srcDir = path.join(rootDir, 'public', 'assets', 'firebase', 'v2');
 const outDir = path.join(srcDir, 'dist');
 const isMinify = process.argv.includes('--minify');
 const isWatch = process.argv.includes('--watch');

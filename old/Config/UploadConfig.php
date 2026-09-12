@@ -7,7 +7,7 @@
  * Ensures proper organization and consistent directory structure
  * 
  * Upload Directory Structure:
- * /public_html/uploads/
+ * /public/uploads/
  * ├── profiles/          (User profile pictures)
  * ├── mobiles/           (Mobile device photos)
  * ├── content/           (Content images)

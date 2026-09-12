@@ -1,6 +1,6 @@
 <?php
 /* Import all SQL files from Database directory */
-require_once __DIR__ . '/../public_html/_db.php';
+require_once __DIR__ . '/../public/_db.php';
 
 $databaseDir = dirname(__DIR__) . '/Database';
 $files = glob($databaseDir . '/*.sql');

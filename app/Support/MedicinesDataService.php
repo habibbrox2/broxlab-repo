@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Laravel port of the legacy app/Services/MedexDataService.php. Reads the same
  * shared JSON data files that the browser-side collector writes
- * (public_html/uploads/medex/...), so no medicine information is lost and both
+ * (public/uploads/medex/...), so no medicine information is lost and both
  * apps agree on the dataset.
  *
  * @package BroxLab
@@ -528,7 +528,7 @@ class MedicinesDataService
 
     public function getUploadsDir(): string
     {
-        return base_path('public_html/uploads/medex');
+        return base_path('public/uploads/medex');
     }
 
     public function ensureUploadsDir(): void

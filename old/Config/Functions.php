@@ -904,7 +904,7 @@ if (!function_exists('getAdminBreadcrumbs')) {
 }
 
 if (!function_exists('autoAdminBreadcrumbs')) {
-    function autoAdminBreadcrumbs(string $requestUri = null): array
+    function autoAdminBreadcrumbs(?string $requestUri = null): array
     {
         $generator = new BreadcrumbGenerator();
         return $generator->generateAutoAdmin($requestUri);
@@ -912,7 +912,7 @@ if (!function_exists('autoAdminBreadcrumbs')) {
 }
 
 if (!function_exists('sanitizeBreadcrumbs')) {
-    function sanitizeBreadcrumbs(array $breadcrumbs, string $baseUrl = null): array
+    function sanitizeBreadcrumbs(array $breadcrumbs, ?string $baseUrl = null): array
     {
         $generator = new BreadcrumbGenerator();
         return $generator->sanitize($breadcrumbs, $baseUrl);

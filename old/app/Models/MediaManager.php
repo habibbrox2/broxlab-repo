@@ -21,8 +21,8 @@ class MediaManager
 
     public function __construct(
         mysqli $mysqli,
-        string $uploadDir = null,
-        string $tempDir = null,
+        ?string $uploadDir = null,
+        ?string $tempDir = null,
         int $maxFileSize = 52428800
     ) {
         $this->mysqli = $mysqli;

@@ -499,24 +499,24 @@
                 <p data-i18n="Highest-rated posts and services curated for you">{{ t('Highest-rated posts and services curated for you') }}</p>
             </div>
             {{-- Tab switcher --}}
-            <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="Switch between top posts and top services">
+            <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="Switch between top posts and top services" x-data="topPicksTabs()">
                 <button type="button"
-                        class="top-carousel-tab active rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        :class="['top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200', activeTab === 'posts' ? 'active' : '']"
                         role="tab"
                         id="tab-posts"
-                        aria-selected="true"
+                        :aria-selected="activeTab === 'posts'"
                         aria-controls="panel-posts"
-                        data-action="top-picks-tab" data-panel="panel-posts">
+                        @click="setTab('posts')">
                     <i class="lucide lucide-file-text inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
                     {{ t('Top Posts') }}
                 </button>
                 <button type="button"
-                        class="top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        :class="['top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200', activeTab === 'services' ? 'active' : '']"
                         role="tab"
                         id="tab-services"
-                        aria-selected="false"
+                        :aria-selected="activeTab === 'services'"
                         aria-controls="panel-services"
-                        data-action="top-picks-tab" data-panel="panel-services">
+                        @click="setTab('services')">
                     <i class="lucide lucide-star inline-block mr-1.5" style="width:16px;height:16px" aria-hidden="true"></i>
                     {{ t('Top Services') }}
                 </button>
@@ -524,7 +524,7 @@
         </div>
 
         {{-- Top posts panel --}}
-        <div id="panel-posts" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-posts">
+        <div id="panel-posts" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-posts" x-show="activeTab === 'posts'" x-cloak>
             @if (!empty($top_posts))
                 <div class="top-carousel-track" role="list" aria-label="Top posts">
                     @foreach ($top_posts as $post)
@@ -582,7 +582,7 @@
         </div>
 
         {{-- Top services panel --}}
-        <div id="panel-services" class="top-carousel-panel hidden" role="tabpanel" aria-labelledby="tab-services">
+        <div id="panel-services" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-services" x-show="activeTab === 'services'" x-cloak>
             @if (!empty($top_services))
                 <div class="top-carousel-track" role="list" aria-label="Top services">
                     @foreach ($top_services as $svc)
@@ -655,25 +655,25 @@
         </div>
 
         <div id="discovery-feed" class="discovery-feed-container">
-            <div class="discovery-toolbar" role="toolbar" aria-label="Feed controls">
+            <div class="discovery-toolbar" role="toolbar" aria-label="Feed controls" x-data="feedToolbar()">
                 {{-- Row 1: search + filters --}}
                 <div class="toolbar-row">
                     <div class="toolbar-search-wrap">
                         <i class="lucide lucide-search search-icon" style="width:18px;height:18px" aria-hidden="true"></i>
-                        <input type="search" id="feed-search" placeholder="Search content..." aria-label="Search content" autocomplete="off">
-                        <button type="button" class="search-clear-btn" id="feed-search-clear" aria-label="Clear search">
+                        <input type="search" x-model="searchQuery" placeholder="Search content..." aria-label="Search content" autocomplete="off">
+                        <button type="button" class="search-clear-btn" aria-label="Clear search" x-show="searchQuery" @click="searchQuery = ''">
                             <i class="lucide lucide-x" style="width:16px;height:16px" aria-hidden="true"></i>
                         </button>
                     </div>
 
-                    <select id="feed-category" class="toolbar-select" aria-label="Filter by category">
+                    <select class="toolbar-select" aria-label="Filter by category">
                         <option data-i18n="All Categories">{{ t('All Categories') }}</option>
                         @foreach ($feed_categories ?? [] as $cat)
                             <option value="{{ $cat['slug'] }}">{{ $cat['name'] }}</option>
                         @endforeach
                     </select>
 
-                    <select id="feed-sort" class="toolbar-select" aria-label="Sort content">
+                    <select class="toolbar-select" aria-label="Sort content">
                         <option data-i18n="Newest">{{ t('Newest') }}</option>
                         <option data-i18n="Oldest">{{ t('Oldest') }}</option>
                         <option data-i18n="Most Viewed">{{ t('Most Viewed') }}</option>
@@ -684,14 +684,14 @@
                 {{-- Row 2: actions --}}
                 <div class="toolbar-row">
                     <div class="toolbar-row-actions" style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
-                        <button type="button" id="feed-view-toggle" class="toolbar-btn active" aria-label="Toggle grid/list view" title="Toggle view">
-                            <i class="lucide lucide-grid-3x3" style="width:18px;height:18px" aria-hidden="true"></i>
-                            <span data-i18n="Grid">{{ t('Grid') }}</span>
+                        <button type="button" class="toolbar-btn" aria-label="Toggle grid/list view" title="Toggle view" @click="toggleView()">
+                            <i :class="['lucide', viewMode === 'grid' ? 'lucide-grid-3x3' : 'lucide-list', 'inline-block mr-1.5']" style="width:18px;height:18px" aria-hidden="true"></i>
+                            <span x-text="viewMode === 'grid' ? '{{ t('Grid') }}' : '{{ t('List') }}'"></span>
                         </button>
 
                         <div class="toolbar-toggle-wrap">
                             <label class="toggle-switch">
-                                <input type="checkbox" id="feed-auto-refresh" aria-label="Toggle auto-refresh">
+                                <input type="checkbox" x-model="autoRefresh" aria-label="Toggle auto-refresh">
                                 <span class="toggle-slider"></span>
                             </label>
                             <span data-i18n="Auto-refresh off">{{ t('Auto-refresh off') }}</span>
@@ -775,15 +775,15 @@
 </section>
 
 {{-- Share modal --}}
-<div id="discovery-share-modal" class="discovery-modal" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true">
-    <div class="discovery-modal__backdrop" data-action="close-share-modal"></div>
+<div id="discovery-share-modal" class="discovery-modal" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true" x-data="shareModal()" x-show="open" @keydown.escape.window="close()" @click.outside="close()" x-cloak>
+    <div class="discovery-modal__backdrop" @click="close()"></div>
     <div class="discovery-modal__content">
-        <button type="button" class="discovery-modal__close" data-action="close-share-modal" aria-label="Close">
+        <button type="button" class="discovery-modal__close" @click="close()" aria-label="Close">
             <i class="lucide lucide-x" style="width:18px;height:18px" aria-hidden="true"></i>
         </button>
         <h3 data-i18n="Share">{{ t('Share') }}</h3>
-        <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm" data-share-url readonly data-action="select-input">
-        <button>
+        <input type="text" class="w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm" x-model="url" readonly>
+        <button type="button" @click="copyToClipboard()" x-ref="copyBtn">
             {{ t('Copy Link') }}
         </button>
     </div>

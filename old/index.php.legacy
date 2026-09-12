@@ -81,7 +81,7 @@ if ($isStaticFile) {
 // paths only while the legacy app still exists.
 //
 // When the legacy app is fully removed (Phase 8), this file can be removed
-// too and public_html can be decommissioned.
+// too — the legacy web root has already been retired.
 
 // Enable output buffering to prevent "headers already sent" errors
 ob_start();

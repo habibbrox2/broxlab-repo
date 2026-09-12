@@ -93,7 +93,7 @@ class ScriptLoadingChecker {
     const cleanPath = resolvedAssetPath.split('?')[0].split('#')[0];
 
     if (cleanPath.startsWith('/')) {
-      return normalize(join(PROJECT_ROOT, 'public_html', cleanPath));
+      return normalize(join(PROJECT_ROOT, 'public', cleanPath));
     }
 
     return normalize(join(PROJECT_ROOT, cleanPath));

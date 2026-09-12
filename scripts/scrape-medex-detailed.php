@@ -42,9 +42,9 @@ parse_command_line_arguments($options);
 
 function getUploadsBaseDir(): string
 {
-    $uploads = realpath(__DIR__ . '/../public_html/uploads');
+    $uploads = realpath(__DIR__ . '/../public/uploads');
     if ($uploads === false) {
-        $uploads = __DIR__ . '/../public_html/uploads';
+        $uploads = __DIR__ . '/../public/uploads';
     }
     return rtrim(str_replace('\\', '/', $uploads), '/');
 }
@@ -538,7 +538,7 @@ function parse_brand_detail_page(string $html): array
         $data["strip_price"] = $pkgNode ? clean_text($pkgNode->textContent) : "";
     }
 
-    // Detailed sections — dual-strategy extraction.
+    // Detailed sections ï¿½ dual-strategy extraction.
     // Strategy 1 (preferred): Find .ac-body as a descendant of the section div
     //   (e.g., <div id="indications" class="ac"><div class="ac-body">...</div></div>)
     // Strategy 2 (fallback): Find .ac-body as a following sibling of the section div

@@ -16,11 +16,11 @@ export default [
       '**/node_modules/',
       '**/dist/',
       '**/*.min.js',
-      'public_html/assets/js/dist/',
-      'public_html/assets/js/admin-bulk-article-writer.js',
-      'public_html/assets/js/bangla-converter.js',
-      'public_html/assets/firebase/v2/**',
-      'public_html/assets/js/test-template.mjs',
+      'public/assets/js/dist/',
+      'public/assets/js/admin-bulk-article-writer.js',
+      'public/assets/js/bangla-converter.js',
+      'public/assets/firebase/v2/**',
+      'public/assets/js/test-template.mjs',
       'build/Scripts/**',
       'build/esbuild.config.js',
       'build/esbuild-firebase.mjs',
@@ -31,7 +31,7 @@ export default [
 
   // ── JavaScript / MJS files ─────────────────────────────────────────────────
   {
-    files: ['public_html/assets/js/**/*.js', 'public_html/assets/js/**/*.mjs'],
+    files: ['public/assets/js/**/*.js', 'public/assets/js/**/*.mjs'],
     plugins: {
       '@stylistic': stylistic,
     },

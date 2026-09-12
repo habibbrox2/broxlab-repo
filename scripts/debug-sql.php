@@ -1,6 +1,6 @@
 <?php
 /* Debug: Check db() function behavior */
-require_once __DIR__ . '/../public_html/_db.php';
+require_once __DIR__ . '/../public/_db.php';
 
 // First file
 $file = dirname(__DIR__) . '/Database/user_roles.sql';

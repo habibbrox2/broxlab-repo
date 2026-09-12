@@ -55,11 +55,14 @@ set_exception_handler(function ($e) use ($IS_DEV) {
 // ---------------------------------------------------------------------------
 // Database configuration
 // ---------------------------------------------------------------------------
-$dbHost    = $env['DB_HOST']    ?? 'localhost';
-$dbName    = $env['DB_NAME']    ?? '';
-$dbUser    = $env['DB_USER']    ?? '';
-$dbPass    = $env['DB_PASS']    ?? '';
-$dbCharset = $env['DB_CHARSET'] ?? 'utf8mb4';
+// Accept both the legacy key names (DB_NAME / DB_USER / DB_PASS) and the
+// Laravel-style names (DB_DATABASE / DB_USERNAME / DB_PASSWORD) so the same
+// shared .env works for both codebases.
+$dbHost    = $env['DB_HOST']     ?? 'localhost';
+$dbName    = $env['DB_NAME']     ?? $env['DB_DATABASE'] ?? '';
+$dbUser    = $env['DB_USER']     ?? $env['DB_USERNAME'] ?? '';
+$dbPass    = $env['DB_PASS']     ?? $env['DB_PASSWORD'] ?? '';
+$dbCharset = $env['DB_CHARSET']  ?? 'utf8mb4';
 
 // Validate required config
 if (!$dbName || !$dbUser) {

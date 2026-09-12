@@ -583,7 +583,7 @@ JSON;
     /**
      * Safe UTF-8 substring (with mbstring fallback)
      */
-    private function safeSubstr(string $str, int $start, int $length = null): string
+    private function safeSubstr(string $str, int $start, ?int $length = null): string
     {
         if (function_exists('mb_substr')) {
             return $length === null ? mb_substr($str, $start, null, 'UTF-8') : mb_substr($str, $start, $length, 'UTF-8');

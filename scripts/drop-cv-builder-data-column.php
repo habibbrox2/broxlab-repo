@@ -16,10 +16,10 @@
  *   php scripts/drop-cv-builder-data-column.php --force            # skip confirmation
  *
  * Requirements:
- *   - ../public_html/_db.php for DB credentials
+ *   - ../public/_db.php for DB credentials
  */
 declare(strict_types=1);
-require_once __DIR__ . '/../public_html/_db.php';
+require_once __DIR__ . '/../public/_db.php';
 $isDryRun = !in_array('--execute', $argv ?? [], true);
 $force = in_array('--force', $argv ?? [], true);
 echo ">> DROP builder_data COLUMN -- V3 Migration <<\n\n";

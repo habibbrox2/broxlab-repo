@@ -5,7 +5,7 @@
 @php
     // Same cache-bust semantics as legacy getRTEVersion(): mtime of the RTE
     // bundle (path is relative to the laravel base, one level up).
-    $rteBundle = base_path('public_html/rtceditor/editor.bundle.js');
+    $rteBundle = base_path('public/rtceditor/editor.bundle.js');
     $rteVersion = @filemtime($rteBundle) ?: time();
     $currentStatus = $isCreate ? ($status ?? 'published') : (!empty($item->published) ? 'published' : 'draft');
 @endphp

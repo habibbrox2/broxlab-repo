@@ -21,17 +21,17 @@ export default defineConfig({
             exclude: [
                 'node_modules/',
                 'build/',
-                'public_html/assets/**/dist/',
+                'public/assets/**/dist/',
             ],
         },
         include: ['**/__tests__/**/*.{test,spec}.{js,ts}'],
-        exclude: ['node_modules', 'build', 'public_html/assets/**/dist'],
+        exclude: ['node_modules', 'build', 'public/assets/**/dist'],
     },
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './public_html/assets'),
-            '@js': path.resolve(__dirname, './public_html/assets/js'),
-            '@css': path.resolve(__dirname, './public_html/assets/css'),
+            '@': path.resolve(__dirname, './public/assets'),
+            '@js': path.resolve(__dirname, './public/assets/js'),
+            '@css': path.resolve(__dirname, './public/assets/css'),
         },
     },
 });

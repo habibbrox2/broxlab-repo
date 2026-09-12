@@ -35,7 +35,7 @@ class UsersAdminService
         $offset = max(0, ($page - 1) * $perPage);
 
         $query = DB::table('users')
-            ->select('id', 'username', 'email', 'first_name', 'last_name', 'status', 'role', 'is_admin', 'profile_pic', 'created_at', 'last_login', 'failed_login_attempts')
+            ->select('id', 'username', 'email', 'first_name', 'last_name', 'status', 'profile_pic', 'created_at', 'last_login', 'failed_login_attempts')
             ->where('deleted_at', null);
 
         if ($search !== '') {
@@ -53,19 +53,31 @@ class UsersAdminService
 
         $total = $query->count();
 
-        $users = $query
+        $rows = $query
             ->orderBy($sort, $order)
             ->skip($offset)
             ->take($perPage)
-            ->get()
+            ->get();
+
+        // The users table has no role/is_admin columns; roles live in the
+        // RBAC tables. One grouped query for the page of users.
+        $roleByUser = DB::table('user_roles')
+            ->join('roles', 'roles.id', '=', 'user_roles.role_id')
+            ->whereIn('user_roles.user_id', $rows->pluck('id')->all() ?: [0])
+            ->where('roles.deleted_at', null)
+            ->orderBy('roles.ranking', 'asc')
+            ->get(['user_roles.user_id', 'roles.name', 'roles.is_super_admin'])
+            ->groupBy('user_id');
+
+        $users = $rows
             ->map(fn ($u) => [
                 'id' => $u->id,
                 'username' => $u->username,
                 'email' => $u->email,
                 'full_name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
                 'status' => $u->status,
-                'role' => $u->role ?? '',
-                'is_admin' => (bool) ($u->is_admin ?? false),
+                'role' => optional($roleByUser->get($u->id))->first()->name ?? '',
+                'is_admin' => (bool) optional($roleByUser->get($u->id))->contains(fn ($r) => (int) $r->is_super_admin === 1 || $r->name === 'admin'),
                 'profile_pic' => $u->profile_pic ?? '',
                 'created_at' => $u->created_at,
                 'last_login' => $u->last_login ? Carbon::parse($u->last_login)->format('M j, Y g:i A') : 'Never',
@@ -94,7 +106,7 @@ class UsersAdminService
     {
         $user = DB::table('users')
             ->select('id', 'username', 'email', 'first_name', 'last_name', 'gender', 'dob', 'phone', 'alternate_phone',
-                'address', 'city', 'state', 'country', 'zipcode', 'status', 'role', 'is_admin', 'profile_pic',
+                'address', 'city', 'state', 'country', 'zipcode', 'status', 'profile_pic',
                 'email_verified', 'phone_verified', 'facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url',
                 'notification_topic_preferences', 'created_at', 'updated_at', 'last_login', 'failed_login_attempts',
                 'account_locked_until', 'last_failed_login_at', 'login_ip', 'login_device')
@@ -108,7 +120,6 @@ class UsersAdminService
 
         $roles = self::getUserRoles($id);
         $permissions = self::getUserPermissions($id);
-
         return [
             'id' => $user->id,
             'username' => $user->username,
@@ -126,8 +137,8 @@ class UsersAdminService
             'country' => $user->country ?? '',
             'zipcode' => $user->zipcode ?? '',
             'status' => $user->status,
-            'role' => $user->role ?? '',
-            'is_admin' => (bool) ($user->is_admin ?? false),
+            'role' => $roles[0]['name'] ?? '',
+            'is_admin' => self::userIsAdmin($id),
             'profile_pic' => $user->profile_pic ?? '',
             'email_verified' => (bool) ($user->email_verified ?? false),
             'phone_verified' => (bool) ($user->phone_verified ?? false),
@@ -229,6 +240,22 @@ class UsersAdminService
     }
 
     // ---------- Role assignment ----------
+
+    /**
+     * Same admin definition as EnsureAdmin middleware: holds a role flagged
+     * is_super_admin = 1, or a role literally named 'admin'.
+     */
+    public static function userIsAdmin(int $userId): bool
+    {
+        return DB::table('user_roles')
+            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+            ->where('user_roles.user_id', $userId)
+            ->where('roles.deleted_at', null)
+            ->where(function ($q) {
+                $q->where('roles.is_super_admin', 1)->orWhere('roles.name', 'admin');
+            })
+            ->exists();
+    }
 
     public static function getUserRoles(int $userId): array
     {

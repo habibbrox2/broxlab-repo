@@ -1,6 +1,6 @@
 /**
  * Unit tests for shared utility functions
- * @see public_html/assets/js/shared/utils.js
+ * @see public/assets/js/shared/utils.js
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

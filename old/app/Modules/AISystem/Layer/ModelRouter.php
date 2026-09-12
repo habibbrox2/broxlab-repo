@@ -57,7 +57,7 @@ class ModelRouter
         ]
     ];
 
-    public function __construct(array $activeProviders, string $defaultModel = null)
+    public function __construct(array $activeProviders, ?string $defaultModel = null)
     {
         $this->providers = $activeProviders;
         $this->defaultModel = $defaultModel ?? 'meta-llama/llama-3-8b-instruct:free';

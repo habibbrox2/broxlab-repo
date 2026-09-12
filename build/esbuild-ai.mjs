@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * ESBuild AI Asset Config
- * Bundles the standalone /public_html/ai JS and CSS assets.
+ * Bundles the standalone /public/ai JS and CSS assets.
  */
 
 import * as esbuild from 'esbuild';
@@ -15,7 +15,7 @@ const isDev = process.argv.includes('--dev');
 const isWatch = process.argv.includes('--watch');
 const hasSourceMap = process.argv.includes('--sourcemap=external');
 
-const aiDir = path.join(rootDir, 'public_html', 'assets', 'ai');
+const aiDir = path.join(rootDir, 'public', 'assets', 'ai');
 const outDir = path.join(aiDir, 'dist');
 
 const jsEntryPoints = {

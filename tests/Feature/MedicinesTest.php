@@ -23,7 +23,7 @@ class MedicinesTest extends TestCase
     {
         parent::setUp();
 
-        $this->medexDir = base_path('public_html/uploads/medex');
+        $this->medexDir = base_path('public/uploads/medex');
         if (! is_dir($this->medexDir)) {
             mkdir($this->medexDir, 0755, true);
         }

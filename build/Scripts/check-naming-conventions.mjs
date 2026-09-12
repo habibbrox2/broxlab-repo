@@ -72,7 +72,7 @@ const CONFIG = {
 
   // Directories to check
   checkDirs: [
-    'public_html/assets',
+    'public/assets',
     'app',
     'src',
     'build',

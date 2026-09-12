@@ -2242,7 +2242,7 @@ class AIProvider
     /**
      * Test API connection
      */
-    public function testConnection(string $providerName, string $model = null): array
+    public function testConnection(string $providerName, ?string $model = null): array
     {
         $provider = $this->getByName($providerName);
         if (!$provider) {
@@ -2814,7 +2814,7 @@ class AIProvider
     /**
      * Test connection with verbose output for debugging
      */
-    public function testConnectionVerbose(string $providerName, string $model = null): array
+    public function testConnectionVerbose(string $providerName, ?string $model = null): array
     {
         $provider = $this->getByName($providerName);
         if (!$provider) {

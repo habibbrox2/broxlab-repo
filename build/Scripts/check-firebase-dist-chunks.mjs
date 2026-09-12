@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 
 const CONFIG = {
   // Firebase dist directory
-  firebaseDistDir: 'public_html/assets/firebase/v2/dist',
+  firebaseDistDir: 'public/assets/firebase/v2/dist',
 
   // Expected file patterns
   expectedFiles: {

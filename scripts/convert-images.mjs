@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
-const ASSETS_DIR = join(ROOT_DIR, 'public_html', 'assets');
+const ASSETS_DIR = join(ROOT_DIR, 'public', 'assets');
 
 const TARGETS = [
   { path: 'images/1.png',              quality: 80 },

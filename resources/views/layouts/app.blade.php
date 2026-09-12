@@ -235,7 +235,11 @@
             aria-label="Scroll to top of page"
             data-i18n-title="Scroll to top of page"
             data-i18n-aria-label="Scroll to top of page"
-            class="scroll-top-btn fixed bottom-20 right-5 z-40 hidden items-center justify-center w-11 h-11 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none">
+            x-data="{}"
+            x-show="window.pageYOffset > 180"
+            x-transition
+            @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+            class="scroll-top-btn fixed bottom-20 right-5 z-40 items-center justify-center w-11 h-11 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none">
         <i class="lucide lucide-arrow-up w-5 h-5" aria-hidden="true"></i>
     </button>
 
@@ -255,7 +259,10 @@
          role="progressbar"
          aria-label="Page scroll progress"
          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
-         class="scroll-progress fixed top-0 left-0 z-[9999] h-[3px] w-0 bg-indigo-500 transition-none">
+         x-data="scrollProgress()"
+         :style="`width: ${progress}%`"
+         :aria-valuenow="Math.round(progress)"
+         class="scroll-progress fixed top-0 left-0 z-[9999] h-[3px] bg-indigo-500 transition-none">
     </div>
 
     {{-- Page transition overlay --}}
@@ -404,6 +411,7 @@
     <script type="module" src="{{ asset('/assets/js/dist/assistant-runtime.js') }}"></script>
     <script type="module" src="{{ asset('/assets/js/dist/brox-i18n.js') }}"></script>
     <script type="module" src="{{ asset('/assets/js/dist/lucide-compat.js') }}"></script>
+    <script type="module" src="{{ asset('/assets/laravel/dist/app.js') }}"></script>
 
     {{-- AI Assistant --}}
     @php

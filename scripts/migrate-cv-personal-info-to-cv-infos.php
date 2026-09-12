@@ -5,7 +5,7 @@
  * Usage: php scripts/migrate-cv-personal-info-to-cv-infos.php
  */
 declare(strict_types=1);
-require_once __DIR__ . '/../public_html/_db.php';
+require_once __DIR__ . '/../public/_db.php';
 echo "=== CV Personal Info -> cv_infos Migration ===\n\n";
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($mysqli->connect_error) die("Connection failed\n");

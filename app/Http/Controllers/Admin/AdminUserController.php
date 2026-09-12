@@ -34,7 +34,8 @@ class AdminUserController extends Controller
             status: $status
         );
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.users.index', [
             'title' => 'Users',
@@ -51,7 +52,7 @@ class AdminUserController extends Controller
 
     // ---------- View ----------
 
-    public function view(Request $request, int $id): View
+    public function view(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -65,7 +66,8 @@ class AdminUserController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
         $rolesList = RbacAdminService::getRolesList(page: 1, perPage: 999, sort: 'ranking', order: 'ASC');
         $permissionsList = RbacAdminService::getPermissionsList(page: 1, perPage: 999, sort: 'id', order: 'ASC');
 
@@ -81,7 +83,7 @@ class AdminUserController extends Controller
 
     // ---------- Edit user details ----------
 
-    public function edit(Request $request, int $id): View
+    public function edit(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -95,7 +97,8 @@ class AdminUserController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.users.edit', [
             'title' => 'Edit User',
@@ -105,7 +108,7 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {
@@ -139,7 +142,7 @@ class AdminUserController extends Controller
 
     // ---------- Delete ----------
 
-    public function deleteConfirm(Request $request, int $id): View
+    public function deleteConfirm(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -153,7 +156,8 @@ class AdminUserController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettingsRaw = DB::table('app_settings')->first();
+        $appSettings = $appSettingsRaw ? (array) $appSettingsRaw : [];
 
         return view('admin.users.delete', [
             'title' => 'Delete User',
@@ -163,7 +167,7 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, int $id): RedirectResponse
+    public function destroy(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {

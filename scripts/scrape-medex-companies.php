@@ -19,9 +19,9 @@ require_once __DIR__ . '/medex-cloudflare-helper.php';
 
 function getUploadsBaseDir(): string
 {
-    $uploads = realpath(__DIR__ . '/../public_html/uploads');
+    $uploads = realpath(__DIR__ . '/../public/uploads');
     if ($uploads === false) {
-        $uploads = __DIR__ . '/../public_html/uploads';
+        $uploads = __DIR__ . '/../public/uploads';
     }
     return rtrim(str_replace('\\', '/', $uploads), '/');
 }

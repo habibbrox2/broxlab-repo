@@ -47,7 +47,7 @@ $html = $twig->render('pdf/kharij-form.twig', $data);
 $mpdf = mpdf_create_instance(['format'=>'A4','orientation'=>'L','margin_left'=>10,'margin_right'=>10,'margin_top'=>6,'margin_bottom'=>10]);
 if (!$mpdf) { echo "FAIL: mPDF init error\n"; exit(1); }
 mpdf_apply_runtime_optimizations($mpdf);
-$wp = realpath($projectRoot . '/public_html/assets/images/kharij/watermark.png');
+$wp = realpath($projectRoot . '/public/assets/images/kharij/watermark.png');
 if ($wp && is_file($wp) && method_exists($mpdf, 'SetWatermarkImage')) {
     $mpdf->SetWatermarkImage($wp, 0.18, 175);
     $mpdf->showWatermarkImage = true;
@@ -58,7 +58,7 @@ $footer = '<table width="100%" style="border-top:none;font-family:solaimanlipi,n
 $mpdf->SetHTMLFooter($footer);
 $mpdf->SetTitle('KHARIJ TEST');
 $mpdf->WriteHTML(mpdf_optimize_html($html));
-$out = $projectRoot . '/public_html/test-kharij-output.pdf';
+$out = $projectRoot . '/public/test-kharij-output.pdf';
 $mpdf->Output($out, \Mpdf\Output\Destination::FILE);
 if (file_exists($out)) {
     echo "\nOK: test-kharij-output.pdf (" . filesize($out) . " bytes)\n";

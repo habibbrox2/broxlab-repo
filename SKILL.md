@@ -25,7 +25,7 @@ license: Complete terms in LICENSE.txt
 | Data | `app/Models/` | Database access, queries |
 | Utils | `app/Helpers/` | Reusable functions |
 | Views | `app/Views/` | HTML/Twig templates |
-| Frontend | `public_html/assets/` | UI, CSS, JavaScript |
+| Frontend | `public/assets/` | UI, CSS, JavaScript |
 | Node/TS | `src/` | Backend services |
 | Prompts | `system/prompts/` | AI behavior, templates |
 
@@ -41,7 +41,7 @@ license: Complete terms in LICENSE.txt
 - Use `{{ withAssetVersion() }}` for asset links
 
 ❌ **Never:**
-- Edit files in `public_html/assets/**/dist/` directly
+- Edit files in `public/assets/**/dist/` directly
 - Use raw SQL or raw string concatenation
 - Forget to rebuild: `npm run build:prod`
 - Skip validation: `npm run validate`
@@ -68,7 +68,7 @@ Individual checks:
 
 **Is it backend logic?** → Focus on `app/Controllers/`, `app/Models/`, `app/Helpers/`
 
-**Is it frontend UI?** → Focus on `app/Views/`, `public_html/assets/{js,css}/`
+**Is it frontend UI?** → Focus on `app/Views/`, `public/assets/{js,css}/`
 
 **Does it change the database?** → Use prepared statements, explicit columns, soft deletes
 
@@ -93,7 +93,7 @@ Individual checks:
 | Old JS cached | Hard refresh browser (Ctrl+Shift+R) |
 | SELECT * in queries | Always list columns: `SELECT id, name FROM table` |
 | Forgot soft delete filter | Add `WHERE deleted_at IS NULL` to WHERE clause |
-| Building fails | Check kebab-case file names in `public_html/assets/` |
+| Building fails | Check kebab-case file names in `public/assets/` |
 
 ### Essential References
 

@@ -26,7 +26,9 @@ use App\Http\Controllers\Admin\AdminAiSystemController;
 use App\Http\Controllers\Admin\AdminApiProxyController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\WeatherApiController;
 use App\Http\Controllers\MobileController;
 use App\Http\Controllers\Admin\AdminMobileController;
@@ -34,7 +36,9 @@ use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\MedicinesController;
@@ -45,7 +49,7 @@ use Illuminate\Support\Facades\Route;
 | Migrated routes (strangler fig)
 |--------------------------------------------------------------------------
 | Each route below is delegated to Laravel by the bridge in
-| public_html/index.php (allowlist in laravel/bridge.php).
+| public/index.php (allowlist in laravel/bridge.php).
 | Legacy controllers keep serving everything that is not listed here.
 |
 | Route order matters: /posts/view must be registered before /posts/{id}.
@@ -96,13 +100,47 @@ Route::middleware('guest')->group(function () {
 });
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Static/public pages (Phase 1)
+// Static/public pages (Phase 1 + backlog follow-ups)
 Route::get('/about-us', [PageController::class, 'about'])->name('pages.about');
+Route::get('/about', fn () => redirect('/about-us', 301))->name('pages.about.alias');
+Route::get('/contact', [PageController::class, 'contact'])->name('pages.contact');
+Route::post('/contact', [PageController::class, 'contactSubmit'])->name('pages.contact.submit');
+Route::get('/advertise', [PageController::class, 'advertise'])->name('pages.advertise');
+Route::post('/advertise', [PageController::class, 'advertiseSubmit'])->name('pages.advertise.submit');
 Route::get('/faq', [PageController::class, 'faq'])->name('pages.faq');
 Route::get('/terms', [PageController::class, 'terms'])->name('pages.terms');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('pages.privacy');
 Route::get('/newsletter', [PageController::class, 'newsletter'])->name('pages.newsletter');
 Route::post('/newsletter/subscribe', [PageController::class, 'subscribe'])->name('newsletter.subscribe');
+
+// Donations — public page + bKash callback (Phase 8 backlog: MonetizationController)
+Route::get('/donate', [DonationController::class, 'show'])->name('donate.show');
+Route::post('/donate', [DonationController::class, 'submit'])->name('donate.submit');
+Route::match(['get', 'post'], '/donate/bkash/callback', [DonationController::class, 'bkashCallback'])->name('donate.bkash.callback');
+
+// Language switch — legacy /lang/{code} (GET redirect + POST JSON)
+Route::get('/lang/{code}', [LanguageController::class, 'switch'])->name('lang.switch');
+Route::post('/lang/{code}', [LanguageController::class, 'switchJson'])->name('lang.switch.json');
+
+// robots.txt + split XML sitemaps (legacy SitemapController port)
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('sitemap.robots');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+Route::get('/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts');
+Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
+Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
+Route::get('/sitemap-tags.xml', [SitemapController::class, 'tags'])->name('sitemap.tags');
+Route::get('/sitemap-services.xml', [SitemapController::class, 'services'])->name('sitemap.services');
+Route::get('/sitemap-mobiles.xml', [SitemapController::class, 'mobiles'])->name('sitemap.mobiles');
+Route::get('/sitemap-static.xml', [SitemapController::class, 'staticPages'])->name('sitemap.static');
+Route::get('/sitemap-medex-brands.xml', [SitemapController::class, 'medexBrands'])->name('sitemap.medex-brands');
+Route::get('/sitemap-products.xml', [SitemapController::class, 'productsRedirect'])->name('sitemap.products');
+
+// Public CMS page viewer — legacy /pages/view/{slug}
+Route::get('/pages/view/{slug}', [PublicPageController::class, 'view'])->name('pages.view');
+
+// Category / tag index aliases — legacy 301s to /categories and /tags
+Route::get('/category', fn () => redirect('/categories', 301))->name('category.index.alias');
+Route::get('/tag', fn () => redirect('/tags', 301))->name('tag.index.alias');
 
 // Posts — public read side (Phase 4)
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');

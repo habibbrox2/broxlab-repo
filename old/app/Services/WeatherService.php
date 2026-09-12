@@ -178,7 +178,7 @@ class WeatherService
     /**
      * Fetch weather by coordinates
      */
-    private function fetchByCoordinates(float $lat, float $lon, string $units, int $forecastDays, string $locationName = null): array
+    private function fetchByCoordinates(float $lat, float $lon, string $units, int $forecastDays, ?string $locationName = null): array
     {
         $config = $this->getConfig()['openweathermap'];
 
