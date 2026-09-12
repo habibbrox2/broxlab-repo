@@ -240,6 +240,13 @@ ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
 ensure_env_secret "NODE_SERVICE_API_KEY"
 
+# The shared legacy database does not include Laravel's optional cache table.
+# Keep existing Redis or other explicit cache backends unchanged.
+if grep -q '^CACHE_STORE=database$' "$SHARED/.env"; then
+    log_warn "CACHE_STORE=database requires a missing cache table; switching shared .env to file cache"
+    sed -i 's/^CACHE_STORE=database$/CACHE_STORE=file/' "$SHARED/.env"
+fi
+
 mkdir -p \
     "$STORAGE/uploads" \
     "$STORAGE/cache" \
