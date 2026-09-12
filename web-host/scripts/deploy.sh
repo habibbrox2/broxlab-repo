@@ -309,6 +309,11 @@ ln -sfn "$STORAGE/tmp" "storage/tmp"
 ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
 ln -sfn "$STORAGE/sessions" "storage/sessions"
 
+mkdir -p bootstrap/cache
+if [[ ! -w bootstrap/cache ]]; then
+    log_error "Laravel bootstrap/cache is not writable: $NEW_RELEASE/bootstrap/cache"
+    exit 1
+fi
 
 
 log_section "INSTALLING DEPENDENCIES"
