@@ -4,7 +4,7 @@
 এই নথি `scripts/deploy.sh` স্ক্রিপ্টের ব্যবহার ও প্রয়োজনীয় ধাপগুলো বাংলা ভাষায় বর্ণনা করে — নতুন রিলিজ তৈরি, শেয়ার্ড রিসোর্স লিংক, ডিপেনডেন্সি ইনস্টল, অ্যাসেট বিল্ড, নোড সার্ভার পুনরায় চালু, হেলথ-চেক এবং অটো-রোলব্যাক।
 
 ## পূর্বপ্রয়োজনীয়তা
-- রিমোট সার্ভারে Git, Node.js, npm ইনস্টল থাকতে হবে।
+- রিমোট সার্ভারে Git এবং PHP/Composer ইনস্টল থাকতে হবে। Node.js/npm না থাকলে `USE_PHP_ONLY=true` দিয়ে PHP-only deploy চালানো যাবে।
 - যদি প্রজেক্টে PHP থাকে: `php` এবং `composer` থাকা প্রয়োজন।
 - `shared/.env` ফাইল তৈরি ও কনফিগার করা থাকতে হবে (`$BASE/app/shared/.env`)।
 - `scripts/deploy.sh` এ `GIT_REPO`, `REF`, `NODE_HEALTH_URL` ইত্যাদি environment ভ্যারিয়েবল কনফিগার করা যাবে।
@@ -19,7 +19,7 @@ cd /home/tdhuedhn/broxlab
 2. ডিপ্লয় স্ক্রিপ্ট চালান (ডিফল্ট: `main` ব্রাঞ্চ):
 
 ```bash
-scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:yourorg/yourrepo.git --ref main
+scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main
 ```
 
 - ড্রাই-রান:
@@ -38,7 +38,7 @@ scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:yourorg/yo
 ## গুরুত্বপূর্ণ পরিবেশ ভ্যারিয়েবল
 - BASE (ডিফল্ট: /home/tdhuedhn/broxlab)
 - GIT_REPO (গিট রিপোজিটরি URL)
-- REF (ব্রাঞ্চ বা শা: ডিফল্ট main)
+- REF (ব্রাঞ্চ, tag বা commit: ডিফল্ট main)
 - KEEP_RELEASES (সংখ্যা, ডিফল্ট 3)
 - NODE_ENV (production)
 - NODE_HEALTH_URL (নোড অ্যাপের হেলথ-এন্ডপয়েন্ট — optional)
@@ -54,7 +54,7 @@ scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:yourorg/yo
 - ম্যানুয়াল রোলব্যাকের জন্য `web-host/scripts/rollback.sh` ব্যবহার করুন।
 
 ## লগ ও ডিবাগিং
-- লগ ফাইল: `$BASE/logs/node-server_<timestamp>.log`
+- লগ ফাইল: `$BASE/logs/deploy_<timestamp>.log`
 - ডিপ্লয় ত্রুটি হলে `/home/deploy/broxlab/app/releases`-এ নতুন রিলিজ মুছে ফেলা হবে এবং `app/current` আগের রিলিজে ফিরিয়ে আনা হবে (যদি উপস্থিত থাকে)।
 
 ## GitHub Actions (সংক্ষেপে)
