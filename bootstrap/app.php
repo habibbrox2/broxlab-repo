@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/medicines/proxy',
             'api/medicines/fetch-page',
             'api/medicines/save-data',
+            'api/translate',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
