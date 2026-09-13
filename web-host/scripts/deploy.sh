@@ -188,6 +188,10 @@ if [[ "${USE_PHP_ONLY:-false}" != "true" ]] && ! command -v node >/dev/null 2>&1
     if ! command -v node >/dev/null 2>&1; then
         for node_dir in \
             "${HOME:-}/.nvm/versions/node"/*/bin \
+            "${HOME:-}/nodevenv"/*/*/bin \
+            /opt/cpanel/ea-nodejs*/bin \
+            /opt/cpanel/ea-nodejs*/usr/bin \
+            /opt/alt/alt-nodejs*/usr/bin \
             /opt/alt/*/usr/bin \
             /usr/local/nodejs/bin \
             /usr/local/lib/nodejs/bin \
@@ -206,6 +210,11 @@ if [[ "${USE_PHP_ONLY:-false}" != "true" ]] && ! command -v node >/dev/null 2>&1
         log_warn "Frontend asset builds (esbuild/vite) will be SKIPPED; install Node or set USE_PHP_ONLY=false to enable them"
         USE_PHP_ONLY=true
     fi
+fi
+
+if [[ "${USE_PHP_ONLY:-false}" != "true" ]] && command -v node >/dev/null 2>&1; then
+    log_info "Node detected: $(node --version 2>/dev/null || echo unknown)"
+    log_info "npm detected: $(npm --version 2>/dev/null || echo unknown)"
 fi
 
 require_command git
@@ -238,6 +247,21 @@ ensure_env_secret() {
     fi
 }
 
+ensure_env_setting() {
+    local key="$1"
+    local value="$2"
+    local env_file="$SHARED/.env"
+
+    if grep -q "^${key}=" "$env_file"; then
+        if grep -q "^${key}=$" "$env_file"; then
+            printf '%s=%s\n' "$key" "$value" >> "$env_file"
+            sed -i "/^${key}=\$/d" "$env_file"
+        fi
+    else
+        printf '%s=%s\n' "$key" "$value" >> "$env_file"
+    fi
+}
+
 if command -v composer >/dev/null 2>&1 || [[ -f "$SHARED/composer" ]] || [[ -f "$SHARED/composer.phar" ]]; then
     log_debug "Composer available"
 else
@@ -245,13 +269,26 @@ else
 fi
 
 if [[ ! -f "$SHARED/.env" ]]; then
-    log_error ".env not found at $SHARED/.env"
-    exit 1
+    if [[ -f "$BASE/.env" ]]; then
+        cp "$BASE/.env" "$SHARED/.env"
+        chmod 600 "$SHARED/.env"
+        log_warn "Shared .env was missing; copied $BASE/.env"
+    elif [[ -f "$BASE/.env.example" ]]; then
+        cp "$BASE/.env.example" "$SHARED/.env"
+        chmod 600 "$SHARED/.env"
+        log_warn "Shared .env was missing; created it from $BASE/.env.example"
+    else
+        log_error ".env not found and no template is available at $BASE/.env.example"
+        exit 1
+    fi
 fi
 
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
 ensure_env_secret "NODE_SERVICE_API_KEY"
+ensure_env_setting "APP_KEY" "base64:$(php -r 'echo base64_encode(random_bytes(32));')"
+ensure_env_setting "APP_ENV" "production"
+ensure_env_setting "APP_DEBUG" "false"
 
 # The shared legacy database does not include Laravel's optional cache table.
 # Keep existing Redis or other explicit cache backends unchanged.
