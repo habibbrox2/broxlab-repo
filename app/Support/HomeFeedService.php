@@ -18,6 +18,11 @@ class HomeFeedService
 
     /**
      * Unified feed: mobiles ∪ pages ∪ posts, ordered by published_at DESC.
+     *
+     * Uses a three-phase approach to avoid the slow UNION ALL + filesort:
+     * 1) Fetch lightweight ID-only rows from each table (uses indexes).
+     * 2) Merge-sort in PHP, then paginate.
+     * 3) Fetch full details only for the page of results.
      */
     public function unifiedContent(int $page = 1, int $limit = 12, string $sort = 'latest'): array
     {
@@ -25,84 +30,140 @@ class HomeFeedService
         $limit = max(1, $limit);
         $offset = ($page - 1) * $limit;
 
-        $mobiles = DB::table('mobiles as m')
-            ->leftJoin('mobile_images as img', function ($join) {
-                $join->on('m.id', '=', 'img.mobile_id')
-                    ->whereRaw('img.id = (SELECT MIN(id) FROM mobile_images WHERE mobile_id = m.id)');
-            })
-            ->select(
-                'm.id',
-                'm.brand_name as title',
-                'm.model_name as subtitle',
-                'img.image_url as image',
-                'm.created_at',
-                'm.created_at as published_at',
-                DB::raw("'mobile' as type"),
-                DB::raw('NULL as url'),
-                'm.official_price',
-                'm.unofficial_price',
-                'm.is_official',
-                'm.status',
-                'm.release_date'
-            );
-
-        $pages = DB::table('pages as p')
-            ->select(
-                'p.id',
-                'p.title',
-                'p.content as subtitle',
-                DB::raw('NULL as image'),
-                'p.created_at',
-                'p.created_at as published_at',
-                DB::raw("'page' as type"),
-                'p.slug as url',
-                DB::raw('NULL as official_price'),
-                DB::raw('NULL as unofficial_price'),
-                DB::raw('NULL as is_official'),
-                DB::raw('NULL as status'),
-                DB::raw('NULL as release_date')
-            )
-            ->whereIn('p.published', [1, '1', 0, '0']);
-
-        $posts = DB::table('posts as po')
-            ->select(
-                'po.id',
-                'po.title',
-                'po.content as subtitle',
-                DB::raw('NULL as image'),
-                'po.created_at',
-                DB::raw('COALESCE(po.published_at, po.created_at) as published_at'),
-                DB::raw("'post' as type"),
-                'po.slug as url',
-                DB::raw('NULL as official_price'),
-                DB::raw('NULL as unofficial_price'),
-                DB::raw('NULL as is_official'),
-                DB::raw('NULL as status'),
-                DB::raw('NULL as release_date')
-            )
-            ->whereIn('po.published', [1, '1', 0, '0']);
-
-        $rows = $mobiles->unionAll($pages)->unionAll($posts)
-            ->orderBy('published_at', 'desc')
-            ->limit($limit)
-            ->offset($offset)
-            ->get()
-            ->map(fn ($r) => (array) $r)
+        // Phase 1: lightweight ID + timestamp rows (index-only scans)
+        $mobileIds = DB::table('mobiles')
+            ->select('id', 'created_at as published_at')
+            ->orderByDesc('created_at')
+            ->limit($limit + $offset)
+            ->pluck('published_at', 'id')
             ->all();
 
-        $postIds = [];
-        $pageIds = [];
-        foreach ($rows as $row) {
-            if ($row['type'] === 'post') {
-                $postIds[] = (int) $row['id'];
-            } elseif ($row['type'] === 'page') {
-                $pageIds[] = (int) $row['id'];
+        $pageIds = DB::table('pages')
+            ->select('id', 'created_at as published_at')
+            ->where('published', 1)
+            ->orderByDesc('created_at')
+            ->limit($limit + $offset)
+            ->pluck('published_at', 'id')
+            ->all();
+
+        $postIds = DB::table('posts')
+            ->select('id', 'published_at')
+            ->where('published', 1)
+            ->orderByDesc('published_at')
+            ->limit($limit + $offset)
+            ->pluck('published_at', 'id')
+            ->all();
+
+        // Phase 2: merge-sort in PHP by published_at DESC
+        $all = [];
+        foreach ($mobileIds as $id => $ts) {
+            $all[] = ['id' => $id, 'ts' => $ts, 'type' => 'mobile'];
+        }
+        foreach ($pageIds as $id => $ts) {
+            $all[] = ['id' => $id, 'ts' => $ts, 'type' => 'page'];
+        }
+        foreach ($postIds as $id => $ts) {
+            $all[] = ['id' => $id, 'ts' => $ts, 'type' => 'post'];
+        }
+        usort($all, fn ($a, $b) => strcmp((string) $b['ts'], (string) $a['ts']));
+
+        $total = count($all);
+        $sliced = array_slice($all, $offset, $limit);
+
+        if (empty($sliced)) {
+            return ['contents' => [], 'total_pages' => (int) ceil($total / $limit)];
+        }
+
+        // Phase 3: batch-fetch full details for selected IDs
+        $byType = ['mobile' => [], 'page' => [], 'post' => []];
+        foreach ($sliced as $item) {
+            $byType[$item['type']][] = (int) $item['id'];
+        }
+
+        $rows = [];
+
+        if ($byType['mobile']) {
+            $mobileRows = DB::table('mobiles as m')
+                ->leftJoin('mobile_images as img', function ($join) {
+                    $join->on('m.id', '=', 'img.mobile_id')
+                        ->whereRaw('img.id = (SELECT MIN(id) FROM mobile_images WHERE mobile_id = m.id)');
+                })
+                ->whereIn('m.id', $byType['mobile'])
+                ->select(
+                    'm.id', 'm.brand_name as title', 'm.model_name as subtitle',
+                    'img.image_url as image', 'm.created_at',
+                    DB::raw("'mobile' as type"),
+                    DB::raw('NULL as url'),
+                    'm.official_price', 'm.unofficial_price',
+                    'm.is_official', 'm.status', 'm.release_date'
+                )
+                ->get()->keyBy('id');
+            foreach ($byType['mobile'] as $id) {
+                if (isset($mobileRows[$id])) {
+                    $rows[] = (array) $mobileRows[$id];
+                }
             }
         }
 
-        $postCats = $this->taxonomy->categoriesForContentBatch('post', $postIds);
-        $postTags = $this->taxonomy->tagsForContentBatch('post', $postIds);
-        $pageCats = $this->taxonomy->categoriesForContentBatch('page', $pageIds);
+        if ($byType['page']) {
+            $pageRows = DB::table('pages as p')
+                ->whereIn('p.id', $byType['page'])
+                ->select(
+                    'p.id', 'p.title',
+                    DB::raw('SUBSTRING(p.content, 1, 500) as subtitle'),
+                    DB::raw('NULL as image'), 'p.created_at',
+                    DB::raw("'page' as type"), 'p.slug as url',
+                    DB::raw('NULL as official_price'), DB::raw('NULL as unofficial_price'),
+                    DB::raw('NULL as is_official'), DB::raw('NULL as status'), DB::raw('NULL as release_date')
+                )
+                ->get()->keyBy('id');
+            foreach ($byType['page'] as $id) {
+                if (isset($pageRows[$id])) {
+                    $rows[] = (array) $pageRows[$id];
+                }
+            }
+        }
+
+        if ($byType['post']) {
+            $postRows = DB::table('posts as po')
+                ->whereIn('po.id', $byType['post'])
+                ->select(
+                    'po.id', 'po.title',
+                    DB::raw('SUBSTRING(po.content, 1, 500) as subtitle'),
+                    DB::raw('NULL as image'), 'po.created_at',
+                    DB::raw('COALESCE(po.published_at, po.created_at) as published_at'),
+                    DB::raw("'post' as type"), 'po.slug as url',
+                    DB::raw('NULL as official_price'), DB::raw('NULL as unofficial_price'),
+                    DB::raw('NULL as is_official'), DB::raw('NULL as status'), DB::raw('NULL as release_date')
+                )
+                ->get()->keyBy('id');
+            foreach ($byType['post'] as $id) {
+                if (isset($postRows[$id])) {
+                    $rows[] = (array) $postRows[$id];
+                }
+            }
+        }
+
+        // Re-sort by published_at DESC (maintains original merge order)
+        usort($rows, function ($a, $b) {
+            $ta = $a['published_at'] ?? $a['created_at'] ?? '';
+            $tb = $b['published_at'] ?? $b['created_at'] ?? '';
+            return strcmp((string) $tb, (string) $ta);
+        });
+
+        $postIdsArr = [];
+        $pageIdsArr = [];
+        foreach ($rows as $row) {
+            if ($row['type'] === 'post') {
+                $postIdsArr[] = (int) $row['id'];
+            } elseif ($row['type'] === 'page') {
+                $pageIdsArr[] = (int) $row['id'];
+            }
+        }
+
+        $postCats = $this->taxonomy->categoriesForContentBatch('post', $postIdsArr);
+        $postTags = $this->taxonomy->tagsForContentBatch('post', $postIdsArr);
+        $pageCats = $this->taxonomy->categoriesForContentBatch('page', $pageIdsArr);
 
         foreach ($rows as &$row) {
             $images = [];
@@ -118,11 +179,6 @@ class HomeFeedService
             $row['tags'] = ($row['type'] === 'post' && isset($postTags[$id])) ? $postTags[$id] : [];
         }
         unset($row);
-
-        // Total pages — same SUM-of-counts as legacy
-        $total = (int) DB::table('mobiles')->count()
-            + (int) DB::table('pages')->whereIn('published', [1, '1', 0, '0'])->count()
-            + (int) DB::table('posts')->whereIn('published', [1, '1', 0, '0'])->count();
 
         return [
             'contents' => $rows,
@@ -161,21 +217,47 @@ class HomeFeedService
 
     public function topPosts(int $limit = 8): array
     {
+        // Aggregate ratings with JOIN instead of correlated subqueries,
+        // then fetch content only for top rows.
+        $topIds = DB::table('posts as p')
+            ->leftJoin('content_ratings as cr', function ($join) {
+                $join->on('p.id', '=', 'cr.content_id')
+                    ->where('cr.content_type', '=', 'post');
+            })
+            ->select(
+                'p.id',
+                DB::raw('ROUND(COALESCE(AVG(cr.rating), 0), 1) AS rating_average'),
+                DB::raw('COUNT(cr.id) AS rating_total')
+            )
+            ->where('p.published', 1)
+            ->groupBy('p.id')
+            ->orderByDesc(DB::raw('rating_average'))
+            ->orderByDesc(DB::raw('rating_total'))
+            ->orderByDesc('p.published_at')
+            ->limit(max(1, $limit))
+            ->pluck('id')
+            ->all();
+
+        if (empty($topIds)) {
+            return [];
+        }
+
         $rows = DB::table('posts as p')
+            ->leftJoin('content_ratings as cr', function ($join) {
+                $join->on('p.id', '=', 'cr.content_id')
+                    ->where('cr.content_type', '=', 'post');
+            })
             ->select(
                 'p.id',
                 'p.title',
                 'p.slug',
-                'p.content',
+                DB::raw('SUBSTRING(p.content, 1, 500) as content'),
                 'p.created_at',
-                DB::raw('(SELECT ROUND(AVG(cr.rating), 1) FROM content_ratings cr WHERE cr.content_type = "post" AND cr.content_id = p.id) AS rating_average'),
-                DB::raw('(SELECT COUNT(*) FROM content_ratings cr WHERE cr.content_type = "post" AND cr.content_id = p.id) AS rating_total')
+                DB::raw('ROUND(COALESCE(AVG(cr.rating), 0), 1) AS rating_average'),
+                DB::raw('COUNT(cr.id) AS rating_total')
             )
-            ->where('p.published', 1)
-            ->orderByDesc(DB::raw('rating_average'))
-            ->orderByDesc(DB::raw('rating_total'))
-            ->orderByDesc(DB::raw('COALESCE(p.published_at, p.created_at)'))
-            ->limit(max(1, $limit))
+            ->whereIn('p.id', $topIds)
+            ->groupBy('p.id', 'p.title', 'p.slug', 'p.content', 'p.created_at')
             ->get()
             ->map(fn ($r) => (array) $r)
             ->all();

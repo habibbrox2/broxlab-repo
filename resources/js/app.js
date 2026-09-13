@@ -3,5 +3,6 @@ import { initAlpineComponents } from './alpine-components.js';
 
 window.Alpine = Alpine;
 
-Alpine.start();
+// Register data components BEFORE starting Alpine
 initAlpineComponents();
+Alpine.start();
