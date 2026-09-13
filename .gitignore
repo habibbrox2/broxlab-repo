@@ -105,6 +105,17 @@ rollback_backup_*
 /cache/
 /tmp/
 /build/cache/
+/scripts/tmp-*
+/scripts/*-debug*
+/scripts/debug-sql.php
+/scripts/test_*
+/scripts/test-*.php
+/scripts/generate-test-pdf.php
+/tests/__snapshots__/
+/tests/coverage/
+/tests/tmp/
+/tests/.phpunit.cache/
+/tests/.vitest.cache/
 
 # Deployment logs
 deployment.log

@@ -50,7 +50,7 @@ jobs:
             # so a broken copy would otherwise block every future deploy.
             cp -f /tmp/broxlab-deploy/web-host/scripts/deploy.sh scripts/deploy.sh
             chmod +x scripts/deploy.sh
-            bash scripts/deploy.sh
+            bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main
 
       - name: Post-Deployment Status
         if: always()

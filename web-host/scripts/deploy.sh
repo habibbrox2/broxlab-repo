@@ -8,6 +8,7 @@ set -euo pipefail
 
 BASE="${BASE_PATH:-/home/tdhuedhn/broxlab}"
 GIT_REPO="${GIT_REPO:-git@github.com:habibbrox2/broxlab-repo.git}"
+REF="${REF:-main}"
 NODE_ENV="${NODE_ENV:-production}"
 APP="$BASE/app"
 RELEASES="$APP/releases"
@@ -33,15 +34,26 @@ KEEP_RELEASES=3
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --repo) GIT_REPO="$2"; shift 2 ;;
+        --ref) REF="$2"; shift 2 ;;
+        --use-https)
+            GIT_REPO="https://github.com/${GIT_REPO#git@github.com:}"
+            GIT_REPO="${GIT_REPO%.git}.git"
+            shift
+            ;;
         --skip-backup) SKIP_BACKUP=true; shift ;;
         --skip-db-backup) SKIP_DB_BACKUP=true; shift ;;
         --skip-cleanup) SKIP_CLEANUP=true; shift ;;
         --skip-build) SKIP_BUILD=true; shift ;;
         --keep) KEEP_RELEASES="$2"; shift 2 ;;
         --base) BASE="$2"; shift 2 ;;
+        --help|-h)
+            echo "Usage: $0 [--repo URL] [--ref BRANCH_OR_TAG] [--use-https] [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH]"
+            exit 0
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--no-node-start]"
+            echo "Use --help for usage."
             exit 1
             ;;
     esac
@@ -144,6 +156,7 @@ fi
 log_section "BROXLAB DEPLOYMENT STARTED"
 log_info "Release: $DATE"
 log_info "Target: $NEW_RELEASE"
+log_info "Repository: $GIT_REPO@$REF"
 log_info "Shared storage: $SHARED"
 log_info "Node environment: $NODE_ENV"
 
@@ -275,7 +288,7 @@ fi
 
 log_section "FETCHING RELEASE"
 mkdir -p "$NEW_RELEASE"
-if ! git clone --depth=1 "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
+if ! git clone --depth=1 --branch "$REF" "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
     log_error "Failed to clone repository"
     exit 1
 fi
@@ -365,15 +378,22 @@ fi
 
 log_section "VALIDATING PHP"
 if command -v php >/dev/null 2>&1; then
+    # Use a temp file instead of process substitution to avoid /dev/fd issues
+    # on some deployment environments (e.g. restricted shells, certain WSL setups).
+    PHP_FILES=$(mktemp)
+    trap 'rm -f "$PHP_FILES"' RETURN
+
+    find app -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
     while IFS= read -r php_file; do
-        php -l "$php_file" >/dev/null
-    done < <(find app -name "*.php" -type f 2>/dev/null)
+        php -l "$php_file" >/dev/null || log_warn "PHP syntax issue in: $php_file"
+    done < "$PHP_FILES"
 
     # Phase 8: lint the Laravel framework/config/routes/database PHP too —
     # the app now lives at the repo root.
+    find config routes bootstrap database -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
     while IFS= read -r php_file; do
-        php -l "$php_file" >/dev/null
-    done < <(find config routes bootstrap database -name "*.php" -type f 2>/dev/null)
+        php -l "$php_file" >/dev/null || log_warn "PHP syntax issue in: $php_file"
+    done < "$PHP_FILES"
 fi
 
 log_section "UPDATING VERSION"
