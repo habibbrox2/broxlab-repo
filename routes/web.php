@@ -29,7 +29,8 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\WeatherApiController;
+use App\Http\Controllers\TranslateController;
+use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\MobileController;
 use App\Http\Controllers\Admin\AdminMobileController;
 use App\Http\Controllers\NotificationsController;
@@ -121,6 +122,13 @@ Route::match(['get', 'post'], '/donate/bkash/callback', [DonationController::cla
 // Language switch — legacy /lang/{code} (GET redirect + POST JSON)
 Route::get('/lang/{code}', [LanguageController::class, 'switch'])->name('lang.switch');
 Route::post('/lang/{code}', [LanguageController::class, 'switchJson'])->name('lang.switch.json');
+
+// Dynamic translation — legacy POST /api/translate (brox-i18n.js batch fallback)
+Route::post('/api/translate', [TranslateController::class, 'translate'])->name('api.translate');
+
+// Firebase Web SDK config — legacy GET /api/firebase-config (public-by-design values)
+Route::get('/api/firebase-config', [FirebaseConfigController::class, 'show'])->name('api.firebase-config');
+Route::match(['post', 'put', 'patch', 'delete'], '/api/firebase-config', [FirebaseConfigController::class, 'rejectWrite'])->name('api.firebase-config.reject');
 
 // robots.txt + split XML sitemaps (legacy SitemapController port)
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('sitemap.robots');
@@ -334,14 +342,26 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Revenue — Ads, Sponsored, Donations
     Route::get('/admin/revenue', [AdminRevenueController::class, 'index'])->name('admin.revenue.index');
     Route::get('/admin/revenue/ads', [AdminRevenueController::class, 'ads'])->name('admin.revenue.ads');
+    Route::get('/admin/revenue/ads/analytics', [AdminRevenueController::class, 'adsAnalytics'])->name('admin.revenue.ads.analytics');
+    Route::get('/admin/revenue/ads/campaigns', [AdminRevenueController::class, 'adsCampaigns'])->name('admin.revenue.ads.campaigns');
+    Route::get('/admin/revenue/ads/placements', [AdminRevenueController::class, 'adsPlacements'])->name('admin.revenue.ads.placements');
+    Route::get('/admin/revenue/ads/settings', [AdminRevenueController::class, 'adsSettings'])->name('admin.revenue.ads.settings');
     Route::get('/admin/revenue/sponsored', [AdminRevenueController::class, 'sponsored'])->name('admin.revenue.sponsored');
+    Route::get('/admin/revenue/sponsored/create', [AdminRevenueController::class, 'sponsoredCreate'])->name('admin.revenue.sponsored.create');
+    Route::get('/admin/revenue/sponsored/edit', [AdminRevenueController::class, 'sponsoredEdit'])->name('admin.revenue.sponsored.edit');
     Route::get('/admin/revenue/donations', [AdminRevenueController::class, 'donations'])->name('admin.revenue.donations');
+    Route::get('/admin/revenue/donations/bkash', [AdminRevenueController::class, 'donationsBkash'])->name('admin.revenue.donations.bkash');
+    Route::get('/admin/revenue/donations/nagad', [AdminRevenueController::class, 'donationsNagad'])->name('admin.revenue.donations.nagad');
+    Route::get('/admin/revenue/donations/rocket', [AdminRevenueController::class, 'donationsRocket'])->name('admin.revenue.donations.rocket');
 
     // Logs
     Route::get('/admin/logs', [AdminLogsController::class, 'index'])->name('admin.logs.index');
 
     // Security settings
     Route::get('/admin/security', [AdminSecurityController::class, 'index'])->name('admin.security.index');
+    Route::get('/admin/security/auth', [AdminSecurityController::class, 'auth'])->name('admin.security.auth');
+    Route::get('/admin/security/recaptcha', [AdminSecurityController::class, 'recaptcha'])->name('admin.security.recaptcha');
+    Route::get('/admin/security/smtp', [AdminSecurityController::class, 'smtp'])->name('admin.security.smtp');
 
     // Setup wizard
     Route::get('/admin/setup', [AdminSetupController::class, 'index'])->name('admin.setup.index');
@@ -350,7 +370,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/scraper', [AdminScraperController::class, 'index'])->name('admin.scraper.index');
     Route::get('/admin/scraper/jobs', [AdminScraperController::class, 'jobs'])->name('admin.scraper.jobs');
     Route::get('/admin/scraper/sources', [AdminScraperController::class, 'sources'])->name('admin.scraper.sources');
+    Route::get('/admin/scraper/sources/create', [AdminScraperController::class, 'sourcesCreate'])->name('admin.scraper.sources.create');
     Route::get('/admin/scraper/settings', [AdminScraperController::class, 'settings'])->name('admin.scraper.settings');
+    Route::get('/admin/scraper/logs', [AdminScraperController::class, 'logs'])->name('admin.scraper.logs');
+    Route::get('/admin/scraper/settings/automation', [AdminScraperController::class, 'settingsAutomation'])->name('admin.scraper.settings.automation');
+    Route::get('/admin/scraper/settings/limits', [AdminScraperController::class, 'settingsLimits'])->name('admin.scraper.settings.limits');
+    Route::get('/admin/scraper/settings/storage', [AdminScraperController::class, 'settingsStorage'])->name('admin.scraper.settings.storage');
 
     // CV Builder — admin
     Route::get('/admin/cv', [AdminCvController::class, 'index'])->name('admin.cv.index');
@@ -362,27 +387,50 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Sitemap
     Route::get('/admin/sitemap', [AdminSitemapController::class, 'index'])->name('admin.sitemap.index');
+    Route::get('/admin/sitemap/history', [AdminSitemapController::class, 'history'])->name('admin.sitemap.history');
 
     // Weather
     Route::get('/admin/weather', [AdminWeatherController::class, 'index'])->name('admin.weather.index');
+    Route::get('/admin/weather/api', [AdminWeatherController::class, 'api'])->name('admin.weather.api');
+    Route::get('/admin/weather/locations', [AdminWeatherController::class, 'locations'])->name('admin.weather.locations');
 
     // Live TV
     Route::get('/admin/livetv', [AdminLiveTvController::class, 'index'])->name('admin.livetv.index');
+    Route::get('/admin/livetv/channels', [AdminLiveTvController::class, 'channels'])->name('admin.livetv.channels');
+    Route::get('/admin/livetv/proxy', [AdminLiveTvController::class, 'proxy'])->name('admin.livetv.proxy');
 
     // Calculator
     Route::get('/admin/calculator', [AdminCalculatorController::class, 'index'])->name('admin.calculator.index');
+    Route::get('/admin/calculator/gpa', [AdminCalculatorController::class, 'gpa'])->name('admin.calculator.gpa');
+    Route::get('/admin/calculator/loan', [AdminCalculatorController::class, 'loan'])->name('admin.calculator.loan');
+    Route::get('/admin/calculator/widgets', [AdminCalculatorController::class, 'widgets'])->name('admin.calculator.widgets');
 
     // OCR
     Route::get('/admin/ocr', [AdminOcrController::class, 'index'])->name('admin.ocr.index');
+    Route::get('/admin/ocr/history', [AdminOcrController::class, 'history'])->name('admin.ocr.history');
+    Route::get('/admin/ocr/settings', [AdminOcrController::class, 'ocrSettings'])->name('admin.ocr.settings');
+    Route::get('/admin/ocr/test', [AdminOcrController::class, 'test'])->name('admin.ocr.test');
 
     // Photo Studio
     Route::get('/admin/photo-studio', [AdminPhotoStudioController::class, 'index'])->name('admin.photo-studio.index');
+    Route::get('/admin/photo-studio/cutout', [AdminPhotoStudioController::class, 'cutout'])->name('admin.photo-studio.cutout');
+    Route::get('/admin/photo-studio/editor', [AdminPhotoStudioController::class, 'editor'])->name('admin.photo-studio.editor');
+    Route::get('/admin/photo-studio/history', [AdminPhotoStudioController::class, 'history'])->name('admin.photo-studio.history');
 
     // AI System
     Route::get('/admin/aisystem', [AdminAiSystemController::class, 'index'])->name('admin.aisystem.index');
+    Route::get('/admin/aisystem/analytics', [AdminAiSystemController::class, 'analytics'])->name('admin.aisystem.analytics');
+    Route::get('/admin/aisystem/chat', [AdminAiSystemController::class, 'chat'])->name('admin.aisystem.chat');
+    Route::get('/admin/aisystem/knowledge', [AdminAiSystemController::class, 'knowledge'])->name('admin.aisystem.knowledge');
+    Route::get('/admin/aisystem/providers', [AdminAiSystemController::class, 'providers'])->name('admin.aisystem.providers');
+    Route::get('/admin/aisystem/writer', [AdminAiSystemController::class, 'writer'])->name('admin.aisystem.writer');
 
     // API Proxies
     Route::get('/admin/api-proxy', [AdminApiProxyController::class, 'index'])->name('admin.api-proxy.index');
+    Route::get('/admin/api-proxy/firebase', [AdminApiProxyController::class, 'firebase'])->name('admin.api-proxy.firebase');
+    Route::get('/admin/api-proxy/pexels', [AdminApiProxyController::class, 'pexels'])->name('admin.api-proxy.pexels');
+    Route::get('/admin/api-proxy/pixabay', [AdminApiProxyController::class, 'pixabay'])->name('admin.api-proxy.pixabay');
+    Route::get('/admin/api-proxy/puter', [AdminApiProxyController::class, 'puter'])->name('admin.api-proxy.puter');
 
     // Notifications — admin send/schedule/manage
     Route::get('/admin/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
