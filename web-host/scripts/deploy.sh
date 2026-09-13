@@ -431,7 +431,6 @@ if command -v php >/dev/null 2>&1; then
     # Use a temp file instead of process substitution to avoid /dev/fd issues
     # on some deployment environments (e.g. restricted shells, certain WSL setups).
     PHP_FILES=$(mktemp)
-    trap 'rm -f "$PHP_FILES"' RETURN
 
     PHP_VALIDATION_FAILED=false
     find app -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
@@ -455,9 +454,11 @@ if command -v php >/dev/null 2>&1; then
     done < "$PHP_FILES"
 
     if [[ "$PHP_VALIDATION_FAILED" == "true" ]]; then
+        rm -f "$PHP_FILES"
         log_error "PHP validation failed; release will not be activated"
         exit 1
     fi
+    rm -f "$PHP_FILES"
 fi
 
 log_section "UPDATING VERSION"
