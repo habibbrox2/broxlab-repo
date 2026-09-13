@@ -513,7 +513,7 @@ fi
 # release directory ($BASE/releases/<date>) or git revert the Phase 8 commit.
 PUBLIC_HTML_BASE="$BASE/public_html"
 PUBLIC_HTML_TARGET="$CURRENT/public"
-log_info "Docroot set to public/ (Laravel-only, Phase 8)"
+log_info "Docroot symlink: $PUBLIC_HTML_BASE -> $PUBLIC_HTML_TARGET"
 
 if [[ -L "$PUBLIC_HTML_BASE" ]]; then
     rm -f "$PUBLIC_HTML_BASE"
@@ -521,6 +521,15 @@ elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
     mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
 fi
 ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
+if [[ ! -L "$PUBLIC_HTML_BASE" || "$(readlink "$PUBLIC_HTML_BASE")" != "$PUBLIC_HTML_TARGET" ]]; then
+    log_error "Document-root symlink was not created correctly: $PUBLIC_HTML_BASE"
+    exit 1
+fi
+if [[ ! -f "$PUBLIC_HTML_TARGET/index.php" ]]; then
+    log_error "Laravel document root is missing index.php: $PUBLIC_HTML_TARGET"
+    exit 1
+fi
+log_info "Document-root symlink verified"
 
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
