@@ -383,17 +383,31 @@ if command -v php >/dev/null 2>&1; then
     PHP_FILES=$(mktemp)
     trap 'rm -f "$PHP_FILES"' RETURN
 
+    PHP_VALIDATION_FAILED=false
     find app -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
     while IFS= read -r php_file; do
-        php -l "$php_file" >/dev/null || log_warn "PHP syntax issue in: $php_file"
+        if ! php_output=$(php -l "$php_file" 2>&1); then
+            PHP_VALIDATION_FAILED=true
+            log_error "PHP syntax issue in: $php_file"
+            printf '%s\n' "$php_output" | tee -a "$LOG_FILE"
+        fi
     done < "$PHP_FILES"
 
     # Phase 8: lint the Laravel framework/config/routes/database PHP too —
     # the app now lives at the repo root.
     find config routes bootstrap database -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
     while IFS= read -r php_file; do
-        php -l "$php_file" >/dev/null || log_warn "PHP syntax issue in: $php_file"
+        if ! php_output=$(php -l "$php_file" 2>&1); then
+            PHP_VALIDATION_FAILED=true
+            log_error "PHP syntax issue in: $php_file"
+            printf '%s\n' "$php_output" | tee -a "$LOG_FILE"
+        fi
     done < "$PHP_FILES"
+
+    if [[ "$PHP_VALIDATION_FAILED" == "true" ]]; then
+        log_error "PHP validation failed; release will not be activated"
+        exit 1
+    fi
 fi
 
 log_section "UPDATING VERSION"
