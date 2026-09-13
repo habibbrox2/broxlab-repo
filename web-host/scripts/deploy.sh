@@ -102,6 +102,19 @@ log_section() {
     echo -e "${CYAN}============================================================${NC}" | tee -a "$LOG_FILE"
 }
 
+LN_BIN="$(command -v ln || true)"
+if [[ -z "$LN_BIN" ]]; then
+    log_error "ln command not found; cannot create deployment symlinks"
+    exit 2
+fi
+
+create_symlink() {
+    local target="$1"
+    local link_name="$2"
+    rm -rf "$link_name"
+    "$LN_BIN" -s "$target" "$link_name"
+}
+
 acquire_deploy_lock() {
     if [[ -f "$DEPLOY_LOCK" ]]; then
         local lock_pid
@@ -350,22 +363,22 @@ mkdir -p storage/framework/cache/data storage/framework/sessions storage/framewo
 # .env when no root .env exists yet, and warn: the shared file predates Laravel
 # and may lack APP_KEY — add it before serving traffic.
 if [[ ! -f .env && ! -L .env ]]; then
-    ln -sfn "$SHARED/.env" .env
+    create_symlink "$SHARED/.env" .env
     log_warn "Root .env missing — symlinked shared legacy .env; verify APP_KEY and Laravel vars are present"
 fi
 
 if [[ -f "$SHARED/Config/broxlab-firebase.json" ]]; then
-    ln -sfn "$SHARED/Config/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
+    create_symlink "$SHARED/Config/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
 elif [[ -f "$SHARED/broxlab-firebase.json" ]]; then
-    ln -sfn "$SHARED/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
+    create_symlink "$SHARED/broxlab-firebase.json" "storage/firebase/broxlab-firebase.json"
 fi
 
-ln -sfn "$STORAGE/uploads" "public_html/uploads"
-ln -sfn "$STORAGE/cache" "storage/cache"
-ln -sfn "$STORAGE/logs" "storage/logs"
-ln -sfn "$STORAGE/tmp" "storage/tmp"
-ln -sfn "$STORAGE/ocr-temp" "storage/ocr-temp"
-ln -sfn "$STORAGE/sessions" "storage/sessions"
+create_symlink "$STORAGE/uploads" "public_html/uploads"
+create_symlink "$STORAGE/cache" "storage/cache"
+create_symlink "$STORAGE/logs" "storage/logs"
+create_symlink "$STORAGE/tmp" "storage/tmp"
+create_symlink "$STORAGE/ocr-temp" "storage/ocr-temp"
+create_symlink "$STORAGE/sessions" "storage/sessions"
 
 mkdir -p bootstrap/cache
 if [[ ! -w bootstrap/cache ]]; then
@@ -480,12 +493,12 @@ ln -sfn "$NEW_RELEASE" "$CURRENT"
 # storage target as public_html/uploads). Fail loudly so a broken uploads path
 # is visible in deploy logs.
 mkdir -p storage public
-ln -sfn "$STORAGE/uploads" storage/uploads
+    create_symlink "$STORAGE/uploads" storage/uploads
 log_info "Storage uploads symlinked: storage/uploads -> $STORAGE/uploads"
 if [[ -L "public/uploads" || -d "public/uploads" ]]; then
     rm -f public/uploads
 fi
-ln -sfn "$STORAGE/uploads" public/uploads
+create_symlink "$STORAGE/uploads" public/uploads
 log_info "Public uploads symlinked: public/uploads -> $STORAGE/uploads"
 
 # Site assets/uploads live in public_html/ (shared static store, also used by
@@ -493,10 +506,10 @@ log_info "Public uploads symlinked: public/uploads -> $STORAGE/uploads"
 # relative symlinks so the same files are reachable at their historical URLs
 # (/assets/*, /cdn/*, /rtceditor/*, /uploads/*, ...).
 for shared_dir in assets cdn rtceditor smart_design_assets ai uploads; do
-    ln -sfn "../public_html/$shared_dir" "public/$shared_dir"
+    create_symlink "../public_html/$shared_dir" "public/$shared_dir"
 done
-ln -sfn "../public_html/robots.txt" "public/robots.txt"
-ln -sfn "../public_html/firebase-messaging-sw.js" "public/firebase-messaging-sw.js"
+create_symlink "../public_html/robots.txt" "public/robots.txt"
+create_symlink "../public_html/firebase-messaging-sw.js" "public/firebase-messaging-sw.js"
 log_info "Shared asset symlinks created in public/ (assets, cdn, rtceditor, smart_design_assets, ai, uploads, robots.txt, firebase-messaging-sw.js)"
 
 # Optimize the legacy release size by removing local copy of node_modules if
@@ -520,7 +533,7 @@ if [[ -L "$PUBLIC_HTML_BASE" ]]; then
 elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
     mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
 fi
-ln -sfn "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
+create_symlink "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
 if [[ ! -L "$PUBLIC_HTML_BASE" || "$(readlink "$PUBLIC_HTML_BASE")" != "$PUBLIC_HTML_TARGET" ]]; then
     log_error "Document-root symlink was not created correctly: $PUBLIC_HTML_BASE"
     exit 1
