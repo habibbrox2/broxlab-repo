@@ -9,6 +9,7 @@ set -euo pipefail
 BASE="${BASE_PATH:-/home/tdhuedhn/broxlab}"
 GIT_REPO="${GIT_REPO:-git@github.com:habibbrox2/broxlab-repo.git}"
 REF="${REF:-main}"
+ASSET_ARCHIVE="${ASSET_ARCHIVE:-}"
 NODE_ENV="${NODE_ENV:-production}"
 APP="$BASE/app"
 RELEASES="$APP/releases"
@@ -341,6 +342,16 @@ mkdir -p "$NEW_RELEASE"
 if ! git clone --depth=1 --branch "$REF" "$GIT_REPO" "$NEW_RELEASE" 2>&1 | tee -a "$LOG_FILE"; then
     log_error "Failed to clone repository"
     exit 1
+fi
+
+if [[ -n "$ASSET_ARCHIVE" ]]; then
+    if [[ ! -f "$ASSET_ARCHIVE" ]]; then
+        log_error "Asset archive not found: $ASSET_ARCHIVE"
+        exit 1
+    fi
+    require_command tar
+    tar -xzf "$ASSET_ARCHIVE" -C "$NEW_RELEASE"
+    log_info "Built frontend assets extracted from CI archive"
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then

@@ -24,6 +24,20 @@ jobs:
           chmod 600 /tmp/ssh/deploy_key
         shell: bash
 
+      - name: Build frontend assets
+        run: |
+          npm ci --include=dev
+          npm run build:prod
+          npm run build:laravel
+          tar -czf /tmp/broxlab-assets.tar.gz \
+            public/assets/ai/dist \
+            public/assets/css/dist \
+            public/assets/js/dist \
+            public/assets/firebase/v2/dist \
+            public/assets/laravel/dist \
+            public/rtceditor/editor.bundle.js
+        shell: bash
+
       - name: Upload deploy script
         uses: appleboy/scp-action@v1
         with:
@@ -32,6 +46,16 @@ jobs:
           key_path: /tmp/ssh/deploy_key
           port: 22
           source: "web-host/scripts/deploy.sh"
+          target: "/tmp/broxlab-deploy"
+
+      - name: Upload frontend assets
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key_path: /tmp/ssh/deploy_key
+          port: 22
+          source: "/tmp/broxlab-assets.tar.gz"
           target: "/tmp/broxlab-deploy"
 
       - name: Deploy to server
@@ -50,7 +74,8 @@ jobs:
             # so a broken copy would otherwise block every future deploy.
             cp -f /tmp/broxlab-deploy/web-host/scripts/deploy.sh scripts/deploy.sh
             chmod +x scripts/deploy.sh
-            bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main
+            ASSET_ARCHIVE=/tmp/broxlab-deploy/broxlab-assets.tar.gz \
+              bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main
 
       - name: Post-Deployment Status
         if: always()
