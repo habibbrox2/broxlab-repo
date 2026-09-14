@@ -310,9 +310,12 @@ if grep -q '^CACHE_STORE=database$' "$SHARED/.env"; then
     log_warn "CACHE_STORE=database requires a missing cache table; switching shared .env to file cache"
     sed -i 's/^CACHE_STORE=database$/CACHE_STORE=file/' "$SHARED/.env"
 fi
-if grep -q '^SESSION_DRIVER=database$' "$SHARED/.env"; then
-    log_warn "SESSION_DRIVER=database requires a missing sessions table; switching shared .env to file driver"
-    sed -i 's/^SESSION_DRIVER=database$/SESSION_DRIVER=file/' "$SHARED/.env"
+if grep -q '^SESSION_DRIVER=database' "$SHARED/.env" || ! grep -q '^SESSION_DRIVER=' "$SHARED/.env"; then
+    log_warn "SESSION_DRIVER=database (or unset) requires a missing sessions table; switching shared .env to file driver"
+    sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' "$SHARED/.env"
+    if ! grep -q '^SESSION_DRIVER=' "$SHARED/.env"; then
+        printf 'SESSION_DRIVER=file\n' >> "$SHARED/.env"
+    fi
 fi
 
 mkdir -p \
