@@ -29,7 +29,7 @@ jobs:
           npm ci --include=dev
           npm run build:prod
           npm run build:laravel
-          tar -czf /tmp/broxlab-assets.tar.gz \
+          tar -czf broxlab-assets.tar.gz \
             public/assets/ai/dist \
             public/assets/css/dist \
             public/assets/js/dist \
@@ -55,7 +55,7 @@ jobs:
           username: ${{ secrets.USER }}
           key_path: /tmp/ssh/deploy_key
           port: 22
-          source: "/tmp/broxlab-assets.tar.gz"
+          source: "broxlab-assets.tar.gz"
           target: "/tmp/broxlab-deploy"
 
       - name: Deploy to server
