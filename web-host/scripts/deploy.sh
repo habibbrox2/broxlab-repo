@@ -512,9 +512,7 @@ ln -sfn "$NEW_RELEASE" "$CURRENT"
 mkdir -p storage public
     create_symlink "$STORAGE/uploads" storage/uploads
 log_info "Storage uploads symlinked: storage/uploads -> $STORAGE/uploads"
-if [[ -L "public/uploads" || -d "public/uploads" ]]; then
-    rm -f public/uploads
-fi
+rm -rf public/uploads 2>/dev/null || true
 create_symlink "$STORAGE/uploads" public/uploads
 log_info "Public uploads symlinked: public/uploads -> $STORAGE/uploads"
 
