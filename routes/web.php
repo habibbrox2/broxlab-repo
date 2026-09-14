@@ -43,6 +43,7 @@ use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\MedicinesController;
+use App\Http\Controllers\WeatherApiController;
 use Illuminate\Support\Facades\Route;
 
 /*

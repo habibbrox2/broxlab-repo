@@ -286,6 +286,31 @@
     <script>
     (function () {
         'use strict';
+
+        if (typeof window.debounce !== 'function') {
+            window.debounce = function debounce(fn, ms) {
+                var t;
+                return function () {
+                    var args = arguments;
+                    clearTimeout(t);
+                    t = setTimeout(function () { fn.apply(this, args); }.bind(this), ms);
+                }.bind(this);
+            };
+        }
+
+        if (typeof window.throttle !== 'function') {
+            window.throttle = function throttle(fn, ms) {
+                var last = 0;
+                return function () {
+                    var now = Date.now();
+                    if (now - last >= ms) {
+                        last = now;
+                        fn.apply(this, arguments);
+                    }
+                };
+            };
+        }
+
         function scrollTop() { return window.pageYOffset || document.documentElement.scrollTop || 0; }
 
         function initScrollTopBtn() {
@@ -393,12 +418,14 @@
     window.__APP_JS_CONFIG.notifications.websocketUrl = '';
     window.puter = window.puter || {};
     window.puter.quiet = true;
-    window.__broxSiteLang = '{{ app(LanguageService::class)->current() }}';
-    window.__broxSiteLogo = '{{ $appSettings['site_logo'] ?? '' }}';
+
+    const currentLang = @json(app(LanguageService::class)->current());
+    window.__broxSiteLang = currentLang;
+    window.__broxSiteLogo = @json($appSettings['site_logo'] ?? '');
     window.__broxSiteTranslations = window.__broxSiteTranslations || {};
-    window.__broxSiteTranslations['en'] = Object.assign(window.__broxSiteTranslations['en'] || {}, {!! $siteTranslations['en'] ?? '{}' !!});
-    window.__broxSiteTranslations['bn'] = Object.assign(window.__broxSiteTranslations['bn'] || {}, {!! $siteTranslations['bn'] ?? '{}' !!});
-    window.__broxSiteTranslations['{{ app(LanguageService::class)->current() }}'] = Object.assign(window.__broxSiteTranslations['{{ app(LanguageService::class)->current() }}'] || {}, {!! $siteTranslations[app(LanguageService::class)->current()] ?? '{}' !!});
+    window.__broxSiteTranslations.en = Object.assign(window.__broxSiteTranslations.en || {}, @json($siteTranslations['en'] ?? []));
+    window.__broxSiteTranslations.bn = Object.assign(window.__broxSiteTranslations.bn || {}, @json($siteTranslations['bn'] ?? []));
+    window.__broxSiteTranslations[currentLang] = Object.assign(window.__broxSiteTranslations[currentLang] || {}, @json($siteTranslations[app(LanguageService::class)->current()] ?? []));
     </script>
 
     {{-- Module scripts --}}
