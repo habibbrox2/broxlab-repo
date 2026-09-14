@@ -304,11 +304,15 @@ ensure_env_setting "APP_KEY" "base64:$(php -r 'echo base64_encode(random_bytes(3
 ensure_env_setting "APP_ENV" "production"
 ensure_env_setting "APP_DEBUG" "false"
 
-# The shared legacy database does not include Laravel's optional cache table.
+# The shared legacy database does not include Laravel's optional cache or sessions tables.
 # Keep existing Redis or other explicit cache backends unchanged.
 if grep -q '^CACHE_STORE=database$' "$SHARED/.env"; then
     log_warn "CACHE_STORE=database requires a missing cache table; switching shared .env to file cache"
     sed -i 's/^CACHE_STORE=database$/CACHE_STORE=file/' "$SHARED/.env"
+fi
+if grep -q '^SESSION_DRIVER=database$' "$SHARED/.env"; then
+    log_warn "SESSION_DRIVER=database requires a missing sessions table; switching shared .env to file driver"
+    sed -i 's/^SESSION_DRIVER=database$/SESSION_DRIVER=file/' "$SHARED/.env"
 fi
 
 mkdir -p \
