@@ -442,10 +442,12 @@ if command -v php >/dev/null 2>&1; then
     # Use a temp file instead of process substitution to avoid /dev/fd issues
     # on some deployment environments (e.g. restricted shells, certain WSL setups).
     PHP_FILES=$(mktemp)
+    touch "$PHP_FILES"
 
     PHP_VALIDATION_FAILED=false
-    find app -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
+    (find app -name "*.php" -type f 2>/dev/null || true) > "$PHP_FILES"
     while IFS= read -r php_file; do
+        [[ -z "$php_file" ]] && continue
         if ! php_output=$(php -l "$php_file" 2>&1); then
             PHP_VALIDATION_FAILED=true
             log_error "PHP syntax issue in: $php_file"
@@ -455,8 +457,9 @@ if command -v php >/dev/null 2>&1; then
 
     # Phase 8: lint the Laravel framework/config/routes/database PHP too —
     # the app now lives at the repo root.
-    find config routes bootstrap database -name "*.php" -type f 2>/dev/null > "$PHP_FILES"
+    (find config routes bootstrap database -name "*.php" -type f 2>/dev/null || true) > "$PHP_FILES"
     while IFS= read -r php_file; do
+        [[ -z "$php_file" ]] && continue
         if ! php_output=$(php -l "$php_file" 2>&1); then
             PHP_VALIDATION_FAILED=true
             log_error "PHP syntax issue in: $php_file"
@@ -470,6 +473,8 @@ if command -v php >/dev/null 2>&1; then
         exit 1
     fi
     rm -f "$PHP_FILES"
+else
+    log_warn "php not found; skipping PHP validation"
 fi
 
 log_section "UPDATING VERSION"
