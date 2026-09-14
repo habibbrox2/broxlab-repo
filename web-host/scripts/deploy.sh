@@ -357,8 +357,8 @@ if [[ -n "$ASSET_ARCHIVE" ]]; then
         exit 1
     fi
     require_command tar
-    tar -xzf "$ASSET_ARCHIVE" -C "$NEW_RELEASE"
-    log_info "Built frontend assets extracted from CI archive"
+    tar -xzf "$ASSET_ARCHIVE" -C "$BASE/public_html"
+    log_info "Built frontend assets extracted to public_html from CI archive"
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
