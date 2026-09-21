@@ -117,6 +117,7 @@ Route::get('/contact', [PageController::class, 'contact'])->name('pages.contact'
 Route::post('/contact', [PageController::class, 'contactSubmit'])->name('pages.contact.submit');
 Route::get('/advertise', [PageController::class, 'advertise'])->name('pages.advertise');
 Route::post('/advertise', [PageController::class, 'advertiseSubmit'])->name('pages.advertise.submit');
+Route::view('/digital-sheba', 'pages.digital-sheba')->name('digital-sheba');
 Route::get('/faq', [PageController::class, 'faq'])->name('pages.faq');
 Route::get('/terms', [PageController::class, 'terms'])->name('pages.terms');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('pages.privacy');

@@ -46,7 +46,16 @@
          ]],
         ['label' => 'Weather',    'url' => '/weather',   'icon' => 'cloud-sun',   'match' => '/weather'],
         ['label' => 'Medicines',  'url' => '/medicines', 'icon' => 'pill',        'match' => '/medicines'],
-        ['label' => 'News',       'url' => '/news',      'icon' => 'newspaper',   'match' => '/news']
+        ['label' => 'News',       'url' => '/news',      'icon' => 'newspaper',   'match' => '/news'],
+        ['label' => 'ডিজিটাল সেবা', 'url' => '/digital-sheba', 'icon' => 'globe', 'match' => '/digital-sheba',
+         'submenu' => [
+            ['label' => 'ডিজিটাল রাষ্ট্রসেবা',  'url' => 'https://sheba.gov.bd',        'icon' => 'shield'],
+            ['label' => 'বাংলাদেশ সার্ভি',      'url' => 'https://www.bangladesh.gov.bd', 'icon' => 'landmark'],
+            ['label' => 'ই-গভর্ন্যান্স',        'url' => 'https://egov.gov.bd',        'icon' => 'file-check'],
+            ['label' => 'মোবাইল ব্যাংকিং',       'url' => 'https://www.bangladeshbank.org.bd', 'icon' => 'banknote'],
+            ['label' => 'ডিজিটাল শিক্ষা',        'url' => 'https://www.mohe.gov.bd',    'icon' => 'graduation-cap'],
+            ['label' => 'ই-হেলথ',              'url' => 'https://www.docdidi.com',   'icon' => 'heart-pulse'],
+         ]],
     ];
 
     // $isAdmin comes from the shared view composer and is resolved from the RBAC
