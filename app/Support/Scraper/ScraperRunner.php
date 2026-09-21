@@ -39,12 +39,15 @@ class ScraperRunner
 
     protected ?MobileDetailParser $mobileParser = null;
 
+    protected ?JobDetailParser $jobParser = null;
+
     public function __construct(
         ?ScraperClient $client = null,
         ?ScraperStore $store = null,
         ?SourceCatalog $catalog = null,
         ?ContentEnricher $enricher = null,
         ?MobileDetailParser $mobileParser = null,
+        ?JobDetailParser $jobParser = null,
     ) {
         $this->client = $client ?? new ScraperClient();
         $this->store = $store ?? new ScraperStore();
@@ -54,6 +57,7 @@ class ScraperRunner
         $this->sitemaps = new SitemapReader($this->client);
         $this->enricher = $enricher;
         $this->mobileParser = $mobileParser ?? new MobileDetailParser();
+        $this->jobParser = $jobParser ?? new JobDetailParser();
     }
 
     /**
@@ -151,6 +155,10 @@ class ScraperRunner
         // Mobile sources need detail-page fetching + structured parsing.
         if ($type === 'mobile') {
             $normalized = $this->parseMobileItems($raw, $source, $limit);
+        } elseif ($type === 'jobs' && ($source['parser'] ?? null) === 'jobdetail') {
+            // Job sources with jobdetail parser: fetch each listing page and
+            // extract structured fields (company, location, salary, deadline, etc.).
+            $normalized = $this->parseJobItems($raw, $source, $limit);
         } else {
             $normalized = $this->normalize($raw, $source);
         }
@@ -216,6 +224,50 @@ class ScraperRunner
 
             if ($item !== null) {
                 $item['extracted_at'] = gmdate('c');
+                $items[] = $item;
+                $parsed++;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Fetch each discovered job listing URL and parse it through the
+     * JobDetailParser to extract structured job data (company, location,
+     * salary, deadline, etc.).
+     *
+     * @param  array<int, array<string, mixed>>  $raw  Discovered URLs (from sitemap/feed/html).
+     * @param  array<string, mixed>  $source
+     * @return array<int, array<string, mixed>>  Parsed job items.
+     */
+    protected function parseJobItems(array $raw, array $source, int $limit): array
+    {
+        $items = [];
+        $parsed = 0;
+
+        foreach ($raw as $discovered) {
+            if ($parsed >= $limit) {
+                break;
+            }
+
+            $link = trim((string) ($discovered['link'] ?? ''));
+            if ($link === '') {
+                continue;
+            }
+
+            $response = $this->client->get($link);
+            if (! $response['ok'] || $response['body'] === null) {
+                continue;
+            }
+
+            $item = $this->jobParser->parse(
+                $response['body'],
+                (string) $source['key'],
+                $link
+            );
+
+            if ($item !== null) {
                 $items[] = $item;
                 $parsed++;
             }

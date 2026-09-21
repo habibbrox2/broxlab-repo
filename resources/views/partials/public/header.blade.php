@@ -31,6 +31,12 @@
             ['label' => 'Latest',      'url' => '/posts?sort=latest',  'icon' => 'clock']
          ]],
         ['label' => 'Categories', 'url' => '/categories', 'icon' => 'grid',        'match' => '/categories'],
+        ['label' => 'Jobs',       'url' => '/jobs',      'icon' => 'briefcase',   'match' => '/jobs', 'submenu' => [
+            ['label' => 'All Jobs',     'url' => '/jobs',             'icon' => 'list'],
+            ['label' => 'Govt Jobs',    'url' => '/jobs?tag=govt',     'icon' => 'landmark'],
+            ['label' => 'Private Jobs', 'url' => '/jobs?tag=private',  'icon' => 'building'],
+            ['label' => 'Internships',  'url' => '/jobs?tag=intern',   'icon' => 'graduation-cap'],
+        ]],
         ['label' => 'Services',   'url' => '/services',   'icon' => 'briefcase',   'match' => '/services',
          'submenu' => [
             ['label' => 'All Services', 'url' => '/services',    'icon' => 'list'],
