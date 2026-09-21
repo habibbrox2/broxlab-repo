@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Log;
  *   discover → fetch → parse → dedupe (seen.json) → optional AI enrich →
  *   merge into the per-source snapshot → record run history.
  *
+ * For "mobile" type sources, the parse step additionally fetches each detail-
+ * page URL discovered by the sitemap and runs it through MobileDetailParser
+ * to extract structured device data (prices, specs, images).
+ *
  * The runner never throws for a single source; failures are reported in the
  * returned stats so the admin UI and the queue log can surface them.
  */
@@ -33,11 +37,14 @@ class ScraperRunner
 
     protected ?ContentEnricher $enricher = null;
 
+    protected ?MobileDetailParser $mobileParser = null;
+
     public function __construct(
         ?ScraperClient $client = null,
         ?ScraperStore $store = null,
         ?SourceCatalog $catalog = null,
         ?ContentEnricher $enricher = null,
+        ?MobileDetailParser $mobileParser = null,
     ) {
         $this->client = $client ?? new ScraperClient();
         $this->store = $store ?? new ScraperStore();
@@ -46,6 +53,7 @@ class ScraperRunner
         $this->html = new HtmlListingExtractor($this->client);
         $this->sitemaps = new SitemapReader($this->client);
         $this->enricher = $enricher;
+        $this->mobileParser = $mobileParser ?? new MobileDetailParser();
     }
 
     /**
@@ -116,7 +124,8 @@ class ScraperRunner
     public function runSource(array $source, int $limit, bool $enrich = false): array
     {
         $key = (string) $source['key'];
-        $base = ['key' => $key, 'name' => $source['name'] ?? $key, 'type' => $source['type'] ?? 'news'];
+        $type = (string) ($source['type'] ?? 'news');
+        $base = ['key' => $key, 'name' => $source['name'] ?? $key, 'type' => $type];
 
         try {
             $discovery = $this->discover($source, $limit);
@@ -139,7 +148,13 @@ class ScraperRunner
             ]);
         }
 
-        $normalized = $this->normalize($raw, $source);
+        // Mobile sources need detail-page fetching + structured parsing.
+        if ($type === 'mobile') {
+            $normalized = $this->parseMobileItems($raw, $source, $limit);
+        } else {
+            $normalized = $this->normalize($raw, $source);
+        }
+
         $fresh = $this->store->filterUnseen($normalized);
         $skipped = count($normalized) - count($fresh);
         $fresh = array_slice($fresh, 0, $limit);
@@ -160,6 +175,53 @@ class ScraperRunner
             'added' => count($fresh),
             'skipped' => $skipped,
         ]);
+    }
+
+    /**
+     * Fetch each discovered detail-page URL and parse it through the
+     * MobileDetailParser. This is the mobile equivalent of normalize().
+     *
+     * @param  array<int, array<string, mixed>>  $raw  Discovered URLs (from sitemap).
+     * @param  array<string, mixed>  $source
+     * @return array<int, array<string, mixed>>  Parsed mobile items.
+     */
+    protected function parseMobileItems(array $raw, array $source, int $limit): array
+    {
+        $items = [];
+        $parsed = 0;
+
+        foreach ($raw as $discovered) {
+            if ($parsed >= $limit) {
+                break;
+            }
+
+            $link = trim((string) ($discovered['link'] ?? ''));
+            if ($link === '') {
+                continue;
+            }
+
+            $response = $this->client->get($link);
+            if (! $response['ok'] || $response['body'] === null) {
+                continue;
+            }
+
+            $this->mobileParser->setBaseUrl($link);
+            $item = $this->mobileParser->parse(
+                $response['body'],
+                (string) $source['key'],
+                (string) ($source['name'] ?? $source['key']),
+                $link,
+                (string) ($source['lang'] ?? 'bn'),
+            );
+
+            if ($item !== null) {
+                $item['extracted_at'] = gmdate('c');
+                $items[] = $item;
+                $parsed++;
+            }
+        }
+
+        return $items;
     }
 
     /**
@@ -243,7 +305,7 @@ class ScraperRunner
                 if (stripos($tag, 'application/rss+xml') === false && stripos($tag, 'application/atom+xml') === false) {
                     continue;
                 }
-                if (preg_match('#href=["\']([^"\']+)["\']#i', $tag, $href) === 1) {
+                if (preg_match('#href=([^\s>]+)#i', $tag, $href) === 1) {
                     $found[] = $this->client->resolveUrl($href[1], $homepage);
                 }
             }
@@ -285,6 +347,7 @@ class ScraperRunner
                 'summary' => $this->cleanSummary($item['summary'] ?? null),
                 'published_at' => $item['published_at'] ?? null,
                 'guid' => $item['guid'] ?? $dedupeKey,
+                'image' => $this->cleanImage($item['image'] ?? null),
                 'source_key' => $source['key'],
                 'source_name' => $source['name'] ?? $source['key'],
                 'type' => $source['type'] ?? 'news',
@@ -342,6 +405,25 @@ class ScraperRunner
         }
 
         return array_slice(array_values($byLink), 0, $limit);
+    }
+
+    /** Keep only absolute http(s) image URLs that look like real images. */
+    protected function cleanImage(mixed $image): ?string
+    {
+        if (! is_string($image)) {
+            return null;
+        }
+
+        $image = trim($image);
+        if ($image === '' || ! preg_match('#^https?://#i', $image)) {
+            return null;
+        }
+
+        if (preg_match('/(logo|icon|sprite|avatar|pixel|spacer)/i', $image)) {
+            return null;
+        }
+
+        return $image;
     }
 
     protected function cleanTitle(string $title): string

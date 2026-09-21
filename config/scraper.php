@@ -17,6 +17,11 @@
 |   sitemap → sitemap.xml only
 |   html    → HTML listing heuristics only
 |
+| Mobile sources (type = 'mobile') work the same way but, after discovery,
+| the runner fetches each detail-page URL and a MobileDetailParser extracts
+| structured device data (brand, model, prices, specs, images) instead of
+| article summaries.
+|
 | Add more sources by appending an entry here; the runner picks it up.
 |
 */
@@ -47,9 +52,20 @@ return [
     ),
 
     // Optional AI post-processing: summarise / categorise each extracted item
-    // using the default provider configured under /admin/aisystem/providers.
+    // using the default provider configured under /admin/aisystem.providers.
     'ai_enrich' => env('CONTENT_EXTRACT_AI_ENRICH', false),
     'ai_model' => env('CONTENT_EXTRACT_AI_MODEL'),
+
+    // Auto-publish: turn each extracted snapshot item into a published post
+    // (attributed to its source, tagged News/Jobs/Tech). Still requires the
+    // extraction gate above — this only adds the publish step. Per-run cap:
+    'autopublish' => env('CONTENT_EXTRACT_AUTO_PUBLISH', true),
+    'autopublish_limit' => (int) env('CONTENT_EXTRACT_AUTO_PUBLISH_LIMIT', 50),
+
+    // Token the cron pipeline validates against (set via .env). When empty,
+    // the internal cron endpoint refuses to run, so a misconfigured host can
+    // never accidentally trigger a scrape.
+    'cron_token' => env('SCRAPER_PIPELINE_CRON_TOKEN'),
 
     /*
     |--------------------------------------------------------------------------
@@ -215,6 +231,56 @@ return [
             'feed' => 'https://bdnews24.com/technology/rss',
             'lang' => 'en',
             'strategy' => 'auto',
+            'enabled' => true,
+        ],
+
+        // ---------- 4. Mobile ----------
+        [
+            'key' => 'mobiledokan',
+            'name' => 'MobileDokan (মোবাইলডকান)',
+            'type' => 'mobile',
+            'homepage' => 'https://www.mobiledokan.co',
+            'feed' => null,
+            'lang' => 'bn',
+            'strategy' => 'sitemap',
+            'detail_pattern' => '/product/{slug}/i',
+            'parser' => 'mobiledokan',
+            'enabled' => true,
+        ],
+        [
+            'key' => 'muthophone',
+            'name' => 'MuthoPhone (মুথোফোন)',
+            'type' => 'mobile',
+            'homepage' => 'https://www.muthophone.com.bd',
+            'feed' => null,
+            'lang' => 'bn',
+            'strategy' => 'sitemap',
+            'detail_pattern' => '/phone/{slug}/i',
+            'parser' => 'muthophone',
+            'enabled' => true,
+        ],
+        [
+            'key' => 'mobilebd',
+            'name' => 'MobileBD (মোবাইলবিডি)',
+            'type' => 'mobile',
+            'homepage' => 'https://www.mobilebd.co',
+            'feed' => null,
+            'lang' => 'bn',
+            'strategy' => 'sitemap',
+            'detail_pattern' => '/{slug}/i',
+            'parser' => 'mobilebd',
+            'enabled' => true,
+        ],
+        [
+            'key' => 'gsmarena_bd',
+            'name' => 'GSMArena BD (গ্সমারেনা বিডি)',
+            'type' => 'mobile',
+            'homepage' => 'https://www.gsmarena.com.bd',
+            'feed' => null,
+            'lang' => 'en',
+            'strategy' => 'sitemap',
+            'detail_pattern' => '/{brand}/{slug}-bd{.*}/i',
+            'parser' => 'gsmarena_bd',
             'enabled' => true,
         ],
     ],

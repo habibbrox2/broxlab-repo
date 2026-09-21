@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPostController;
 use App\Http\Controllers\Admin\AdminPageController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Admin\AdminServiceController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminRbacController;
 use App\Http\Controllers\Admin\AdminRevenueController;
+use App\Http\Controllers\Admin\AdminWalletController;
 use App\Http\Controllers\Admin\AdminLogsController;
 use App\Http\Controllers\Admin\AdminSecurityController;
 use App\Http\Controllers\Admin\AdminSetupController;
@@ -41,10 +43,13 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\Internal\ScrapControlCenterController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CvExportController;
+use App\Http\Controllers\ServiceApplicationController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\MedicinesController;
 use App\Http\Controllers\WeatherApiController;
 use Illuminate\Support\Facades\Route;
@@ -182,6 +187,16 @@ Route::get('/categories', [ArchiveController::class, 'categories'])->name('categ
 Route::get('/category/{slug}', [ArchiveController::class, 'category'])->name('category.archive');
 Route::get('/tags', [ArchiveController::class, 'tags'])->name('tags.index');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag.archive');
+
+// Services — user area (auth-gated). Registered BEFORE /services/{slug}
+// so the /services/applications path is not swallowed by the {slug} catch-all.
+Route::middleware('auth')->group(function () {
+    Route::get('/services/applications', [ServiceApplicationController::class, 'index'])->name('services.applications');
+    Route::get('/services/applications/{id}', [ServiceApplicationController::class, 'show'])->name('services.application.show');
+    Route::post('/services/applications/{id}/cancel', [ServiceApplicationController::class, 'cancel'])->name('services.application.cancel');
+    Route::get('/services/{slug}/apply', [ServiceApplicationController::class, 'applyForm'])->name('services.apply');
+    Route::post('/services/{slug}/apply', [ServiceApplicationController::class, 'apply'])->name('services.apply.submit');
+});
 
 // Services — public read side (canonical /services/view/{slug} + legacy /services/{slug})
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
@@ -369,6 +384,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/revenue/donations/nagad', [AdminRevenueController::class, 'donationsNagad'])->name('admin.revenue.donations.nagad');
     Route::get('/admin/revenue/donations/rocket', [AdminRevenueController::class, 'donationsRocket'])->name('admin.revenue.donations.rocket');
 
+    // Wallet — recharges, ledger, user balances
+    Route::get('/admin/wallet/recharges', [AdminWalletController::class, 'recharges'])->name('admin.wallet.recharges');
+    Route::post('/admin/wallet/recharges/{id}/approve', [AdminWalletController::class, 'approveRecharge'])->name('admin.wallet.recharge.approve');
+    Route::post('/admin/wallet/recharges/{id}/reject', [AdminWalletController::class, 'rejectRecharge'])->name('admin.wallet.recharge.reject');
+    Route::get('/admin/wallet/transactions', [AdminWalletController::class, 'transactions'])->name('admin.wallet.transactions');
+    Route::get('/admin/wallet/users', [AdminWalletController::class, 'users'])->name('admin.wallet.users');
+    Route::post('/admin/wallet/users/{id}/adjust', [AdminWalletController::class, 'adjustBalance'])->name('admin.wallet.users.adjust');
+
     // Logs
     Route::get('/admin/logs', [AdminLogsController::class, 'index'])->name('admin.logs.index');
 
@@ -377,6 +400,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/security/auth', [AdminSecurityController::class, 'auth'])->name('admin.security.auth');
     Route::get('/admin/security/recaptcha', [AdminSecurityController::class, 'recaptcha'])->name('admin.security.recaptcha');
     Route::get('/admin/security/smtp', [AdminSecurityController::class, 'smtp'])->name('admin.security.smtp');
+    Route::post('/admin/security/auth', [AdminSecurityController::class, 'update'])->name('admin.security.auth.update');
+    Route::post('/admin/security/recaptcha', [AdminSecurityController::class, 'update'])->name('admin.security.recaptcha.update');
+    Route::post('/admin/security/smtp', [AdminSecurityController::class, 'update'])->name('admin.security.smtp.update');
+    Route::post('/admin/security/smtp/test', [AdminSecurityController::class, 'testMail'])->name('admin.security.smtp.test');
 
     // Setup wizard
     Route::get('/admin/setup', [AdminSetupController::class, 'index'])->name('admin.setup.index');
@@ -391,6 +418,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/scraper/settings/automation', [AdminScraperController::class, 'settingsAutomation'])->name('admin.scraper.settings.automation');
     Route::get('/admin/scraper/settings/limits', [AdminScraperController::class, 'settingsLimits'])->name('admin.scraper.settings.limits');
     Route::get('/admin/scraper/settings/storage', [AdminScraperController::class, 'settingsStorage'])->name('admin.scraper.settings.storage');
+    Route::post('/admin/scraper/settings/autopublish', [AdminScraperController::class, 'updateAutopublish'])->name('admin.scraper.settings.autopublish');
     Route::get('/admin/scraper/source/{key}', [AdminScraperController::class, 'showSource'])->name('admin.scraper.source.show');
     Route::post('/admin/scraper/run', [AdminScraperController::class, 'run'])->name('admin.scraper.run');
     Route::post('/admin/scraper/source/{key}/clear', [AdminScraperController::class, 'clearSource'])->name('admin.scraper.source.clear');
@@ -411,6 +439,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/weather', [AdminWeatherController::class, 'index'])->name('admin.weather.index');
     Route::get('/admin/weather/api', [AdminWeatherController::class, 'api'])->name('admin.weather.api');
     Route::get('/admin/weather/locations', [AdminWeatherController::class, 'locations'])->name('admin.weather.locations');
+    Route::post('/admin/weather/api', [AdminWeatherController::class, 'update'])->name('admin.weather.api.update');
+    Route::post('/admin/weather/locations', [AdminWeatherController::class, 'update'])->name('admin.weather.locations.update');
+    Route::post('/admin/weather/api/test', [AdminWeatherController::class, 'test'])->name('admin.weather.api.test');
 
     // Live TV
     Route::get('/admin/livetv', [AdminLiveTvController::class, 'index'])->name('admin.livetv.index');
@@ -467,6 +498,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/notifications/view', [AdminNotificationController::class, 'view'])->name('admin.notifications.show.query');
     Route::get('/admin/notifications/delete', [AdminNotificationController::class, 'deleteConfirm'])->name('admin.notifications.delete.query.confirm');
     Route::post('/admin/notifications/delete', [AdminNotificationController::class, 'destroy'])->name('admin.notifications.destroy.query');
+
+    // The logged-in admin's own account — the admin-chrome equivalents of the
+    // user-area /profile, /user/settings and /user/notifications pages that the
+    // public header and the admin dropdown link to for admins.
+    Route::get('/admin/profile', [AdminAccountController::class, 'profile'])->name('admin.profile');
+    Route::get('/admin/account-settings', [AdminAccountController::class, 'settings'])->name('admin.account-settings');
+    Route::get('/admin/my/notifications', [AdminAccountController::class, 'notifications'])->name('admin.my-notifications');
 });
 
 
@@ -497,6 +535,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/notifications', [NotificationsController::class, 'index'])->name('user.notifications');
     Route::post('/api/notification/mark-read', [NotificationsController::class, 'markRead'])->name('notifications.mark-read');
     Route::post('/api/notification/mark-all-read', [NotificationsController::class, 'markAllRead'])->name('notifications.mark-all-read');
+
+    // Wallet — balance, recharge, transactions
+    Route::get('/wallet', [WalletController::class, 'dashboard'])->name('wallet.dashboard');
+    Route::get('/wallet/recharge', [WalletController::class, 'rechargeForm'])->name('wallet.recharge');
+    Route::post('/wallet/recharge', [WalletController::class, 'recharge'])->name('wallet.recharge.submit');
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
+    Route::get('/wallet/recharges', [WalletController::class, 'recharges'])->name('wallet.recharges');
+    Route::get('/wallet/recharges/{id}', [WalletController::class, 'showRecharge'])->name('wallet.recharge.view');
+});
+
+Route::prefix('internal/api')->group(function () {
+    Route::post('/scrap-control-center/cron-run-pipeline', [ScrapControlCenterController::class, 'cronRunPipeline']);
 });
 
 Route::fallback(function () {

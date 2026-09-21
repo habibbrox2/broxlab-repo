@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\Ai\AiProviderRepository;
+use App\Support\AutoPublishService;
 use App\Support\Scraper\ScraperStore;
 use App\Support\Scraper\SourceCatalog;
 use App\Support\ScraperPipelineService;
@@ -102,6 +103,41 @@ class AdminScraperController extends Controller
         return $this->settingsView('storage', $request);
     }
 
+    /**
+     * POST /admin/scraper/settings/autopublish — toggle scraped-content
+     * auto-publishing and/or its per-run cap (persisted to app_settings).
+     */
+    public function updateAutopublish(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'autopublish_enabled' => ['nullable', 'boolean'],
+            'autopublish_limit' => ['nullable', 'integer', 'min:1', 'max:500'],
+        ]);
+
+        $data = [
+            // Unchecked checkbox = absent key → explicitly 0 (off), not "unset".
+            'scraper_autopublish_enabled' => $request->boolean('autopublish_enabled') ? 1 : 0,
+            'updated_at' => now(),
+        ];
+
+        if (($validated['autopublish_limit'] ?? '') !== '' && $validated['autopublish_limit'] !== null) {
+            $data['scraper_autopublish_limit'] = (int) $validated['autopublish_limit'];
+        }
+
+        DB::table('app_settings')->where('id', 1)->update($data);
+        \Illuminate\Support\Facades\Cache::forget('app_settings:row');
+
+        $this->logAutopublishActivity('Scraper Auto-Publish Updated', [
+            'enabled' => (bool) $data['scraper_autopublish_enabled'],
+            'limit' => $data['scraper_autopublish_limit'] ?? null,
+        ]);
+
+        return redirect('/admin/scraper/settings')->with('status',
+            'Auto-publish '.($data['scraper_autopublish_enabled'] ? 'enabled' : 'disabled')
+            .(isset($data['scraper_autopublish_limit']) ? ' — per-run limit '.$data['scraper_autopublish_limit'].'.' : '.')
+        );
+    }
+
     public function logs(): View
     {
         $files = [];
@@ -134,7 +170,7 @@ class AdminScraperController extends Controller
         @set_time_limit(0);
 
         $validated = $request->validate([
-            'type' => ['nullable', 'in:news,jobs,tech'],
+            'type' => ['nullable', 'in:news,jobs,tech,mobile'],
             'source' => ['nullable', 'string', 'max:64'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
             'enrich' => ['nullable', 'boolean'],
@@ -209,6 +245,10 @@ class AdminScraperController extends Controller
                 'seen_cap' => (int) config('scraper.seen_cap'),
                 'ai_enrich' => (bool) config('scraper.ai_enrich'),
                 'user_agent' => (string) config('scraper.user_agent'),
+                'autopublish' => app(AutoPublishService::class)->isEnabled(),
+                'autopublish_limit' => app(AutoPublishService::class)->autopublishLimit(),
+                'autopublish_override' => app(AutoPublishService::class)->autopublishSetting(),
+                'scraped_posts' => (int) DB::table('posts')->whereNotNull('source_url')->where('published', 1)->count(),
             ],
             'aiProvider' => app(AiProviderRepository::class)->default(),
         ]);
@@ -223,5 +263,26 @@ class AdminScraperController extends Controller
         $data['appSettings'] = $appSettings ? (array) $appSettings : [];
 
         return view($view, $data);
+    }
+
+    /** Activity log entry for the auto-publish toggle (RBAC role attribution). */
+    protected function logAutopublishActivity(string $action, array $details): void
+    {
+        try {
+            DB::table('activity_logs')->insert([
+                'user_id' => (int) auth()->id(),
+                'role' => app(\App\Support\UserProfileService::class)->rbacFor((int) auth()->id())['roles'][0] ?? 'admin',
+                'action' => $action,
+                'resource_type' => 'scraper_settings',
+                'resource_id' => 0,
+                'status' => 'success',
+                'ip_address' => request()?->ip() ?? '0.0.0.0',
+                'user_agent' => mb_substr((string) (request()?->userAgent() ?? ''), 0, 500),
+                'details' => json_encode($details),
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // Logging must never break the save.
+        }
     }
 }

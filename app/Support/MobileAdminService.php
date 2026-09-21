@@ -250,6 +250,62 @@ class MobileAdminService
     }
 
     /**
+     * Upsert a mobile by its source URL (the scraper identity).
+     *
+     * If a mobile with the given source_url exists, it is updated; otherwise
+     * a new row is inserted (with source_url set). This makes scraper re-runs
+     * idempotent: the same phone from the same site updates its price/specs
+     * in place rather than creating duplicates.
+     *
+     * @param  array<string, mixed>  $data  {
+     *     @var string  brand_name
+     *     @var string  model_name
+     *     @var float   official_price
+     *     @var float   unofficial_price
+     *     @var string  status
+     *     @var string  release_date
+     *     @var int     is_official
+     *     @var string  source_url
+     * }
+     * @return int|false  Mobile ID on success, false on failure.
+     */
+    public function upsertMobileBySourceUrl(array $data)
+    {
+        $sourceUrl = trim((string) ($data['source_url'] ?? ''));
+        if ($sourceUrl === '') {
+            return false;
+        }
+
+        try {
+            $existingId = (int) DB::table('mobiles')->where('source_url', $sourceUrl)->value('id');
+
+            $update = [
+                'brand_name' => (string) ($data['brand_name'] ?? ''),
+                'model_name' => (string) ($data['model_name'] ?? ''),
+                'official_price' => (float) ($data['official_price'] ?? 0),
+                'unofficial_price' => (float) ($data['unofficial_price'] ?? 0),
+                'status' => (string) ($data['status'] ?? 'both'),
+                'release_date' => (string) ($data['release_date'] ?? null),
+                'is_official' => (int) ($data['is_official'] ?? 0),
+                'updated_at' => now(),
+            ];
+
+            if ($existingId > 0) {
+                DB::table('mobiles')->where('id', $existingId)->update($update);
+                return $existingId;
+            }
+
+            $update['source_url'] = $sourceUrl;
+            $update['created_at'] = now();
+            $id = DB::table('mobiles')->insertGetId($update);
+            return (int) $id;
+        } catch (\Throwable $e) {
+            Log::warning('MobileAdminService: upsertMobileBySourceUrl failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Update a mobile's basic fields.
      * Port of MobileModel::updateMobile().
      */

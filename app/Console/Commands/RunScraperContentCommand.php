@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\AutoPublishService;
+use App\Support\MobilePublisher;
 use App\Support\ScraperPipelineService;
 use Illuminate\Console\Command;
 
@@ -18,15 +20,16 @@ use Illuminate\Console\Command;
 class RunScraperContentCommand extends Command
 {
     protected $signature = 'scraper:run
-        {--type= : Restrict to one category (news|jobs|tech)}
+        {--type= : Restrict to one category (news|jobs|tech|mobile)}
         {--source= : Restrict to one source key}
         {--limit= : Max items per source}
         {--enrich : Run the configured AI provider over each item}
+        {--no-publish : Skip the auto-publish step (snapshots only)}
         {--force : Run even when the pipeline is disabled in settings}';
 
-    protected $description = 'Extract the latest content from the configured Bangladesh news, jobs and tech sources';
+    protected $description = 'Extract the latest content from the configured Bangladesh news, jobs, tech and mobile sources';
 
-    public function handle(ScraperPipelineService $pipeline): int
+    public function handle(ScraperPipelineService $pipeline, AutoPublishService $publisher, MobilePublisher $mobilePublisher): int
     {
         if (! $pipeline->isEnabled() && ! $this->option('force')) {
             $this->warn('Content extraction is disabled. Set CONTENT_EXTRACT_ENABLED=true or pass --force.');
@@ -70,6 +73,46 @@ class RunScraperContentCommand extends Command
             (int) $totals['added'],
             (int) $totals['skipped'],
         ));
+
+        // Auto-publish step: turn the newly extracted items into posts.
+        if ($this->option('no-publish')) {
+            $this->line('Auto-publish skipped (--no-publish).');
+
+            return self::SUCCESS;
+        }
+
+        // Publish posts for news/jobs/tech sources (skip for mobile-only runs).
+        if ($type !== 'mobile') {
+            if (! $publisher->isEnabled() && ! $this->option('force')) {
+                $this->line('Auto-publish is off — scraped items stay as snapshots only.');
+            } else {
+                $published = $publisher->publishAll($type, $limit);
+                $this->info(sprintf(
+                    'Auto-published %d post(s) (%d already existed, %d failed) from %d source snapshot(s).',
+                    $published['published'],
+                    $published['skipped'],
+                    $published['failed'],
+                    $published['sources'],
+                ));
+            }
+        }
+
+        // Publish mobile items to the mobiles table.
+        if ($type === null || $type === 'mobile') {
+            if (! $mobilePublisher->isEnabled() && ! $this->option('force')) {
+                $this->line('Mobile publishing is off (pipeline disabled).');
+            } else {
+                $mobilePublished = $mobilePublisher->publishAll($type, $limit);
+                $this->info(sprintf(
+                    'Mobile-published %d, updated %d, skipped %d, failed %d from %d source snapshot(s).',
+                    $mobilePublished['published'],
+                    $mobilePublished['updated'],
+                    $mobilePublished['skipped'],
+                    $mobilePublished['failed'],
+                    $mobilePublished['sources'],
+                ));
+            }
+        }
 
         return self::SUCCESS;
     }
