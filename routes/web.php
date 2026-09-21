@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\AdminMobileController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\PublicPhotoEditController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SettingsController;
@@ -178,6 +179,10 @@ Route::post('/comment/edit', [CommentController::class, 'edit'])->name('comments
 Route::post('/comment/delete', [CommentController::class, 'delete'])->name('comments.delete');
 Route::post('/comment/react', [CommentController::class, 'react'])->name('comments.react');
 Route::post('/comment/like', [CommentController::class, 'like'])->name('comments.like');
+
+// AI Photo Editing — public page
+Route::get('/photo-edit', [PublicPhotoEditController::class, 'index'])->name('photo-edit.index');
+Route::post('/photo-edit/edit', [PublicPhotoEditController::class, 'edit'])->name('photo-edit.edit');
 
 // Mobiles catalog — public read side
 Route::get('/mobiles', [MobileController::class, 'index'])->name('mobiles.index');

@@ -53,6 +53,11 @@
         ['label' => 'Weather',    'url' => '/weather',   'icon' => 'cloud-sun',   'match' => '/weather'],
         ['label' => 'Medicines',  'url' => '/medicines', 'icon' => 'pill',        'match' => '/medicines'],
         ['label' => 'News',       'url' => '/news',      'icon' => 'newspaper',   'match' => '/news'],
+        ['label' => 'AI Tools',     'url' => '/photo-edit', 'icon' => 'wand', 'match' => '/photo-edit', 'submenu' => [
+            ['label' => 'AI Photo Edit',     'url' => '/photo-edit',          'icon' => 'image-edit'],
+            ['label' => 'AI চ্যাট সহকারী',  'url' => '/ai-chat',            'icon' => 'message-circle'],
+            ['label' => 'AI ভয়েস ওডিও',    'url' => '#',                    'icon' => 'volume-2'],
+        ]],
         ['label' => 'ডিজিটাল সেবা', 'url' => '/digital-sheba', 'icon' => 'globe', 'match' => '/digital-sheba',
          'submenu' => [
             ['label' => 'ডিজিটাল রাষ্ট্রসেবা',  'url' => 'https://sheba.gov.bd',        'icon' => 'shield'],

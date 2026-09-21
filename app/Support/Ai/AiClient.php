@@ -8,9 +8,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
- * Minimal OpenAI-compatible chat client. Works unchanged against OpenRouter
- * (https://openrouter.ai/api/v1) and any OpenAI-compatible endpoint because
- * both expose POST {base_url}/chat/completions with a bearer token.
+ * Minimal OpenAI-compatible chat + image client. Works unchanged against
+ * OpenRouter (https://openrouter.ai/api/v1) and any OpenAI-compatible
+ * endpoint.
+ *
+ * Image generation/editing uses OpenAI's images API endpoints
+ * (POST {base_url}/images/edits and /images/generations).
  */
 class AiClient
 {
@@ -95,6 +98,132 @@ class AiClient
             'status' => $response->status(),
             'model' => data_get($json, 'model', $model),
             'usage' => (array) data_get($json, 'usage', []),
+        ];
+    }
+
+    /**
+     * Generate or edit an image via the configured provider.
+     *
+     * @param  array<string, mixed>  $options  Keys: prompt (required), mode ('edit'|'gen'), image, mask, size, response_format, provider
+     * @return array{ok:bool,content:?string,error:?string,status:?int,model:?string,usage:array<string,mixed>}
+     */
+    public function imageEdit(array $options = []): array
+    {
+        $provider = $options['provider'] ?? null;
+        unset($options['provider']);
+
+        $provider ??= $this->repository->default();
+
+        if ($provider === null) {
+            return $this->failure('No AI provider configured. Add one under AI System → Providers.');
+        }
+
+        if (($provider['enabled'] ?? true) === false) {
+            return $this->failure('AI provider is disabled.');
+        }
+
+        $apiKey = $this->repository->revealKey($provider);
+        if ($apiKey === '') {
+            return $this->failure('AI provider has no API key.');
+        }
+
+        $driver = (string) ($provider['driver'] ?? AiProviderRepository::DRIVER_OPENAI_COMPATIBLE);
+
+        // OpenRouter does not support image APIs — require OpenAI-compatible endpoint.
+        if ($driver === AiProviderRepository::DRIVER_OPENROUTER) {
+            return $this->failure('Image generation requires an OpenAI-compatible provider (not OpenRouter).');
+        }
+
+        $baseUrl = rtrim((string) ($provider['base_url'] ?? ''), '/');
+        if ($baseUrl === '') {
+            $baseUrl = AiProviderRepository::DRIVER_BASE_URLS[$driver]
+                ?? 'https://api.openai.com/v1';
+        }
+
+        $mode   = ($options['mode'] ?? 'gen') === 'edit' ? 'edit' : 'gen';
+        $prompt = (string) ($options['prompt'] ?? '');
+
+        if ($prompt === '') {
+            return $this->failure('Prompt is required for image generation.');
+        }
+
+        $payload = [
+            'prompt' => $prompt,
+            'model'  => (string) ($options['model'] ?? $provider['model'] ?? 'gpt-image-brazil'),
+            'size'   => (string) ($options['size'] ?? '1024x1024'),
+            'response_format' => (string) ($options['response_format'] ?? 'b64_json'),
+        ];
+
+        $multipart = [];
+
+        if ($mode === 'edit') {
+            $image = $options['image'] ?? null;
+            if ($image === null || $image === '') {
+                return $this->failure('Image is required for editing.');
+            }
+
+            $multipart[] = [
+                'name'     => 'image',
+                'contents' => is_resource($image) ? $image : (is_array($image) ? $image : fopen($image, 'r')),
+                'filename' => 'image.png',
+            ];
+
+            // Optional mask for inpainting.
+            $mask = $options['mask'] ?? null;
+            if ($mask !== null && $mask !== '') {
+                $multipart[] = [
+                    'name'     => 'mask',
+                    'contents' => is_resource($mask) ? $mask : (is_array($mask) ? $mask : fopen($mask, 'r')),
+                    'filename' => 'mask.png',
+                ];
+            }
+
+            $endpoint = $baseUrl . '/images/edits';
+            $headers  = (array) ($provider['headers'] ?? []);
+        } else {
+            $endpoint = $baseUrl . '/images/generations';
+            $headers  = (array) ($provider['headers'] ?? []);
+        }
+
+        $headers['Authorization'] = 'Bearer ' . $apiKey;
+        if ($driver === AiProviderRepository::DRIVER_OPENROUTER) {
+            $headers['HTTP-Referer'] ??= (string) config('app.url', 'https://broxlab.online');
+            $headers['X-Title'] ??= (string) config('app.name', 'BroxLab');
+        }
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->withHeaders($headers)
+                ->timeout((int) ($options['timeout'] ?? 60))
+                ->asMultipart()
+                ->multipart(array_merge($multipart, array_map(function ($key) use ($payload) {
+                    return [
+                        'name'     => $key,
+                        'contents' => $payload[$key],
+                    ];
+                }, ['prompt', 'model', 'size', 'response_format'])))
+                ->post($endpoint);
+        } catch (\Throwable $e) {
+            return $this->failure($e->getMessage());
+        }
+
+        if (! $response->successful()) {
+            return $this->failure(
+                'HTTP ' . $response->status() . ': ' . Str::limit((string) $response->body(), 300),
+                $response->status()
+            );
+        }
+
+        $json = $response->json();
+        $content = data_get($json, 'data.0.url') ?: data_get($json, 'data.0.b64_json');
+
+        return [
+            'ok' => true,
+            'content' => is_string($content) ? $content : null,
+            'error' => null,
+            'status' => $response->status(),
+            'model' => (string) ($payload['model'] ?? 'unknown'),
+            'usage' => [],
         ];
     }
 
