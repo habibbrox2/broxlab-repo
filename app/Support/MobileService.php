@@ -17,7 +17,7 @@ class MobileService
         $offset = ($page - 1) * $perPage;
         $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
 
-        $allowed = ['id', 'brand_name', 'model_name', 'release_date', 'created_at'];
+        $allowed = ['id', 'brand_name', 'model_name', 'release_date', 'created_at', 'official_price', 'unofficial_price'];
         if (! in_array($sort, $allowed, true)) {
             $sort = 'id';
         }
@@ -134,6 +134,118 @@ class MobileService
     /**
      * Random related mobiles (legacy random-offset pattern).
      */
+    /**
+     * Distinct brands with mobile counts and a representative image.
+     */
+    public function brands(): array
+    {
+        $rows = DB::table('mobiles as m')
+            ->select('m.brand_name', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('m.brand_name')
+            ->where('m.brand_name', '<>', '')
+            ->groupBy('m.brand_name')
+            ->orderBy('m.brand_name')
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+
+        // Attach a representative image per brand (first phone's first image)
+        foreach ($rows as &$brand) {
+            $brand['image_path'] = $this->firstImageForBrand($brand['brand_name']);
+        }
+        unset($brand);
+
+        return $rows;
+    }
+
+    /**
+     * Phones filtered by price range, sorted by price ascending.
+     */
+    public function byPriceRange(?float $min = null, ?float $max = null, int $page = 1, int $perPage = 12): array
+    {
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        $query = DB::table('mobiles as m')
+            ->select('m.id', 'm.brand_name', 'm.model_name', 'm.official_price', 'm.unofficial_price', 'm.status', 'm.release_date', 'm.is_official', 'm.created_at')
+            ->orderBy('m.official_price', 'ASC');
+
+        if ($min !== null && $min > 0) {
+            $query->where(function (\Illuminate\Database\Query\Builder $q) use ($min) {
+                $q->where('m.official_price', '>=', $min)
+                    ->orWhere('m.unofficial_price', '>=', $min);
+            });
+        }
+        if ($max !== null && $max > 0) {
+            $query->where(function (\Illuminate\Database\Query\Builder $q) use ($max) {
+                $q->where('m.official_price', '<=', $max)
+                    ->orWhere('m.unofficial_price', '<=', $max);
+            });
+        }
+
+        $mobiles = $query->limit($perPage)->offset($offset)->get()->map(fn ($r) => (array) $r)->all();
+
+        if (! empty($mobiles)) {
+            $firstByMobile = $this->firstImagesForIds(array_column($mobiles, 'id'));
+            foreach ($mobiles as &$mobile) {
+                $mobile['image_path'] = $firstByMobile[(int) $mobile['id']] ?? null;
+            }
+            unset($mobile);
+        }
+
+        return $mobiles;
+    }
+
+    public function priceCount(?float $min = null, ?float $max = null): int
+    {
+        $query = DB::table('mobiles m');
+        if ($min !== null && $min > 0) {
+            $query->where(function ($q) use ($min) {
+                $q->where('m.official_price', '>=', $min)->orWhere('m.unofficial_price', '>=', $min);
+            });
+        }
+        if ($max !== null && $max > 0) {
+            $query->where(function ($q) use ($max) {
+                $q->where('m.official_price', '<=', $max)->orWhere('m.unofficial_price', '<=', $max);
+            });
+        }
+        return (int) $query->count();
+    }
+
+    public function priceStats(): array
+    {
+        return (array) DB::table('mobiles')->selectRaw('MIN(official_price) as min_price, MAX(official_price) as max_price, AVG(official_price) as avg_price, COUNT(*) as total')->first();
+    }
+
+    protected function firstImageForBrand(string $brand): ?string
+    {
+        return DB::table('mobiles as m')
+            ->join('mobile_images as mi', 'mi.mobile_id', '=', 'm.id')
+            ->where('m.brand_name', $brand)
+            ->orderBy('m.id')
+            ->orderBy('mi.id')
+            ->value('mi.image_url');
+    }
+
+    protected function firstImagesForIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        $rows = DB::table('mobile_images')
+            ->whereIn('mobile_id', $ids)
+            ->orderBy('mobile_id')
+            ->orderBy('id')
+            ->get(['mobile_id', 'image_url']);
+
+        $first = [];
+        foreach ($rows as $r) {
+            $first[(int) $r->mobile_id] ??= $r->image_url;
+        }
+        return $first;
+    }
+
     public function related(int $mobileId, int $limit = 3): array
     {
         $total = (int) DB::table('mobiles')->where('id', '!=', $mobileId)->count();

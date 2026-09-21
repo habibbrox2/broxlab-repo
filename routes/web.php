@@ -180,6 +180,10 @@ Route::post('/comment/like', [CommentController::class, 'like'])->name('comments
 
 // Mobiles catalog — public read side
 Route::get('/mobiles', [MobileController::class, 'index'])->name('mobiles.index');
+Route::get('/mobiles/prices', [MobileController::class, 'prices'])->name('mobiles.prices');
+Route::get('/mobiles/new', [MobileController::class, 'newArrivals'])->name('mobiles.new');
+Route::get('/mobiles/brands', [MobileController::class, 'brands'])->name('mobiles.brands');
+Route::get('/mobiles/compare', [MobileController::class, 'compare'])->name('mobiles.compare');
 Route::get('/mobiles/view/{id}', [MobileController::class, 'view'])->whereNumber('id')->name('mobiles.view');
 
 // Categories / tags — archives

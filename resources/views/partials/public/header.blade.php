@@ -17,9 +17,12 @@
         ['label' => 'Home',       'url' => '/',           'icon' => 'home',        'match' => '/'],
         ['label' => 'Mobiles',    'url' => '/mobiles',    'icon' => 'smartphone',  'match' => '/mobiles',
          'submenu' => [
-            ['label' => 'Browse All',  'url' => '/mobiles',              'icon' => 'list'],
-            ['label' => 'Top Phones',  'url' => '/mobiles?sort=popular', 'icon' => 'star'],
-            ['label' => 'Brands',      'url' => '/mobiles/brands',       'icon' => 'tag']
+            ['label' => 'Browse All',    'url' => '/mobiles',                 'icon' => 'list'],
+            ['label' => 'Mobile Prices',  'url' => '/mobiles/prices',          'icon' => 'wallet'],
+            ['label' => 'New Arrivals',   'url' => '/mobiles/new',             'icon' => 'clock'],
+            ['label' => 'Top Phones',     'url' => '/mobiles?sort=created_at&order=DESC', 'icon' => 'star'],
+            ['label' => 'Brands',         'url' => '/mobiles/brands',          'icon' => 'tag'],
+            ['label' => 'Compare Phones', 'url' => '/mobiles/compare',         'icon' => 'git-compare'],
          ]],
         ['label' => 'Articles',   'url' => '/posts',      'icon' => 'file-text',   'match' => '/posts',
          'submenu' => [
@@ -46,12 +49,16 @@
         ['label' => 'News',       'url' => '/news',      'icon' => 'newspaper',   'match' => '/news']
     ];
 
+    // $isAdmin comes from the shared view composer and is resolved from the RBAC
+    // roles/user_roles tables — the users table has no `role` column.
     if (auth()->check()) {
-        $dashboardUrl = ($isSuperAdmin || ($authUser && $authUser->role === 'admin')) ? '/admin/dashboard' : '/user/dashboard';
+        $dashboardUrl = $isAdmin ? '/admin/dashboard' : '/user/dashboard';
         $navItems[] = ['label' => 'Dashboard', 'url' => $dashboardUrl, 'icon' => 'gauge', 'match' => $dashboardUrl];
+
+        $walletUrl  = $isAdmin ? '/admin/wallet/recharges' : '/wallet';
+        $navItems[] = ['label' => 'Wallet', 'url' => $walletUrl, 'icon' => 'wallet', 'match' => $isAdmin ? '/admin/wallet' : '/wallet'];
     }
 
-    $isAdmin = auth()->check() && (($authUser && ($authUser->is_super_admin ?? false)) || ($authUser && $authUser->role === 'admin'));
     $unread = $unreadCount ?? 0;
 @endphp
 
@@ -336,7 +343,7 @@
                     <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{{ $authUser->username ?? 'User' }}</p>
                     <span class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
                       <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse flex-shrink-0"></span>
-                      {{ $authUser->roles && count($authUser->roles) > 0 ? ($authUser->roles[0]['name'] ?? ($authUser->role ?? 'User')) : 'User' }}
+                      {{ ! empty($authRoles) ? ucfirst(str_replace('_', ' ', $authRoles[0])) : 'User' }}
                     </span>
                   </div>
                 </div>
