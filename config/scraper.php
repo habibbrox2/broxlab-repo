@@ -67,6 +67,9 @@ return [
     // never accidentally trigger a scrape.
     'cron_token' => env('SCRAPER_PIPELINE_CRON_TOKEN'),
 
+    // API keys for image services
+    'remove_bg_api_key' => env('REMOVE_BG_API_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Sources
