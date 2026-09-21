@@ -12,13 +12,13 @@
                 <i class="lucide lucide-tv w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Specialized Modules</p>
-                <h1 class="text-xl font-bold text-white">Live TV</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage live streaming channels and HLS proxy</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Specialized Modules') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Live TV') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage live streaming channels and HLS proxy') }}</p>
             </div>
         </div>
         <a href="/admin" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Dashboard
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Dashboard') }}
         </a>
     </div>
 </div>
@@ -31,9 +31,9 @@
                     <i class="lucide lucide-channels w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Channels</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Manage live TV channels</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Manage live TV channels') }}</p>
                 <a href="/admin/livetv/channels" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Manage Channels <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Manage Channels') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -42,10 +42,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-sky-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-server w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">HLS Proxy</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure HLS reverse proxy settings</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('HLS Proxy') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure HLS reverse proxy settings') }}</p>
                 <a href="/admin/livetv/proxy" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Proxy Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Proxy Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -54,8 +54,8 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-eye w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Live Preview</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Preview live TV on site</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Live Preview') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Preview live TV on site') }}</p>
                 <a href="/livetv" target="_blank" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Preview <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>

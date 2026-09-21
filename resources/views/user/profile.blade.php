@@ -7,14 +7,14 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{{ $header_title }}</h1>
-            <p class="mt-0.5 text-sm text-slate-500">Your account details</p>
+            <p class="mt-0.5 text-sm text-slate-500">{{ t('Your account details') }}</p>
         </div>
         <div class="flex gap-2">
             <a href="/profile/edit" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
-                <i class="lucide lucide-pencil h-4 w-4"></i> Edit
+                <i class="lucide lucide-pencil h-4 w-4"></i> {{ t('Edit') }}
             </a>
             <a href="/profile/password" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
-                <i class="lucide lucide-key h-4 w-4"></i> Password
+                <i class="lucide lucide-key h-4 w-4"></i> {{ t('Password') }}
             </a>
         </div>
     </div>
@@ -22,7 +22,7 @@
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="flex items-center gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-5">
             @if (!empty($user->profile_pic))
-                <img src="{{ asset($user->profile_pic) }}" alt="Profile picture" class="h-16 w-16 rounded-full border border-slate-200 object-cover">
+                <img src="{{ asset($user->profile_pic) }}" alt="{{ t('Profile picture') }}" class="h-16 w-16 rounded-full border border-slate-200 object-cover">
             @else
                 <span class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-black text-white">
                     {{ mb_strtoupper(mb_substr($user->username ?? 'U', 0, 1)) }}
@@ -67,7 +67,7 @@
                         @forelse ($roles as $role)
                             <span class="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-slate-700">{{ $role['name'] }}</span>
                         @empty
-                            <span class="text-sm text-slate-500">No roles assigned</span>
+                            <span class="text-sm text-slate-500">{{ t('No roles assigned') }}</span>
                         @endforelse
                     </dd>
                 </div>

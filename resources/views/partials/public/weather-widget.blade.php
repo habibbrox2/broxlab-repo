@@ -8,9 +8,9 @@
         <div class="col-span-12">
             <div class="text-center mb-5">
                 <h2 class="text-3xl md:text-4xl font-bold mb-3">
-                    <span class="text-indigo-600">Weather</span> Update
+                    <span class="text-indigo-600">{{ t('Weather') }}</span> Update
                 </h2>
-                <p class="text-lg text-slate-500 mb-0">Real-time weather for your location</p>
+                <p class="text-lg text-slate-500 mb-0">{{ t('Real-time weather for your location') }}</p>
             </div>
         </div>
     </div>
@@ -27,10 +27,10 @@
                            name="location"
                            id="home-weather-search-input"
                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500  border-0 py-4 px-4"
-                           placeholder="Enter city name or coordinates (e.g., Dhaka, 23.8103,90.4125)"
-                           aria-label="Search weather location">
+                           placeholder="{{ t('Enter city name or coordinates (e.g., Dhaka, 23.8103,90.4125)') }}"
+                           aria-label="{{ t('Search weather location') }}">
                     <button class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700" type="submit">
-                        <i class="lucide lucide-search mr-2"></i>Check Weather
+                        <i class="lucide lucide-search mr-2"></i>{{ t('Check Weather') }}
                     </button>
                 </div>
             </form>
@@ -46,9 +46,9 @@
                         <div class="flex items-center justify-center" style="min-height: 220px;">
                             <div class="text-center">
                                 <div class="inline-block h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent mb-4" role="status">
-                                    <span class="sr-only">Loading weather...</span>
+                                    <span class="sr-only">{{ t('Loading weather...') }}</span>
                                 </div>
-                                <p class="mb-0 font-medium">Fetching latest weather data...</p>
+                                <p class="mb-0 font-medium">{{ t('Fetching latest weather data...') }}</p>
                             </div>
                         </div>
                     </div>
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
                                     <i class="lucide lucide-thermometer text-lg text-indigo-600"></i>
                                     <div>
-                                        <small class="block opacity-75">Temperature</small>
+                                        <small class="block opacity-75">{{ t('Temperature') }}</small>
                                         <strong class="text-lg">${temp}${unit}</strong>
                                     </div>
                                 </div>
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
                                     <i class="lucide lucide-droplets text-lg text-sky-600"></i>
                                     <div>
-                                        <small class="block opacity-75">Humidity</small>
+                                        <small class="block opacity-75">{{ t('Humidity') }}</small>
                                         <strong class="text-lg">${humidity}%</strong>
                                     </div>
                                 </div>
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
                                     <i class="lucide lucide-wind text-lg text-emerald-600"></i>
                                     <div>
-                                        <small class="block opacity-75">Wind</small>
+                                        <small class="block opacity-75">{{ t('Wind') }}</small>
                                         <strong class="text-lg">${wind} m/s ${windDir}</strong>
                                     </div>
                                 </div>
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
                                     <i class="lucide lucide-gauge text-lg text-amber-600"></i>
                                     <div>
-                                        <small class="block opacity-75">Pressure</small>
+                                        <small class="block opacity-75">{{ t('Pressure') }}</small>
                                         <strong class="text-lg">${pressure} hPa</strong>
                                     </div>
                                 </div>
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="flex items-start gap-3 p-3 rounded-xl bg-white/5">
                                     <i class="lucide lucide-eye text-lg text-cyan"></i>
                                     <div>
-                                        <small class="block opacity-75">Feels Like</small>
+                                        <small class="block opacity-75">{{ t('Feels Like') }}</small>
                                         <strong class="text-lg">${feels}${unit}</strong>
                                     </div>
                                 </div>
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <i class="lucide lucide-clock text-lg text-slate-500"></i>
                                     <div>
                                         <small class="block opacity-75">Updated</small>
-                                        <strong class="text-sm">Just now</strong>
+                                        <strong class="text-sm">{{ t('Just now') }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="bg-white/10 text-center text-sm text-white/75">
                 <i class="lucide lucide-zap mr-1"></i>
-                Data updates every 10 minutes | <a href="${detailsUrl}" class="text-white underline hover:no-underline">Full details</a>
+                Data updates every 10 minutes | <a href="${detailsUrl}" class="text-white underline hover:no-underline">{{ t('Full details') }}</a>
             </div>
         </div>`;
     }
@@ -262,9 +262,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="flex items-center justify-center" style="min-height: 200px;">
                     <div class="text-center">
                         <div class="inline-spinner text-white mb-3" role="status" style="width: 3rem; height: 3rem;">
-                            <span class="sr-only">Loading weather...</span>
+                            <span class="sr-only">{{ t('Loading weather...') }}</span>
                         </div>
-                        <p class="mb-0">Fetching latest weather data...</p>
+                        <p class="mb-0">{{ t('Fetching latest weather data...') }}</p>
                     </div>
                 </div>
             </div>
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="p-4 lg:p-5 text-center">
                 <div class="flex items-center justify-center flex-column" style="min-height: 200px;">
                     <i class="lucide lucide-cloud-off text-4xl mb-3"></i>
-                    <h5 class="mb-2">Unable to load weather</h5>
+                    <h5 class="mb-2">{{ t('Unable to load weather') }}</h5>
                     <p class="mb-3 opacity-75">${escapeHtml(message)}</p>
                     <button class="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100" data-action="location.reload">
                         <i class="lucide lucide-rotate-ccw mr-1"></i>Retry

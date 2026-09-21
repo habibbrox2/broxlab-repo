@@ -79,7 +79,7 @@
                     data-bookmark-id="{{ $item['id'] }}"
                     data-bookmark-title="{{ strip_tags((string) $itemTitle) }}"
                     data-bookmark-url="{{ $itemHref }}"
-                    aria-label="Bookmark this item" title="Bookmark">
+                    aria-label="{{ t('Bookmark this item') }}" title="{{ t('Bookmark') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
@@ -88,7 +88,7 @@
                     class="discovery-card__action-btn"
                     data-share-url="{{ $itemHref }}"
                     data-share-title="{{ strip_tags((string) $itemTitle) }}"
-                    aria-label="Share this item" title="Share">
+                    aria-label="{{ t('Share this item') }}" title="{{ t('Share') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
@@ -98,7 +98,7 @@
             <button type="button"
                     class="discovery-card__action-btn"
                     data-copy-url="{{ $itemHref }}"
-                    aria-label="Copy link" title="Copy link">
+                    aria-label="{{ t('Copy link') }}" title="{{ t('Copy link') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
@@ -130,7 +130,7 @@
         @endif
 
         @if (! empty($item['tags']) && is_array($item['tags']))
-            <div class="discovery-card__tags" role="list" aria-label="Tags">
+            <div class="discovery-card__tags" role="list" aria-label="{{ t('Tags') }}">
                 @foreach (array_slice($item['tags'], 0, 4) as $tag)
                     <span class="discovery-card__tag" role="listitem">{{ is_array($tag) ? ($tag['name'] ?? '') : $tag }}</span>
                 @endforeach

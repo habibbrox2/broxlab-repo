@@ -12,7 +12,7 @@
     <div class="mb-6 flex items-center justify-between">
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900">
             <i class="lucide lucide-message-square-more bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"></i>
-            <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Comments</span>
+            <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ t('Comments') }}</span>
         </h2>
         <span class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20">
             <i class="lucide lucide-message-square-text" aria-hidden="true"></i>
@@ -50,8 +50,8 @@
             @guest
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                    <label class="mb-1.5 block text-xs font-semibold text-slate-500">Name <span class="text-red-400">*</span></label>
-                    <input type="text" name="guest_name" x-model="guestName" placeholder="Your Name" required
+                    <label class="mb-1.5 block text-xs font-semibold text-slate-500">{{ t('Name') }} <span class="text-red-400">*</span></label>
+                    <input type="text" name="guest_name" x-model="guestName" placeholder="{{ t('Your Name') }}" required
                            class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
                 </div>
             </div>
@@ -88,8 +88,8 @@
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50">
                 <i class="lucide lucide-message-square-more text-2xl text-slate-300"></i>
             </div>
-            <h3 class="text-base font-semibold text-slate-600">No comments yet</h3>
-            <p class="mt-1 text-sm text-slate-400">Be the first to share your thoughts!</p>
+            <h3 class="text-base font-semibold text-slate-600">{{ t('No comments yet') }}</h3>
+            <p class="mt-1 text-sm text-slate-400">{{ t('Be the first to share your thoughts!') }}</p>
         </div>
         @endforelse
     </div>

@@ -18,13 +18,13 @@
                 <i class="lucide lucide-circle-dollar w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Services</p>
-                <h1 class="text-xl font-bold text-white">Create New Service</h1>
-                <p class="text-sm text-white/60 mt-0.5 max-w-md">Register a new service with optional images and service form fields.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Services') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Create New Service') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ t('Register a new service with optional images and service form fields.') }}</p>
             </div>
         </div>
         <a href="/admin/services" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 self-start sm:self-auto">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Services
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Services') }}
         </a>
     </div>
 </div>
@@ -37,8 +37,8 @@
                 <i class="lucide lucide-server w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Service Details</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Enter the service information and optional branding</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Service Details') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Enter the service information and optional branding') }}</p>
             </div>
         </div>
         <div class="p-5 sm:p-6">
@@ -47,46 +47,46 @@
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Service Title <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                        {{ t('Service Title') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
-                    <input type="text" name="service_title" placeholder="e.g., Web Development, Design Services" required
+                    <input type="text" name="service_title" placeholder="{{ t('e.g., Web Development, Design Services') }}" required
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10">
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">The main title of the service</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">{{ t('The main title of the service') }}</p>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Service Description <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                        {{ t('Service Description') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
-                    <textarea name="service_description" rows="4" placeholder="Describe the services you offer..." required
+                    <textarea name="service_description" rows="4" placeholder="{{ t('Describe the services you offer...') }}" required
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"></textarea>
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">A detailed description of the services</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">{{ t('A detailed description of the services') }}</p>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Service Images (one per line)
+                        {{ t('Service Images (one per line)') }}
                     </label>
                     <textarea name="service_images" rows="2" placeholder="https://example.com/image.jpg&#10;https://example.com/image2.jpg"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"></textarea>
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">One image URL per line. Leave empty to skip images</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">{{ t('One image URL per line. Leave empty to skip images') }}</p>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Service Form JSON
+                        {{ t('Service Form JSON') }}
                     </label>
                     <textarea name="service_form_template_json" rows="3" placeholder='[{"type":"text","label":"Name","placeholder":"Enter your name","required":true},{"type":"email","label":"Email","placeholder":"your@email.com","required":true}]'
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 font-mono text-xs"></textarea>
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">JSON array of form fields. Leave empty for no custom form</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">{{ t('JSON array of form fields. Leave empty for no custom form') }}</p>
                 </div>
 
                 <div class="flex flex-wrap gap-3 pt-2">
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-check-circle w-4 h-4"></i> Create Service
+                        <i class="lucide lucide-check-circle w-4 h-4"></i> {{ t('Create Service') }}
                     </button>
                     <a href="/admin/services" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                        <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                     </a>
                 </div>
             </form>

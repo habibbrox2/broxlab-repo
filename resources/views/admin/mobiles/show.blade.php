@@ -17,19 +17,19 @@
                 </div>
             @endif
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Mobile Details</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Mobile Details') }}</p>
                 <h1 class="text-xl font-bold text-white">{{ $mobile['brand_name'] ?? '' }} {{ $mobile['model_name'] ?? '' }}</h1>
                 <p class="text-sm text-white/60 mt-0.5">ID: {{ $mobile['id'] }}</p>
             </div>
         </div>
         <div class="flex gap-2">
             <a href="/admin/mobiles/edit/{{ $mobile['id'] }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-pencil w-4 h-4"></i> Edit
+                <i class="lucide lucide-pencil w-4 h-4"></i> {{ t('Edit') }}
             </a>
             <a href="/admin/mobiles/delete/{{ $mobile['id'] }}"
                onclick="return confirm('Are you sure you want to delete this mobile? This action cannot be undone.')"
                class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-red-600/20 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
+                <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete') }}
             </a>
             <a href="/admin/mobiles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
                 <i class="lucide lucide-arrow-left w-4 h-4"></i> Back
@@ -59,7 +59,7 @@
                     <i class="lucide lucide-tag w-4 h-4 text-slate-400"></i>
                 </div>
                 <div class="px-4 py-4">
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-0.5">Brand</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-0.5">{{ t('Brand') }}</p>
                     <p class="text-lg font-bold text-slate-900 dark:text-white truncate">{{ $mobile['brand_name'] ?? '' }}</p>
                 </div>
             </div>
@@ -101,7 +101,7 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         @foreach ($images as $image)
                             <div class="group relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
-                                <img src="{{ $image['image_url'] }}" alt="Mobile image" class="w-full aspect-square object-cover">
+                                <img src="{{ $image['image_url'] }}" alt="{{ t('Mobile image') }}" class="w-full aspect-square object-cover">
                                 <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <i class="lucide lucide-zoom-in w-5 h-5 text-white"></i>
                                 </div>
@@ -119,7 +119,7 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-list-details w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Specifications</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Specifications') }}</h3>
                 </div>
                 <div class="p-5">
                     <div class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -141,7 +141,7 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-message-circle w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Comments</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Comments') }}</h3>
                     <span class="text-xs text-slate-400 dark:text-slate-600">({{ count($comments) }})</span>
                 </div>
                 <div class="p-5 space-y-4">
@@ -180,36 +180,36 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-information w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Quick Info</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Quick Info') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-slate-400 dark:text-slate-600">Model Name</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Model Name') }}</span>
                             <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ $mobile['model_name'] ?? '' }}</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-slate-400 dark:text-slate-600">Official Price</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Official Price') }}</span>
                             <span class="text-sm font-semibold text-slate-900 dark:text-white">
                                 @if($mobile['official_price'] > 0)
                                     ৳{{ number_format($mobile['official_price'], 0) }}
                                 @else
-                                    <span class="text-slate-400">Not set</span>
+                                    <span class="text-slate-400">{{ t('Not set') }}</span>
                                 @endif
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-slate-400 dark:text-slate-600">Unofficial Price</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Unofficial Price') }}</span>
                             <span class="text-sm font-semibold text-slate-900 dark:text-white">
                                 @if($mobile['unofficial_price'] > 0)
                                     ৳{{ number_format($mobile['unofficial_price'], 0) }}
                                 @else
-                                    <span class="text-slate-400">Not set</span>
+                                    <span class="text-slate-400">{{ t('Not set') }}</span>
                                 @endif
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-slate-400 dark:text-slate-600">Official Product</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Official Product') }}</span>
                             <span class="text-sm @if(!empty($mobile['is_official'])) text-emerald-600 dark:text-emerald-400 @else text-slate-400 @endif">
                                 @if(!empty($mobile['is_official'])) Yes @else No @endif
                             </span>
@@ -229,7 +229,7 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-tags w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tags</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Tags') }}</h3>
                     </div>
                     <div class="p-5">
                         <div class="flex flex-wrap gap-2">

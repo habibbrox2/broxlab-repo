@@ -115,7 +115,7 @@
     // First 2 digits = last 2 digits of the year
     const lastTwo = year.slice(-2);
     // Remaining 10 digits = sequential counter, zero-padded
-    const suffix = ('0000000000' + dakhilaSerialCounter).slice(-10);
+    const suffix = (`0000000000${ dakhilaSerialCounter}`).slice(-10);
     dakhilaSerialCounter++;
 
     // Convert to Bengali digits
@@ -151,8 +151,8 @@
 
     if (!enVal) {
       // English Date cleared → clear Bangla date and last_payment_year
-      var bnEl = document.getElementById('receipt_date');
-      var pyEl = document.getElementById('last_payment_year');
+      const bnEl = document.getElementById('receipt_date');
+      const pyEl = document.getElementById('last_payment_year');
       if (bnEl) bnEl.value = '';
       if (pyEl) pyEl.value = '';
       return;
@@ -176,30 +176,30 @@
 
     // Generate field values (using English digits throughout)
     function fill(id, val) {
-      var el = document.getElementById(id);
+      const el = document.getElementById(id);
       if (el) el.value = val;
     }
 
-    fill('last_payment_year', year + '-' + nextYear);
+    fill('last_payment_year', `${year }-${ nextYear}`);
 
-    var holdingNum = year + '-' + (100000 + seed);
+    const holdingNum = `${year }-${ 100000 + seed}`;
     fill('holding_number', holdingNum);
 
-    var challanNum = shortYear + nextShort + '-' + String(571100000 + seed).slice(-10);
+    const challanNum = `${shortYear + nextShort }-${ String(571100000 + seed).slice(-10)}`;
     fill('challan_number', challanNum);
 
     // Generate tax amounts with date-based variation
-    var arrearsOver3 = String(50 + (seed % 150));
-    var arrearsLast3 = String(20 + (seed % 80));
-    var penalty = String(10 + (seed % 140));
-    var currentDemand = String(5 + (seed % 75));
-    var totalDemand = String(
+    const arrearsOver3 = String(50 + (seed % 150));
+    const arrearsLast3 = String(20 + (seed % 80));
+    const penalty = String(10 + (seed % 140));
+    const currentDemand = String(5 + (seed % 75));
+    const totalDemand = String(
       parseInt(arrearsOver3, 10) +
       parseInt(arrearsLast3, 10) +
       parseInt(penalty, 10) +
       parseInt(currentDemand, 10)
     );
-    var totalCollected = totalDemand;
+    const totalCollected = totalDemand;
 
     fill('tax_arrears_over_3_years', arrearsOver3);
     fill('tax_arrears_last_3_years', arrearsLast3);
@@ -224,31 +224,31 @@
    * Only fills these two fields — does not overwrite other saved tax data.
    */
   function initBanglaDateAndPaymentYear() {
-    var enEl = document.getElementById('receipt_date_en');
+    const enEl = document.getElementById('receipt_date_en');
     if (!enEl) return;
-    var enVal = enEl.value.trim();
+    const enVal = enEl.value.trim();
     if (!enVal) return;
 
     // Fill Bangla date from English date
     updateBanglaDate();
 
     // Fill last_payment_year from extracted year
-    var bnToEn = window.bnToEn || function (s) { return s; };
-    var cleanVal = bnToEn(enVal);
-    var year = extractYear(cleanVal);
+    const bnToEn = window.bnToEn || function (s) { return s; };
+    const cleanVal = bnToEn(enVal);
+    const year = extractYear(cleanVal);
     if (year) {
-      var pyEl = document.getElementById('last_payment_year');
-      var nextYear = String(parseInt(year, 10) + 1);
+      const pyEl = document.getElementById('last_payment_year');
+      const nextYear = String(parseInt(year, 10) + 1);
       if (pyEl && !pyEl.value) {
-        pyEl.value = year + '-' + nextYear;
+        pyEl.value = `${year }-${ nextYear}`;
       }
     }
   }
 
   function initTaxCalculator() {
     // Attach listeners to tax fields
-    taxFields.forEach(function (id) {
-      var el = document.getElementById(id);
+    taxFields.forEach((id) => {
+      const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', calcTaxTotals);
         el.addEventListener('change', calcTaxTotals);
@@ -256,7 +256,7 @@
     });
 
     // Listen for English date changes → auto-fill Bangla date, payment year, and all tax fields
-    var enDateEl = document.getElementById('receipt_date_en');
+    const enDateEl = document.getElementById('receipt_date_en');
     if (enDateEl) {
       // Live fill as user types (Bangla date + last_payment_year update on each keystroke;
       // full auto-fill triggers once date is complete enough to extract year)
@@ -273,7 +273,7 @@
     setTimeout(calcTaxTotals, 300);
 
     // Button listener
-    var calcBtn = document.getElementById('calcTaxTotals');
+    const calcBtn = document.getElementById('calcTaxTotals');
     if (calcBtn) calcBtn.addEventListener('click', calcTaxTotals);
   }
 

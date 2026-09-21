@@ -349,3 +349,10 @@ npm-debug.log*
 #
 # Check with: git status --porcelain
 # Remember: This .gitignore is your first line of defense against accidentally exposing sensitive data. Always double-check before committing! 🔒
+
+# ── Local-only files ────────────────────────────────────────────────────────
+# .freebuff/ holds agent scratch space (preview logs, helper scripts) and
+# web-host/cpanel/ holds local server access notes. Both contain live server
+# credentials and machine-specific logs, so they must never be committed.
+.freebuff/
+web-host/cpanel/

@@ -1,3 +1,15 @@
+/**
+ * The same handful of inline styles is emitted by every step heading and by all
+ * six entry renderers, so they live here as constants instead of being repeated
+ * throughout the bundled output. The rendered HTML is byte-for-byte unchanged.
+ */
+const SECTION_HEADING_STYLE = 'font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;';
+const ENTRY_ACTIONS_STYLE = 'display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;';
+const ENTRY_BUTTONS_STYLE = 'display:flex;gap:0.35rem;flex-shrink:0;align-items:center;';
+const BTN_ICON_DANGER_STYLE = 'background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;';
+const BTN_PRIMARY_LG_STYLE = 'background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;';
+const BTN_PRIMARY_SM_STYLE = 'background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;';
+
 export function createCvBuilderRenderers(deps) {
   const { STATE, STEPS, escHtml, } = deps;
 
@@ -62,7 +74,7 @@ export function createCvBuilderRenderers(deps) {
         const summaryVal = escHtml(s.professional_summary || '');
         const objectiveVal = escHtml(s.career_objective || '');
         return '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-file-text" style="width:1.2em;height:1.2em;color:#f59e0b;"></i> Professional Summary</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Write a short summary that highlights your experience, strengths, and what you bring to a role. This appears near the top of your CV.</p>' +
           '<div class="bld-form-group"><label class="bld-label">Professional Summary</label>' +
@@ -93,17 +105,17 @@ export function createCvBuilderRenderers(deps) {
           langHtml += renderLanguageEntry(langs[li], li);
         }
         return '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-briefcase" style="width:1.2em;height:1.2em;color:#f59e0b;"></i> Work Experience</h3>' +
           `<div id="bld-experience-list">${ expHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-experience"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Experience</button></div>' +
           '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-graduation-cap" style="width:1.2em;height:1.2em;color:#10b981;"></i> Education</h3>' +
           `<div id="bld-education-list">${ eduHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-education"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Education</button></div>' +
           '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-zap" style="width:1.2em;height:1.2em;color:#06b6d4;"></i> Skills</h3>' +
           '<div class="bld-form-group"><label class="bld-label">Technical Skills</label>' +
           `<div class="bld-skills-area" id="bld-skills-technical">${ renderSkillTags(technical, 'technical') }</div>` +
@@ -112,7 +124,7 @@ export function createCvBuilderRenderers(deps) {
           `<div class="bld-skills-area" id="bld-skills-soft">${ renderSkillTags(soft, 'soft') }</div>` +
           '<input class="bld-skill-input" id="bld-skill-input-soft" placeholder="Type and press Enter..." data-action="add-skill"></div></div>' +
           '<div style="margin-bottom:1rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-globe" style="width:1.2em;height:1.2em;color:#3b82f6;"></i> Languages</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Add languages you speak and your proficiency level.</p>' +
           `<div id="bld-languages-list">${ langHtml }</div>` +
@@ -137,19 +149,19 @@ export function createCvBuilderRenderers(deps) {
           refHtml += renderReferenceEntry(refs[ri], ri);
         }
         return '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-share-2" style="width:1.2em;height:1.2em;color:#6366f1;"></i> Social Links</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Add your social media profiles and online presence links.</p>' +
           `<div id="bld-social-links-list">${ linkHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-social-link"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Social Link</button></div>' +
           '<div style="margin-bottom:2rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-layout" style="width:1.2em;height:1.2em;color:#f59e0b;"></i> Custom Sections</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">Add custom sections like Volunteer Work, Publications, Hobbies, etc.</p>' +
           `<div id="bld-custom-sections-list">${ secHtml }</div>` +
           '<button class="bld-add-entry" data-action="add-custom-section"><i class="lucide lucide-plus-circle" style="width:1em;height:1em;"></i> Add Custom Section</button></div>' +
           '<div style="margin-bottom:1rem;">' +
-          '<h3 style="font-size:1.1rem;font-weight:700;color:#374151;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:0.5rem;">' +
+          `<h3 style="${ SECTION_HEADING_STYLE }">` +
           '<i class="lucide lucide-users" style="width:1.2em;height:1.2em;color:#10b981;"></i> References</h3>' +
           '<p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem;">References are optional. You can skip this step.</p>' +
           `<div id="bld-references-list">${ refHtml }</div>` +
@@ -283,8 +295,8 @@ export function createCvBuilderRenderers(deps) {
         `<button class="bld-entry-remove" data-action="remove-entry" data-section="languages" data-idx="${ idx }"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
         `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Language</label><input class="bld-input lang-name" value="${ escHtml(l.name || '') }" placeholder="e.g. English"></div>` +
         `<div class="bld-form-group"><label class="bld-label">Proficiency</label><select class="bld-select lang-proficiency">${ profOptions }</select></div></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="languages" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const name = l.name || 'New Language';
@@ -298,9 +310,9 @@ export function createCvBuilderRenderers(deps) {
       `<div style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(name) }</div>${
         prof ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">${ escHtml(prof) }</div>` : ''
       }</div>` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="languages" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="languages" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="languages" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="languages" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderSocialLinkEntry(link, idx) {
@@ -320,8 +332,8 @@ export function createCvBuilderRenderers(deps) {
         `<button class="bld-entry-remove" data-action="remove-entry" data-section="social_links" data-idx="${ idx }"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
         `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Platform</label><select class="bld-select link-platform">${ platOptions }</select></div>` +
         `<div class="bld-form-group"><label class="bld-label">URL</label><input class="bld-input link-url" value="${ escHtml(l.url || '') }" placeholder="https://..."></div></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="social_links" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const iconMap = { linkedin: 'linkedin', github: 'github', twitter: 'twitter', website: 'globe', facebook: 'facebook', instagram: 'instagram', youtube: 'youtube', dribbble: 'dribbble', behance: 'behance', other: 'link', };
@@ -341,9 +353,9 @@ export function createCvBuilderRenderers(deps) {
       `<span style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(platLabel) }</span></div>${
         displayUrl ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;word-break:break-all;">${ escHtml(displayUrl) }</div>` : ''
       }</n` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="social_links" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="social_links" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="social_links" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="social_links" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderCustomSectionEntry(sec, idx) {
@@ -357,8 +369,8 @@ export function createCvBuilderRenderers(deps) {
         `<button class="bld-entry-remove" data-action="remove-entry" data-section="custom_sections" data-idx="${ idx }"><i class="lucide lucide-x" style="width:1em;height:1em;"></i></button>` +
         `<div class="bld-form-group"><label class="bld-label">Section Title</label><input class="bld-input custom-title" value="${ escHtml(s.title || '') }" placeholder="e.g. Volunteer Work"></div>` +
         `<div class="bld-form-group"><label class="bld-label">Content</label><textarea class="bld-textarea custom-content" style="min-height:80px;" placeholder="Describe this section...">${ escHtml(s.content || '') }</textarea></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="custom_sections" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const title = s.title || 'New Section';
@@ -373,9 +385,9 @@ export function createCvBuilderRenderers(deps) {
       `<div style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(title) }</div>${
         preview ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">${ escHtml(preview) }</div>` : ''
       }</div>` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="custom_sections" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="custom_sections" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="custom_sections" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="custom_sections" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderExperienceEntry(exp, idx) {
@@ -394,8 +406,8 @@ export function createCvBuilderRenderers(deps) {
         `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">End Date</label><input class="bld-input exp-end_date" value="${ escHtml(e.end_date || '') }" placeholder="Present"></div>` +
         `<div class="bld-form-group"><label class="bld-checkbox"><input type="checkbox" class="exp-current" ${ e.is_current ? 'checked' : '' }> Currently here</label></div></div>` +
         `<div class="bld-form-group"><label class="bld-label">Responsibilities</label><textarea class="bld-textarea exp-responsibilities" style="min-height:80px;">${ escHtml(e.responsibilities || '') }</textarea></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="experience" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const title = [e.company, e.position,].filter(Boolean).join(' · ') || 'New Experience';
@@ -410,9 +422,9 @@ export function createCvBuilderRenderers(deps) {
       `<div style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(title) }</div>${
         dateRange ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">${ escHtml(dateRange) }${loc ? ` · ${ escHtml(loc)}` : '' }</div>` : ''
       }</div>` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="experience" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="experience" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="experience" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="experience" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderEducationEntry(edu, idx) {
@@ -428,8 +440,8 @@ export function createCvBuilderRenderers(deps) {
         `<div class="bld-form-group"><label class="bld-label">Degree</label><input class="bld-input edu-degree" value="${ escHtml(e.degree || '') }" placeholder="B.Sc."></div></div>` +
         `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Field</label><input class="bld-input edu-field" value="${ escHtml(e.field || '') }" placeholder="Computer Science"></div>` +
         `<div class="bld-form-group"><label class="bld-label">Year</label><input class="bld-input edu-year" value="${ escHtml(e.year || '') }" placeholder="2024"></div></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="education" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const title = [e.institution, e.degree,].filter(Boolean).join(' · ') || 'New Education';
@@ -443,9 +455,9 @@ export function createCvBuilderRenderers(deps) {
       `<div style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(title) }</div>${
         detail ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">${ escHtml(detail) }</div>` : ''
       }</div>` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="education" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="education" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="education" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="education" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderReferenceEntry(ref, idx) {
@@ -461,8 +473,8 @@ export function createCvBuilderRenderers(deps) {
         `<div class="bld-form-group"><label class="bld-label">Title</label><input class="bld-input ref-title" value="${ escHtml(r.title || '') }" placeholder="e.g. Manager"></div></div>` +
         `<div class="bld-input-group"><div class="bld-form-group"><label class="bld-label">Email</label><input class="bld-input ref-email" value="${ escHtml(r.email || '') }" placeholder="email@example.com"></div>` +
         `<div class="bld-form-group"><label class="bld-label">Phone</label><input class="bld-input ref-phone" value="${ escHtml(r.phone || '') }" placeholder="+1 555-0000"></div></div>` +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">' +
-        '<button class="bld-btn-sm" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-weight:600;font-size:0.8rem;" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>' +
+        `<div style="${ ENTRY_ACTIONS_STYLE }">` +
+        `<button class="bld-btn-sm" style="${ BTN_PRIMARY_LG_STYLE }" data-action="done-editing"><i class="lucide lucide-check" style="width:0.85em;height:0.85em;"></i> Done</button>` +
         `<button class="bld-btn-sm bld-btn-remove" style="padding:0.4rem 1rem;" data-action="remove-entry" data-section="references" data-idx="${ idx }">Remove</button></div></div>`;
     }
     const name = r.name || 'New Reference';
@@ -476,9 +488,9 @@ export function createCvBuilderRenderers(deps) {
       `<div style="font-weight:600;font-size:0.95rem;color:#1f2937;">${ escHtml(name) }</div>${
         detail ? `<div style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem;">${ escHtml(detail) }</div>` : ''
       }</div>` +
-      '<div style="display:flex;gap:0.35rem;flex-shrink:0;align-items:center;">' +
-      `<button style="background:#6366f1;color:white;border:none;border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-weight:600;font-size:0.78rem;" data-action="edit-entry" data-section="references" data-idx="${ idx }">Edit</button>` +
-      `<button style="background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.78rem;" data-action="remove-entry" data-section="references" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
+      `<div style="${ ENTRY_BUTTONS_STYLE }">` +
+      `<button style="${ BTN_PRIMARY_SM_STYLE }" data-action="edit-entry" data-section="references" data-idx="${ idx }">Edit</button>` +
+      `<button style="${ BTN_ICON_DANGER_STYLE }" data-action="remove-entry" data-section="references" data-idx="${ idx }"><i class="lucide lucide-trash-2" style="width:0.85em;height:0.85em;"></i></button></div></div>`;
   }
 
   function renderSkillTags(skills, category) {

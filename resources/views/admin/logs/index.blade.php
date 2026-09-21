@@ -13,8 +13,8 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Administration</p>
-                <h1 class="text-xl font-bold text-white">Activity Logs</h1>
-                <p class="text-sm text-white/60 mt-0.5">Track admin actions and system events</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Activity Logs') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Track admin actions and system events') }}</p>
             </div>
         </div>
     </div>
@@ -27,7 +27,7 @@
                 <div class="w-7 h-7 rounded-lg bg-slate-500 dark:bg-slate-600/30 flex items-center justify-center flex-shrink-0">
                     <i class="lucide lucide-clock w-4 h-4 text-slate-400 dark:text-slate-600"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Recent Activity</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Recent Activity') }}</h3>
             </div>
             <span class="text-xs text-slate-400 dark:text-slate-600">{{ count($logs) }} events</span>
         </div>
@@ -62,8 +62,8 @@
             @empty
                 <div class="px-5 py-8 text-center text-slate-400 dark:text-slate-600">
                     <i class="lucide lucide-clipboard-list-off w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                    <p class="text-sm font-medium">No activity logs yet</p>
-                    <p class="text-xs mt-1">Admin actions will appear here</p>
+                    <p class="text-sm font-medium">{{ t('No activity logs yet') }}</p>
+                    <p class="text-xs mt-1">{{ t('Admin actions will appear here') }}</p>
                 </div>
             @endforelse
         </div>

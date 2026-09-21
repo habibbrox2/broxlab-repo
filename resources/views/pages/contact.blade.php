@@ -80,7 +80,7 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="name" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Your Name">{{ t('Your Name') }}</label>
-                                <input type="text" id="name" name="name" value="{{ $old['name'] ?? '' }}" placeholder="John Doe" required>
+                                <input type="text" id="name" name="name" value="{{ $old['name'] ?? '' }}" placeholder="{{ t('John Doe') }}" required>
                             </div>
                             <div>
                                 <label for="email" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Email">{{ t('Email') }}</label>
@@ -90,12 +90,12 @@
 
                         <div>
                             <label for="subject" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Subject">{{ t('Subject') }}</label>
-                            <input type="text" id="subject" name="subject" value="{{ $old['subject'] ?? '' }}" placeholder="Message subject" required>
+                            <input type="text" id="subject" name="subject" value="{{ $old['subject'] ?? '' }}" placeholder="{{ t('Message subject') }}" required>
                         </div>
 
                         <div>
                             <label for="message" class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Message">{{ t('Message') }}</label>
-                            <textarea id="message" name="message" rows="6" placeholder="Write your message here..." required>{{ $old['message'] ?? '' }}</textarea>
+                            <textarea id="message" name="message" rows="6" placeholder="{{ t('Write your message here...') }}" required>{{ $old['message'] ?? '' }}</textarea>
                         </div>
 
                         <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">

@@ -28,7 +28,7 @@
     </div>
 
     @if ($pagination['total_pages'] > 1)
-    <nav aria-label="Page navigation">
+    <nav aria-label="{{ t('Page navigation') }}">
         <ul class="flex items-center gap-1">
             <li>
                 <a href="?page=1{{ $querySuffix }}" aria-label="First"
@@ -37,7 +37,7 @@
                 </a>
             </li>
             <li>
-                <a href="?page={{ max(1, $pagination['current_page'] - 1) }}{{ $querySuffix }}" aria-label="Previous"
+                <a href="?page={{ max(1, $pagination['current_page'] - 1) }}{{ $querySuffix }}" aria-label="{{ t('Previous') }}"
                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm {{ $pagination['current_page'] == 1 ? 'pointer-events-none text-slate-300 dark:text-slate-700' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                     <i class="lucide lucide-chevron-left w-4 h-4"></i>
                 </a>
@@ -53,7 +53,7 @@
             @endfor
 
             <li>
-                <a href="?page={{ min($pagination['total_pages'], $pagination['current_page'] + 1) }}{{ $querySuffix }}" aria-label="Next"
+                <a href="?page={{ min($pagination['total_pages'], $pagination['current_page'] + 1) }}{{ $querySuffix }}" aria-label="{{ t('Next') }}"
                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm {{ $pagination['current_page'] >= $pagination['total_pages'] ? 'pointer-events-none text-slate-300 dark:text-slate-700' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                     <i class="lucide lucide-chevron-right w-4 h-4"></i>
                 </a>

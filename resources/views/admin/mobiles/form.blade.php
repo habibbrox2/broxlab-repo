@@ -25,7 +25,7 @@
         </div>
         <div class="flex gap-2">
             <a href="/admin/mobiles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Mobiles
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Mobiles') }}
             </a>
         </div>
     </div>
@@ -52,36 +52,36 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-tag w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Basic Information</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Basic Information') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
 
                     {{-- Brand Name --}}
                     <div class="space-y-1.5">
                         <label for="brand_name" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                            Brand Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                            {{ t('Brand Name') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                         </label>
-                        <input type="text" id="brand_name" name="brand_name" placeholder="e.g., Samsung, iPhone, Xiaomi"
+                        <input type="text" id="brand_name" name="brand_name" placeholder="{{ t('e.g., Samsung, iPhone, Xiaomi') }}"
                             value="{{ $mobile['brand_name'] ?? '' }}" required
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">The manufacturer or brand of the mobile device</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('The manufacturer or brand of the mobile device') }}</p>
                     </div>
 
                     {{-- Model Name --}}
                     <div class="space-y-1.5">
                         <label for="model_name" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                            Model Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                            {{ t('Model Name') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                         </label>
-                        <input type="text" id="model_name" name="model_name" placeholder="e.g., Galaxy S24, iPhone 15 Pro"
+                        <input type="text" id="model_name" name="model_name" placeholder="{{ t('e.g., Galaxy S24, iPhone 15 Pro') }}"
                             value="{{ $mobile['model_name'] ?? '' }}" required
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">The specific model name or number</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('The specific model name or number') }}</p>
                     </div>
 
                     {{-- Release Date --}}
                     <div class="space-y-1.5">
                         <label for="release_date" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                            Release Date <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                            {{ t('Release Date') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                         </label>
                         <input type="date" id="release_date" name="release_date"
                             value="{{ $mobile['release_date'] ?? '' }}" required
@@ -97,10 +97,10 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-list-details w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Specifications</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Specifications') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Add technical specifications for this mobile device.</p>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Add technical specifications for this mobile device.') }}</p>
 
                     @if (!empty($specifications))
                         <div class="space-y-2">
@@ -124,7 +124,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-amber-600 dark:text-amber-400">No specification keys defined yet.</p>
+                        <p class="text-sm text-amber-600 dark:text-amber-400">{{ t('No specification keys defined yet.') }}</p>
                     @endif
 
                 </div>
@@ -139,22 +139,22 @@
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Images</h3>
                 </div>
                 <div class="p-5 space-y-4">
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Upload images for this mobile device.</p>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Upload images for this mobile device.') }}</p>
 
                     <div class="space-y-3">
                         <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                            Upload New Images
+                            {{ t('Upload New Images') }}
                         </label>
                         <input type="file" name="images[]" multiple accept="image/*"
                             class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-slate-800 dark:file:text-indigo-400 dark:file:border-slate-700 cursor-pointer">
-                        <p class="text-xs text-slate-400 dark:text-slate-600">PNG, JPG, or WebP. Multiple files allowed.</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('PNG, JPG, or WebP. Multiple files allowed.') }}</p>
                     </div>
 
                     @if (!empty($mobile_images))
                         <div class="grid grid-cols-3 gap-3">
                             @foreach ($mobile_images as $image)
                                 <div class="relative group">
-                                    <img src="{{ $image['image_url'] }}" alt="Mobile image" class="w-full aspect-square object-cover rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <img src="{{ $image['image_url'] }}" alt="{{ t('Mobile image') }}" class="w-full aspect-square object-cover rounded-xl border border-slate-200 dark:border-slate-700">
                                     <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
                                         <label class="cursor-pointer">
                                             <input type="checkbox" name="deleted_images[]" value="{{ $image['id'] }}"
@@ -165,12 +165,12 @@
                                     <div class="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-1 rounded-lg">
                                         <input type="checkbox" name="deleted_images[]" value="{{ $image['id'] }}"
                                             class="sr-only peer">
-                                            <span class="peer-checked:hidden">Delete</span>
+                                            <span class="peer-checked:hidden">{{ t('Delete') }}</span>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
-                        <p class="text-xs text-slate-400 dark:text-slate-600">Check images to delete them.</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Check images to delete them.') }}</p>
                     @endif
 
                 </div>
@@ -188,7 +188,7 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-dollar-sign w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Pricing & Status</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Pricing & Status') }}</h3>
                     </div>
                     <div class="p-5 space-y-4">
 
@@ -210,7 +210,7 @@
                             <input type="number" id="unofficial_price" name="unofficial_price" min="0" step="0.01"
                                 value="{{ $mobile['unofficial_price'] ?? '' }}"
                                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Market/gray market price if different</p>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('Market/gray market price if different') }}</p>
                         </div>
 
                         {{-- Status --}}
@@ -218,7 +218,7 @@
                             <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
                                 Status <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                             </label>
-                            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Mobile status">
+                            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ t('Mobile status') }}">
                                 <label class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-600 has-[:checked]:text-white">
                                     <input type="radio" name="status" value="official" id="status-official"
                                         {{ $currentStatus === 'official' ? 'checked' : '' }} aria-label="Official" class="hidden">
@@ -247,7 +247,7 @@
                                 <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/20 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
                             <label for="is_official" class="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                                Official product
+                                {{ t('Official product') }}
                             </label>
                         </div>
 
@@ -260,11 +260,11 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-tags w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tags</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Tags') }}</h3>
                     </div>
                     <div class="p-5 space-y-3">
                         <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                            Assign Tags
+                            {{ t('Assign Tags') }}
                         </label>
                         @php
                             $selectedTagIds = collect($selected_tags)->map(fn ($t) => (string) ($t['id'] ?? $t))->all();
@@ -275,7 +275,7 @@
                                 <option value="{{ $tag['id'] }}" {{ in_array((string) $tag['id'], $selectedTagIds, true) ? 'selected' : '' }}>{{ $tag['name'] }}</option>
                             @endforeach
                         </select>
-                        <p class="text-xs text-slate-400 dark:text-slate-600">Hold Ctrl/Cmd to select multiple tags.</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Hold Ctrl/Cmd to select multiple tags.') }}</p>
                     </div>
                 </div>
 
@@ -294,7 +294,7 @@
                             </button>
                             <a href="/admin/mobiles"
                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                                <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                                <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                             </a>
                         </div>
                     </div>

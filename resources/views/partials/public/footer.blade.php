@@ -1,4 +1,4 @@
-@php use App\Support\LanguageService; @endphp
+@php use App\Support\I18n\LanguageService; @endphp
 <footer class="relative overflow-hidden border-t border-slate-800/70 bg-slate-950 py-2 text-slate-300 shadow-[0_-8px_30px_rgba(15,23,42,0.12)] sm:py-3 md:py-4" role="contentinfo" itemscope itemtype="https://schema.org/WPFooter">
   <div class="pointer-events-none absolute inset-0">
     <div class="absolute -top-24 left-1/4 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl"></div>
@@ -10,7 +10,7 @@
       {{-- About Company --}}
       <div class="md:col-span-1">
         <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
-          <i class="lucide lucide-sparkles h-3.5 w-3.5" aria-hidden="true"></i> About
+          <i class="lucide lucide-sparkles h-3.5 w-3.5" aria-hidden="true"></i> {{ t('About') }}
         </div>
         <div class="mb-3 text-lg font-bold text-white" itemprop="name">
           <i class="lucide lucide-smartphone mr-2" aria-hidden="true"></i>{{ $appSettings['site_name'] ?? 'BroxLab' }}
@@ -21,12 +21,12 @@
 
         {{-- Social Media Links --}}
         @if(!empty($appSettings['social_twitter']) || !empty($appSettings['social_instagram']) || !empty($appSettings['social_facebook']))
-          <nav aria-label="Social media links" class="mt-4">
+          <nav aria-label="{{ t('Social media links') }}" class="mt-4">
             <div class="flex gap-4 footer-social-links">
               @if(!empty($appSettings['social_twitter']))
                 <a href="{{ $appSettings['social_twitter'] }}"
                    class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
-                   title="Follow us on Twitter/X"
+                   title="{{ t('Follow us on Twitter/X') }}"
                    rel="noopener noreferrer"
                    target="_blank"
                    aria-label="Twitter/X">
@@ -36,7 +36,7 @@
               @if(!empty($appSettings['social_instagram']))
                 <a href="{{ $appSettings['social_instagram'] }}"
                    class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
-                   title="Follow us on Instagram"
+                   title="{{ t('Follow us on Instagram') }}"
                    rel="noopener noreferrer"
                    target="_blank"
                    aria-label="Instagram">
@@ -46,7 +46,7 @@
               @if(!empty($appSettings['social_facebook']))
                 <a href="{{ $appSettings['social_facebook'] }}"
                    class="text-slate-400 hover:text-indigo-500 transition-all duration-200 rounded-lg p-2 hover:bg-white/5"
-                   title="Follow us on Facebook"
+                   title="{{ t('Follow us on Facebook') }}"
                    rel="noopener noreferrer"
                    target="_blank"
                    aria-label="Facebook">
@@ -60,36 +60,36 @@
 
       {{-- Quick Links --}}
       <div class="md:col-span-1">
-        <div class="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-white">Quick Links</div>
-        <ul class="space-y-3 text-sm" role="navigation" aria-label="Quick navigation">
+        <div class="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-white">{{ t('Quick Links') }}</div>
+        <ul class="space-y-3 text-sm" role="navigation" aria-label="{{ t('Quick navigation') }}">
           <li class="list-none">
             <a href="/about-us" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>About Us</span>
+              <span>{{ t('About Us') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/contact" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Contact</span>
+              <span>{{ t('Contact') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/newsletter" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Newsletter</span>
+              <span>{{ t('Newsletter') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/advertise" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Advertise</span>
+              <span>{{ t('Advertise') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/faq" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>FAQ</span>
+              <span>{{ t('FAQ') }}</span>
             </a>
           </li>
         </ul>
@@ -98,29 +98,29 @@
       {{-- Legal & Compliance --}}
       <div class="md:col-span-1">
         <div class="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-white">Legal</div>
-        <ul class="space-y-3 text-sm" role="navigation" aria-label="Legal navigation">
+        <ul class="space-y-3 text-sm" role="navigation" aria-label="{{ t('Legal navigation') }}">
           <li class="list-none">
             <a href="/terms" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Terms of Service</span>
+              <span>{{ t('Terms of Service') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/privacy" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Privacy Policy</span>
+              <span>{{ t('Privacy Policy') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/sitemap" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>Sitemap</span>
+              <span>{{ t('Sitemap') }}</span>
             </a>
           </li>
           <li class="list-none">
             <a href="/sitemap.xml" class="text-slate-400 hover:text-white transition-all duration-200 inline-flex items-center gap-2 hover:translate-x-1">
               <i class="lucide lucide-chevron-right text-xs" aria-hidden="true"></i>
-              <span>XML Sitemap</span>
+              <span>{{ t('XML Sitemap') }}</span>
             </a>
           </li>
         </ul>
@@ -137,9 +137,9 @@
         @if(!empty($appSettings['contact_email']))
           | <a href="mailto:{{ $appSettings['contact_email'] }}"
                class="text-slate-400 hover:text-white transition-colors"
-               title="Email us">{{ $appSettings['contact_email'] }}</a>
+               title="{{ t('Email us') }}">{{ $appSettings['contact_email'] }}</a>
         @endif
-        <span class="footer-tagline ml-2 inline-block text-slate-500">Designed for maximum performance & accessibility.</span>
+        <span class="footer-tagline ml-2 inline-block text-slate-500">{{ t('Designed for maximum performance & accessibility.') }}</span>
       </p>
 
       {{-- Language Switcher --}}
@@ -162,7 +162,7 @@
               <rect width="24" height="21.54" fill="#3c3b6e"/>
             </svg>
           @endif
-          <span class="text-xs text-slate-500">Language</span>
+          <span class="text-xs text-slate-500">{{ t('Language') }}</span>
           <button type="button"
                   data-lang-btn="{{ app(LanguageService::class)->current() == 'bn' ? 'en' : 'bn' }}"
                   aria-label="{{ app(LanguageService::class)->current() == 'bn' ? 'Switch to English' : 'Switch to Bangla' }}"

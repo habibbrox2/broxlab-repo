@@ -9,7 +9,7 @@
             <i class="lucide lucide-key h-5 w-5"></i>
         </div>
         <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{{ $header_title }}</h1>
-        <p class="mt-1 text-sm text-slate-500">Use at least 8 characters with upper, lower, number & symbol</p>
+        <p class="mt-1 text-sm text-slate-500">{{ t('Use at least 8 characters with upper, lower, number & symbol') }}</p>
     </div>
 
     @if (session('status'))
@@ -28,25 +28,25 @@
         @csrf
 
         <div>
-            <label for="current_password" class="mb-1 block text-sm font-semibold text-slate-700">Current password</label>
+            <label for="current_password" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Current password') }}</label>
             <input type="password" id="current_password" name="current_password" required autocomplete="current-password"
                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
         </div>
 
         <div>
-            <label for="new_password" class="mb-1 block text-sm font-semibold text-slate-700">New password</label>
+            <label for="new_password" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('New password') }}</label>
             <input type="password" id="new_password" name="new_password" required minlength="8" autocomplete="new-password"
                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
         </div>
 
         <div>
-            <label for="new_password_confirmation" class="mb-1 block text-sm font-semibold text-slate-700">Confirm new password</label>
+            <label for="new_password_confirmation" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Confirm new password') }}</label>
             <input type="password" id="new_password_confirmation" name="new_password_confirmation" required minlength="8" autocomplete="new-password"
                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
         </div>
 
         <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99]">
-            <i class="lucide lucide-shield-check h-4 w-4"></i> Update password
+            <i class="lucide lucide-shield-check h-4 w-4"></i> {{ t('Update password') }}
         </button>
     </form>
 </div>

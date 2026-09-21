@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\LanguageService;
-use App\Support\TranslationService;
+use App\Support\I18n\LanguageService;
+use App\Support\I18n\Translator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 class TranslateController extends Controller
 {
     public function __construct(
-        protected TranslationService $translations,
+        protected Translator $translations,
         protected LanguageService $languages,
     ) {}
 

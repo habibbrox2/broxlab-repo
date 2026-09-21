@@ -286,6 +286,20 @@ class AdminPostTest extends TestCase
 
     // ── Delete ─────────────────────────────────────────────────────────
 
+    public function test_delete_confirm_page_has_no_side_effects(): void
+    {
+        $this->makeAdmin();
+
+        $id = $this->createPost(['title' => 'Doomed Post']);
+
+        // GET must only render the confirmation page — never delete.
+        $this->get("/admin/posts/delete/{$id}")
+            ->assertOk()
+            ->assertSee('Confirm Deletion');
+
+        $this->assertDatabaseHas('posts', ['id' => $id]);
+    }
+
     public function test_destroy_removes_post_and_attachments(): void
     {
         $this->makeAdmin();
@@ -295,7 +309,8 @@ class AdminPostTest extends TestCase
         $this->tagIds[] = $tagId;
         DB::table('content_tags')->insert(['content_type' => 'post', 'content_id' => $id, 'tag_id' => $tagId]);
 
-        $this->get("/admin/posts/delete/{$id}")
+        $this->withoutMiddleware(ValidateCsrfToken::class)
+            ->post("/admin/posts/delete/{$id}")
             ->assertRedirect('/admin/posts')
             ->assertSessionHas('status', 'Post deleted successfully');
 
@@ -313,7 +328,8 @@ class AdminPostTest extends TestCase
     {
         $this->makeAdmin();
 
-        $this->get('/admin/posts/delete/999999999')
+        $this->withoutMiddleware(ValidateCsrfToken::class)
+            ->post('/admin/posts/delete/999999999')
             ->assertRedirect('/admin/posts')
             ->assertSessionHas('error', 'Post not found');
     }

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $currentLang = app(\App\Support\LanguageService::class)->current();
+    $currentLang = app(\App\Support\I18n\LanguageService::class)->current();
     $companyName = $company['name'] ?? 'Pharmaceutical Company';
     $brandGeneric = trim(strip_tags((string) ($brand['generic'] ?? '')));
 @endphp
@@ -82,7 +82,7 @@
                     @endif
                 @else
                     <small class="text-slate-500 block mb-2" data-i18n-en="Pricing" data-i18n-bn="মূল্য">{{ $currentLang === 'bn' ? 'মূল্য' : 'Pricing' }}</small>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">Contact supplier</span>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">{{ t('Contact supplier') }}</span>
                 @endif
 
                 <div class="mt-3">
@@ -125,7 +125,7 @@
                         @else
                             <p class="medex-section-empty">
                                 <i class="lucide lucide-info"></i>
-                                Detailed information for this section is not yet available. Please check back later or contact the manufacturer.
+                                {{ t('Detailed information for this section is not yet available. Please check back later or contact the manufacturer.') }}
                             </p>
                         @endif
                     </div>
@@ -135,7 +135,7 @@
     </div>
 
     {{-- Navigation Back --}}
-    <nav class="mt-5 pt-4 border-top" aria-label="Page navigation">
+    <nav class="mt-5 pt-4 border-top" aria-label="{{ t('Page navigation') }}">
         <div class="flex flex-wrap justify-between items-center">
             @if ($company)
                 <a href="/medicines/company/{{ $company['_id'] ?? '' }}" class="medex-back-link">

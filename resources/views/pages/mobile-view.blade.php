@@ -46,7 +46,7 @@
 <section class="py-4 lg:py-6">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <nav class="mb-4 flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
-            <a href="/mobiles" class="inline-flex items-center gap-1 hover:text-indigo-600"><i class="lucide lucide-smartphone h-3.5 w-3.5"></i> Mobiles</a>
+            <a href="/mobiles" class="inline-flex items-center gap-1 hover:text-indigo-600"><i class="lucide lucide-smartphone h-3.5 w-3.5"></i> {{ t('Mobiles') }}</a>
             <i class="lucide lucide-chevron-right h-3 w-3 text-slate-300"></i>
             <span class="truncate font-medium text-slate-700">{{ $mobile['brand_name'] }} {{ $mobile['model_name'] }}</span>
         </nav>
@@ -65,10 +65,10 @@
                             @endforeach
                         </div>
                         @if ($imageCount > 1)
-                        <button type="button" @click="idx = (idx - 1 + {{ $imageCount }}) % {{ $imageCount }}" aria-label="Previous image" class="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm transition hover:bg-white">
+                        <button type="button" @click="idx = (idx - 1 + {{ $imageCount }}) % {{ $imageCount }}" aria-label="{{ t('Previous image') }}" class="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm transition hover:bg-white">
                             <i class="lucide lucide-chevron-left h-4 w-4 text-slate-600"></i>
                         </button>
-                        <button type="button" @click="idx = (idx + 1) % {{ $imageCount }}" aria-label="Next image" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm transition hover:bg-white">
+                        <button type="button" @click="idx = (idx + 1) % {{ $imageCount }}" aria-label="{{ t('Next image') }}" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm transition hover:bg-white">
                             <i class="lucide lucide-chevron-right h-4 w-4 text-slate-600"></i>
                         </button>
                         <div class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
@@ -102,7 +102,7 @@
                 <h1 class="mb-3 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl lg:text-4xl">
                     {{ $mobile['brand_name'] }} {{ $mobile['model_name'] }}
                 </h1>
-                <p class="mb-6 text-base text-slate-500">Pricing, specifications, image gallery, and related devices in one place.</p>
+                <p class="mb-6 text-base text-slate-500">{{ t('Pricing, specifications, image gallery, and related devices in one place.') }}</p>
 
                 {{-- Quick stats --}}
                 <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -129,13 +129,13 @@
                 <div class="mb-6 flex flex-wrap gap-3">
                     @if (!empty($mobile['official_price']))
                     <div class="min-w-[140px] rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-3.5 shadow-sm">
-                        <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-600">Official Price</span>
+                        <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ t('Official Price') }}</span>
                         <strong class="text-xl font-bold text-emerald-800">{{ number_format((float) $mobile['official_price'], 2, '.', ',') }} ৳</strong>
                     </div>
                     @endif
                     @if (!empty($mobile['unofficial_price']))
                     <div class="min-w-[140px] rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/60 p-3.5 shadow-sm">
-                        <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-600">Market Price</span>
+                        <span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-600">{{ t('Market Price') }}</span>
                         <strong class="text-xl font-bold text-amber-800">{{ number_format((float) $mobile['unofficial_price'], 2, '.', ',') }} ৳</strong>
                     </div>
                     @endif
@@ -144,7 +144,7 @@
 
                 {{-- Tags --}}
                 @if (!empty($mobile['tags']))
-                <div class="mb-6 flex flex-wrap gap-2" aria-label="Related mobile tags">
+                <div class="mb-6 flex flex-wrap gap-2" aria-label="{{ t('Related mobile tags') }}">
                     @foreach ($mobile['tags'] as $tag)
                     <a href="/tag/{{ $tag['slug'] }}" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">
                         <i class="lucide lucide-tag h-3 w-3"></i>
@@ -156,7 +156,7 @@
 
                 <div class="flex flex-wrap gap-2">
                     <a href="#tab-specs" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700" @click.prevent="$dispatch('switch-tab', 'specs')">
-                        <i class="lucide lucide-check-square h-4 w-4"></i> Specifications
+                        <i class="lucide lucide-check-square h-4 w-4"></i> {{ t('Specifications') }}
                     </a>
                     <a href="#tab-images" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" @click.prevent="$dispatch('switch-tab', 'images')">
                         <i class="lucide lucide-images h-4 w-4"></i> Images
@@ -167,7 +167,7 @@
                     </a>
                     @endif
                     <a href="/mobiles" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-                        <i class="lucide lucide-grid-3x3 h-4 w-4"></i> All Mobiles
+                        <i class="lucide lucide-grid-3x3 h-4 w-4"></i> {{ t('All Mobiles') }}
                     </a>
                 </div>
             </div>
@@ -177,13 +177,13 @@
         <div class="mt-8 lg:mt-10" x-data="{ tab: 'specs' }" x-on:switch-tab.window="tab = $event.detail; document.getElementById('tab-' + $event.detail)?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
             <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900 md:text-2xl">Device Details</h2>
-                    <p class="text-sm text-slate-500">Browse structured information without leaving the page.</p>
+                    <h2 class="text-xl font-bold text-slate-900 md:text-2xl">{{ t('Device Details') }}</h2>
+                    <p class="text-sm text-slate-500">{{ t('Browse structured information without leaving the page.') }}</p>
                 </div>
-                <div class="flex gap-1.5 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 shadow-sm" role="tablist" aria-label="Mobile detail tabs">
+                <div class="flex gap-1.5 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 shadow-sm" role="tablist" aria-label="{{ t('Mobile detail tabs') }}">
                     <button type="button" @click="tab = 'specs'" role="tab" :aria-selected="tab === 'specs'" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition" :class="tab === 'specs' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'">
                         <i class="lucide lucide-check-square h-4 w-4"></i>
-                        <span class="hidden sm:inline">Specifications</span><span class="sm:hidden">Specs</span>
+                        <span class="hidden sm:inline">{{ t('Specifications') }}</span><span class="sm:hidden">Specs</span>
                     </button>
                     <button type="button" @click="tab = 'images'" role="tab" :aria-selected="tab === 'images'" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition" :class="tab === 'images' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'">
                         <i class="lucide lucide-images h-4 w-4"></i>
@@ -217,7 +217,7 @@
                         <div class="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
                             <i class="lucide lucide-alert-circle text-2xl"></i>
                         </div>
-                        <p class="font-medium text-slate-500">No specifications available.</p>
+                        <p class="font-medium text-slate-500">{{ t('No specifications available.') }}</p>
                     </div>
                     @endif
                 </div>
@@ -243,16 +243,16 @@
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         @if (!empty($mobile['official_price']))
                         <div class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-6 shadow-sm">
-                            <span class="block text-xs font-semibold uppercase tracking-wider text-emerald-600">Official Price</span>
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-emerald-600">{{ t('Official Price') }}</span>
                             <strong class="mt-2 block text-3xl font-bold text-emerald-800">{{ number_format((float) $mobile['official_price'], 2, '.', ',') }} ৳</strong>
-                            <p class="mt-2 text-sm text-emerald-700/70">Suggested retail price in Bangladesh.</p>
+                            <p class="mt-2 text-sm text-emerald-700/70">{{ t('Suggested retail price in Bangladesh.') }}</p>
                         </div>
                         @endif
                         @if (!empty($mobile['unofficial_price']))
                         <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/60 p-6 shadow-sm">
-                            <span class="block text-xs font-semibold uppercase tracking-wider text-amber-600">Market Price</span>
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-amber-600">{{ t('Market Price') }}</span>
                             <strong class="mt-2 block text-3xl font-bold text-amber-800">{{ number_format((float) $mobile['unofficial_price'], 2, '.', ',') }} ৳</strong>
-                            <p class="mt-2 text-sm text-amber-700/70">Current market price in Bangladesh.</p>
+                            <p class="mt-2 text-sm text-amber-700/70">{{ t('Current market price in Bangladesh.') }}</p>
                         </div>
                         @endif
                     </div>
@@ -264,7 +264,7 @@
         {{-- Related mobiles --}}
         @if (!empty($related))
         <div class="mt-10">
-            <h2 id="related-mobiles-title" class="mb-4 text-xl font-bold text-slate-900 md:text-2xl">Related Mobiles</h2>
+            <h2 id="related-mobiles-title" class="mb-4 text-xl font-bold text-slate-900 md:text-2xl">{{ t('Related Mobiles') }}</h2>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($related as $m)
                 <a href="/mobiles/view/{{ $m['id'] }}" class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">

@@ -20,6 +20,9 @@
 const BROXI18N_STORAGE_KEY = 'brox-i18n-lang';
 const BROXI18N_LANG_CHANGE = 'brox:langchange';
 const BROXI18N_ACCEPTED_LANGS = ['en', 'bn',];
+// Must match LanguageService::LANG_COOKIE server-side — the server reads this
+// cookie to pick the language it renders t() output in.
+const BROXI18N_LANG_COOKIE = 'brox_lang';
 
 let _currentLang = detectInitialLang();
 let _isTranslating = false;
@@ -28,8 +31,26 @@ window.__broxClientTranslationCache = _cache;
 
 // ======================== Initialisation ========================
 
+/** Language the server rendered this page in — see detectInitialLang(). */
+let _serverLang = 'en';
+
+/** Language the dictionary text pass last painted the document in. Starts at
+ *  the server's language: on a fresh English page it is 'en' (nothing to do,
+ *  and Bengali content from the database must not be rewritten), and after a
+ *  client-side switch paints Bengali it becomes 'bn' so switching back to
+ *  English is allowed to revert that paint. */
+let _paintedLang = null;
+
 function detectInitialLang() {
-  // Priority: URL param > localStorage > html lang attr > default 'en'
+  // The SERVER is authoritative. It resolved ?lang= / the brox_lang cookie /
+  // the legacy session, then rendered every t() string in that language.
+  // Picking anything else here paints only the annotated nodes and leaves the
+  // server-rendered strings behind — a half-translated page. So read the
+  // server's choice first and use localStorage only as a last resort.
+  const serverLang = window.__broxSiteLang
+    || document.documentElement.getAttribute('lang');
+  if (BROXI18N_ACCEPTED_LANGS.includes(serverLang)) return serverLang;
+
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const urlLang = urlParams.get('lang');
@@ -38,9 +59,6 @@ function detectInitialLang() {
     const stored = localStorage.getItem(BROXI18N_STORAGE_KEY);
     if (BROXI18N_ACCEPTED_LANGS.includes(stored)) return stored;
   } catch (_) { /* ignore */ }
-
-  const htmlLang = document.documentElement.getAttribute('lang');
-  if (BROXI18N_ACCEPTED_LANGS.includes(htmlLang)) return htmlLang;
 
   return 'en';
 }
@@ -69,6 +87,125 @@ function setCached(text, lang, translation) {
   }
 }
 
+// ======================== Dictionary Text Pass ========================
+//
+// The server ships its dictionaries in window.__broxSiteTranslations
+// ({ en: {...}, bn: { englishSource: 'বাংলা ...' } }). t() output is plain text
+// in the HTML with no data-i18n marker, so without this pass a client-side
+// switch would leave every server-rendered string in the previous language.
+//
+// Only text nodes whose ENTIRE trimmed content matches a dictionary key are
+// replaced — exactly the lookup t() does server-side — so longer copy that
+// merely contains a key as a substring is never rewritten.
+
+// OPTION is skipped because <select> labels are data (category labels) and
+// must keep matching the value the form actually submits.
+const BROXI18N_TEXT_SKIP = ['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA', 'NOSCRIPT', 'OPTION',];
+const _reverseDicts = {};
+
+/** Server-shipped dictionary for `lang`, or null. */
+function serverDictionary(lang) {
+  const all = window.__broxSiteTranslations;
+  const dict = all && all[lang];
+  return dict && typeof dict === 'object' ? dict : null;
+}
+
+/** translated text -> English source, for switching back to English. */
+function reverseDictionary(lang) {
+  if (_reverseDicts[lang]) return _reverseDicts[lang];
+
+  const dict = serverDictionary(lang);
+  const reverse = {};
+
+  if (dict) {
+    Object.keys(dict).forEach((key) => {
+      const value = dict[key];
+      // First writer wins: several English keys may share one translation.
+      if (typeof value === 'string' && value !== '' && !(value in reverse)) {
+        reverse[value] = key;
+      }
+    });
+  }
+
+  return (_reverseDicts[lang] = reverse);
+}
+
+/** What `text` should read as in `lang`, or null to leave the node alone. */
+function lookupDictionaryText(text, lang) {
+  if (lang === 'en') {
+    const reverse = reverseDictionary('bn');
+    return reverse[text] || null;
+  }
+
+  const dict = serverDictionary(lang);
+  return dict && dict[text] ? dict[text] : null;
+}
+
+/**
+ * Translate bare text nodes via the shipped dictionary so a client-side
+ * switch covers the whole page, not just the data-i18n nodes.
+ */
+function applyDictionaryText(root, lang) {
+  if (!root || typeof document.createTreeWalker !== 'function') return;
+  if (_paintedLang === null) _paintedLang = _serverLang;
+  if (_paintedLang === lang) return;
+
+  if (lang === 'en') {
+    // Only revert when this document was actually painted Bengali by an
+    // earlier switch. On a page the server rendered in English, any Bengali
+    // text is real content (post titles, category and tag names) and
+    // rewriting it would corrupt what the database says.
+    if (Object.keys(reverseDictionary('bn')).length === 0) return;
+  } else if (!serverDictionary(lang)) {
+    return;
+  }
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function (node) {
+      const parent = node.parentNode;
+      if (!parent || BROXI18N_TEXT_SKIP.indexOf(parent.nodeName) !== -1) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      if (parent.closest && parent.closest('[data-i18n-skip], [data-i18n-en][data-i18n-bn]')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return node.nodeValue && node.nodeValue.trim()
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
+    },
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach((node) => {
+    const raw = node.nodeValue;
+    const trimmed = raw.trim();
+    let translated = lookupDictionaryText(trimmed, lang);
+
+    // Reversing is ambiguous when several source keys share one translation
+    // ("Article" | "Articles" -> "আর্টিকেল"). An annotated element tells us the
+    // exact key, so prefer it over the reverse map's guess.
+    if (translated && lang === 'en') {
+      const host = node.parentNode && node.parentNode.closest
+        ? node.parentNode.closest('[data-i18n]')
+        : null;
+      const attrKey = host ? host.getAttribute('data-i18n') : null;
+      const dict = attrKey ? serverDictionary('bn') : null;
+
+      if (dict && dict[attrKey] === trimmed) translated = attrKey;
+    }
+
+    if (!translated || translated === trimmed) return;
+
+    // Keep the node's original surrounding whitespace/indentation. The
+    // replacer function keeps $ sequences in the translation literal.
+    node.nodeValue = raw.replace(trimmed, () => translated);
+  });
+
+  _paintedLang = lang;
+}
+
 // ======================== DOM Translation ========================
 
 function applyTranslation(root) {
@@ -84,55 +221,63 @@ function applyTranslation(root) {
     }
   });
 
-  // Method 2: data-i18n (fallback — checks cache, then queues API batch)
-  root.querySelectorAll('[data-i18n]').forEach((el) => {
-    // Skip if already handled by Method 1
-    if (el.hasAttribute('data-i18n-en') && el.hasAttribute('data-i18n-bn')) return;
-    const key = el.getAttribute('data-i18n') || '';
-    if (!key) return;
-    const cached = getCached(key, _currentLang);
-    if (cached) {
-      el.innerHTML = cached;
-      return;
-    }
-    el.dataset.i18nPending = key;
-  });
+  // Every other pass needs a translation to apply. English is the source
+  // language: the server already rendered it, so never touch the DOM and
+  // never queue /api/translate work for it.
+  if (_currentLang !== 'en') {
+    // Method 2: data-i18n (fallback — checks cache, then queues API batch)
+    root.querySelectorAll('[data-i18n]').forEach((el) => {
+      // Skip if already handled by Method 1
+      if (el.hasAttribute('data-i18n-en') && el.hasAttribute('data-i18n-bn')) return;
+      const key = el.getAttribute('data-i18n') || '';
+      if (!key) return;
+      const cached = getCached(key, _currentLang);
+      if (cached) {
+        el.innerHTML = cached;
+        return;
+      }
+      el.dataset.i18nPending = key;
+    });
 
-  // data-i18n-title
-  root.querySelectorAll('[data-i18n-title]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-title') || '';
-    if (!key) return;
-    const cached = getCached(key, _currentLang);
-    if (cached) {
-      el.setAttribute('title', cached);
-    } else {
-      el.dataset.i18nTitlePending = key;
-    }
-  });
+    // data-i18n-title
+    root.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-title') || '';
+      if (!key) return;
+      const cached = getCached(key, _currentLang);
+      if (cached) {
+        el.setAttribute('title', cached);
+      } else {
+        el.dataset.i18nTitlePending = key;
+      }
+    });
 
-  // data-i18n-aria-label
-  root.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-aria-label') || '';
-    if (!key) return;
-    const cached = getCached(key, _currentLang);
-    if (cached) {
-      el.setAttribute('aria-label', cached);
-    } else {
-      el.dataset.i18nAriaLabelPending = key;
-    }
-  });
+    // data-i18n-aria-label
+    root.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-aria-label') || '';
+      if (!key) return;
+      const cached = getCached(key, _currentLang);
+      if (cached) {
+        el.setAttribute('aria-label', cached);
+      } else {
+        el.dataset.i18nAriaLabelPending = key;
+      }
+    });
 
-  // data-i18n-placeholder
-  root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-placeholder') || '';
-    if (!key) return;
-    const cached = getCached(key, _currentLang);
-    if (cached) {
-      el.setAttribute('placeholder', cached);
-    } else {
-      el.dataset.i18nPlaceholderPending = key;
-    }
-  });
+    // data-i18n-placeholder
+    root.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-placeholder') || '';
+      if (!key) return;
+      const cached = getCached(key, _currentLang);
+      if (cached) {
+        el.setAttribute('placeholder', cached);
+      } else {
+        el.dataset.i18nPlaceholderPending = key;
+      }
+    });
+  }
+
+  // Method 3: dictionary pass over bare text nodes (server-rendered t() output)
+  applyDictionaryText(root, _currentLang);
 
   fetchPendingBatch();
 }
@@ -316,9 +461,14 @@ function switchLanguage(lang) {
     window.history.replaceState({ lang: lang, }, '', url.toString());
   } catch (_) { /* ignore */ }
 
-  // Persist preference
+  // Persist preference client-side and server-side. The cookie is what the
+  // server reads to render t() output, so without it the next page would come
+  // back in the old language and desync the moment it loads.
   try {
     localStorage.setItem(BROXI18N_STORAGE_KEY, lang);
+  } catch (_) { /* ignore */ }
+  try {
+    document.cookie = `${BROXI18N_LANG_COOKIE}=${lang}; path=/; max-age=31536000; SameSite=Lax`;
   } catch (_) { /* ignore */ }
 
   // Update canonical / hreflang links
@@ -434,6 +584,10 @@ window.broxI18n = broxI18n;
 // ======================== Auto-Init ========================
 
 function init() {
+  // Record the language the server rendered before painting the DOM.
+  _serverLang = _currentLang;
+  _paintedLang = _serverLang;
+
   // Apply initial language to DOM
   applyTranslation();
 
@@ -447,11 +601,15 @@ function init() {
     }
   });
 
-  // If URL has lang param but it differs from detected, update
+  // If the URL carries ?lang= that the server did not render (e.g. it was
+  // appended after load), adopt it and repaint.
   try {
     const urlLang = new URLSearchParams(window.location.search).get('lang');
     if (urlLang && urlLang !== _currentLang && BROXI18N_ACCEPTED_LANGS.includes(urlLang)) {
       _currentLang = urlLang;
+      try {
+        document.cookie = `${BROXI18N_LANG_COOKIE}=${urlLang}; path=/; max-age=31536000; SameSite=Lax`;
+      } catch (_) { /* ignore */ }
       applyTranslation();
     }
   } catch (_) { /* ignore */ }

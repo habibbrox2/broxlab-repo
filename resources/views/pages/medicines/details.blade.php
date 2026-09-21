@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $currentLang = app(\App\Support\LanguageService::class)->current();
+    $currentLang = app(\App\Support\I18n\LanguageService::class)->current();
 @endphp
 
 @section('title', ($currentLang === 'bn' ? 'মেডিসিন ডেটাসেট বিস্তারিত' : 'Medicines Dataset Details').' — '.($appSettings['site_name'] ?? 'BroxLab'))
@@ -193,7 +193,7 @@
                 </div>
 
                 <div class="mt-3">
-                    <label class="block text-sm font-medium text-neutral-700 mb-1.5 font-semibold">Live Log</label>
+                    <label class="block text-sm font-medium text-neutral-700 mb-1.5 font-semibold">{{ t('Live Log') }}</label>
                     <textarea id="js-scrape-log" class="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm font-mono" rows="8" readonly style="font-size: 0.85rem; background:#0d1117; color:#c9d1d9;"></textarea>
                 </div>
 

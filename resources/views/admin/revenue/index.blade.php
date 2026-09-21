@@ -13,8 +13,8 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Administration</p>
-                <h1 class="text-xl font-bold text-white">Revenue Management</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage advertising, sponsored content, and donations</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Revenue Management') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage advertising, sponsored content, and donations') }}</p>
             </div>
         </div>
     </div>
@@ -27,8 +27,8 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0 mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-advertisement w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Advertising</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600">Manage ad placements, campaigns, and monetization</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ t('Advertising') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Manage ad placements, campaigns, and monetization') }}</p>
             </div>
             <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800">
                 <span class="text-xs font-medium text-slate-400 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Go to Advertising →</span>
@@ -40,8 +40,8 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-sparkles w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Sponsored Packages</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600">Create and manage sponsored content packages</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ t('Sponsored Packages') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Create and manage sponsored content packages') }}</p>
             </div>
             <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800">
                 <span class="text-xs font-medium text-slate-400 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Go to Packages →</span>
@@ -54,7 +54,7 @@
                     <i class="lucide lucide-heart w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Donations</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600">View and manage user donations</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('View and manage user donations') }}</p>
             </div>
             <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800">
                 <span class="text-xs font-medium text-slate-400 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Go to Donations →</span>

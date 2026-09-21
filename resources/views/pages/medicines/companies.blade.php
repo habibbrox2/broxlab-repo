@@ -6,7 +6,7 @@
 @section('og_type', 'website')
 
 @php
-    $currentLang = app(\App\Support\LanguageService::class)->current();
+    $currentLang = app(\App\Support\I18n\LanguageService::class)->current();
 @endphp
 
 @section('schema')
@@ -130,7 +130,7 @@
                     <thead>
                     <tr>
                         <th scope="col" class="text-center" style="width: 60px;">#</th>
-                        <th scope="col"><span data-i18n-en="Company Name" data-i18n-bn="কোম্পানির নাম">Company Name</span></th>
+                        <th scope="col"><span data-i18n-en="Company Name" data-i18n-bn="কোম্পানির নাম">{{ t('Company Name') }}</span></th>
                         <th scope="col" class="text-center" style="width: 100px;"><span data-i18n-en="Est." data-i18n-bn="প্রতিষ্ঠা">Est.</span></th>
                         <th scope="col" class="text-right" style="width: 120px;"><span data-i18n-en="Generics" data-i18n-bn="জেনেরিকস">Generics</span></th>
                         <th scope="col" class="text-right" style="width: 120px;"><span data-i18n-en="Brands" data-i18n-bn="ব্র্যান্ড">Brands</span></th>
@@ -190,12 +190,12 @@
     {{-- Pagination --}}
     @if (($pagination['total_pages'] ?? 1) > 1)
         <div class="medex-pagination-wrap">
-            <nav aria-label="Page navigation" class="mt-4">
+            <nav aria-label="{{ t('Page navigation') }}" class="mt-4">
                 <ul class="flex items-center justify-center gap-1">
                     <li class="{{ $pagination['current_page'] <= 1 ? 'opacity-50 pointer-events-none' : '' }}">
-                        <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ $pagination['current_page'] - 1 }}" aria-label="Previous">
+                        <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ $pagination['current_page'] - 1 }}" aria-label="{{ t('Previous') }}">
                             <span aria-hidden="true">&laquo;</span>
-                            <span class="sr-only">Previous</span>
+                            <span class="sr-only">{{ t('Previous') }}</span>
                         </a>
                     </li>
 
@@ -223,9 +223,9 @@
                     @endif
 
                     <li class="{{ $pagination['current_page'] >= $pagination['total_pages'] ? 'opacity-50 pointer-events-none' : '' }}">
-                        <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ $pagination['current_page'] + 1 }}" aria-label="Next">
+                        <a class="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm hover:bg-neutral-100 transition-colors" href="?page={{ $pagination['current_page'] + 1 }}" aria-label="{{ t('Next') }}">
                             <span aria-hidden="true">&raquo;</span>
-                            <span class="sr-only">Next</span>
+                            <span class="sr-only">{{ t('Next') }}</span>
                         </a>
                     </li>
                 </ul>

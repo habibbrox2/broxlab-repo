@@ -18,8 +18,10 @@ use Illuminate\View\View;
  * Parity notes:
  * - Legacy treats create/update failure via the DB layer returning false; our
  *   service catches duplicate-slug / constraint errors the same way.
- * - Delete is a GET route in legacy (no CSRF) — kept identical, including the
- *   failure flash when the row doesn't exist.
+ * - Delete parity change (security): legacy allowed a single GET to delete a
+ *   row, which is CSRF-able (a crawler, link prefetch or <img> tag can fire
+ *   it). GET now renders a confirmation page and the actual delete happens
+ *   on POST (CSRF-protected); the failure flash behaviour is unchanged.
  * - Sort allowlists: categories [id, name, created_at, updated_at], tags
  *   [id, name]; order ASC/DESC only; limit clamped to 5..100.
  */
@@ -78,6 +80,18 @@ class TagCategoryController extends Controller
         $ok = $this->taxonomy->updateCategory($id, $data['name'], $data['slug']);
 
         return $this->finish($ok, 'Category', 'update', $id, $data['name'], $data['slug'], '/admin/categories', "/admin/categories/edit/{$id}");
+    }
+
+    /** GET /admin/categories/delete/{id} — confirmation page (no side effects). */
+    public function categoryDeleteConfirm(int $id): View
+    {
+        $category = $this->taxonomy->getCategoryById($id);
+
+        if ($category === null) {
+            abort(404);
+        }
+
+        return view('admin.categories.delete', ['category' => $category]);
     }
 
     public function categoryDestroy(int $id): RedirectResponse
@@ -152,6 +166,18 @@ class TagCategoryController extends Controller
         $ok = $this->taxonomy->updateTag($id, $data['name'], $data['slug']);
 
         return $this->finish($ok, 'Tag', 'update', $id, $data['name'], $data['slug'], '/admin/tags', "/admin/tags/edit/{$id}");
+    }
+
+    /** GET /admin/tags/delete/{id} — confirmation page (no side effects). */
+    public function tagDeleteConfirm(int $id): View
+    {
+        $tag = $this->taxonomy->getTagById($id);
+
+        if ($tag === null) {
+            abort(404);
+        }
+
+        return view('admin.tags.delete', ['tag' => $tag]);
     }
 
     public function tagDestroy(int $id): RedirectResponse

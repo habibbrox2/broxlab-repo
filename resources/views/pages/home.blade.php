@@ -300,7 +300,7 @@
                             <div class="datetime-icon me-3">
                                 <i class="lucide lucide-calendar-days" aria-hidden="true"></i>
                             </div>
-                            <h3 class="mb-0 text-lg font-bold">English Date & Time</h3>
+                            <h3 class="mb-0 text-lg font-bold">{{ t('English Date & Time') }}</h3>
                         </div>
                         <div class="datetime-content">
                             <div class="mb-3">
@@ -309,7 +309,7 @@
                                     <small class="font-semibold text-white/50">Date</small>
                                 </div>
                                 <div id="english-date" class="font-bold">
-                                    Loading...
+                                    {{ t('Loading...') }}
                                 </div>
                             </div>
                             <div class="mb-0">
@@ -318,7 +318,7 @@
                                     <small class="font-semibold text-white/50">Time</small>
                                 </div>
                                 <div id="english-time" class="font-bold font-mono" style="font-family: 'JetBrains Mono', monospace;">
-                                    Loading...
+                                    {{ t('Loading...') }}
                                 </div>
                             </div>
                         </div>
@@ -499,7 +499,7 @@
                 <p data-i18n="Highest-rated posts and services curated for you">{{ t('Highest-rated posts and services curated for you') }}</p>
             </div>
             {{-- Tab switcher --}}
-            <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="Switch between top posts and top services" x-data="topPicksTabs()">
+            <div class="top-carousel-tabs inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-inner" role="tablist" aria-label="{{ t('Switch between top posts and top services') }}" x-data="topPicksTabs()">
                 <button type="button"
                         :class="['top-carousel-tab rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200', activeTab === 'posts' ? 'active' : '']"
                         role="tab"
@@ -526,7 +526,7 @@
         {{-- Top posts panel --}}
         <div id="panel-posts" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-posts" x-show="activeTab === 'posts'" x-cloak>
             @if (!empty($top_posts))
-                <div class="top-carousel-track" role="list" aria-label="Top posts">
+                <div class="top-carousel-track" role="list" aria-label="{{ t('Top posts') }}">
                     @foreach ($top_posts as $post)
                         <article class="top-carousel-card" role="listitem">
                             <div class="top-carousel-card__inner">
@@ -584,7 +584,7 @@
         {{-- Top services panel --}}
         <div id="panel-services" class="top-carousel-panel" role="tabpanel" aria-labelledby="tab-services" x-show="activeTab === 'services'" x-cloak>
             @if (!empty($top_services))
-                <div class="top-carousel-track" role="list" aria-label="Top services">
+                <div class="top-carousel-track" role="list" aria-label="{{ t('Top services') }}">
                     @foreach ($top_services as $svc)
                         <article class="top-carousel-card" role="listitem">
                             <div class="top-carousel-card__inner">
@@ -655,25 +655,25 @@
         </div>
 
         <div id="discovery-feed" class="discovery-feed-container">
-            <div class="discovery-toolbar" role="toolbar" aria-label="Feed controls" x-data="feedToolbar()">
+            <div class="discovery-toolbar" role="toolbar" aria-label="{{ t('Feed controls') }}" x-data="feedToolbar()">
                 {{-- Row 1: search + filters --}}
                 <div class="toolbar-row">
                     <div class="toolbar-search-wrap">
                         <i class="lucide lucide-search search-icon" style="width:18px;height:18px" aria-hidden="true"></i>
-                        <input type="search" x-model="searchQuery" placeholder="Search content..." aria-label="Search content" autocomplete="off">
-                        <button type="button" class="search-clear-btn" aria-label="Clear search" x-show="searchQuery" @click="searchQuery = ''">
+                        <input type="search" x-model="searchQuery" placeholder="{{ t('Search content...') }}" aria-label="{{ t('Search content') }}" autocomplete="off">
+                        <button type="button" class="search-clear-btn" aria-label="{{ t('Clear search') }}" x-show="searchQuery" @click="searchQuery = ''">
                             <i class="lucide lucide-x" style="width:16px;height:16px" aria-hidden="true"></i>
                         </button>
                     </div>
 
-                    <select class="toolbar-select" aria-label="Filter by category">
+                    <select class="toolbar-select" aria-label="{{ t('Filter by category') }}">
                         <option data-i18n="All Categories">{{ t('All Categories') }}</option>
                         @foreach ($feed_categories ?? [] as $cat)
                             <option value="{{ $cat['slug'] }}">{{ $cat['name'] }}</option>
                         @endforeach
                     </select>
 
-                    <select class="toolbar-select" aria-label="Sort content">
+                    <select class="toolbar-select" aria-label="{{ t('Sort content') }}">
                         <option data-i18n="Newest">{{ t('Newest') }}</option>
                         <option data-i18n="Oldest">{{ t('Oldest') }}</option>
                         <option data-i18n="Most Viewed">{{ t('Most Viewed') }}</option>
@@ -684,14 +684,14 @@
                 {{-- Row 2: actions --}}
                 <div class="toolbar-row">
                     <div class="toolbar-row-actions" style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
-                        <button type="button" class="toolbar-btn" aria-label="Toggle grid/list view" title="Toggle view" @click="toggleView()">
+                        <button type="button" class="toolbar-btn" aria-label="{{ t('Toggle grid/list view') }}" title="{{ t('Toggle view') }}" @click="toggleView()">
                             <i :class="['lucide', viewMode === 'grid' ? 'lucide-grid-3x3' : 'lucide-list', 'inline-block mr-1.5']" style="width:18px;height:18px" aria-hidden="true"></i>
                             <span x-text="viewMode === 'grid' ? '{{ t('Grid') }}' : '{{ t('List') }}'"></span>
                         </button>
 
                         <div class="toolbar-toggle-wrap">
                             <label class="toggle-switch">
-                                <input type="checkbox" x-model="autoRefresh" aria-label="Toggle auto-refresh">
+                                <input type="checkbox" x-model="autoRefresh" aria-label="{{ t('Toggle auto-refresh') }}">
                                 <span class="toggle-slider"></span>
                             </label>
                             <span data-i18n="Auto-refresh off">{{ t('Auto-refresh off') }}</span>
@@ -700,10 +700,10 @@
                 </div>
             </div>
 
-            <div id="feed-filter-badges" role="status" aria-live="polite" aria-label="Active filters"></div>
+            <div id="feed-filter-badges" role="status" aria-live="polite" aria-label="{{ t('Active filters') }}"></div>
 
             {{-- Feed grid --}}
-            <div id="discovery-feed-grid" class="is-grid-view" role="feed" aria-label="Content feed">
+            <div id="discovery-feed-grid" class="is-grid-view" role="feed" aria-label="{{ t('Content feed') }}">
                 @include('partials.public.home-feed-items', [
                     'items' => $contents,
                     'startIndex' => (($current_page - 1) * $homepage_feed_limit) + 1,
@@ -756,7 +756,7 @@
             {{-- Load more / infinite scroll --}}
             <div class="mt-6 text-center">
                 <div id="feed-scroll-sentinel" class="h-4" aria-hidden="true"></div>
-                <button type="button" id="feed-load-more" class="toolbar-btn" aria-label="Load more content">
+                <button type="button" id="feed-load-more" class="toolbar-btn" aria-label="{{ t('Load more content') }}">
                     <i class="lucide lucide-arrow-down" style="width:16px;height:16px" aria-hidden="true"></i>
                     <span data-i18n="Load More">{{ t('Load More') }}</span>
                 </button>
@@ -778,7 +778,7 @@
 <div id="discovery-share-modal" class="discovery-modal" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true" x-data="shareModal()" x-show="open" @keydown.escape.window="close()" @click.outside="close()" x-cloak>
     <div class="discovery-modal__backdrop" @click="close()"></div>
     <div class="discovery-modal__content">
-        <button type="button" class="discovery-modal__close" @click="close()" aria-label="Close">
+        <button type="button" class="discovery-modal__close" @click="close()" aria-label="{{ t('Close') }}">
             <i class="lucide lucide-x" style="width:18px;height:18px" aria-hidden="true"></i>
         </button>
         <h3 data-i18n="Share">{{ t('Share') }}</h3>
@@ -799,7 +799,7 @@
             <p data-i18n="Hand-picked content curated just for you">{{ t('Hand-picked content curated just for you') }}</p>
         </div>
 
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Featured content highlights">
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" role="region" aria-label="{{ t('Featured content highlights') }}">
             <div>
                 <article class="home-featured-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article">
                     <div class="relative bg-primary/10 p-8 text-center">
@@ -858,12 +858,12 @@
                 </h2>
                 <p data-i18n="Discover the newest smartphones with detailed specifications and pricing">{{ t('Discover the newest smartphones with detailed specifications and pricing') }}</p>
             </div>
-            <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="View all mobile phones">
+            <a href="/mobiles" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700" aria-label="{{ t('View all mobile phones') }}">
                 <i class="lucide lucide-arrow-right mr-2"></i>{{ t('View All') }}
             </a>
         </div>
 
-        <div class="feed-grid" role="feed" aria-label="Latest mobiles feed">
+        <div class="feed-grid" role="feed" aria-label="{{ t('Latest mobiles feed') }}">
             @include('partials.public.home-feed-items', [
                 'items' => $latest_mobiles ?? [],
                 'startIndex' => 1,
@@ -948,8 +948,8 @@
                 <div class="flex items-center gap-4">
                     <i class="lucide lucide-info text-2xl text-sky-600"></i>
                     <div>
-                        <h6 class="mb-1 font-bold text-sky-800">Logged In User</h6>
-                        <p class="text-sm text-sky-700">You can view <a href="/services/my-applications" class="font-bold text-sky-600 underline">your applications</a> and apply for new services anytime.</p>
+                        <h6 class="mb-1 font-bold text-sky-800">{{ t('Logged In User') }}</h6>
+                        <p class="text-sm text-sky-700">{{ t('You can view') }} <a href="/services/my-applications" class="font-bold text-sky-600 underline">{{ t('your applications') }}</a> {{ t('and apply for new services anytime.') }}</p>
                     </div>
                 </div>
             </div>
@@ -968,8 +968,8 @@
             <p data-i18n="Explore content across different categories">{{ t('Explore content across different categories') }}</p>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Content categories">
-            <a href="/category/news" class="text-decoration-none" aria-label="Browse breaking news category">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="{{ t('Content categories') }}">
+            <a href="/category/news" class="text-decoration-none" aria-label="{{ t('Browse breaking news category') }}">
                 <div class="home-category-card news rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-flame mb-2 text-3xl" aria-hidden="true"></i>
@@ -978,7 +978,7 @@
                 </div>
             </a>
 
-            <a href="/category/reviews" class="text-decoration-none" aria-label="Browse reviews category">
+            <a href="/category/reviews" class="text-decoration-none" aria-label="{{ t('Browse reviews category') }}">
                 <div class="home-category-card reviews rounded-2xl bg-gradient-to-br from-amber-500 to-pink-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-star mb-2 text-3xl" aria-hidden="true"></i>
@@ -987,7 +987,7 @@
                 </div>
             </a>
 
-            <a href="/category/tips" class="text-decoration-none" aria-label="Browse tips and tricks category">
+            <a href="/category/tips" class="text-decoration-none" aria-label="{{ t('Browse tips and tricks category') }}">
                 <div class="home-category-card tips rounded-2xl bg-gradient-to-br from-lime-500 to-emerald-500 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-lightbulb mb-2 text-3xl" aria-hidden="true"></i>
@@ -996,7 +996,7 @@
                 </div>
             </a>
 
-            <a href="/category/tutorials" class="text-decoration-none" aria-label="Browse tutorials category">
+            <a href="/category/tutorials" class="text-decoration-none" aria-label="{{ t('Browse tutorials category') }}">
                 <div class="home-category-card tutorials rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-graduation-cap mb-2 text-3xl" aria-hidden="true"></i>
@@ -1005,7 +1005,7 @@
                 </div>
             </a>
 
-            <a href="/category/comparison" class="text-decoration-none" aria-label="Browse comparison category">
+            <a href="/category/comparison" class="text-decoration-none" aria-label="{{ t('Browse comparison category') }}">
                 <div class="home-category-card comparison rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-code mb-2 text-3xl" aria-hidden="true"></i>
@@ -1014,7 +1014,7 @@
                 </div>
             </a>
 
-            <a href="/category/trending" class="text-decoration-none" aria-label="Browse trending category">
+            <a href="/category/trending" class="text-decoration-none" aria-label="{{ t('Browse trending category') }}">
                 <div class="home-category-card trending rounded-2xl bg-gradient-to-br from-fuchsia-600 to-pink-600 p-4 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                      role="button" tabindex="0">
                     <i class="lucide lucide-trending-up mb-2 text-3xl" aria-hidden="true"></i>
@@ -1034,22 +1034,22 @@
     </div>
 
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 id="stats-title" class="sr-only">Platform Statistics</h2>
-        <div class="grid gap-6 text-center md:grid-cols-4" role="region" aria-label="Platform statistics">
+        <h2 id="stats-title" class="sr-only">{{ t('Platform Statistics') }}</h2>
+        <div class="grid gap-6 text-center md:grid-cols-4" role="region" aria-label="{{ t('Platform statistics') }}">
             <div class="stat-item">
-                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Active users">{{ $stats['active_users'] ?? '500' }}+</p>
+                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="{{ t('Active users') }}">{{ $stats['active_users'] ?? '500' }}+</p>
                 <p data-i18n="Active Users">{{ t('Active Users') }}</p>
             </div>
             <div class="stat-item">
-                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Device specifications">{{ $stats['device_specs'] ?? '1200' }}+</p>
+                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="{{ t('Device specifications') }}">{{ $stats['device_specs'] ?? '1200' }}+</p>
                 <p data-i18n="Device Specs">{{ t('Device Specs') }}</p>
             </div>
             <div class="stat-item">
-                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Published articles">{{ $stats['articles'] ?? '850' }}+</p>
+                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="{{ t('Published articles') }}">{{ $stats['articles'] ?? '850' }}+</p>
                 <p class="mb-0 opacity-75">{{ t('Articles') }}</p>
             </div>
             <div class="stat-item">
-                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="Job postings">{{ $stats['job_posts'] ?? '320' }}+</p>
+                <p class="mb-2 text-4xl font-bold md:text-5xl" aria-label="{{ t('Job postings') }}">{{ $stats['job_posts'] ?? '320' }}+</p>
                 <p data-i18n="Job Posts">{{ t('Job Posts') }}</p>
             </div>
         </div>
@@ -1139,38 +1139,38 @@
                     <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>{{ t('Share This Page') }}
                 </h2>
 
-                <div class="flex flex-wrap justify-center gap-3 mb-4" role="group" aria-label="Share on social media">
+                <div class="flex flex-wrap justify-center gap-3 mb-4" role="group" aria-label="{{ t('Share on social media') }}">
                     <a href="https://twitter.com/intent/tweet?url={{ urlencode(url()->current()) }}&text={{ urlencode('Check out this amazing content!') }}"
                        target="_blank" rel="noopener noreferrer"
                        class="rounded-full bg-[#1DA1F2] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                       aria-label="Share on Twitter/X">
+                       aria-label="{{ t('Share on Twitter/X') }}">
                         <i class="lucide lucide-share-2 mr-2" aria-hidden="true"></i>Twitter/X
                     </a>
 
                     <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode(url()->current()) }}"
                        target="_blank" rel="noopener noreferrer"
                        class="rounded-full bg-[#0077B5] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                       aria-label="Share on LinkedIn">
+                       aria-label="{{ t('Share on LinkedIn') }}">
                         <i class="lucide lucide-briefcase mr-2" aria-hidden="true"></i>LinkedIn
                     </a>
 
                     <a href="https://wa.me/?text={{ urlencode('Check out this amazing content') }}%20{{ urlencode(url()->current()) }}"
                        target="_blank" rel="noopener noreferrer"
                        class="rounded-full bg-[#25D366] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                       aria-label="Share on WhatsApp">
+                       aria-label="{{ t('Share on WhatsApp') }}">
                         <i class="lucide lucide-message-circle mr-2" aria-hidden="true"></i>WhatsApp
                     </a>
 
                     <a href="mailto:?subject={{ urlencode('Check out this amazing website') }}&body={{ urlencode('I found this amazing website that you might like:') }}%0D%0A{{ urlencode(url()->current()) }}"
                        class="rounded-full bg-[#EA4335] px-5 py-2 text-sm font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                       aria-label="Share via Email">
-                        <i class="lucide lucide-mail mr-2" aria-hidden="true"></i>Email
+                       aria-label="{{ t('Share via Email') }}">
+                        <i class="lucide lucide-mail mr-2" aria-hidden="true"></i>{{ t('Email') }}
                     </a>
 
                     <button type="button"
                             class="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50"
                             id="copyLinkBtnHome"
-                            aria-label="Copy link to clipboard"
+                            aria-label="{{ t('Copy link to clipboard') }}"
                             data-action="copy-page-url">
                         <i class="lucide lucide-link mr-2" aria-hidden="true"></i>{{ t('Copy Link') }}
                     </button>
@@ -1194,15 +1194,15 @@
                 </div>
                 <h2 data-i18n="Get Latest Updates">{{ t('Get Latest Updates') }}</h2>
                 <p data-i18n="Subscribe for the latest news, reviews, and exclusive offers">{{ t('Subscribe for the latest news, reviews, and exclusive offers') }}</p>
-                <form id="home-newsletter-form" class="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-2" aria-label="Newsletter subscription form">
+                <form id="home-newsletter-form" class="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-2" aria-label="{{ t('Newsletter subscription form') }}">
                     <div class="flex-1 sm:max-w-md">
-                        <label for="newsletter-email" class="sr-only">Email address</label>
+                        <label for="newsletter-email" class="sr-only">{{ t('Email address') }}</label>
                         <input type="email"
                                id="newsletter-email"
                                name="email"
                                class="w-full rounded-full border border-slate-300 px-5 py-3 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
                                placeholder="{{ t('Your email address') }}"
-                               aria-label="Enter your email address"
+                               aria-label="{{ t('Enter your email address') }}"
                                required>
                     </div>
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
@@ -1223,7 +1223,7 @@
             </h2>
             <p data-i18n="Hand-picked content just for your interests">{{ t('Hand-picked content just for your interests') }}</p>
         </div>
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="Recommended content">
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="region" aria-label="{{ t('Recommended content') }}">
             @if (!empty($featured_content))
                 @foreach (array_slice($featured_content, 0, 3) as $item)
                 <article class="recommended-card flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1" role="article" aria-label="Recommended item: {{ $item['title'] }}">

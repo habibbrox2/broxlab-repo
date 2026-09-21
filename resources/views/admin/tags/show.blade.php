@@ -13,14 +13,14 @@
                 <i class="lucide lucide-hash w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Tag Details</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Tag Details') }}</p>
                 <h1 class="text-xl font-bold text-white">{{ $tag->name ?? 'Tag' }}</h1>
                 <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ $tag->name ?? 'N/A' }}</p>
             </div>
         </div>
         <div class="flex gap-2">
             <a href="/admin/tags/edit/{{ $tag->id ?? 0 }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-pencil w-4 h-4"></i> Edit
+                <i class="lucide lucide-pencil w-4 h-4"></i> {{ t('Edit') }}
             </a>
             <a href="/admin/tags" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
                 <i class="lucide lucide-arrow-left w-4 h-4"></i> Back
@@ -37,14 +37,14 @@
                 <i class="lucide lucide-info w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tag Information</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Basic details for this tag</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Tag Information') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Basic details for this tag') }}</p>
             </div>
         </div>
         <div class="p-5">
             <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div class="space-y-1">
-                    <dt class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Name</dt>
+                    <dt class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{{ t('Name') }}</dt>
                     <dd class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <i class="lucide lucide-tag w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         {{ $tag->name ?? 'N/A' }}

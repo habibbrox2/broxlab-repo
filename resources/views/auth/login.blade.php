@@ -18,8 +18,8 @@
                 <i class="lucide lucide-log-in h-6 w-6"></i>
             </div>
             <div class="text-center">
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Welcome back</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Sign in to your account and continue where you left off.</p>
+                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{{ t('Welcome back') }}</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">{{ t('Sign in to your account and continue where you left off.') }}</p>
             </div>
         </div>
 
@@ -40,10 +40,10 @@
                 @csrf
 
                 <div class="space-y-1.5">
-                    <label for="username" class="block text-sm font-semibold text-slate-700">Email or Username</label>
+                    <label for="username" class="block text-sm font-semibold text-slate-700">{{ t('Email or Username') }}</label>
                     <div class="relative">
                         <i class="lucide lucide-user absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
-                        <input type="text" id="username" name="username" value="{{ old('username') }}" placeholder="Enter email or username"
+                        <input type="text" id="username" name="username" value="{{ old('username') }}" placeholder="{{ t('Enter email or username') }}"
                                autocomplete="username" required
                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                     </div>
@@ -51,8 +51,8 @@
 
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between">
-                        <label for="password" class="block text-sm font-semibold text-slate-700">Password</label>
-                        <a href="/forgot-password" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Forgot password?</a>
+                        <label for="password" class="block text-sm font-semibold text-slate-700">{{ t('Password') }}</label>
+                        <a href="/forgot-password" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">{{ t('Forgot password?') }}</a>
                     </div>
                     <div class="relative">
                         <i class="lucide lucide-lock absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
@@ -60,7 +60,7 @@
                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                         <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-indigo-600"
                                 @click="$nextTick(() => { const p = $el.previousElementSibling; p.type = p.type === 'password' ? 'text' : 'password'; })"
-                                aria-label="Show password">
+                                aria-label="{{ t('Show password') }}">
                             <i class="lucide lucide-eye h-5 w-5"></i>
                         </button>
                     </div>
@@ -70,19 +70,19 @@
                     <label class="flex items-center gap-3 text-sm font-medium text-slate-700">
                         <input type="checkbox" name="remember_me" value="1"
                                class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        Remember me for 30 days
+                        {{ t('Remember me for 30 days') }}
                     </label>
                 </div>
 
                 <button type="submit"
                         class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-700 hover:to-violet-700 active:scale-[0.99]">
-                    <i class="lucide lucide-log-in h-4 w-4"></i> Sign In
+                    <i class="lucide lucide-log-in h-4 w-4"></i> {{ t('Sign In') }}
                 </button>
             </form>
 
             <p class="mt-6 text-center text-sm text-slate-500">
-                Don't have an account?
-                <a href="{{ route('register') }}" class="font-bold text-indigo-600 hover:text-indigo-700">Create one</a>
+                {{ t('Don\'t have an account?') }}
+                <a href="{{ route('register') }}" class="font-bold text-indigo-600 hover:text-indigo-700">{{ t('Create one') }}</a>
             </p>
         </div>
     </section>

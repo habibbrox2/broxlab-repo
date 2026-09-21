@@ -12,9 +12,9 @@
                 <i class="lucide lucide-send w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Notifications</p>
-                <h1 class="text-xl font-bold text-white">Send Notification</h1>
-                <p class="text-sm text-white/60 mt-0.5">Send an immediate notification to all users</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Notifications') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Send Notification') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Send an immediate notification to all users') }}</p>
             </div>
         </div>
         <a href="/admin/notifications" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
@@ -31,8 +31,8 @@
                     <i class="lucide lucide-edit w-4 h-4 text-amber-600 dark:text-amber-400"></i>
                 </div>
                 <div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notification Details</h3>
-                    <p class="text-xs text-slate-400 dark:text-slate-600">Compose and send a notification</p>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Notification Details') }}</h3>
+                    <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Compose and send a notification') }}</p>
                 </div>
             </div>
         </div>
@@ -42,13 +42,13 @@
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Title <span class="text-rose-500 ml-0.5">*</span></label>
-                    <input type="text" name="title" required maxlength="255" placeholder="Notification title"
+                    <input type="text" name="title" required maxlength="255" placeholder="{{ t('Notification title') }}"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/10">
                 </div>
 
                 <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Message <span class="text-rose-500 ml-0.5">*</span></label>
-                    <textarea name="message" required rows="4" maxlength="2000" placeholder="Notification message content..."
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('Message') }} <span class="text-rose-500 ml-0.5">*</span></label>
+                    <textarea name="message" required rows="4" maxlength="2000" placeholder="{{ t('Notification message content...') }}"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/10"></textarea>
                 </div>
 
@@ -66,10 +66,10 @@
 
                 <div class="flex flex-wrap gap-3 pt-2">
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-amber-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-send w-4 h-4"></i> Send Notification
+                        <i class="lucide lucide-send w-4 h-4"></i> {{ t('Send Notification') }}
                     </button>
                     <a href="/admin/notifications" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                        <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                     </a>
                 </div>
             </form>

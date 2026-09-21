@@ -12,13 +12,13 @@
                 <i class="lucide lucide-cloud-arrow-up w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">API Integration</p>
-                <h1 class="text-xl font-bold text-white">API Proxies</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage external API proxy integrations</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('API Integration') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('API Proxies') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage external API proxy integrations') }}</p>
             </div>
         </div>
         <a href="/admin" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Dashboard
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Dashboard') }}
         </a>
     </div>
 </div>
@@ -31,7 +31,7 @@
                     <i class="lucide lucide-image w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Pexels</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Pexels image API proxy</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Pexels image API proxy') }}</p>
                 <a href="/admin/api-proxy/pexels" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Configure <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
@@ -43,7 +43,7 @@
                     <i class="lucide lucide-photo w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Pixabay</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Pixabay image API proxy</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Pixabay image API proxy') }}</p>
                 <a href="/admin/api-proxy/pixabay" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Configure <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
@@ -55,7 +55,7 @@
                     <i class="lucide lucide-desktop w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Puter</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Puter desktop proxy</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Puter desktop proxy') }}</p>
                 <a href="/admin/api-proxy/puter" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Configure <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
@@ -66,8 +66,8 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-log-in w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Firebase Auth</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Firebase authentication proxy</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Firebase Auth') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Firebase authentication proxy') }}</p>
                 <a href="/admin/api-proxy/firebase" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     Configure <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>

@@ -23,6 +23,7 @@ class RunScraperPipelineJob implements ShouldQueue
         public readonly ?string $type = null,
         public readonly int $limit = 20,
         public readonly ?string $sourceId = null,
+        public readonly bool $enrich = false,
     ) {}
 
     public function handle(ScraperPipelineService $pipeline): void
@@ -32,6 +33,7 @@ class RunScraperPipelineJob implements ShouldQueue
                 type: $this->type,
                 limit: $this->limit,
                 sourceId: $this->sourceId,
+                enrich: $this->enrich,
             );
 
             Log::info('Scraper pipeline job completed', [
@@ -39,9 +41,10 @@ class RunScraperPipelineJob implements ShouldQueue
                 'type' => $this->type,
                 'limit' => $this->limit,
                 'source_id' => $this->sourceId,
-                'processed' => data_get($result, 'processed', 0),
-                'added' => data_get($result, 'added', 0),
-                'skipped' => data_get($result, 'skipped', 0),
+                'sources' => data_get($result, 'sources', 0),
+                'fetched' => data_get($result, 'totals.fetched', 0),
+                'added' => data_get($result, 'totals.added', 0),
+                'skipped' => data_get($result, 'totals.skipped', 0),
             ]);
         } catch (\Throwable $e) {
             Log::error('Scraper pipeline job failed: ' . $e->getMessage(), [
@@ -57,11 +60,12 @@ class RunScraperPipelineJob implements ShouldQueue
 
     public function tags(): array
     {
-        return [
+        return array_values(array_filter([
             'scraping',
             $this->type ?: 'scraping:all',
             $this->sourceId ? 'source_id:' . $this->sourceId : '',
-        ];
+            $this->enrich ? 'scraping:enriched' : '',
+        ]));
     }
 
     public function failed(\Throwable $exception): void

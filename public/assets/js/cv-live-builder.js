@@ -8,8 +8,6 @@
  * - Template switching, zoom, PDF export
  */
 
-/* global window, document, fetch, setTimeout, clearTimeout */
-
 (function () {
   'use strict';
 
@@ -38,7 +36,7 @@
 
   // ── LocalStorage key ──
   // Scoped by cvId so different CVs don't collide
-  const STORAGE_KEY = 'cv_live_builder_' + (STATE.cvId || 'guest') + '_data';
+  const STORAGE_KEY = `cv_live_builder_${ STATE.cvId || 'guest' }_data`;
 
   const inputClass = 'w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 caret-indigo-500 transition-all duration-150 hover:border-indigo-300 hover:bg-white focus:outline-none focus:border-indigo-500 focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] placeholder:text-slate-400 font-sans';
   const labelClass = 'block text-[0.65rem] font-semibold text-slate-500 mb-1 tracking-tight uppercase';
@@ -255,9 +253,9 @@
   // ── LocalStorage Persistence ──
   function saveToLocalStorage() {
     try {
-      var formData = collectFormData();
-      var builderData = buildBuilderData(formData);
-      var payload = {
+      const formData = collectFormData();
+      const builderData = buildBuilderData(formData);
+      const payload = {
         template: STATE.selectedTemplate,
         data: formData,
         builderData: builderData,
@@ -271,9 +269,9 @@
 
   function loadFromLocalStorage() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
-      var parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
       if (!parsed || !parsed.data || !parsed.savedAt) return null;
       return parsed;
     } catch (e) {
@@ -282,13 +280,13 @@
   }
 
   function restoreFromLocalStorage() {
-    var cached = loadFromLocalStorage();
+    const cached = loadFromLocalStorage();
     if (!cached) return false;
 
     // Merge cached data into STATE.data so renderInitialData() picks it up
     // Cached data takes precedence over server data (it's the latest user edits)
     STATE.data = STATE.data || {};
-    Object.keys(cached.builderData || {}).forEach(function (key) {
+    Object.keys(cached.builderData || {}).forEach((key) => {
       STATE.data[key] = cached.builderData[key];
     });
 
@@ -350,9 +348,9 @@
       frame.srcdoc = result.html;
 
       // Reveal handler: apply zoom BEFORE showing, then fade in smoothly
-      var _revealPreview = function () {
+      const _revealPreview = function () {
         applyAutoFit();
-        frame.style.transform = 'scale(' + (STATE.zoom * STATE.autoFitScale) + ')';
+        frame.style.transform = `scale(${ STATE.zoom * STATE.autoFitScale })`;
         frame.style.transformOrigin = 'top center';
         frame.style.width = '210mm';
         frame.style.height = '297mm';
@@ -360,12 +358,16 @@
         frame.style.display = 'block';
         el.previewCanvas.classList.remove('lb-updating');
 
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
             frame.classList.add('fade-in');
           });
         });
       };
+
+      // Safety-fallback timer handle. Declared before the load handler so the
+      // handler can clear it without relying on var hoisting.
+      let _revealTimer = null;
 
       // One-time load handler — apply zoom BEFORE showing, no flash
       frame.addEventListener('load', function onLoad() {
@@ -375,7 +377,7 @@
       });
 
       // Safety fallback: reveal even if load event never fires
-      var _revealTimer = setTimeout(function () {
+      _revealTimer = setTimeout(() => {
         _revealPreview();
       }, 1000);
 
@@ -667,13 +669,13 @@
       .replace(/'/g, '&#039;');
   }
 
-// ── Zoom Presets ──
+  // ── Zoom Presets ──
   const ZOOM_PRESETS = [
-    { label: 'Fit Page', value: 'fit-page' },
-    { label: 'Fit Width', value: 'fit-width' },
-    { label: '100%', value: 1.0 },
-    { label: '75%', value: 0.75 },
-    { label: '50%', value: 0.5 },
+    { label: 'Fit Page', value: 'fit-page', },
+    { label: 'Fit Width', value: 'fit-width', },
+    { label: '100%', value: 1.0, },
+    { label: '75%', value: 0.75, },
+    { label: '50%', value: 0.5, },
   ];
   let _zoomPresetIndex = -1; // -1 = custom
 
@@ -706,9 +708,9 @@
     // Numeric preset
     STATE.zoom = presetValue;
     applyZoom();
-    el.zoomLabel.textContent = Math.round(presetValue * 100) + '%';
+    el.zoomLabel.textContent = `${Math.round(presetValue * 100) }%`;
     // Find index
-    _zoomPresetIndex = ZOOM_PRESETS.findIndex(function (p) {
+    _zoomPresetIndex = ZOOM_PRESETS.findIndex((p) => {
       return p.value === presetValue;
     });
     updateZoomPresetUI();
@@ -722,7 +724,7 @@
 
   function updateZoomPresetUI() {
     // Toggle active class on preset button if present
-    var fitBtn = document.querySelector('[data-action="zoom-fit"]');
+    const fitBtn = document.querySelector('[data-action="zoom-fit"]');
     if (fitBtn) {
       fitBtn.classList.toggle('active', _zoomPresetIndex <= 1);
     }
@@ -746,14 +748,14 @@
   function applyZoom() {
     const frame = el.previewFrame;
     if (!frame || frame.style.display === 'none') {
-      el.zoomLabel.textContent = Math.round(STATE.zoom * 100) + '%';
+      el.zoomLabel.textContent = `${Math.round(STATE.zoom * 100) }%`;
       return;
     }
     // Always show percentage — preset labels are set by applyZoomPreset()
-    el.zoomLabel.textContent = Math.round(STATE.zoom * 100) + '%';
+    el.zoomLabel.textContent = `${Math.round(STATE.zoom * 100) }%`;
     _zoomPresetIndex = -1;
     updateZoomPresetUI();
-    frame.style.transform = 'scale(' + (STATE.zoom * STATE.autoFitScale) + ')';
+    frame.style.transform = `scale(${ STATE.zoom * STATE.autoFitScale })`;
     frame.style.transformOrigin = 'top center';
     frame.style.width = '210mm';
     frame.style.height = '297mm';
@@ -771,8 +773,8 @@
 
   // ── Section Toggle ──
   function setupSectionToggles() {
-    document.querySelectorAll('[data-toggle-section]').forEach(function (title) {
-      title.addEventListener('click', function () {
+    document.querySelectorAll('[data-toggle-section]').forEach((title) => {
+      title.addEventListener('click', () => {
         const section = title.closest('.lb-section');
         if (!section) return;
         const body = section.querySelector('.lb-section-body');
@@ -786,7 +788,7 @@
 
   // ── Keyboard Shortcuts ──
   function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', function (e) {
+    document.addEventListener('keydown', (e) => {
       // Ctrl+S or Cmd+S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -803,12 +805,12 @@
   // ── Event Delegation ──
   function setupEvents() {
     // Form input changes → preview + save
-    el.form.addEventListener('input', function (e) {
+    el.form.addEventListener('input', (e) => {
       schedulePreviewUpdate();
       scheduleSave();
     });
 
-    el.form.addEventListener('change', function (e) {
+    el.form.addEventListener('change', (e) => {
       schedulePreviewUpdate();
       scheduleSave();
     });
@@ -956,30 +958,29 @@
 
   // ── Form Template Grid ──
   function renderFormTemplateGrid() {
-    var grid = document.getElementById('lb-form-tpl-grid');
+    const grid = document.getElementById('lb-form-tpl-grid');
     if (!grid) return;
 
-    grid.innerHTML = STATE.templates.map(function (t) {
-      var color = t.primary_color || '#6366f1';
-      var selected = (t.slug === STATE.selectedTemplate) ? ' selected' : '';
-      var premium = t.is_premium ? '<div class="lb-tpl-form-card-badge">Premium</div>' : '';
-      var layout = getLayoutType(t.slug);
+    grid.innerHTML = STATE.templates.map((t) => {
+      const color = t.primary_color || '#6366f1';
+      const selected = (t.slug === STATE.selectedTemplate) ? ' selected' : '';
+      const premium = t.is_premium ? '<div class="lb-tpl-form-card-badge">Premium</div>' : '';
+      const layout = getLayoutType(t.slug);
       // Use server-generated thumbnail if available, fall back to layout icon
-      var thumbUrl = t.thumbnail_url || null;
-      var layoutSvg = thumbUrl ? '' : getLayoutIcon(layout);
-      return '<div class="lb-tpl-form-card' + selected + ' border border-slate-200 rounded-lg overflow-hidden cursor-pointer transition-all duration-150 bg-white hover:border-indigo-300 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(99,102,241,0.1)]" data-slug="' + t.slug + '" data-name="' + (t.name || '').toLowerCase() + '" data-cat="' + (t.category || 'general').toLowerCase() + '" title="' + escapeHtml(t.description || t.best_for || t.name || '') + '">' +
-        '<div class="lb-tpl-form-card-thumb" style="background:' + (thumbUrl ? '#ffffff' : color) + ';">' +
-          (thumbUrl
-            ? '<img src="' + escapeHtml(thumbUrl) + '" alt="' + escapeHtml(t.name || t.slug) + '" style="width:100%;height:100%;object-fit:contain;position:absolute;inset:0;" loading="lazy">'
+      const thumbUrl = t.thumbnail_url || null;
+      const layoutSvg = thumbUrl ? '' : getLayoutIcon(layout);
+      return `<div class="lb-tpl-form-card${ selected } border border-slate-200 rounded-lg overflow-hidden cursor-pointer transition-all duration-150 bg-white hover:border-indigo-300 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(99,102,241,0.1)]" data-slug="${ t.slug }" data-name="${ (t.name || '').toLowerCase() }" data-cat="${ (t.category || 'general').toLowerCase() }" title="${ escapeHtml(t.description || t.best_for || t.name || '') }">` +
+        `<div class="lb-tpl-form-card-thumb" style="background:${ thumbUrl ? '#ffffff' : color };">${
+          thumbUrl
+            ? `<img src="${ escapeHtml(thumbUrl) }" alt="${ escapeHtml(t.name || t.slug) }" style="width:100%;height:100%;object-fit:contain;position:absolute;inset:0;" loading="lazy">`
             : '<div class="lb-tpl-card-pattern"></div>' +
-              '<div class="lb-tpl-form-card-layout">' + layoutSvg + '</div>'
-          ) +
-          '<div class="lb-tpl-form-card-name text-[0.55rem] font-bold drop-shadow-sm">' + escapeHtml(t.name || t.slug) + '</div>' +
-          premium +
-        '</div>' +
+              `<div class="lb-tpl-form-card-layout">${ layoutSvg }</div>`
+        }<div class="lb-tpl-form-card-name text-[0.55rem] font-bold drop-shadow-sm">${ escapeHtml(t.name || t.slug) }</div>${
+          premium
+        }</div>` +
         '<div class="lb-tpl-form-card-info flex items-center justify-between gap-1 px-1.5 py-1 bg-gradient-to-b from-indigo-50/50 to-white">' +
-          '<span class="lb-tpl-form-card-cat text-[0.5rem] font-semibold uppercase tracking-wider text-indigo-500">' + escapeHtml(t.category || 'General') + '</span>' +
-          '<span class="lb-tpl-form-card-version text-[0.45rem] text-slate-400 font-medium">v' + (t.version || '1.0') + '</span>' +
+          `<span class="lb-tpl-form-card-cat text-[0.5rem] font-semibold uppercase tracking-wider text-indigo-500">${ escapeHtml(t.category || 'General') }</span>` +
+          `<span class="lb-tpl-form-card-version text-[0.45rem] text-slate-400 font-medium">v${ t.version || '1.0' }</span>` +
         '</div>' +
       '</div>';
     }).join('');
@@ -990,32 +991,32 @@
   }
 
   function setupFormGridEvents() {
-    var grid = document.getElementById('lb-form-tpl-grid');
+    const grid = document.getElementById('lb-form-tpl-grid');
     if (!grid) return;
 
     // Card click — select template
-    grid.addEventListener('click', function (e) {
-      var card = e.target.closest('.lb-tpl-form-card');
+    grid.addEventListener('click', (e) => {
+      const card = e.target.closest('.lb-tpl-form-card');
       if (!card) return;
-      var slug = card.getAttribute('data-slug');
+      const slug = card.getAttribute('data-slug');
       if (!slug) return;
 
       selectFormTemplate(slug);
     });
 
     // Search filter
-    var searchInput = document.getElementById('lb-form-tpl-search');
+    const searchInput = document.getElementById('lb-form-tpl-search');
     if (searchInput) {
       searchInput.addEventListener('input', applyFormFilters);
     }
 
     // Category pills
-    var catsEl = document.getElementById('lb-form-tpl-cats');
+    const catsEl = document.getElementById('lb-form-tpl-cats');
     if (catsEl) {
-      catsEl.addEventListener('click', function (e) {
-        var pill = e.target.closest('.lb-tpl-cat-pill');
+      catsEl.addEventListener('click', (e) => {
+        const pill = e.target.closest('.lb-tpl-cat-pill');
         if (!pill) return;
-        catsEl.querySelectorAll('.lb-tpl-cat-pill').forEach(function (p) { p.classList.remove('active'); });
+        catsEl.querySelectorAll('.lb-tpl-cat-pill').forEach((p) => { p.classList.remove('active'); });
         pill.classList.add('active');
         applyFormFilters();
       });
@@ -1023,23 +1024,23 @@
   }
 
   function applyFormFilters() {
-    var grid = document.getElementById('lb-form-tpl-grid');
-    var noneEl = document.getElementById('lb-form-tpl-none');
-    var searchInput = document.getElementById('lb-form-tpl-search');
-    var catsEl = document.getElementById('lb-form-tpl-cats');
+    const grid = document.getElementById('lb-form-tpl-grid');
+    const noneEl = document.getElementById('lb-form-tpl-none');
+    const searchInput = document.getElementById('lb-form-tpl-search');
+    const catsEl = document.getElementById('lb-form-tpl-cats');
     if (!grid) return;
 
-    var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    var activeCat = catsEl ? catsEl.querySelector('.lb-tpl-cat-pill.active') : null;
-    var cat = activeCat ? activeCat.getAttribute('data-cat') : 'all';
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const activeCat = catsEl ? catsEl.querySelector('.lb-tpl-cat-pill.active') : null;
+    const cat = activeCat ? activeCat.getAttribute('data-cat') : 'all';
 
-    var visibleCount = 0;
-    grid.querySelectorAll('.lb-tpl-form-card').forEach(function (card) {
-      var name = card.getAttribute('data-name') || '';
-      var cardCat = card.getAttribute('data-cat') || '';
-      var matchesSearch = !query || name.indexOf(query) !== -1;
-      var matchesCat = cat === 'all' || cardCat === cat;
-      var visible = matchesSearch && matchesCat;
+    let visibleCount = 0;
+    grid.querySelectorAll('.lb-tpl-form-card').forEach((card) => {
+      const name = card.getAttribute('data-name') || '';
+      const cardCat = card.getAttribute('data-cat') || '';
+      const matchesSearch = !query || name.indexOf(query) !== -1;
+      const matchesCat = cat === 'all' || cardCat === cat;
+      const visible = matchesSearch && matchesCat;
       card.classList.toggle('hidden', !visible);
       if (visible) visibleCount++;
     });
@@ -1048,10 +1049,10 @@
   }
 
   function updateFormSelection() {
-    var grid = document.getElementById('lb-form-tpl-grid');
+    const grid = document.getElementById('lb-form-tpl-grid');
     if (!grid) return;
-    grid.querySelectorAll('.lb-tpl-form-card').forEach(function (card) {
-      var slug = card.getAttribute('data-slug');
+    grid.querySelectorAll('.lb-tpl-form-card').forEach((card) => {
+      const slug = card.getAttribute('data-slug');
       card.classList.toggle('selected', slug === STATE.selectedTemplate);
     });
   }
@@ -1070,15 +1071,15 @@
 
     // Persist
     if (STATE.cvId) {
-      fetch('/api/cv/builder/' + STATE.cvId + '/step', {
+      fetch(`/api/cv/builder/${ STATE.cvId }/step`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': STATE.csrf, },
         body: JSON.stringify({
           step: '_template',
-          data: { template: slug },
-          all_data: { _template: slug }
+          data: { template: slug, },
+          all_data: { _template: slug, },
         }),
-      }).catch(function (err) {
+      }).catch((err) => {
         console.warn('[LiveBuilder] Failed to persist template selection:', err);
       });
     }
@@ -1088,7 +1089,7 @@
   function init() {
     // Ensure templates is flat array of {slug, name}
     if (!Array.isArray(STATE.templates) && typeof STATE.templates === 'object') {
-      STATE.templates = Object.entries(STATE.templates).map(([slug, t]) => ({
+      STATE.templates = Object.entries(STATE.templates).map(([slug, t,]) => ({
         slug,
         name: t.name || slug,
         ...t,
@@ -1107,13 +1108,13 @@
       // Show initial loading state
       el.previewLoading.style.display = 'flex';
       // Small delay to ensure DOM is fully rendered
-      setTimeout(function () {
+      setTimeout(() => {
         applyAutoFit();
-        updatePreview().then(function () {
+        updatePreview().then(() => {
           // Apply fit-page preset AFTER load handler has revealed iframe
           // Load handler applies transform before showing, so no visual flash
           applyZoomPreset('fit-page');
-        }).catch(function () {
+        }).catch(() => {
           // Preview might fail for some templates, that's OK
           el.previewLoading.innerHTML = '' +
             '<div class="lb-preview-empty flex flex-col items-center justify-center gap-3 text-slate-400 text-center min-h-[300px] p-8 animate-[lbFadeIn_0.3s_ease]">' +
@@ -1137,15 +1138,15 @@
     // so no persistent listener is needed here.
 
     // Save to localStorage immediately before page unload
-    window.addEventListener('beforeunload', function () {
+    window.addEventListener('beforeunload', () => {
       saveToLocalStorage();
     });
 
     // Window resize — recalculate auto-fit
-    var resizeTimer;
-    window.addEventListener('resize', function () {
+    let resizeTimer;
+    window.addEventListener('resize', () => {
       if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () {
+      resizeTimer = setTimeout(() => {
         applyAutoFit();
         applyZoom();
       }, 150);

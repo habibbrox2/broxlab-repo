@@ -13,8 +13,8 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Administration</p>
-                <h1 class="text-xl font-bold text-white">Notifications</h1>
-                <p class="text-sm text-white/60 mt-0.5">Send, schedule, and manage user notifications</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Notifications') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Send, schedule, and manage user notifications') }}</p>
             </div>
         </div>
         <div class="flex gap-2">
@@ -34,13 +34,13 @@
             <div class="flex flex-col sm:flex-row gap-3">
                 <div class="flex-1 relative">
                     <i class="lucide lucide-search w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600"></i>
-                    <input type="text" value="{{ $search }}" placeholder="Search notifications..."
+                    <input type="text" value="{{ $search }}" placeholder="{{ t('Search notifications...') }}"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-9 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/10"
                         oninput="this.form.submit()">
                 </div>
                 <div class="w-full sm:w-36">
                     <select onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/10">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ t('All Statuses') }}</option>
                         <option value="sent" {{ $status_filter === 'sent' ? 'selected' : '' }}>Sent</option>
                         <option value="scheduled" {{ $status_filter === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
                         <option value="failed" {{ $status_filter === 'failed' ? 'selected' : '' }}>Failed</option>
@@ -49,7 +49,7 @@
                 </div>
                 <div class="w-full sm:w-36">
                     <select onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/10">
-                        <option value="">All Types</option>
+                        <option value="">{{ t('All Types') }}</option>
                         <option value="info" {{ $type_filter === 'info' ? 'selected' : '' }}>Info</option>
                         <option value="alert" {{ $type_filter === 'alert' ? 'selected' : '' }}>Alert</option>
                         <option value="promotion" {{ $type_filter === 'promotion' ? 'selected' : '' }}>Promotion</option>
@@ -114,8 +114,8 @@
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-600">
                                 <i class="lucide lucide-bell-off w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                                <p class="text-sm font-medium">No notifications found</p>
-                                <p class="text-xs mt-1">Send your first notification to get started</p>
+                                <p class="text-sm font-medium">{{ t('No notifications found') }}</p>
+                                <p class="text-xs mt-1">{{ t('Send your first notification to get started') }}</p>
                             </td>
                         </tr>
                     @endforelse

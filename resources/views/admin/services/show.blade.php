@@ -13,14 +13,14 @@
                 <i class="lucide lucide-circle-dollar w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Services</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Services') }}</p>
                 <h1 class="text-xl font-bold text-white">{{ $service['name'] ?? $service['title'] ?? $service->service_title ?? '' }}</h1>
-                <p class="text-sm text-white/60 mt-0.5 max-w-md">Service details and information</p>
+                <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ t('Service details and information') }}</p>
             </div>
         </div>
         <div class="flex gap-2">
             <a href="/admin/services" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Services
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Services') }}
             </a>
         </div>
     </div>
@@ -34,7 +34,7 @@
                 <i class="lucide lucide-file-info w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Service Details</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Service Details') }}</h3>
                 <p class="text-xs text-slate-400 dark:text-slate-600">{{ \Carbon\Carbon::parse($service['created_at'] ?? $service->created_at)->format('M j, Y g:i A') }}</p>
             </div>
         </div>
@@ -57,7 +57,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach(explode("\n", trim($service['images'] ?? $service['service_images'] ?? $service->service_images ?? '')) as $img)
                             @if(trim($img))
-                                <img src="{{trim($img)}}" alt="Service Image" class="rounded-xl border border-slate-200 dark:border-slate-700 object-cover max-h-40 shadow-sm">
+                                <img src="{{trim($img)}}" alt="{{ t('Service Image') }}" class="rounded-xl border border-slate-200 dark:border-slate-700 object-cover max-h-40 shadow-sm">
                             @endif
                         @endforeach
                     </div>
@@ -66,19 +66,19 @@
 
             @if(!empty($service['form_json'] ?? $service['service_form_template_json'] ?? $service->service_form_template_json ?? ''))
                 <div>
-                    <h4 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em] mb-2">Service Form Fields</h4>
+                    <h4 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.12em] mb-2">{{ t('Service Form Fields') }}</h4>
                     <pre class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs text-slate-700 dark:text-slate-300 overflow-x-auto">{!! e($service['form_json'] ?? $service['service_form_template_json'] ?? $service->service_form_template_json ?? '') !!}</pre>
                 </div>
             @endif
 
             <div class="flex flex-wrap gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <a href="/admin/services/edit/{{$service['id'] ?? $service->id ?? 0}}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    <i class="lucide lucide-edit w-4 h-4"></i> Edit Service
+                    <i class="lucide lucide-edit w-4 h-4"></i> {{ t('Edit Service') }}
                 </a>
                 <form action="/admin/services/delete/{{$service['id'] ?? $service->id ?? 0}}" method="post" onsubmit="return confirm('Are you sure you want to delete this service?');">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete') }}
                     </button>
                 </form>
             </div>

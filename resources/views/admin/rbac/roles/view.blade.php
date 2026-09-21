@@ -20,10 +20,10 @@
         </div>
         <div class="flex gap-2">
             <a href="/admin/roles/edit/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-edit w-4 h-4"></i> Edit
+                <i class="lucide lucide-edit w-4 h-4"></i> {{ t('Edit') }}
             </a>
             <a href="/admin/roles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Roles
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Roles') }}
             </a>
         </div>
     </div>
@@ -41,14 +41,14 @@
                             <i class="lucide lucide-shield w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Role Details</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-600">Role information and metadata</p>
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Role Details') }}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Role information and metadata') }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Role Name</label>
+                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Role Name') }}</label>
                         <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $role['name'] }}</p>
                     </div>
                     <div>
@@ -60,7 +60,7 @@
                         <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $role['ranking'] }}</p>
                     </div>
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Super Admin</label>
+                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Super Admin') }}</label>
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold
                             @if($role['is_super_admin']) bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
                             @else bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 @endif">
@@ -90,7 +90,7 @@
                             <p class="text-xs text-slate-400 dark:text-slate-600">{{ count($role['permissions']) }} permission(s) assigned</p>
                         </div>
                     </div>
-                    <span class="text-xs text-slate-400 dark:text-slate-600">Click a permission to remove it from this role</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Click a permission to remove it from this role') }}</span>
                 </div>
                 <div class="p-5">
                     @if(count($role['permissions']) > 0)
@@ -111,7 +111,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">No permissions assigned to this role</p>
+                        <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">{{ t('No permissions assigned to this role') }}</p>
                     @endif
                 </div>
             </div>
@@ -124,8 +124,8 @@
                             <i class="lucide lucide-plus w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Assign Permission</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-600">Add a permission to this role</p>
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Assign Permission') }}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Add a permission to this role') }}</p>
                         </div>
                     </div>
                 </div>
@@ -155,15 +155,15 @@
             {{-- Stats --}}
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Role Statistics</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Role Statistics') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Role ID</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Role ID') }}</span>
                         <span class="text-sm font-medium text-slate-900 dark:text-white">#{{ $role['id'] }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Users Assigned</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Users Assigned') }}</span>
                         <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400">{{ count($role['users']) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -171,7 +171,7 @@
                         <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ count($role['permissions']) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Super Admin</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Super Admin') }}</span>
                         <span class="text-sm font-medium {{ $role['is_super_admin'] ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-600' }}">{{ $role['is_super_admin'] ? 'Yes' : 'No' }}</span>
                     </div>
                 </div>
@@ -181,7 +181,7 @@
             @if(count($role['users']) > 0)
                 <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                     <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Users with this Role</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Users with this Role') }}</h3>
                         <p class="text-xs text-slate-400 dark:text-slate-600">{{ count($role['users']) }} user(s)</p>
                     </div>
                     <div class="p-5 space-y-2">
@@ -204,10 +204,10 @@
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="p-5 space-y-3">
                     <a href="/admin/roles/edit/{{ $role['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-edit w-4 h-4 text-indigo-600 dark:text-indigo-400"></i> Edit Role
+                        <i class="lucide lucide-edit w-4 h-4 text-indigo-600 dark:text-indigo-400"></i> {{ t('Edit Role') }}
                     </a>
                     <a href="/admin/roles/delete/{{ $role['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete Role
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete Role') }}
                     </a>
                 </div>
             </div>

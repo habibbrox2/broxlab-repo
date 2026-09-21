@@ -12,13 +12,13 @@
                 <i class="lucide lucide-image-wand w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Specialized Modules</p>
-                <h1 class="text-xl font-bold text-white">Photo Studio</h1>
-                <p class="text-sm text-white/60 mt-0.5">Configure AI cutout and photo editing tools</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Specialized Modules') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Photo Studio') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Configure AI cutout and photo editing tools') }}</p>
             </div>
         </div>
         <a href="/admin" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Dashboard
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Dashboard') }}
         </a>
     </div>
 </div>
@@ -30,10 +30,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-wand-2 w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">AI Cutout</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure AI background removal</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('AI Cutout') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure AI background removal') }}</p>
                 <a href="/admin/photo-studio/cutout" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Cutout Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Cutout Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -42,10 +42,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-fuchsia-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-palette w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Editor Settings</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure photo editor options</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Editor Settings') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure photo editor options') }}</p>
                 <a href="/admin/photo-studio/editor" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Editor Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Editor Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -54,10 +54,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-history w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Usage History</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">View photo studio usage logs</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Usage History') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('View photo studio usage logs') }}</p>
                 <a href="/admin/photo-studio/history" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    View History <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('View History') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>

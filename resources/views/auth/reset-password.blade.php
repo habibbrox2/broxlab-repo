@@ -17,8 +17,8 @@
                 <i class="lucide lucide-shield h-6 w-6"></i>
             </div>
             <div class="text-center">
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Set a new password</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Choose a strong password you haven't used before.</p>
+                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{{ t('Set a new password') }}</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">{{ t('Choose a strong password you haven\'t used before.') }}</p>
             </div>
         </div>
 
@@ -41,22 +41,22 @@
                 <input type="hidden" name="reset_token" value="{{ $reset_token }}">
 
                 <div class="space-y-1.5">
-                    <label for="password" class="block text-sm font-semibold text-slate-700">New Password</label>
+                    <label for="password" class="block text-sm font-semibold text-slate-700">{{ t('New Password') }}</label>
                     <div class="relative">
                         <i class="lucide lucide-lock absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
                         <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="new-password" required
                                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-12 text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                         <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-indigo-600"
                                 @click="$nextTick(() => { const p = $el.previousElementSibling; p.type = p.type === 'password' ? 'text' : 'password'; })"
-                                aria-label="Show password">
+                                aria-label="{{ t('Show password') }}">
                             <i class="lucide lucide-eye h-5 w-5"></i>
                         </button>
                     </div>
-                    <p class="text-xs text-slate-500">Minimum 8 characters with uppercase, lowercase, number, and special character.</p>
+                    <p class="text-xs text-slate-500">{{ t('Minimum 8 characters with uppercase, lowercase, number, and special character.') }}</p>
                 </div>
 
                 <div class="space-y-1.5">
-                    <label for="confirm_password" class="block text-sm font-semibold text-slate-700">Confirm Password</label>
+                    <label for="confirm_password" class="block text-sm font-semibold text-slate-700">{{ t('Confirm Password') }}</label>
                     <div class="relative">
                         <i class="lucide lucide-lock absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
                         <input type="password" id="confirm_password" name="confirm_password" placeholder="••••••••" autocomplete="new-password" required
@@ -66,13 +66,13 @@
 
                 <button type="submit"
                         class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:from-violet-700 hover:to-indigo-700 active:scale-[0.99]">
-                    <i class="lucide lucide-check-circle h-4 w-4"></i> Reset Password
+                    <i class="lucide lucide-check-circle h-4 w-4"></i> {{ t('Reset Password') }}
                 </button>
             </form>
 
             <div class="mt-5 flex justify-center">
                 <a href="/login" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100">
-                    <i class="lucide lucide-arrow-left h-4 w-4 text-indigo-600"></i> Back to Login
+                    <i class="lucide lucide-arrow-left h-4 w-4 text-indigo-600"></i> {{ t('Back to Login') }}
                 </a>
             </div>
             @else
@@ -80,10 +80,10 @@
                 <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 text-red-600">
                     <i class="lucide lucide-alert-triangle h-8 w-8"></i>
                 </div>
-                <h3 class="mb-1 text-lg font-bold text-red-800">Invalid or Expired Link</h3>
-                <p class="mb-4 text-sm text-red-600">This password reset link is invalid or has expired. Password reset links expire after 1 hour.</p>
+                <h3 class="mb-1 text-lg font-bold text-red-800">{{ t('Invalid or Expired Link') }}</h3>
+                <p class="mb-4 text-sm text-red-600">{{ t('This password reset link is invalid or has expired. Password reset links expire after 1 hour.') }}</p>
                 <a href="/forgot-password" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
-                    <i class="lucide lucide-refresh-ccw h-4 w-4"></i> Request a New Link
+                    <i class="lucide lucide-refresh-ccw h-4 w-4"></i> {{ t('Request a New Link') }}
                 </a>
             </div>
             @endif

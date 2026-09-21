@@ -106,6 +106,47 @@ class AuthTest extends TestCase
         ]);
     }
 
+    /** Regression: createNativeSession() must propagate real roles into the
+     *  shared legacy session — the dead code that overwrote the roles query
+     *  with an always-empty explode() used to force role = 'user' for everyone. */
+    public function test_login_session_carries_assigned_roles(): void
+    {
+        $user = $this->makeUser();
+
+        $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
+        if (! $adminRoleId) {
+            $this->markTestSkipped('roles table has no admin role row');
+        }
+        DB::table('user_roles')->insert([
+            'user_id' => (int) $user->id,
+            'role_id' => (int) $adminRoleId,
+            'created_at' => now(),
+        ]);
+
+        $this->postForm('/login', [
+            'username' => $user->email,
+            'password' => 'Passw0rd!x',
+        ])->assertRedirect('/');
+
+        $this->assertTrue(Auth::check());
+        $this->assertSame('admin', $_SESSION['role'] ?? null);
+        $this->assertContains('admin', $_SESSION['roles'] ?? []);
+    }
+
+    public function test_login_without_roles_defaults_to_user_role(): void
+    {
+        $user = $this->makeUser();
+
+        $this->postForm('/login', [
+            'username' => $user->email,
+            'password' => 'Passw0rd!x',
+        ])->assertRedirect('/');
+
+        $this->assertTrue(Auth::check());
+        $this->assertSame('user', $_SESSION['role'] ?? null);
+        $this->assertSame([], $_SESSION['roles'] ?? null);
+    }
+
     public function test_login_rejects_wrong_password(): void
     {
         $user = $this->makeUser();

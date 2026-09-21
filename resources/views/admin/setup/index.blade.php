@@ -13,12 +13,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Administration</p>
-                <h1 class="text-xl font-bold text-white">Setup Wizard</h1>
-                <p class="text-sm text-white/60 mt-0.5">Configure your site settings and preferences</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Setup Wizard') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Configure your site settings and preferences') }}</p>
             </div>
         </div>
         <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Dashboard
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Dashboard') }}
         </a>
     </div>
 </div>
@@ -31,8 +31,8 @@
                     <i class="lucide lucide-shield-check w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Security & Authentication</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Configure 2FA, email verification, login attempts, SMTP, and Recaptcha</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('Security & Authentication') }}</h3>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Configure 2FA, email verification, login attempts, SMTP, and Recaptcha') }}</p>
                 </div>
                 <i class="lucide lucide-arrow-right w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"></i>
             </div>
@@ -44,8 +44,8 @@
                     <i class="lucide lucide-trend-up w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Revenue & Monetization</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Configure advertising, sponsored packages, and donation gateways</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('Revenue & Monetization') }}</h3>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Configure advertising, sponsored packages, and donation gateways') }}</p>
                 </div>
                 <i class="lucide lucide-arrow-right w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"></i>
             </div>
@@ -57,8 +57,8 @@
                     <i class="lucide lucide-credit-card w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Payment Gateways</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Configure bKash, Nagad, and Rocket payment settings</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('Payment Gateways') }}</h3>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Configure bKash, Nagad, and Rocket payment settings') }}</p>
                 </div>
                 <i class="lucide lucide-arrow-right w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"></i>
             </div>
@@ -70,8 +70,8 @@
                     <i class="lucide lucide-settings w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Site Settings</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Configure site name, logo, timezone, language, and general preferences</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('Site Settings') }}</h3>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Configure site name, logo, timezone, language, and general preferences') }}</p>
                 </div>
                 <i class="lucide lucide-arrow-right w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"></i>
             </div>
@@ -83,8 +83,8 @@
                     <i class="lucide lucide-brain w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">AI Configuration</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600">Configure AI provider, API key, and model settings</p>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('AI Configuration') }}</h3>
+                    <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Configure AI provider, API key, and model settings') }}</p>
                 </div>
                 <i class="lucide lucide-arrow-right w-5 h-5 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"></i>
             </div>

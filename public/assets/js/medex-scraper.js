@@ -21,8 +21,8 @@
     constructor(opts = {}) {
       const pagePath = window.location.pathname.replace(/\/+$/, '');
       const apiBase = pagePath.startsWith('/medicines') ? '/api/medicines' : '/api/medex';
-      this.proxyUrl = opts.proxyUrl || apiBase + '/proxy';
-      this.saveUrl = opts.saveUrl || apiBase + '/save-data';
+      this.proxyUrl = opts.proxyUrl || `${apiBase }/proxy`;
+      this.saveUrl = opts.saveUrl || `${apiBase }/save-data`;
       this.rate = Number(opts.rate) || 350; // ms between requests (polite)
       this.data = [];
       this.running = false;

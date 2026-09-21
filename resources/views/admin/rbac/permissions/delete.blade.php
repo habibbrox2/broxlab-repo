@@ -14,12 +14,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">RBAC — Role-Based Access Control</p>
-                <h1 class="text-xl font-bold text-white">Delete Permission</h1>
-                <p class="text-sm text-white/60 mt-0.5">This action is irreversible. The permission will be permanently deleted.</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Delete Permission') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('This action is irreversible. The permission will be permanently deleted.') }}</p>
             </div>
         </div>
         <a href="/admin/permissions" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Permissions
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Permissions') }}
         </a>
     </div>
 </div>
@@ -32,21 +32,21 @@
                 <i class="lucide lucide-alert-triangle w-4 h-4 text-rose-600 dark:text-rose-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Confirm Deletion</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Please review before proceeding</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Confirm Deletion') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Please review before proceeding') }}</p>
             </div>
         </div>
         <div class="p-5 sm:p-6 space-y-5">
             <div class="rounded-xl border border-rose-100 dark:border-rose-800 bg-rose-50/40 dark:bg-rose-900/10 px-4 py-3">
                 <p class="text-sm text-slate-700 dark:text-slate-300">
-                    Are you sure you want to permanently delete the permission
+                    {{ t('Are you sure you want to permanently delete the permission') }}
                     <span class="font-semibold text-rose-600 dark:text-rose-400">{{ $permission['name'] }}</span>?
                     This action cannot be undone.
                 </p>
             </div>
 
             <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                <h4 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Permission Details</h4>
+                <h4 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Permission Details') }}</h4>
                 <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <span class="text-slate-400 dark:text-slate-500">Name:</span>
@@ -67,11 +67,11 @@
                 <div class="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800">
                     <p class="text-sm text-amber-800 dark:text-amber-400 flex items-start gap-2">
                         <i class="lucide lucide-alert-circle w-4 h-4 flex-shrink-0 mt-0.5"></i>
-                        <span><strong>Warning:</strong> This permission is currently assigned to <strong>{{ count($permission['roles']) }} role(s)</strong>. Deleting this permission will remove it from these roles.</span>
+                        <span><strong>Warning:</strong> {{ t('This permission is currently assigned to') }} <strong>{{ count($permission['roles']) }} role(s)</strong>. Deleting this permission will remove it from these roles.</span>
                     </p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Roles that will be affected:</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">{{ t('Roles that will be affected:') }}</p>
                     <div class="flex flex-wrap gap-1.5">
                         @foreach($permission['roles'] as $role)
                             <span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -86,11 +86,11 @@
                 <form action="/admin/permissions/delete/{{ $permission['id'] }}" method="post" onsubmit="return confirm('Are you absolutely sure? This action cannot be undone.');">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-rose-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete Permission
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete Permission') }}
                     </button>
                 </form>
                 <a href="/admin/permissions" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                    <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                 </a>
             </div>
         </div>

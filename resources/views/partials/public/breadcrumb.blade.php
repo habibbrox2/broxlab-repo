@@ -20,7 +20,7 @@
       <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
         <a href="/" itemprop="item" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors">
           <i class="lucide lucide-house"></i>
-          <span itemprop="name">Home</span>
+          <span itemprop="name">{{ t('Home') }}</span>
         </a>
         <span class="mx-1 text-slate-300" aria-hidden="true">/</span>
         <meta itemprop="position" content="1">

@@ -12,9 +12,9 @@
                 <i class="lucide lucide-book-open w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Specialized Modules</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Specialized Modules') }}</p>
                 <h1 class="text-xl font-bold text-white">Kharij</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage Kharij records and exam data</p>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage Kharij records and exam data') }}</p>
             </div>
         </div>
     </div>
@@ -27,8 +27,8 @@
                 <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
                     <i class="lucide lucide-book-open w-8 h-8 text-slate-400 dark:text-slate-600"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Kharij Module</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 max-w-md mx-auto">Manage Islamic exam records, results, and student data.</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Kharij Module') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 max-w-md mx-auto">{{ t('Manage Islamic exam records, results, and student data.') }}</p>
                 <div class="mt-6 flex gap-3 justify-center">
                     <span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                         <i class="lucide lucide-users w-4 h-4"></i> Records

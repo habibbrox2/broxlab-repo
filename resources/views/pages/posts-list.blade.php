@@ -50,16 +50,16 @@
     <form method="get" class="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" x-data="{ autoSubmit: false }" @change="if (autoSubmit) $el.submit()">
         <div class="relative min-w-[220px] flex-1">
             <i class="lucide lucide-search absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Search posts..." autocomplete="off"
+            <input type="search" name="search" value="{{ $search }}" placeholder="{{ t('Search posts...') }}" autocomplete="off"
                    class="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
         </div>
-        <select name="per_page" @change="autoSubmit = true" aria-label="Items per page"
+        <select name="per_page" @change="autoSubmit = true" aria-label="{{ t('Items per page') }}"
                 class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
             @foreach ($available_per_page as $opt)
             <option value="{{ $opt }}" @if ($per_page == $opt) selected @endif>{{ $opt }} / page</option>
             @endforeach
         </select>
-        <select name="sort" @change="autoSubmit = true" aria-label="Sort posts"
+        <select name="sort" @change="autoSubmit = true" aria-label="{{ t('Sort posts') }}"
                 class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
             <option value="latest" @if ($sort === 'latest') selected @endif>{{ t('Newest') }}</option>
             <option value="oldest" @if ($sort === 'oldest') selected @endif>{{ t('Oldest') }}</option>
@@ -71,7 +71,7 @@
 
     {{-- Posts grid --}}
     @if (!empty($posts))
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="Articles feed">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="{{ t('Articles feed') }}">
         @foreach ($posts as $post)
         <a href="{{ route('posts.view', $post['slug']) }}" class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
             @if (!empty($post['image']))
@@ -99,7 +99,7 @@
     @if ($total_pages > 1)
     <div class="mt-8 flex items-center justify-center gap-1.5">
         @if ($current_page > 1)
-        <a href="/posts?page={{ $current_page - 1 }}&search={{ urlencode($search) }}&sort={{ $sort }}&order={{ $order }}&per_page={{ $per_page }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Previous">
+        <a href="/posts?page={{ $current_page - 1 }}&search={{ urlencode($search) }}&sort={{ $sort }}&order={{ $order }}&per_page={{ $per_page }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Previous') }}">
             <i class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif
@@ -120,7 +120,7 @@
         <a href="/posts?page={{ $total_pages }}&search={{ urlencode($search) }}&sort={{ $sort }}&order={{ $order }}&per_page={{ $per_page }}" class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-700 hover:border-indigo-300">{{ $total_pages }}</a>
         @endif
         @if ($current_page < $total_pages)
-        <a href="/posts?page={{ $current_page + 1 }}&search={{ urlencode($search) }}&sort={{ $sort }}&order={{ $order }}&per_page={{ $per_page }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Next">
+        <a href="/posts?page={{ $current_page + 1 }}&search={{ urlencode($search) }}&sort={{ $sort }}&order={{ $order }}&per_page={{ $per_page }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Next') }}">
             <i class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif

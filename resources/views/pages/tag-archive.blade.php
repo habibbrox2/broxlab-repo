@@ -28,7 +28,7 @@
     </div>
     <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <nav class="mb-4 flex items-center gap-1.5 text-xs text-white/60" aria-label="Breadcrumb">
-            <a href="/tags" class="inline-flex items-center gap-1 hover:text-white"><i class="lucide lucide-tag h-3.5 w-3.5"></i> Tags</a>
+            <a href="/tags" class="inline-flex items-center gap-1 hover:text-white"><i class="lucide lucide-tag h-3.5 w-3.5"></i> {{ t('Tags') }}</a>
             <i class="lucide lucide-chevron-right h-3 w-3"></i>
             <span class="font-medium text-white">{{ $tag['name'] }}</span>
         </nav>
@@ -43,7 +43,7 @@
 
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     @if (!empty($contents))
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="Tagged content feed">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="{{ t('Tagged content feed') }}">
         @foreach ($contents as $item)
         @include('partials.archive-card', ['item' => $item])
         @endforeach
@@ -55,7 +55,7 @@
             $qs = fn ($p) => '/tag/'.$tag['slug'].'?page='.$p.'&per_page='.$per_page;
         @endphp
         @if ($current_page > 1)
-        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-fuchsia-300" aria-label="Previous">
+        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-fuchsia-300" aria-label="{{ t('Previous') }}">
             <i class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif
@@ -63,7 +63,7 @@
         <a href="{{ $qs($p) }}" class="rounded-xl border px-3.5 py-2 text-sm font-semibold {{ $p === $current_page ? 'border-fuchsia-600 bg-fuchsia-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-fuchsia-300' }}">{{ $p }}</a>
         @endfor
         @if ($current_page < $total_pages)
-        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-fuchsia-300" aria-label="Next">
+        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-fuchsia-300" aria-label="{{ t('Next') }}">
             <i class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif

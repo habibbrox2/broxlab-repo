@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Auth\LegacySessionGuard;
 use App\Support\AppSettings;
+use App\Support\I18n\LanguageService;
+use App\Support\I18n\Translator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AppSettings::class);
+
+        // i18n: singletons so the active language is detected once per request
+        // (t() is called 800+ times per page) and dictionaries are read once.
+        $this->app->singleton(LanguageService::class);
+        $this->app->singleton(Translator::class);
     }
 
     /**
@@ -51,7 +58,12 @@ class AppServiceProvider extends ServiceProvider
         View::share('appSettings', $this->app->make(AppSettings::class)->all());
 
         // Share legacy-equivalent UI globals across all views (header/footer/breadcrumb parity).
-        View::composer('*', function (IlluminateView $view) {
+        // $sharedTranslations is resolved once per request — the composer runs for
+        // every view AND partial, so recomputing two dictionaries each time would
+        // be wasteful.
+        $sharedTranslations = null;
+
+        View::composer('*', function (IlluminateView $view) use (&$sharedTranslations) {
             $appSettings = $this->app->make(AppSettings::class)->all();
 
             $view->with('authUser', auth()->user());
@@ -61,8 +73,17 @@ class AppServiceProvider extends ServiceProvider
                 && (($authUser = auth()->user()) && ($authUser->is_super_admin ?? false)
                     || ($authUser->role === 'admin')));
             $view->with('canonicalUrl', request()->url());
-            $view->with('siteTranslations', []);
-            $view->with('availableLanguages', ['en', 'bn']);
+
+            if ($sharedTranslations === null) {
+                $translator = $this->app->make(Translator::class);
+                $sharedTranslations = [
+                    'en' => $translator->dictionary('en'),
+                    'bn' => $translator->dictionary('bn'),
+                ];
+            }
+
+            $view->with('siteTranslations', $sharedTranslations);
+            $view->with('availableLanguages', $this->app->make(LanguageService::class)->available());
 
             // Public nav items (mirrors legacy header-v2.twig default nav_items).
             $view->with('publicNavItems', []);

@@ -239,7 +239,7 @@ class LegacySessionGuard implements Guard, StatefulGuard
 
         $firstName = (string) ($row->first_name ?? '');
         $lastName = (string) ($row->last_name ?? '');
-        $roles = array_values(array_filter(explode(',', (string) ($row->roles ?? ''))));
+        $roles = array_values(array_map('strval', $roles));
 
         $_SESSION['user_id'] = (int) $row->id;
         $_SESSION['username'] = (string) ($row->username ?? 'User');

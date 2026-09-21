@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@php $currentLang = app(\App\Support\LanguageService::class)->current(); @endphp
+@php $currentLang = app(\App\Support\I18n\LanguageService::class)->current(); @endphp
 
 @section('title', ($company['name'] ?? 'Company').' — '.($currentLang === 'bn' ? 'হার্বাল ফার্মাসিউটিক্যাল কোম্পানি' : 'Herbal Pharmaceutical Company').' — '.($appSettings['site_name'] ?? 'BroxLab'))
 @section('meta_description', ($currentLang === 'bn'

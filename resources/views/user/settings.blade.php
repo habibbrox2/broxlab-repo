@@ -5,8 +5,8 @@
 @section('content')
 <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
     <div class="mb-6">
-        <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">Account Settings</h1>
-        <p class="mt-0.5 text-sm text-slate-500">Security and account preferences</p>
+        <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{{ t('Account Settings') }}</h1>
+        <p class="mt-0.5 text-sm text-slate-500">{{ t('Security and account preferences') }}</p>
     </div>
 
     @if (session('status'))
@@ -23,7 +23,7 @@
                     <i class="lucide lucide-key h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-sm font-bold text-slate-900">Password</h2>
+                    <h2 class="text-sm font-bold text-slate-900">{{ t('Password') }}</h2>
                     <p class="mt-0.5 text-sm text-slate-500">
                         @if ($user_has_password)
                             Last changed:
@@ -53,15 +53,15 @@
                 <i class="lucide lucide-link-2 h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-sm font-bold text-slate-900">Linked accounts</h2>
+                <h2 class="text-sm font-bold text-slate-900">{{ t('Linked accounts') }}</h2>
                 <p class="mt-0.5 text-sm text-slate-500">
-                    Sign-in provider:
+                    {{ t('Sign-in provider:') }}
                     <span class="font-semibold capitalize text-slate-700">{{ $user_data->auth_provider ?? 'email' }}</span>
                     @if ($user_data->firebase_uid)
                         &middot; Firebase linked
                     @endif
                 </p>
-                <p class="mt-2 text-xs text-slate-400">OAuth account linking is managed by the legacy app for now (Phase 2 follow-up).</p>
+                <p class="mt-2 text-xs text-slate-400">{{ t('OAuth account linking is managed by the legacy app for now (Phase 2 follow-up).') }}</p>
             </div>
         </div>
     </div>
@@ -73,14 +73,14 @@
                 <i class="lucide lucide-user h-5 w-5"></i>
             </span>
             <div class="min-w-0 flex-1">
-                <h2 class="text-sm font-bold text-slate-900">Account information</h2>
+                <h2 class="text-sm font-bold text-slate-900">{{ t('Account information') }}</h2>
                 <dl class="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
                     <div class="flex justify-between gap-4 sm:block">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Username</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('Username') }}</dt>
                         <dd class="font-medium text-slate-800">{{ $user_data->username }}</dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('Email') }}</dt>
                         <dd class="truncate font-medium text-slate-800">{{ $user_data->email }}</dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
@@ -88,15 +88,15 @@
                         <dd class="font-medium capitalize text-slate-800">{{ $user_data->status }}</dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email verified</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('Email verified') }}</dt>
                         <dd class="font-medium {{ $user_data->email_verified ? 'text-emerald-600' : 'text-amber-600' }}">
                             {{ $user_data->email_verified ? 'Yes' : 'Pending' }}
                         </dd>
                     </div>
                 </dl>
                 <div class="mt-3 flex gap-2">
-                    <a href="/profile" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">View profile</a>
-                    <a href="/profile/edit" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Edit profile</a>
+                    <a href="/profile" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">{{ t('View profile') }}</a>
+                    <a href="/profile/edit" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">{{ t('Edit profile') }}</a>
                 </div>
             </div>
         </div>

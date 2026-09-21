@@ -40,4 +40,21 @@ return [
         'enabled' => env('FCM_ENABLED', true),
     ],
 
+    // Machine translation fallback (see app/Support/I18n/Translator.php).
+    // The static dictionary in resources/translations/ always wins; this only
+    // gates the free Google Translate fallback used by POST /api/translate.
+    'translation' => [
+        'enabled' => env('TRANSLATION_FALLBACK_ENABLED', true),
+    ],
+
+    // Firebase Web SDK (public-by-design identifiers, see FirebaseConfigController)
+    'firebase' => [
+        'api_key' => env('FIREBASE_API_KEY'),
+        'auth_domain' => env('FIREBASE_AUTH_DOMAIN_LIVE', env('FIREBASE_AUTH_DOMAIN_LOCAL')),
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'storage_bucket' => env('FIREBASE_STORAGE_BUCKET'),
+        'messaging_sender_id' => env('FIREBASE_MESSAGING_SENDER_ID'),
+        'app_id' => env('FIREBASE_APP_ID'),
+    ],
+
 ];

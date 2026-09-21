@@ -13,12 +13,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Revenue</p>
-                <h1 class="text-xl font-bold text-white">Sponsored Packages</h1>
-                <p class="text-sm text-white/60 mt-0.5">Create and manage sponsored content packages</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Sponsored Packages') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Create and manage sponsored content packages') }}</p>
             </div>
         </div>
         <a href="/admin/revenue" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Revenue
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Revenue') }}
         </a>
     </div>
 </div>
@@ -39,7 +39,7 @@
                     <p class="text-sm text-slate-400 dark:text-slate-600 mb-3">{{ $pkg['desc'] }}</p>
                     <p class="text-2xl font-bold text-slate-900 dark:text-white mb-4">{{ $pkg['price'] }}</p>
                     <a href="/admin/revenue/sponsored/edit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        Manage Package <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                        {{ t('Manage Package') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                     </a>
                 </div>
             </div>
@@ -49,11 +49,11 @@
     <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <div class="p-6 flex items-center justify-between">
             <div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Create New Package</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600">Define a new sponsored content package</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ t('Create New Package') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600">{{ t('Define a new sponsored content package') }}</p>
             </div>
             <a href="/admin/revenue/sponsored/create" class="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-amber-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-plus w-4 h-4"></i> New Package
+                <i class="lucide lucide-plus w-4 h-4"></i> {{ t('New Package') }}
             </a>
         </div>
     </div>

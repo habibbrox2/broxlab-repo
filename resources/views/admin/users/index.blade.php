@@ -15,7 +15,7 @@
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Administration</p>
                 <h1 class="text-xl font-bold text-white">Users</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage user accounts, roles, and permissions</p>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage user accounts, roles, and permissions') }}</p>
             </div>
         </div>
     </div>
@@ -31,14 +31,14 @@
                 </div>
                 <div>
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Filters</h3>
-                    <p class="text-xs text-slate-400 dark:text-slate-600">Search and filter users</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Search and filter users') }}</p>
                 </div>
             </div>
         </div>
         <div class="p-5 space-y-4">
             <div class="flex flex-col sm:flex-row gap-3">
                 <div class="flex-1">
-                    <x-admin-input label="Search" placeholder="Search by username, email, name..." icon="lucide-search" :value="$search" route="{{ '/admin/users?search='.urlencode($search) }}" />
+                    <x-admin-input label="Search" placeholder="{{ t('Search by username, email, name...') }}" icon="lucide-search" :value="$search" route="{{ '/admin/users?search='.urlencode($search) }}" />
                 </div>
                 <div class="w-full sm:w-40">
                     <x-admin-select label="Status" :options="['' => 'All Statuses', 'active' => 'Active', 'inactive' => 'Inactive', 'banned' => 'Banned', 'pending' => 'Pending']" :selected="$status_filter" route="{{ '/admin/users?status='.urlencode($status_filter) }}" />
@@ -54,7 +54,7 @@
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                     <i class="lucide lucide-users w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">User Accounts</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('User Accounts') }}</h3>
             </div>
             <span class="text-xs text-slate-400 dark:text-slate-600">{{ $pagination['total'] }} users total</span>
         </div>
@@ -66,7 +66,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Role</th>
                         <th class="text-left px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Created</th>
-                        <th class="text-left px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Last Login</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">{{ t('Last Login') }}</th>
                         <th class="text-right px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
@@ -101,10 +101,10 @@
                                     <a href="/admin/users/view/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="View">
                                         <i class="lucide lucide-eye w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/users/edit/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                    <a href="/admin/users/edit/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="{{ t('Edit') }}">
                                         <i class="lucide lucide-edit w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/users/delete/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="Delete">
+                                    <a href="/admin/users/delete/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="{{ t('Delete') }}">
                                         <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
@@ -114,8 +114,8 @@
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-600">
                                 <i class="lucide lucide-users-off w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                                <p class="text-sm font-medium">No users found</p>
-                                <p class="text-xs mt-1">Try adjusting your search or filters</p>
+                                <p class="text-sm font-medium">{{ t('No users found') }}</p>
+                                <p class="text-xs mt-1">{{ t('Try adjusting your search or filters') }}</p>
                             </td>
                         </tr>
                     @endforelse
@@ -139,7 +139,7 @@
                     <span class="text-xs text-slate-500 dark:text-slate-500 px-2">Page {{ $pagination['current_page'] }} of {{ $pagination['last_page'] }}</span>
                     @if($pagination['current_page'] < $pagination['last_page'])
                         <a href="{{ '/admin/users?page='.($pagination['current_page'] + 1).'&sort='.$sort.'&order='.$order }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                            Next <i class="lucide lucide-chevron-right w-3.5 h-3.5"></i>
+                            {{ t('Next') }} <i class="lucide lucide-chevron-right w-3.5 h-3.5"></i>
                         </a>
                         <a href="{{ '/admin/users?page='.$pagination['last_page'].'&sort='.$sort.'&order='.$order }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                             Last <i class="lucide lucide-chevron-double-right w-3.5 h-3.5"></i>

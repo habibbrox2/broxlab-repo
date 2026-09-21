@@ -20,10 +20,10 @@
         </div>
         <div class="flex gap-2">
             <a href="/admin/users/edit/{{ $user['id'] }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-edit w-4 h-4"></i> Edit
+                <i class="lucide lucide-edit w-4 h-4"></i> {{ t('Edit') }}
             </a>
             <a href="/admin/users" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Users
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Users') }}
             </a>
         </div>
     </div>
@@ -40,22 +40,22 @@
                         <i class="lucide lucide-user w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Personal Information</h3>
-                        <p class="text-xs text-slate-400 dark:text-slate-600">User profile details</p>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Personal Information') }}</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('User profile details') }}</p>
                     </div>
                 </div>
                 <div class="p-5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Full Name</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Full Name') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['full_name'] ?: '—' }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Username</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Username') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['username'] }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Email</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Email') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['email'] }}</p>
                         </div>
                         <div>
@@ -81,15 +81,15 @@
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ ucfirst($user['gender'] ?? 'Not set') }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Date of Birth</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Date of Birth') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['dob'] ? \Carbon\Carbon::parse($user['dob'])->format('F j, Y') : '—' }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Phone</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Phone') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['phone'] ?: '—' }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Alternate Phone</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Alternate Phone') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['alternate_phone'] ?: '—' }}</p>
                         </div>
                         <div>
@@ -109,11 +109,11 @@
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['country'] ?: '—' }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">ZIP Code</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('ZIP Code') }}</label>
                             <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['zipcode'] ?: '—' }}</p>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Profile Picture</label>
+                            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Profile Picture') }}</label>
                             <p class="text-sm text-slate-900 dark:text-white truncate">{{ $user['profile_pic'] ?: '—' }}</p>
                         </div>
                     </div>
@@ -127,8 +127,8 @@
                         <i class="lucide lucide-share-2 w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Social Links</h3>
-                        <p class="text-xs text-slate-400 dark:text-slate-600">User social media profiles</p>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Social Links') }}</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('User social media profiles') }}</p>
                     </div>
                 </div>
                 <div class="p-5">
@@ -160,8 +160,8 @@
                         <i class="lucide lucide-shield w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Roles & Permissions</h3>
-                        <p class="text-xs text-slate-400 dark:text-slate-600">Access control assignments</p>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Roles & Permissions') }}</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Access control assignments') }}</p>
                     </div>
                 </div>
                 <div class="p-5 space-y-4">
@@ -185,7 +185,7 @@
                                 @endforeach
                             </div>
                         @else
-                            <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">No roles assigned</p>
+                            <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">{{ t('No roles assigned') }}</p>
                         @endif
                     </div>
                     <div>
@@ -201,7 +201,7 @@
                                 @endforeach
                             </div>
                         @else
-                            <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">No permissions assigned</p>
+                            <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">{{ t('No permissions assigned') }}</p>
                         @endif
                     </div>
                 </div>
@@ -217,12 +217,12 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-stats w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Account Statistics</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Account Statistics') }}</h3>
                     </div>
                 </div>
                 <div class="p-5 space-y-4">
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Account ID</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Account ID') }}</span>
                         <span class="text-sm font-medium text-slate-900 dark:text-white">#{{ $user['id'] }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -230,19 +230,19 @@
                         <span class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['created_at'] ? \Carbon\Carbon::parse($user['created_at'])->format('M j, Y g:i A') : '—' }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Last Login</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Last Login') }}</span>
                         <span class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['last_login'] }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Failed Logins</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Failed Logins') }}</span>
                         <span class="text-sm font-medium text-slate-900 dark:text-white">{{ $user['failed_login_attempts'] }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Email Verified</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Email Verified') }}</span>
                         <span class="text-sm font-medium {{ $user['email_verified'] ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600' }}">{{ $user['email_verified'] ? 'Yes' : 'No' }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Phone Verified</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Phone Verified') }}</span>
                         <span class="text-sm font-medium {{ $user['phone_verified'] ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600' }}">{{ $user['phone_verified'] ? 'Yes' : 'No' }}</span>
                     </div>
                     @if($user['account_locked_until'])
@@ -257,14 +257,14 @@
             {{-- Quick Actions --}}
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Quick Actions') }}</h3>
                 </div>
                 <div class="p-5 space-y-3">
                     <a href="/admin/users/edit/{{ $user['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-edit w-4 h-4 text-indigo-600 dark:text-indigo-400"></i> Edit User Details
+                        <i class="lucide lucide-edit w-4 h-4 text-indigo-600 dark:text-indigo-400"></i> {{ t('Edit User Details') }}
                     </a>
                     <a href="/admin/users/delete/{{ $user['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete User
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete User') }}
                     </a>
                 </div>
             </div>

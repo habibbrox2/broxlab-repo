@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\LanguageService;
+use App\Support\I18n\LanguageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

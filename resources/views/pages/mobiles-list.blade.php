@@ -32,13 +32,13 @@
             <div class="max-w-2xl">
                 <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 shadow-lg backdrop-blur-sm">
                     <i class="lucide lucide-smartphone h-3.5 w-3.5"></i>
-                    <span>Phone Database</span>
+                    <span>{{ t('Phone Database') }}</span>
                     <i class="lucide lucide-chevron-right h-3 w-3"></i>
                 </div>
                 <h1 class="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
-                    Latest <span class="bg-gradient-to-r from-cyan-300 to-purple-200 bg-clip-text text-transparent">Mobile Phones</span>
+                    {{ t('Latest') }} <span class="bg-gradient-to-r from-cyan-300 to-purple-200 bg-clip-text text-transparent">{{ t('Mobile Phones') }}</span>
                 </h1>
-                <p class="mt-3 max-w-xl text-base text-white/70 md:text-lg">Explore the newest smartphones with detailed specifications, pricing, and image galleries.</p>
+                <p class="mt-3 max-w-xl text-base text-white/70 md:text-lg">{{ t('Explore the newest smartphones with detailed specifications, pricing, and image galleries.') }}</p>
             </div>
             <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-[1.75rem] border border-white/20 bg-white/10 shadow-2xl backdrop-blur-sm md:h-28 md:w-28">
                 <span class="text-5xl md:text-6xl">📱</span>
@@ -52,21 +52,21 @@
     <form method="get" class="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" x-data="{ autoSubmit: false }" @change="if (autoSubmit) $el.submit()">
         <div class="relative min-w-[220px] flex-1">
             <i class="lucide lucide-search absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Search mobiles..." autocomplete="off"
+            <input type="search" name="search" value="{{ $search }}" placeholder="{{ t('Search mobiles...') }}" autocomplete="off"
                    class="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
         </div>
-        <select name="per_page" @change="autoSubmit = true" aria-label="Items per page"
+        <select name="per_page" @change="autoSubmit = true" aria-label="{{ t('Items per page') }}"
                 class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
             @foreach ($available_per_page as $opt)
             <option value="{{ $opt }}" @if ($per_page == $opt) selected @endif>{{ $opt }}</option>
             @endforeach
         </select>
-        <select name="sort" @change="autoSubmit = true" aria-label="Sort mobiles"
+        <select name="sort" @change="autoSubmit = true" aria-label="{{ t('Sort mobiles') }}"
                 class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
-            <option value="release_date" @if ($sort === 'release_date') selected @endif>Release Date</option>
-            <option value="brand_name" @if ($sort === 'brand_name') selected @endif>Brand</option>
-            <option value="model_name" @if ($sort === 'model_name') selected @endif>Model</option>
-            <option value="created_at" @if ($sort === 'created_at') selected @endif>Recently Added</option>
+            <option value="release_date" @if ($sort === 'release_date') selected @endif>{{ t('Release Date') }}</option>
+            <option value="brand_name" @if ($sort === 'brand_name') selected @endif>{{ t('Brand') }}</option>
+            <option value="model_name" @if ($sort === 'model_name') selected @endif>{{ t('Model') }}</option>
+            <option value="created_at" @if ($sort === 'created_at') selected @endif>{{ t('Recently Added') }}</option>
             <option value="id" @if ($sort === 'id') selected @endif>ID</option>
         </select>
         <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
@@ -76,7 +76,7 @@
 
     {{-- Mobiles grid --}}
     @if (!empty($mobiles))
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="feed" aria-label="Mobiles feed">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" role="feed" aria-label="{{ t('Mobiles feed') }}">
         @foreach ($mobiles as $mobile)
         <a href="/mobiles/view/{{ $mobile['id'] }}" class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
             @if (!empty($mobile['image_path']))
@@ -111,7 +111,7 @@
             $end = min($total_pages - 1, $current_page + 2);
         @endphp
         @if ($current_page > 1)
-        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Previous">
+        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Previous') }}">
             <i class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true"></i>
         </a>
         @else
@@ -125,7 +125,7 @@
         @if ($end < $total_pages - 1)<span class="px-1 text-slate-400">…</span>@endif
         <a href="{{ $qs($total_pages) }}" class="rounded-xl border px-3.5 py-2 text-sm font-semibold {{ $current_page === $total_pages ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300' }}">{{ $total_pages }}</a>
         @if ($current_page < $total_pages)
-        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Next">
+        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Next') }}">
             <i class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"></i>
         </a>
         @else

@@ -14,13 +14,13 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Content</p>
-                <h1 class="text-xl font-bold text-white">Posts Management</h1>
-                <p class="text-sm text-white/60 mt-0.5 max-w-md">Search, sort, and maintain the editorial catalog.</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Posts Management') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ t('Search, sort, and maintain the editorial catalog.') }}</p>
             </div>
         </div>
         <div class="flex gap-2">
             <a href="/admin/posts/create" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-plus w-4 h-4"></i> Add New Post
+                <i class="lucide lucide-plus w-4 h-4"></i> {{ t('Add New Post') }}
             </a>
         </div>
     </div>
@@ -33,14 +33,14 @@
             <i class="lucide lucide-filter w-4 h-4 text-amber-600 dark:text-amber-400"></i>
         </div>
         <div>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Filter Posts</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-600">Search by title, sort, and adjust page size</p>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Filter Posts') }}</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Search by title, sort, and adjust page size') }}</p>
         </div>
     </div>
     <form class="p-5" method="get" action="">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="space-y-1.5">
-                <label for="post-search" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Search</label>
+                <label for="post-search" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">{{ t('Search') }}</label>
                 <div class="relative">
                     <i class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-600"></i>
                     <input id="post-search" type="text" name="search" value="{{ $search }}" placeholder="Search by title…"
@@ -48,10 +48,10 @@
                 </div>
             </div>
             <div class="space-y-1.5">
-                <label for="post-sort" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Sort</label>
+                <label for="post-sort" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">{{ t('Sort') }}</label>
                 <select id="post-sort" name="sort"
                     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                    <option value="created_at" {{ $sort === 'created_at' ? 'selected' : '' }}>Latest</option>
+                    <option value="created_at" {{ $sort === 'created_at' ? 'selected' : '' }}>{{ t('Latest') }}</option>
                     <option value="title" {{ $sort === 'title' ? 'selected' : '' }}>Title</option>
                 </select>
             </div>
@@ -64,7 +64,7 @@
                 </select>
             </div>
             <div class="space-y-1.5">
-                <label for="post-limit" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">Per Page</label>
+                <label for="post-limit" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1">{{ t('Per Page') }}</label>
                 <select id="post-limit" name="limit"
                     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
                     @foreach ([10, 20, 50, 100] as $opt)
@@ -89,8 +89,8 @@
             <i class="lucide lucide-file-text w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
         </div>
         <div>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Posts</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-600">Editorial overview with status and quick actions</p>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Posts') }}</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Editorial overview with status and quick actions') }}</p>
         </div>
     </div>
     <div class="overflow-x-auto">
@@ -130,12 +130,12 @@
                                 <i class="lucide lucide-eye w-3.5 h-3.5"></i>
                             </a>
                             <a href="/admin/posts/edit/{{ $post['id'] }}"
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="Edit">
+                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all duration-150" title="{{ t('Edit') }}">
                                 <i class="lucide lucide-pencil w-3.5 h-3.5"></i>
                             </a>
                             <a href="/admin/posts/delete/{{ $post['id'] }}"
                                onclick="return confirm('Are you sure you want to delete this post? This action cannot be undone.')"
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="Delete">
+                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-150" title="{{ t('Delete') }}">
                                 <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -156,10 +156,10 @@
         <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
             <i class="lucide lucide-file-text w-7 h-7 text-slate-400 dark:text-slate-600"></i>
         </div>
-        <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">No posts found</h3>
-        <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">Create your first blog post to get started.</p>
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-1">{{ t('No posts found') }}</h3>
+        <p class="text-sm text-slate-400 dark:text-slate-600 mb-5 max-w-xs">{{ t('Create your first blog post to get started.') }}</p>
         <a href="/admin/posts/create" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 transition-all duration-150">
-            <i class="lucide lucide-plus w-4 h-4"></i> Create Post
+            <i class="lucide lucide-plus w-4 h-4"></i> {{ t('Create Post') }}
         </a>
     </div>
 </section>

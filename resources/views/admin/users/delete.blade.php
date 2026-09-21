@@ -14,12 +14,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Users</p>
-                <h1 class="text-xl font-bold text-white">Delete User</h1>
-                <p class="text-sm text-white/60 mt-0.5">This action is irreversible. The user account will be permanently deleted.</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Delete User') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('This action is irreversible. The user account will be permanently deleted.') }}</p>
             </div>
         </div>
         <a href="/admin/users" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Users
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Users') }}
         </a>
     </div>
 </div>
@@ -32,21 +32,21 @@
                 <i class="lucide lucide-alert-triangle w-4 h-4 text-rose-600 dark:text-rose-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Confirm Deletion</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Please review before proceeding</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Confirm Deletion') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Please review before proceeding') }}</p>
             </div>
         </div>
         <div class="p-5 sm:p-6 space-y-5">
             <div class="rounded-xl border border-rose-100 dark:border-rose-800 bg-rose-50/40 dark:bg-rose-900/10 px-4 py-3">
                 <p class="text-sm text-slate-700 dark:text-slate-300">
-                    Are you sure you want to permanently delete the user
+                    {{ t('Are you sure you want to permanently delete the user') }}
                     <span class="font-semibold text-rose-600 dark:text-rose-400">{{ $user['username'] }}</span>?
                     This action cannot be undone.
                 </p>
             </div>
 
             <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                <h4 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">User Details</h4>
+                <h4 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('User Details') }}</h4>
                 <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <span class="text-slate-400 dark:text-slate-500">Username:</span>
@@ -75,7 +75,7 @@
                 <div class="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800">
                     <p class="text-sm text-amber-800 dark:text-amber-400 flex items-start gap-2">
                         <i class="lucide lucide-alert-circle w-4 h-4 flex-shrink-0 mt-0.5"></i>
-                        <span>This user has <strong>{{ count($user['roles']) }} role(s)</strong> assigned. These will be removed upon deletion.</span>
+                        <span>{{ t('This user has') }} <strong>{{ count($user['roles']) }} role(s)</strong> {{ t('assigned. These will be removed upon deletion.') }}</span>
                     </p>
                 </div>
             @endif
@@ -84,11 +84,11 @@
                 <form action="/admin/users/delete/{{ $user['id'] }}" method="post" onsubmit="return confirm('Are you absolutely sure? This action cannot be undone.');">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-rose-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete User
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete User') }}
                     </button>
                 </form>
                 <a href="/admin/users/view/{{ $user['id'] }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                    <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                 </a>
             </div>
         </div>

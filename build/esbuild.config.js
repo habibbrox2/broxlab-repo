@@ -4,8 +4,8 @@
  */
 
 import esbuild from 'esbuild';
-import { existsSync, mkdirSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
+import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -13,6 +13,7 @@ const JS_OUT_DIR = join(ROOT_DIR, 'public', 'assets', 'js', 'dist');
 
 const isDev = process.argv.includes('--dev');
 const isWatch = process.argv.includes('--watch');
+const shouldPrune = !process.argv.includes('--no-prune');
 
 const ENTRY_POINTS = {
   script: join(ROOT_DIR, 'public', 'assets', 'js', 'script.js'),
@@ -81,6 +82,45 @@ function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
+/**
+ * Delete bundle files left behind by earlier builds.
+ *
+ * Chunk and code-split filenames are content-hashed, so every build writes a new
+ * generation and the previous one stays on disk forever. Those leftovers double
+ * (or triple) the size of every `pattern` entry in build/lib/check-budget.mjs,
+ * which sums all files matching a pattern — making the budget report flag bundles
+ * that are actually well within budget. Anything this build did not emit is stale.
+ */
+function pruneStaleOutputs(metafile) {
+  const produced = new Set(
+    Object.keys(metafile.outputs).map(path => resolve(process.cwd(), path))
+  );
+
+  const removed = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+        continue;
+      }
+      if (!/\.js(\.map)?$/u.test(entry.name)) continue;
+      if (produced.has(resolve(fullPath))) continue;
+      rmSync(fullPath);
+      removed.push(relative(JS_OUT_DIR, fullPath).replace(/\\/g, '/'));
+    }
+  };
+  walk(JS_OUT_DIR);
+
+  if (removed.length === 0) {
+    console.log('🧹 No stale bundles to prune');
+    return;
+  }
+
+  console.log(`🧹 Pruned ${removed.length} stale bundle file(s):`);
+  for (const file of removed) console.log(`   • ${file}`);
+}
+
 async function runBuild() {
   console.log(`📦 Building app${isDev ? ' (dev)' : ' (prod)'}...`);
   ensureDir(JS_OUT_DIR);
@@ -92,10 +132,15 @@ async function runBuild() {
     return;
   }
 
-  const result = await esbuild.build(buildOptions);
+  const result = await esbuild.build({ ...buildOptions, metafile: true });
   console.log('✅ App build complete');
   if (result.warnings.length > 0) {
     console.warn('⚠️  Warnings:', result.warnings);
+  }
+
+  // Only prune after a successful build, so a failed build never empties dist.
+  if (shouldPrune) {
+    pruneStaleOutputs(result.metafile);
   }
 }
 

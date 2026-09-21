@@ -12,13 +12,13 @@
                 <i class="lucide lucide-calculator w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Specialized Modules</p>
-                <h1 class="text-xl font-bold text-white">Calculator Tools</h1>
-                <p class="text-sm text-white/60 mt-0.5">Configure calculator tools and widgets</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Specialized Modules') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Calculator Tools') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Configure calculator tools and widgets') }}</p>
             </div>
         </div>
         <a href="/admin" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Dashboard
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Dashboard') }}
         </a>
     </div>
 </div>
@@ -30,10 +30,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-fuchsia-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-percent w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">GPA Calculator</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure GPA calculation settings</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('GPA Calculator') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure GPA calculation settings') }}</p>
                 <a href="/admin/calculator/gpa" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    GPA Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('GPA Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -42,10 +42,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-banknote w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Loan Calculator</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure loan calculation parameters</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Loan Calculator') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure loan calculation parameters') }}</p>
                 <a href="/admin/calculator/loan" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Loan Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Loan Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -54,10 +54,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="lucide lucide-function w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Custom Widgets</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Manage custom calculator widgets</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Custom Widgets') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Manage custom calculator widgets') }}</p>
                 <a href="/admin/calculator/widgets" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    Widget Manager <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Widget Manager') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>

@@ -2,7 +2,7 @@
    HEADER v2.0 — Sticky responsive navigation (Blade port of header-v2.twig)
    ═══════════════════════════════════════════════════════════════════ --}}
 
-@php use App\Support\LanguageService; @endphp
+@php use App\Support\I18n\LanguageService; @endphp
 
 <style>
 @media (min-width: 1024px) {
@@ -64,7 +64,7 @@
 
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <nav role="navigation"
-         aria-label="Primary navigation"
+         aria-label="{{ t('Primary navigation') }}"
          class="flex items-center h-16 gap-2 lg:gap-4">
 
       {{-- LOGO --}}
@@ -80,7 +80,7 @@
                class="h-9 sm:h-10 w-auto rounded-lg object-contain shadow-md group-hover:shadow-lg group-hover:-translate-y-0.5 transition-all duration-300">
           <div class="hidden sm:flex flex-col">
             <span class="text-sm font-bold text-[rgb(var(--text))] leading-tight">{{ $appSettings['site_name'] ?? 'BroxLab' }}</span>
-            <span class="text-[10px] text-indigo-500/80 leading-tight">Tech Platform</span>
+            <span class="text-[10px] text-indigo-500/80 leading-tight">{{ t('Tech Platform') }}</span>
           </div>
         @else
           <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30 group-hover:shadow-xl group-hover:shadow-indigo-500/40 group-hover:scale-105 transition-all duration-300">
@@ -88,7 +88,7 @@
           </div>
           <div class="hidden sm:flex flex-col">
             <span class="text-sm font-bold text-[rgb(var(--text))] leading-tight">{{ $appSettings['site_name'] ?? 'BroxLab' }}</span>
-            <span class="text-[10px] text-indigo-500/80 leading-tight">Platform</span>
+            <span class="text-[10px] text-indigo-500/80 leading-tight">{{ t('Platform') }}</span>
           </div>
         @endif
       </a>
@@ -98,7 +98,7 @@
               id="mobileMenuToggle"
               aria-controls="broxMainNav"
               x-bind:aria-expanded="open"
-              aria-label="Toggle navigation menu"
+              aria-label="{{ t('Toggle navigation menu') }}"
               x-data="mobileMenu()"
               @click="toggle()"
               class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-indigo-500/30 bg-[rgb(var(--surface-soft))] text-indigo-600 hover:bg-[rgb(var(--surface))] hover:text-indigo-500 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
@@ -185,8 +185,8 @@
                     id="broxNotificationBell"
                     x-bind:aria-expanded="open"
                     aria-haspopup="true"
-                    aria-label="View notifications"
-                    title="Notifications"
+                    aria-label="{{ t('View notifications') }}"
+                    title="{{ t('Notifications') }}"
                     @click="toggle()"
                     class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
               <i class="lucide lucide-bell w-5 h-5 group-hover:scale-110 transition-transform duration-300" aria-hidden="true"></i>
@@ -216,7 +216,7 @@
                   <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600/10 dark:bg-indigo-600/20">
                     <i class="lucide lucide-bell w-4 h-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>
                   </div>
-                  <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">Notifications</h2>
+                  <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ t('Notifications') }}</h2>
                 </div>
                 @if($unread > 0)
                   <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-lg shadow-indigo-500/30">
@@ -264,8 +264,8 @@
                     <div class="flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-3">
                       <i class="lucide lucide-inbox w-6 h-6 opacity-50" aria-hidden="true"></i>
                     </div>
-                    <p class="text-sm font-medium">No notifications yet</p>
-                    <p class="text-xs mt-1 text-center">We'll notify you about important updates and messages</p>
+                    <p class="text-sm font-medium">{{ t('No notifications yet') }}</p>
+                    <p class="text-xs mt-1 text-center">{{ t('We\'ll notify you about important updates and messages') }}</p>
                   </div>
                 @endif
               </div>
@@ -273,7 +273,7 @@
               <div class="border-t border-[rgb(var(--border))] px-3 py-2 bg-slate-50 dark:bg-slate-800/30 flex-shrink-0">
                 <a href="/user/notifications"
                    class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-lg text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all duration-150 group">
-                  <span>View all notifications</span>
+                  <span>{{ t('View all notifications') }}</span>
                   <i class="lucide lucide-arrow-right w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
                 </a>
               </div>
@@ -288,8 +288,8 @@
                     id="broxNavbarUser"
                     x-bind:aria-expanded="open"
                     aria-haspopup="true"
-                    aria-label="Account menu"
-                    title="Account menu"
+                    aria-label="{{ t('Account menu') }}"
+                    title="{{ t('Account menu') }}"
                     @click="toggle()"
                     class="inline-flex items-center justify-center gap-1.5 w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-[rgb(var(--muted))] hover:text-indigo-600 dark:bg-slate-700/40 dark:hover:bg-slate-700/60 dark:text-slate-400 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 group">
               @if(!empty($authUser->profile_pic))
@@ -370,23 +370,23 @@
                    data-unified-logout
                    class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none transition-colors duration-150">
                   <i class="lucide lucide-log-out w-4 h-4" aria-hidden="true"></i>
-                  <span data-i18n="Logout">Logout</span>
+                  <span data-i18n="Logout">{{ t('Logout') }}</span>
                 </a>
               </div>
             </div>
           </div>
         @else
           <a href="/login"
-             title="Login"
+             title="{{ t('Login') }}"
              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-[rgb(var(--muted))] border border-[rgb(var(--border))] hover:bg-[rgb(var(--surface-soft))] hover:text-indigo-600 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
             <i class="lucide lucide-log-in w-4 h-4" aria-hidden="true"></i>
-            Login
+            {{ t('Login') }}
           </a>
           <a href="/register"
-             title="Join Now"
+             title="{{ t('Join Now') }}"
              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/60 active:scale-95 transition-all duration-300">
             <i class="lucide lucide-user-plus w-4 h-4" aria-hidden="true"></i>
-            <span class="hidden sm:inline">Join Now</span>
+            <span class="hidden sm:inline">{{ t('Join Now') }}</span>
           </a>
         @endauth
 
@@ -396,8 +396,8 @@
         <button type="button"
                 id="broxThemeToggle"
                 aria-pressed="false"
-                aria-label="Toggle dark/light theme"
-                title="Toggle theme"
+                aria-label="{{ t('Toggle dark/light theme') }}"
+                title="{{ t('Toggle theme') }}"
                 class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-[rgb(var(--surface-soft))] hover:bg-[rgb(var(--surface))] text-amber-500 hover:text-amber-400 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none hover:-translate-y-0.5 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-amber-500/20 group">
           <i class="lucide lucide-sun dark:hidden block w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>
           <i class="lucide lucide-moon hidden dark:block w-5 h-5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" aria-hidden="true"></i>

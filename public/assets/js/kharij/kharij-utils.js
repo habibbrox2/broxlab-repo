@@ -139,7 +139,7 @@
     const totalSh = acres * 100;
     const bighaPart = Math.floor(totalSh / 33);
     const sotangshoPart = Math.floor(totalSh % 33);
-    tlw.value = acrePart + ' একর ' + bighaPart + ' শতক ' + sotangshoPart + ' অযুতাংশ 00 লক্ষাংশ';
+    tlw.value = `${acrePart } একর ${ bighaPart } শতক ${ sotangshoPart } অযুতাংশ 00 লক্ষাংশ`;
   };
 
   /** Run all auto-calculations */

@@ -15,11 +15,11 @@
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">RBAC — Role-Based Access Control</p>
                 <h1 class="text-xl font-bold text-white">Permissions</h1>
-                <p class="text-sm text-white/60 mt-0.5">Define granular permissions that can be assigned to roles</p>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Define granular permissions that can be assigned to roles') }}</p>
             </div>
         </div>
         <a href="/admin/permissions/create" class="inline-flex items-center gap-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-cyan-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-plus w-4 h-4"></i> Create Permission
+            <i class="lucide lucide-plus w-4 h-4"></i> {{ t('Create Permission') }}
         </a>
     </div>
 </div>
@@ -34,7 +34,7 @@
                 </div>
                 <div>
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Filters</h3>
-                    <p class="text-xs text-slate-400 dark:text-slate-600">Search and filter permissions</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Search and filter permissions') }}</p>
                 </div>
             </div>
         </div>
@@ -42,14 +42,14 @@
             <div class="flex-1">
                 <div class="relative">
                     <i class="lucide lucide-search w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600"></i>
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Search permissions..."
+                    <input type="text" name="search" value="{{ $search }}" placeholder="{{ t('Search permissions...') }}"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 pl-9 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/10"
                         oninput="this.form.submit()">
                 </div>
             </div>
             <div class="w-full sm:w-40">
                 <select name="module" onchange="this.form.submit()" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/10">
-                    <option value="">All Modules</option>
+                    <option value="">{{ t('All Modules') }}</option>
                     @foreach($modules as $module)
                         <option value="{{ $module }}" {{ $module_filter === $module ? 'selected' : '' }}>{{ ucfirst($module) }}</option>
                     @endforeach
@@ -67,7 +67,7 @@
                 <div class="w-7 h-7 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                     <i class="lucide lucide-lock-open w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">All Permissions</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('All Permissions') }}</h3>
             </div>
             <span class="text-xs text-slate-400 dark:text-slate-600">{{ $pagination['total'] }} permissions total</span>
         </div>
@@ -114,10 +114,10 @@
                                     <a href="/admin/permissions/view/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="View">
                                         <i class="lucide lucide-eye w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/permissions/edit/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                    <a href="/admin/permissions/edit/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="{{ t('Edit') }}">
                                         <i class="lucide lucide-edit w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/permissions/delete/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="Delete">
+                                    <a href="/admin/permissions/delete/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="{{ t('Delete') }}">
                                         <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
@@ -127,8 +127,8 @@
                         <tr>
                             <td colspan="5" class="px-4 py-8 text-center text-slate-400 dark:text-slate-600">
                                 <i class="lucide lucide-lock-x w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                                <p class="text-sm font-medium">No permissions found</p>
-                                <p class="text-xs mt-1">Create your first permission to get started</p>
+                                <p class="text-sm font-medium">{{ t('No permissions found') }}</p>
+                                <p class="text-xs mt-1">{{ t('Create your first permission to get started') }}</p>
                             </td>
                         </tr>
                     @endforelse
@@ -147,7 +147,7 @@
                     @endif
                     <span class="text-xs text-slate-500 dark:text-slate-500 px-2">Page {{ $pagination['current_page'] }} of {{ $pagination['last_page'] }}</span>
                     @if($pagination['current_page'] < $pagination['last_page'])
-                        <a href="{{ '/admin/permissions?page='.($pagination['current_page'] + 1).'&module='.urlencode($module_filter) }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Next</a>
+                        <a href="{{ '/admin/permissions?page='.($pagination['current_page'] + 1).'&module='.urlencode($module_filter) }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">{{ t('Next') }}</a>
                         <a href="{{ '/admin/permissions?page='.$pagination['last_page'].'&module='.urlencode($module_filter) }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Last</a>
                     @endif
                 </div>

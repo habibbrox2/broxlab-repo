@@ -27,14 +27,14 @@
                 <i class="lucide lucide-file-text w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Page Studio</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Page Studio') }}</p>
                 <h1 class="text-xl font-bold text-white">{{ $isCreate ? 'Create New Page' : 'Edit Page' }}</h1>
                 <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ $isCreate ? 'Create a polished new article with content, metadata, and publishing settings in one place.' : 'Update the article, metadata, and publishing controls in one streamlined workspace.' }}</p>
             </div>
         </div>
         <div class="flex gap-2">
             <a href="/admin/pages" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Pages
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Pages') }}
             </a>
         </div>
     </div>
@@ -64,7 +64,7 @@
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                         <i class="lucide lucide-file-text w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Page Details</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Page Details') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
 
@@ -73,15 +73,15 @@
                         <label for="title" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
                             Title <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                         </label>
-                        <input type="text" id="title" name="title" placeholder="Enter page title" value="{{ $item->title ?? '' }}" required
+                        <input type="text" id="title" name="title" placeholder="{{ t('Enter page title') }}" value="{{ $item->title ?? '' }}" required
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">A clear, descriptive title for your page</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('A clear, descriptive title for your page') }}</p>
                     </div>
 
                     {{-- URL Slug --}}
                     <div class="space-y-1.5">
                         <label for="seo" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                            URL Slug <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                            {{ t('URL Slug') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                         </label>
                         <div class="relative">
                             <i class="lucide lucide-link w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600"></i>
@@ -93,18 +93,18 @@
 
                     {{-- SEO Title --}}
                     <div class="space-y-1.5">
-                        <label for="meta_title" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">SEO Title</label>
-                        <input type="text" id="meta_title" name="meta_title" placeholder="Optional SEO title" maxlength="60" value="{{ $item->meta_title ?? '' }}"
+                        <label for="meta_title" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('SEO Title') }}</label>
+                        <input type="text" id="meta_title" name="meta_title" placeholder="{{ t('Optional SEO title') }}" maxlength="60" value="{{ $item->meta_title ?? '' }}"
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">A custom SEO title for search engines</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('A custom SEO title for search engines') }}</p>
                     </div>
 
                     {{-- SEO Description --}}
                     <div class="space-y-1.5">
-                        <label for="meta_description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">SEO Description</label>
-                        <textarea id="meta_description" name="meta_description" rows="2" maxlength="160" placeholder="Optional SEO description"
+                        <label for="meta_description" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('SEO Description') }}</label>
+                        <textarea id="meta_description" name="meta_description" rows="2" maxlength="160" placeholder="{{ t('Optional SEO description') }}"
                             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">{{ $item->meta_description ?? '' }}</textarea>
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Shown under the title in search results</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('Shown under the title in search results') }}</p>
                     </div>
 
                     {{-- Content Editor (RTE) --}}
@@ -119,7 +119,7 @@
                                 'initialContent' => $item->content ?? '',
                             ])
                         </div>
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Write the main content for your page</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('Write the main content for your page') }}</p>
                     </div>
                 </div>
             </div>
@@ -135,7 +135,7 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-sliders-horizontal w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Page Settings</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Page Settings') }}</h3>
                     </div>
                     <div class="p-5 space-y-5">
 
@@ -144,7 +144,7 @@
                             <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
                                 Status <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                             </label>
-                            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Page status">
+                            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ t('Page status') }}">
                                 <label class="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition-all duration-200 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-600 has-[:checked]:text-white">
                                     <input type="radio" name="status" value="draft" id="status-draft" {{ $currentStatus === 'draft' ? 'checked' : '' }} aria-label="Draft" class="hidden">
                                     <i class="lucide lucide-pencil text-xs"></i> Draft
@@ -158,19 +158,19 @@
 
                         {{-- SEO Indexing --}}
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Reader Indexing</label>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('Reader Indexing') }}</label>
                             <select name="reader_indexing"
                                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 cursor-pointer focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                                <option value="" {{ empty($item->reader_indexing) ? 'selected' : '' }}>Index and Follow</option>
-                                <option value="noindex" {{ ($item->reader_indexing ?? '') === 'noindex' ? 'selected' : '' }}>No Index</option>
-                                <option value="nofollow" {{ ($item->reader_indexing ?? '') === 'nofollow' ? 'selected' : '' }}>No Follow</option>
+                                <option value="" {{ empty($item->reader_indexing) ? 'selected' : '' }}>{{ t('Index and Follow') }}</option>
+                                <option value="noindex" {{ ($item->reader_indexing ?? '') === 'noindex' ? 'selected' : '' }}>{{ t('No Index') }}</option>
+                                <option value="nofollow" {{ ($item->reader_indexing ?? '') === 'nofollow' ? 'selected' : '' }}>{{ t('No Follow') }}</option>
                             </select>
                         </div>
 
                         {{-- Author --}}
                         <div class="space-y-1.5">
                             <label for="author" class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Author</label>
-                            <input type="text" id="author" name="author" placeholder="Author name" value="{{ $item->author ?? '' }}"
+                            <input type="text" id="author" name="author" placeholder="{{ t('Author name') }}" value="{{ $item->author ?? '' }}"
                                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
                         </div>
                     </div>
@@ -182,11 +182,11 @@
                         <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
                             <i class="lucide lucide-tags w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Categories &amp; Tags</h3>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Categories & Tags') }}</h3>
                     </div>
                     <div class="p-5 space-y-4">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Categories</label>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('Categories') }}</label>
                             @php
                                 $selectedCategoryIds = collect($selectedCategories)->map(fn ($c) => (string) ($c['id'] ?? $c))->all();
                             @endphp
@@ -196,11 +196,11 @@
                                     <option value="{{ $category['id'] }}" {{ in_array((string) $category['id'], $selectedCategoryIds, true) ? 'selected' : '' }}>{{ $category['name'] }}</option>
                                 @endforeach
                             </select>
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Hold Ctrl/Cmd to select multiple.</p>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('Hold Ctrl/Cmd to select multiple.') }}</p>
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">Tags</label>
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">{{ t('Tags') }}</label>
                             @php
                                 $selectedTagIds = collect($selectedTags)->map(fn ($t) => (string) ($t['id'] ?? $t))->all();
                             @endphp
@@ -210,7 +210,7 @@
                                     <option value="{{ $tag['id'] }}" {{ in_array((string) $tag['id'], $selectedTagIds, true) ? 'selected' : '' }}>{{ $tag['name'] }}</option>
                                 @endforeach
                             </select>
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">Select or create tags for better organization</p>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-600">{{ t('Select or create tags for better organization') }}</p>
                         </div>
                     </div>
                 </div>
@@ -230,7 +230,7 @@
                             </button>
                             <a href="/admin/pages"
                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                                <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                                <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                             </a>
                         </div>
                     </div>

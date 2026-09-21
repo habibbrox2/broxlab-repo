@@ -113,6 +113,141 @@ class SecurityService
             ->exists();
     }
 
+    // ── 2FA enrollment (port of UserSecurityController 2fa/setup flow) ──
+
+    /**
+     * Generate a new base32 TOTP secret (SecurityManager helper port).
+     * RFC 4648 alphabet, 32 chars = 160 bits, matching Google Authenticator.
+     */
+    public function generateBase32Secret(int $length = 32): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $secret = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $secret .= $alphabet[random_int(0, 31)];
+        }
+
+        return $secret;
+    }
+
+    /**
+     * otpauth:// URI for authenticator apps (legacy format:
+     * otpauth://totp/broxbhai:{email}?secret={secret}&issuer=Broxbhai).
+     */
+    public function otpauthUri(string $email, string $secret): string
+    {
+        return 'otpauth://totp/broxbhai:'.rawurlencode($email)
+            .'?secret='.$secret.'&issuer=Broxbhai';
+    }
+
+    /**
+     * QR code PNG (data URI) encoding the otpauth URI, for the enrollment
+     * page. Returns null on rendering failure (page degrades to the manual
+     * secret entry, exactly like legacy).
+     */
+    public function qrDataUriForSecret(string $otpauthUri): ?string
+    {
+        try {
+            $result = (new \Endroid\QrCode\Writer\PngWriter())->write(
+                new \Endroid\QrCode\QrCode($otpauthUri)
+            );
+
+            return 'data:image/png;base64,'.base64_encode($result->getString());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /**
+     * Port of SecurityManager::enable2FA — upsert user_security with the
+     * verified secret + fresh backup codes, then log the activity.
+     *
+     * @return array{success: bool, backup_codes?: array<string>, error?: string}
+     */
+    public function enable2FA(int $userId, string $secret): array
+    {
+        if (! preg_match('/^[A-Z2-7]{16,}$/', strtoupper($secret))) {
+            return ['success' => false, 'error' => 'Invalid secret format'];
+        }
+
+        $backupCodes = $this->generateBackupCodes();
+
+        try {
+            $existing = DB::table('user_security')->where('user_id', $userId)->exists();
+
+            if ($existing) {
+                DB::table('user_security')->where('user_id', $userId)->update([
+                    'twofa_enabled' => 1,
+                    'twofa_method' => 'totp',
+                    'twofa_secret' => strtoupper($secret),
+                    'backup_codes' => json_encode($backupCodes),
+                    'twofa_verified_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('user_security')->insert([
+                    'user_id' => $userId,
+                    'twofa_enabled' => 1,
+                    'twofa_method' => 'totp',
+                    'twofa_secret' => strtoupper($secret),
+                    'backup_codes' => json_encode($backupCodes),
+                    'twofa_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+
+            return ['success' => false, 'error' => 'Failed to enable 2FA'];
+        }
+
+        $this->logActivity('2FA Enabled', $userId, 'success', ['method' => 'TOTP']);
+
+        return ['success' => true, 'backup_codes' => $backupCodes];
+    }
+
+    /**
+     * Port of SecurityManager::disable2FA — clear the TOTP row state.
+     */
+    public function disable2FA(int $userId): bool
+    {
+        $ok = (bool) DB::table('user_security')->where('user_id', $userId)->update([
+            'twofa_enabled' => 0,
+            'twofa_secret' => null,
+            'backup_codes' => null,
+            'updated_at' => now(),
+        ]);
+
+        if ($ok) {
+            $this->logActivity('2FA Disabled', $userId, 'success');
+        }
+
+        return $ok;
+    }
+
+    /** Port of SecurityManager::generateBackupCodes (10 × XXXX-XXXX-XXXX). */
+    public function generateBackupCodes(int $count = 10): array
+    {
+        $codes = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $code = '';
+            for ($j = 0; $j < 3; $j++) {
+                $code .= sprintf('%04X', random_int(0, 65535));
+                if ($j < 2) {
+                    $code .= '-';
+                }
+            }
+            $codes[] = $code;
+        }
+
+        return $codes;
+    }
+
     /** Port of SecurityManager::verify2FACode — secret lookup + activity log. */
     public function verify2FACode(int $userId, string $code): bool
     {
@@ -496,6 +631,12 @@ class SecurityService
     }
 
     // ── Shared ────────────────────────────────────────────────────────
+
+    /** Public wrapper for enrollment flows living outside this class. */
+    public function logActivityPublic(string $action, int $userId, string $status, array $details = []): void
+    {
+        $this->logActivity($action, $userId, $status, $details);
+    }
 
     protected function logActivity(string $action, int $userId, string $status, array $details = []): void
     {

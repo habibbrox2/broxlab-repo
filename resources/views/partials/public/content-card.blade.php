@@ -76,11 +76,11 @@
 
                 @if(count($images) > 1)
                     <button class="absolute left-3 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-white active:scale-95 opacity-0 group-hover/card:opacity-100"
-                            type="button" data-brox-target="#carousel{{ $index ?? 'card' }}" data-brox-slide="prev" aria-label="Previous image">
+                            type="button" data-brox-target="#carousel{{ $index ?? 'card' }}" data-brox-slide="prev" aria-label="{{ t('Previous image') }}">
                         <i class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true"></i>
                     </button>
                     <button class="absolute right-3 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-white active:scale-95 opacity-0 group-hover/card:opacity-100"
-                            type="button" data-brox-target="#carousel{{ $index ?? 'card' }}" data-brox-slide="next" aria-label="Next image">
+                            type="button" data-brox-target="#carousel{{ $index ?? 'card' }}" data-brox-slide="next" aria-label="{{ t('Next image') }}">
                         <i class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"></i>
                     </button>
                 @endif
@@ -100,7 +100,7 @@
                     <div class="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/60 shadow-sm ring-1 ring-black/5">
                         <i class="lucide lucide-image-off h-7 w-7 text-slate-300" aria-hidden="true"></i>
                     </div>
-                    <p class="text-[11px] font-medium text-slate-400">No image</p>
+                    <p class="text-[11px] font-medium text-slate-400">{{ t('No image') }}</p>
                 </div>
             </div>
         @endif

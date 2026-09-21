@@ -17,8 +17,8 @@
                 <i class="lucide lucide-shield-check h-6 w-6"></i>
             </div>
             <div class="text-center">
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Two-Factor Authentication</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Enter the 6-digit code from your authenticator app to complete sign-in.</p>
+                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{{ t('Two-Factor Authentication') }}</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">{{ t('Enter the 6-digit code from your authenticator app to complete sign-in.') }}</p>
             </div>
         </div>
 
@@ -34,7 +34,7 @@
                 @csrf
 
                 <div class="space-y-1.5">
-                    <label for="code" class="block text-center text-sm font-semibold text-slate-700">Authentication code</label>
+                    <label for="code" class="block text-center text-sm font-semibold text-slate-700">{{ t('Authentication code') }}</label>
                     <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
                            placeholder="000000" autocomplete="one-time-code" autofocus required
                            x-model="code"
@@ -43,12 +43,12 @@
 
                 <button type="submit" :disabled="code.length !== 6"
                         class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:from-violet-700 hover:to-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50">
-                    <i class="lucide lucide-shield-check h-4 w-4"></i> Verify code
+                    <i class="lucide lucide-shield-check h-4 w-4"></i> {{ t('Verify code') }}
                 </button>
             </form>
 
             <p class="mt-6 text-center text-xs text-slate-400">
-                Lost your device? Use a backup code from your 2FA setup.
+                {{ t('Lost your device? Use a backup code from your 2FA setup.') }}
             </p>
         </div>
     </section>

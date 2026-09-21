@@ -29,12 +29,12 @@
     <div class="relative z-10 mx-auto max-w-7xl">
         <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-sm">
             <i class="lucide lucide-briefcase h-3.5 w-3.5"></i>
-            <span>Services</span>
+            <span>{{ t('Services') }}</span>
         </div>
         <h1 class="max-w-3xl text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            All <span class="bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">Services</span>
+            All <span class="bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">{{ t('Services') }}</span>
         </h1>
-        <p class="mt-4 max-w-xl text-white/70">Browse the services we offer and apply online in minutes.</p>
+        <p class="mt-4 max-w-xl text-white/70">{{ t('Browse the services we offer and apply online in minutes.') }}</p>
     </div>
 </section>
 
@@ -43,20 +43,20 @@
     <form method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" x-data="{ autoSubmit: false }" @change="if (autoSubmit) $el.submit()">
         <div class="relative min-w-[220px] flex-1">
             <i class="lucide lucide-search absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Search services..." autocomplete="off"
+            <input type="search" name="search" value="{{ $search }}" placeholder="{{ t('Search services...') }}" autocomplete="off"
                    class="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
         </div>
         <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-500">Category</label>
+            <label class="mb-1 block text-xs font-semibold text-slate-500">{{ t('Category') }}</label>
             <select name="category" @change="autoSubmit = true" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
-                <option value="">All categories</option>
+                <option value="">{{ t('All categories') }}</option>
                 @foreach ($categories as $cat)
                 <option value="{{ $cat }}" @if ($selected_category === $cat) selected @endif>{{ $cat }}</option>
                 @endforeach
             </select>
         </div>
         <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-500">Sort</label>
+            <label class="mb-1 block text-xs font-semibold text-slate-500">{{ t('Sort') }}</label>
             <select name="sort" @change="autoSubmit = true" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
                 <option value="latest" @if ($sort === 'latest') selected @endif>{{ t('Latest') }}</option>
                 <option value="name" @if ($sort === 'name') selected @endif>{{ t('Name') }}</option>
@@ -64,7 +64,7 @@
             </select>
         </div>
         <div>
-            <label class="mb-1 block text-xs font-semibold text-slate-500">Per page</label>
+            <label class="mb-1 block text-xs font-semibold text-slate-500">{{ t('Per page') }}</label>
             <select name="per_page" @change="autoSubmit = true" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
                 @foreach ([12, 24, 48] as $opt)
                 <option value="{{ $opt }}" @if ($per_page == $opt) selected @endif>{{ $opt }}</option>
@@ -77,7 +77,7 @@
     </form>
 
     @if (!empty($services))
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="Services feed">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="feed" aria-label="{{ t('Services feed') }}">
         @foreach ($services as $service)
         <a href="/services/view/{{ $service['slug'] }}" class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
             @if (!empty($service['featured_image_url']))
@@ -113,7 +113,7 @@
             $qs = fn ($p) => '?page='.$p.'&per_page='.$per_page.'&search='.urlencode($search).'&category='.urlencode($selected_category).'&sort='.$sort;
         @endphp
         @if ($current_page > 1)
-        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Previous">
+        <a href="{{ $qs($current_page - 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Previous') }}">
             <i class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif
@@ -121,7 +121,7 @@
         <a href="{{ $qs($p) }}" class="rounded-xl border px-3.5 py-2 text-sm font-semibold {{ $p === $current_page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300' }}">{{ $p }}</a>
         @endfor
         @if ($current_page < $total_pages)
-        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="Next">
+        <a href="{{ $qs($current_page + 1) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-indigo-300" aria-label="{{ t('Next') }}">
             <i class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"></i>
         </a>
         @endif

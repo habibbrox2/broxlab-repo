@@ -12,13 +12,13 @@
                 <i class="lucide lucide-file-text w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">CV Builder</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('CV Builder') }}</p>
                 <h1 class="text-xl font-bold text-white">{{ $cv['full_name'] }}</h1>
                 <p class="text-sm text-white/60 mt-0.5">{{ $cv['job_title'] ?: 'No job title' }} — Created by {{ $cv['username'] }}</p>
             </div>
         </div>
         <a href="/admin/cv" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to CVs
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to CVs') }}
         </a>
     </div>
 </div>
@@ -28,19 +28,19 @@
         <div class="p-5 space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Full Name</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Full Name') }}</span>
                     <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $cv['full_name'] }}</p>
                 </div>
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Email</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Email') }}</span>
                     <p class="text-sm text-slate-900 dark:text-white">{{ $cv['email'] }}</p>
                 </div>
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Phone</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Phone') }}</span>
                     <p class="text-sm text-slate-900 dark:text-white">{{ $cv['phone'] ?: '—' }}</p>
                 </div>
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Job Title</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Job Title') }}</span>
                     <p class="text-sm text-slate-900 dark:text-white">{{ $cv['job_title'] ?: '—' }}</p>
                 </div>
                 <div>
@@ -56,7 +56,7 @@
                     <p class="text-sm text-slate-900 dark:text-white">{{ ucfirst($cv['gender'] ?? 'Not set') }}</p>
                 </div>
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Date of Birth</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{{ t('Date of Birth') }}</span>
                     <p class="text-sm text-slate-900 dark:text-white">{{ $cv['date_of_birth'] ? Carbon\Carbon::parse($cv['date_of_birth'])->format('F j, Y') : '—' }}</p>
                 </div>
                 <div>
@@ -80,7 +80,7 @@
             <hr class="border-slate-100 dark:border-slate-800">
 
             <div class="flex items-center justify-between py-2">
-                <span class="text-sm text-slate-600 dark:text-slate-400">CV ID</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('CV ID') }}</span>
                 <span class="text-sm font-medium text-slate-900 dark:text-white">#{{ $cv['id'] }}</span>
             </div>
             <div class="flex items-center justify-between py-2">
@@ -88,7 +88,7 @@
                 <span class="text-sm text-slate-900 dark:text-white">{{ $cv['created_at'] ? Carbon\Carbon::parse($cv['created_at'])->format('M j, Y g:i A') : '—' }}</span>
             </div>
             <div class="flex items-center justify-between py-2">
-                <span class="text-sm text-slate-600 dark:text-slate-400">Last Updated</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Last Updated') }}</span>
                 <span class="text-sm text-slate-900 dark:text-white">{{ $cv['updated_at'] ? Carbon\Carbon::parse($cv['updated_at'])->format('M j, Y g:i A') : '—' }}</span>
             </div>
             <div class="flex items-center justify-between py-2">
@@ -100,7 +100,7 @@
                 <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400">{{ $cv['download_count'] }}</span>
             </div>
             <div class="flex items-center justify-between py-2">
-                <span class="text-sm text-slate-600 dark:text-slate-400">Last Viewed</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Last Viewed') }}</span>
                 <span class="text-sm text-slate-900 dark:text-white">{{ $cv['last_viewed_at'] }}</span>
             </div>
             <div class="flex items-center justify-between py-2">

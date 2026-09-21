@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\AdminCvController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\TagCategoryController;
 use App\Http\Controllers\Admin\AdminKharijController;
+use App\Http\Controllers\KharijVerifyController;
+use App\Http\Controllers\UserSecurityController;
 use App\Http\Controllers\Admin\AdminSitemapController;
 use App\Http\Controllers\Admin\AdminWeatherController;
 use App\Http\Controllers\Admin\AdminLiveTvController;
@@ -41,6 +43,7 @@ use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CvExportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\MedicinesController;
 use App\Http\Controllers\WeatherApiController;
@@ -127,6 +130,11 @@ Route::post('/lang/{code}', [LanguageController::class, 'switchJson'])->name('la
 // Dynamic translation — legacy POST /api/translate (brox-i18n.js batch fallback)
 Route::post('/api/translate', [TranslateController::class, 'translate'])->name('api.translate');
 
+// Kharij QR verification (public, no auth — scanner apps hit these directly)
+// Legacy paths preserved: /mutation-land-gov-bd/qr-vk/{hash}
+Route::get('/mutation-land-gov-bd/qr-vk/{hash}', [KharijVerifyController::class, 'verify'])->name('kharij.verify');
+Route::get('/api/kharij/verify/{hash}', [KharijVerifyController::class, 'verifyJson'])->name('kharij.verify.json');
+
 // Firebase Web SDK config — legacy GET /api/firebase-config (public-by-design values)
 Route::get('/api/firebase-config', [FirebaseConfigController::class, 'show'])->name('api.firebase-config');
 Route::match(['post', 'put', 'patch', 'delete'], '/api/firebase-config', [FirebaseConfigController::class, 'rejectWrite'])->name('api.firebase-config.reject');
@@ -209,7 +217,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/categories/view/{id}', [TagCategoryController::class, 'categoryShow'])->name('admin.categories.show');
     Route::get('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryEdit'])->name('admin.categories.edit');
     Route::post('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryUpdate'])->name('admin.categories.update');
-    Route::get('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDestroy'])->name('admin.categories.destroy');
+    // Delete is confirm-on-GET, destroy-on-POST (CSRF-protected).
+    Route::get('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDeleteConfirm'])->whereNumber('id')->name('admin.categories.delete.confirm');
+    Route::post('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDestroy'])->whereNumber('id')->name('admin.categories.destroy');
 
     Route::get('/admin/tags', [TagCategoryController::class, 'tagIndex'])->name('admin.tags.index');
     Route::get('/admin/tags/create', [TagCategoryController::class, 'tagCreate'])->name('admin.tags.create');
@@ -217,7 +227,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/tags/view/{id}', [TagCategoryController::class, 'tagShow'])->name('admin.tags.show');
     Route::get('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagEdit'])->name('admin.tags.edit');
     Route::post('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagUpdate'])->name('admin.tags.update');
-    Route::get('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDestroy'])->name('admin.tags.destroy');
+    Route::get('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDeleteConfirm'])->whereNumber('id')->name('admin.tags.delete.confirm');
+    Route::post('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDestroy'])->whereNumber('id')->name('admin.tags.destroy');
 
     // Pages CMS — port of PagesController admin routes
     Route::get('/admin/pages', [AdminPageController::class, 'index'])->name('admin.pages.index');
@@ -226,7 +237,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/pages/view/{slug}', [AdminPageController::class, 'show'])->name('admin.pages.show');
     Route::get('/admin/pages/edit/{id}', [AdminPageController::class, 'edit'])->whereNumber('id')->name('admin.pages.edit');
     Route::post('/admin/pages/edit/{id}', [AdminPageController::class, 'update'])->whereNumber('id')->name('admin.pages.update');
-    Route::get('/admin/pages/delete/{id}', [AdminPageController::class, 'destroy'])->whereNumber('id')->name('admin.pages.destroy');
+    Route::get('/admin/pages/delete/{id}', [AdminPageController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.pages.delete.confirm');
+    Route::post('/admin/pages/delete/{id}', [AdminPageController::class, 'destroy'])->whereNumber('id')->name('admin.pages.destroy');
     Route::get('/api/pages/check_url', [AdminPageController::class, 'checkUrl'])->name('admin.pages.check-url');
     // Posts — port of PostsController admin routes (+ legacy ?id= query form)
     Route::get('/admin/posts', [AdminPostController::class, 'index'])->name('admin.posts.index');
@@ -235,13 +247,15 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/posts/view/{id}', [AdminPostController::class, 'show'])->whereNumber('id')->name('admin.posts.show');
     Route::get('/admin/posts/edit/{id}', [AdminPostController::class, 'edit'])->whereNumber('id')->name('admin.posts.edit');
     Route::post('/admin/posts/edit/{id}', [AdminPostController::class, 'update'])->whereNumber('id')->name('admin.posts.update');
-    Route::get('/admin/posts/delete/{id}', [AdminPostController::class, 'destroy'])->whereNumber('id')->name('admin.posts.destroy');
+    Route::get('/admin/posts/delete/{id}', [AdminPostController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.posts.delete.confirm');
+    Route::post('/admin/posts/delete/{id}', [AdminPostController::class, 'destroy'])->whereNumber('id')->name('admin.posts.destroy.path');
 
     // Legacy query-string forms (?id=) — keep working alongside path forms
     Route::get('/admin/posts/view', [AdminPostController::class, 'show'])->name('admin.posts.show.query');
     Route::get('/admin/posts/edit', [AdminPostController::class, 'edit'])->name('admin.posts.edit.query');
     Route::post('/admin/posts/edit', [AdminPostController::class, 'update'])->name('admin.posts.update.query');
-    Route::get('/admin/posts/delete', [AdminPostController::class, 'destroy'])->name('admin.posts.destroy.query');
+    Route::get('/admin/posts/delete', [AdminPostController::class, 'deleteConfirm'])->name('admin.posts.delete.query.confirm');
+    Route::post('/admin/posts/delete', [AdminPostController::class, 'destroy'])->name('admin.posts.destroy.query');
 
     // AJAX — port of check_permalink + autosave
     Route::get('/api/posts/check_permalink', [AdminPostController::class, 'checkPermalink'])->name('admin.posts.check-permalink');
@@ -254,8 +268,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/mobiles/view/{id}', [AdminMobileController::class, 'show'])->whereNumber('id')->name('admin.mobiles.show');
     Route::get('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'edit'])->whereNumber('id')->name('admin.mobiles.edit');
     Route::post('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'update'])->whereNumber('id')->name('admin.mobiles.update');
-    Route::get('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'destroy'])->whereNumber('id')->name('admin.mobiles.destroy');
-
     // Legacy query-string forms (?id=) — keep working alongside path forms
     Route::get('/admin/mobiles/view', [AdminMobileController::class, 'show'])->name('admin.mobiles.show.query');
     Route::get('/admin/mobiles/edit', [AdminMobileController::class, 'edit'])->name('admin.mobiles.edit.query');
@@ -263,9 +275,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/mobiles/delete', [AdminMobileController::class, 'deleteConfirm'])->name('admin.mobiles.delete.query');
     Route::post('/admin/mobiles/delete', [AdminMobileController::class, 'destroy'])->name('admin.mobiles.destroy.query');
 
-    // DELETE via path (GET for confirmation, POST for actual delete)
-    Route::get('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'deleteConfirm'])->name('admin.mobiles.delete');
-    Route::post('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'destroy'])->name('admin.mobiles.destroy.path');
+    // DELETE via path (GET for confirmation, POST for actual delete).
+    // NOTE: only ONE GET registration — a second for the same URI would shadow
+    // this confirmation page and delete on GET (that was the old behaviour).
+    Route::get('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.mobiles.delete');
+    Route::post('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'destroy'])->whereNumber('id')->name('admin.mobiles.destroy.path');
 
     // Services CRUD
     Route::get('/admin/services', [AdminServiceController::class, 'index'])->name('admin.services.index');
@@ -377,6 +391,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/scraper/settings/automation', [AdminScraperController::class, 'settingsAutomation'])->name('admin.scraper.settings.automation');
     Route::get('/admin/scraper/settings/limits', [AdminScraperController::class, 'settingsLimits'])->name('admin.scraper.settings.limits');
     Route::get('/admin/scraper/settings/storage', [AdminScraperController::class, 'settingsStorage'])->name('admin.scraper.settings.storage');
+    Route::get('/admin/scraper/source/{key}', [AdminScraperController::class, 'showSource'])->name('admin.scraper.source.show');
+    Route::post('/admin/scraper/run', [AdminScraperController::class, 'run'])->name('admin.scraper.run');
+    Route::post('/admin/scraper/source/{key}/clear', [AdminScraperController::class, 'clearSource'])->name('admin.scraper.source.clear');
 
     // CV Builder — admin
     Route::get('/admin/cv', [AdminCvController::class, 'index'])->name('admin.cv.index');
@@ -424,6 +441,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/aisystem/chat', [AdminAiSystemController::class, 'chat'])->name('admin.aisystem.chat');
     Route::get('/admin/aisystem/knowledge', [AdminAiSystemController::class, 'knowledge'])->name('admin.aisystem.knowledge');
     Route::get('/admin/aisystem/providers', [AdminAiSystemController::class, 'providers'])->name('admin.aisystem.providers');
+    Route::post('/admin/aisystem/providers', [AdminAiSystemController::class, 'providerStore'])->name('admin.aisystem.providers.store');
+    Route::post('/admin/aisystem/providers/{id}', [AdminAiSystemController::class, 'providerUpdate'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.update');
+    Route::post('/admin/aisystem/providers/{id}/delete', [AdminAiSystemController::class, 'providerDelete'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.delete');
+    Route::post('/admin/aisystem/providers/{id}/default', [AdminAiSystemController::class, 'providerDefault'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.default');
+    Route::post('/admin/aisystem/providers/{id}/test', [AdminAiSystemController::class, 'providerTest'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.test');
     Route::get('/admin/aisystem/writer', [AdminAiSystemController::class, 'writer'])->name('admin.aisystem.writer');
 
     // API Proxies
@@ -452,12 +474,23 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/user/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
 
+    // CV export (PDF via mPDF — port of the legacy CvController stream path)
+    Route::get('/cv/{id}/pdf', [CvExportController::class, 'pdf'])
+        ->whereNumber('id')->name('cv.pdf');
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/edit', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profile/password', [ProfileController::class, 'showPasswordForm'])->name('profile.password');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/profile/2fa', fn () => redirect('/user/security/2fa', 302)); // legacy-compat redirect
+
+    // 2FA enrollment (port of legacy /user/security/2fa/* flow)
+    Route::get('/user/security/2fa', [UserSecurityController::class, 'show2FA'])->name('user.security.2fa');
+    Route::get('/user/security/2fa/setup', [UserSecurityController::class, 'setup'])->name('user.security.2fa.setup');
+    Route::post('/user/security/2fa/verify', [UserSecurityController::class, 'verify'])->name('user.security.2fa.verify');
+    Route::get('/user/security/2fa/backup', [UserSecurityController::class, 'backup'])->name('user.security.2fa.backup');
+    Route::post('/user/security/2fa/disable', [UserSecurityController::class, 'disable'])->name('user.security.2fa.disable');
 
     Route::get('/user/settings', [SettingsController::class, 'index'])->name('user.settings');
 

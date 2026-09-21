@@ -68,7 +68,7 @@ window.sendMedexRefreshRequest = async function (button) {
     const path = window.location.pathname.replace(/\/+$/, '');
     const apiBase = path.startsWith('/medicines') ? '/api/medicines' : '/api/medex';
 
-    const response = await fetch(apiBase + '/refresh', {
+    const response = await fetch(`${apiBase }/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

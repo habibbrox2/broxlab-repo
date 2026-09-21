@@ -17,7 +17,7 @@
                 <i class="lucide lucide-mail h-6 w-6"></i>
             </div>
             <div class="text-center">
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Check your inbox</h1>
+                <h1 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{{ t('Check your inbox') }}</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-500">
                     @if (!empty($email))
                         A verification link was sent to <span class="font-semibold text-slate-700">{{ $email }}</span>. Click the link in the email to verify your address.
@@ -45,7 +45,7 @@
                 @csrf
 
                 <div class="space-y-1.5">
-                    <label for="email" class="block text-sm font-semibold text-slate-700">Email address</label>
+                    <label for="email" class="block text-sm font-semibold text-slate-700">{{ t('Email address') }}</label>
                     <div class="relative">
                         <i class="lucide lucide-mail absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
                         <input type="email" id="email" name="email" value="{{ $email }}" required
@@ -56,13 +56,13 @@
 
                 <button type="submit"
                         class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-700 hover:to-violet-700 active:scale-[0.99]">
-                    <i class="lucide lucide-refresh-cw h-4 w-4"></i> Resend verification email
+                    <i class="lucide lucide-refresh-cw h-4 w-4"></i> {{ t('Resend verification email') }}
                 </button>
             </form>
 
             <div class="mt-6 border-t border-slate-100 pt-5 text-center">
                 <a href="/login" class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
-                    <i class="lucide lucide-arrow-left h-4 w-4"></i> Back to login
+                    <i class="lucide lucide-arrow-left h-4 w-4"></i> {{ t('Back to login') }}
                 </a>
             </div>
         </div>

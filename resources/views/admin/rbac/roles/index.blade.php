@@ -15,11 +15,11 @@
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">RBAC — Role-Based Access Control</p>
                 <h1 class="text-xl font-bold text-white">Roles</h1>
-                <p class="text-sm text-white/60 mt-0.5">Define roles to group permissions and assign them to users</p>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Define roles to group permissions and assign them to users') }}</p>
             </div>
         </div>
         <a href="/admin/roles/create" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-plus w-4 h-4"></i> Create Role
+            <i class="lucide lucide-plus w-4 h-4"></i> {{ t('Create Role') }}
         </a>
     </div>
 </div>
@@ -32,7 +32,7 @@
                 <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                     <i class="lucide lucide-shield w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
                 </div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">All Roles</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('All Roles') }}</h3>
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -44,7 +44,7 @@
                         <th class="text-center px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Rank</th>
                         <th class="text-center px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Users</th>
                         <th class="text-center px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Permissions</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Super Admin</th>
+                        <th class="text-center px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">{{ t('Super Admin') }}</th>
                         <th class="text-right px-4 py-3 font-semibold text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
@@ -60,7 +60,7 @@
                                         <p class="font-medium text-slate-900 dark:text-white">{{ $role['name'] }}</p>
                                         @if($role['is_super_admin'])
                                             <span class="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                                                <i class="lucide lucide-star w-3 h-3"></i> Super Admin
+                                                <i class="lucide lucide-star w-3 h-3"></i> {{ t('Super Admin') }}
                                             </span>
                                         @endif
                                     </div>
@@ -72,9 +72,9 @@
                             <td class="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{{ $role['permission_count'] }}</td>
                             <td class="px-4 py-3 text-center">
                                 @if($role['is_super_admin'])
-                                    <span class="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-semibold dark:bg-amber-900/30 dark:text-amber-400">Yes</span>
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-semibold dark:bg-amber-900/30 dark:text-amber-400">{{ t('Yes') }}</span>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-semibold dark:bg-slate-800 dark:text-slate-500">No</span>
+                                    <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-semibold dark:bg-slate-800 dark:text-slate-500">{{ t('No') }}</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
@@ -82,10 +82,10 @@
                                     <a href="/admin/roles/view/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="View">
                                         <i class="lucide lucide-eye w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/roles/edit/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                    <a href="/admin/roles/edit/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="{{ t('Edit') }}">
                                         <i class="lucide lucide-edit w-3.5 h-3.5"></i>
                                     </a>
-                                    <a href="/admin/roles/delete/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="Delete">
+                                    <a href="/admin/roles/delete/{{ $role['id'] }}" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors" title="{{ t('Delete') }}">
                                         <i class="lucide lucide-trash-2 w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
@@ -95,8 +95,8 @@
                         <tr>
                             <td colspan="7" class="px-4 py-8 text-center text-slate-400 dark:text-slate-600">
                                 <i class="lucide lucide-shield-off w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                                <p class="text-sm font-medium">No roles found</p>
-                                <p class="text-xs mt-1">Create your first role to get started</p>
+                                <p class="text-sm font-medium">{{ t('No roles found') }}</p>
+                                <p class="text-xs mt-1">{{ t('Create your first role to get started') }}</p>
                             </td>
                         </tr>
                     @endforelse

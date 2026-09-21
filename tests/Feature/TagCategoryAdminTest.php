@@ -181,13 +181,28 @@ class TagCategoryAdminTest extends TestCase
         $this->get("/admin/categories/edit/{$id}")->assertOk()->assertSee('Show Cat');
     }
 
-    public function test_category_delete_removes_row(): void
+    public function test_category_delete_confirm_page_has_no_side_effects(): void
+    {
+        $this->makeAdmin();
+
+        $id = DB::table('categories')->insertGetId(['name' => 'Doomed', 'slug' => 'doomed-'.uniqid('u')]);
+        $this->categoryIds[] = $id;
+
+        // GET must only show the confirmation page — never delete.
+        $this->get("/admin/categories/delete/{$id}")
+            ->assertOk()
+            ->assertSee('Confirm Deletion');
+
+        $this->assertDatabaseHas('categories', ['id' => $id]);
+    }
+
+    public function test_category_delete_removes_row_on_post(): void
     {
         $this->makeAdmin();
 
         $id = DB::table('categories')->insertGetId(['name' => 'Doomed', 'slug' => 'doomed-'.uniqid('u')]);
 
-        $this->get("/admin/categories/delete/{$id}")
+        $this->withoutCsrf()->post("/admin/categories/delete/{$id}")
             ->assertRedirect('/admin/categories')
             ->assertSessionHas('status', 'Category deleted successfully!');
 
@@ -204,7 +219,7 @@ class TagCategoryAdminTest extends TestCase
     {
         $this->makeAdmin();
 
-        $this->get('/admin/categories/delete/999999999')
+        $this->withoutCsrf()->post('/admin/categories/delete/999999999')
             ->assertRedirect('/admin/categories')
             ->assertSessionHas('error', 'Category not found.');
 
@@ -284,13 +299,27 @@ class TagCategoryAdminTest extends TestCase
         $this->get("/admin/tags/edit/{$id}")->assertOk()->assertSee('Show Tag');
     }
 
-    public function test_tag_delete_removes_row(): void
+    public function test_tag_delete_confirm_page_has_no_side_effects(): void
+    {
+        $this->makeAdmin();
+
+        $id = DB::table('tags')->insertGetId(['name' => 'Doomed Tag', 'slug' => 'doomed-tag-'.uniqid('u')]);
+        $this->tagIds[] = $id;
+
+        $this->get("/admin/tags/delete/{$id}")
+            ->assertOk()
+            ->assertSee('Confirm Deletion');
+
+        $this->assertDatabaseHas('tags', ['id' => $id]);
+    }
+
+    public function test_tag_delete_removes_row_on_post(): void
     {
         $this->makeAdmin();
 
         $id = DB::table('tags')->insertGetId(['name' => 'Doomed Tag', 'slug' => 'doomed-tag-'.uniqid('u')]);
 
-        $this->get("/admin/tags/delete/{$id}")
+        $this->withoutCsrf()->post("/admin/tags/delete/{$id}")
             ->assertRedirect('/admin/tags')
             ->assertSessionHas('status', 'Tag deleted successfully!');
 

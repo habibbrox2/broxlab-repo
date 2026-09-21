@@ -220,9 +220,27 @@ class AdminPostController extends Controller
 
     // ── Delete ────────────────────────────────────────────────────────
 
-    public function destroy(Request $request, ?int $id = null): RedirectResponse
+    /**
+     * GET /admin/posts/delete/{id} (and the legacy ?id= form) — renders the
+     * confirmation page and performs no side effects. The delete itself is a
+     * POST so it is CSRF-protected; legacy deleted on GET, which let a link
+     * prefetch, crawler or <img> tag destroy a post.
+     */
+    public function deleteConfirm(Request $request, ?int $id = null): View
     {
         $id = $id ?? (int) $request->query('id', '0');
+        $post = $id ? $this->posts->getPostById($id) : null;
+
+        if (! $post) {
+            abort(404);
+        }
+
+        return view('admin.posts.delete', ['post' => $post]);
+    }
+
+    public function destroy(Request $request, ?int $id = null): RedirectResponse
+    {
+        $id = $id ?? (int) ($request->input('id') ?? $request->query('id', '0'));
 
         if (! $id) {
             $this->posts->logActivity('Post Deletion Failed', 'post', 0, ['reason' => 'Post ID not provided'], 'failure');

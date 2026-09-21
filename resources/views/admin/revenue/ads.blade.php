@@ -13,12 +13,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Revenue</p>
-                <h1 class="text-xl font-bold text-white">Advertising</h1>
-                <p class="text-sm text-white/60 mt-0.5">Manage ad campaigns, placements, and monetization settings</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Advertising') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Manage ad campaigns, placements, and monetization settings') }}</p>
             </div>
         </div>
         <a href="/admin/revenue" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Revenue
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Revenue') }}
         </a>
     </div>
 </div>
@@ -30,10 +30,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4">
                     <i class="lucide lucide-advertisement w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Ad Campaigns</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Create and manage advertising campaigns</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Ad Campaigns') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Create and manage advertising campaigns') }}</p>
                 <a href="/admin/revenue/ads/campaigns" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    Manage Campaigns <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Manage Campaigns') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -43,10 +43,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center mb-4">
                     <i class="lucide lucide-layout w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Ad Placements</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure where ads appear on your site</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Ad Placements') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure where ads appear on your site') }}</p>
                 <a href="/admin/revenue/ads/placements" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    Manage Placements <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Manage Placements') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -57,9 +57,9 @@
                     <i class="lucide lucide-chart-bar w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Analytics</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">View ad performance and revenue reports</p>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('View ad performance and revenue reports') }}</p>
                 <a href="/admin/revenue/ads/analytics" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    View Analytics <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('View Analytics') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>
@@ -69,10 +69,10 @@
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4">
                     <i class="lucide lucide-settings w-6 h-6 text-white"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Settings</h3>
-                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">Configure ad preferences and policies</p>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Settings') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Configure ad preferences and policies') }}</p>
                 <a href="/admin/revenue/ads/settings" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                    Ad Settings <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                    {{ t('Ad Settings') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
                 </a>
             </div>
         </div>

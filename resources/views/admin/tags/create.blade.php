@@ -14,12 +14,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Content</p>
-                <h1 class="text-xl font-bold text-white">Create New Tag</h1>
-                <p class="text-sm text-white/60 mt-0.5 max-w-md">Add a new tag to label your content.</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Create New Tag') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ t('Add a new tag to label your content.') }}</p>
             </div>
         </div>
         <a href="/admin/tags" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 self-start sm:self-auto">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Tags
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Tags') }}
         </a>
     </div>
 </div>
@@ -32,8 +32,8 @@
                 <i class="lucide lucide-hash w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Tag Details</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Enter the tag name and URL slug</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Tag Details') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Enter the tag name and URL slug') }}</p>
             </div>
         </div>
         <div class="p-5 sm:p-6">
@@ -42,16 +42,16 @@
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Tag Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                        {{ t('Tag Name') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
-                    <input type="text" name="name" placeholder="e.g., PHP, Tutorial, Review" required
+                    <input type="text" name="name" placeholder="{{ t('e.g., PHP, Tutorial, Review') }}" required
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">A short, descriptive label.</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">{{ t('A short, descriptive label.') }}</p>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        URL Slug <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                        {{ t('URL Slug') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
                     <div class="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/10 bg-white dark:bg-slate-800/60 transition-all duration-150">
                         <span class="shrink-0 flex items-center px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600">
@@ -64,10 +64,10 @@
 
                 <div class="flex flex-wrap gap-3 pt-2">
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-check-circle w-4 h-4"></i> Create Tag
+                        <i class="lucide lucide-check-circle w-4 h-4"></i> {{ t('Create Tag') }}
                     </button>
                     <a href="/admin/tags" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                        <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                     </a>
                 </div>
             </form>

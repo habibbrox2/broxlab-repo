@@ -121,7 +121,7 @@
                             <label for="budget" class="mb-2 block text-sm font-semibold text-slate-700">{{ t('Budget Range') }} *</label>
                             <select id="budget" name="budget" required>
                                 <option value="">{{ t('Select Budget') }}</option>
-                                <option value="under-5k" @if(($old['budget'] ?? '') === 'under-5k')selected @endif>Under 5,000 BDT</option>
+                                <option value="under-5k" @if(($old['budget'] ?? '') === 'under-5k')selected @endif>{{ t('Under 5,000 BDT') }}</option>
                                 <option value="5k-10k" @if(($old['budget'] ?? '') === '5k-10k')selected @endif>5,000 - 10,000 BDT</option>
                                 <option value="10k-25k" @if(($old['budget'] ?? '') === '10k-25k')selected @endif>10,000 - 25,000 BDT</option>
                                 <option value="25k-50k" @if(($old['budget'] ?? '') === '25k-50k')selected @endif>25,000 - 50,000 BDT</option>

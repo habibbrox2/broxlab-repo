@@ -1,4 +1,4 @@
-@php use App\Support\LanguageService; @endphp
+@php use App\Support\I18n\LanguageService; @endphp
 <!DOCTYPE html>
 <html lang="{{ app(LanguageService::class)->current() }}" data-lang="{{ app(LanguageService::class)->current() }}" data-theme="light" id="app-html">
 <script>
@@ -108,7 +108,7 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/brox-polish.css') }}?v={{ $assetsVersion }}">
     <link rel="stylesheet" href="{{ asset('/assets/ai/css/assistant.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/datepicker/datepicker.css') }}">
-    <link rel="stylesheet" href="{{ asset('/cdn/css/sweetalert2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/cdn/css/sweetalert2.min.css') }}">
 
     @yield('extra_styles')
     @stack('styles')
@@ -174,7 +174,7 @@
     <a href="#main-content"
        class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-3 focus:bg-white focus:text-indigo-600 focus:outline-none focus:rounded-br-lg"
        tabindex="0">
-        Skip to main content
+        {{ t('Skip to main content') }}
     </a>
 
     {{-- Header --}}
@@ -231,10 +231,10 @@
     {{-- Scroll-to-top button --}}
     <button id="scrollTopBtn"
             type="button"
-            title="Scroll to top of page"
-            aria-label="Scroll to top of page"
-            data-i18n-title="Scroll to top of page"
-            data-i18n-aria-label="Scroll to top of page"
+            title="{{ t('Scroll to top of page') }}"
+            aria-label="{{ t('Scroll to top of page') }}"
+            data-i18n-title="{{ t('Scroll to top of page') }}"
+            data-i18n-aria-label="{{ t('Scroll to top of page') }}"
             x-data="{}"
             x-show="window.pageYOffset > 180"
             x-transition
@@ -246,10 +246,10 @@
     {{-- Push notification button --}}
     <button id="enableNotificationsBtn"
             type="button"
-            title="Enable push notifications"
-            aria-label="Enable notifications"
-            data-i18n-title="Enable push notifications"
-            data-i18n-aria-label="Enable notifications"
+            title="{{ t('Enable push notifications') }}"
+            aria-label="{{ t('Enable notifications') }}"
+            data-i18n-title="{{ t('Enable push notifications') }}"
+            data-i18n-aria-label="{{ t('Enable notifications') }}"
             class="notif-permission-btn fixed bottom-[140px] right-5 z-40 hidden items-center justify-center w-11 h-11 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none">
         <i class="lucide lucide-bell w-5 h-5" aria-hidden="true"></i>
     </button>
@@ -257,7 +257,7 @@
     {{-- Reading progress bar --}}
     <div id="scrollProgress"
          role="progressbar"
-         aria-label="Page scroll progress"
+         aria-label="{{ t('Page scroll progress') }}"
          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
          x-data="scrollProgress()"
          :style="`width: ${progress}%`"
@@ -275,7 +275,7 @@
         <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-violet-500/5 dark:from-indigo-500/10 dark:to-violet-500/10"></div>
         <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
             <div class="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-indigo-500 animate-spin motion-reduce:animate-none"></div>
-            <span class="text-xs font-medium text-slate-400 dark:text-slate-500">Loading...</span>
+            <span class="text-xs font-medium text-slate-400 dark:text-slate-500">{{ t('Loading...') }}</span>
         </div>
     </div>
 
@@ -412,6 +412,18 @@
     </script>
 
     {{-- App config --}}
+    @php
+        $broxCurrentLang = app(LanguageService::class)->current();
+        $broxSiteConfig = [
+            'lang' => $broxCurrentLang,
+            'logo' => $appSettings['site_logo'] ?? '',
+            'translations' => [
+                'en' => $siteTranslations['en'] ?? [],
+                'bn' => $siteTranslations['bn'] ?? [],
+                $broxCurrentLang => $siteTranslations[$broxCurrentLang] ?? [],
+            ],
+        ];
+    @endphp
     <script>
     window.__APP_JS_CONFIG = window.__APP_JS_CONFIG || {};
     window.__APP_JS_CONFIG.notifications = window.__APP_JS_CONFIG.notifications || {};
@@ -419,13 +431,10 @@
     window.puter = window.puter || {};
     window.puter.quiet = true;
 
-    const currentLang = @json(app(LanguageService::class)->current());
-    window.__broxSiteLang = currentLang;
-    window.__broxSiteLogo = @json($appSettings['site_logo'] ?? '');
-    window.__broxSiteTranslations = window.__broxSiteTranslations || {};
-    window.__broxSiteTranslations.en = Object.assign(window.__broxSiteTranslations.en || {}, @json($siteTranslations['en'] ?? []));
-    window.__broxSiteTranslations.bn = Object.assign(window.__broxSiteTranslations.bn || {}, @json($siteTranslations['bn'] ?? []));
-    window.__broxSiteTranslations[currentLang] = Object.assign(window.__broxSiteTranslations[currentLang] || {}, @json($siteTranslations[app(LanguageService::class)->current()] ?? []));
+    window.__broxSiteConfig = {!! json_encode($broxSiteConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
+    window.__broxSiteLang = window.__broxSiteConfig.lang;
+    window.__broxSiteLogo = window.__broxSiteConfig.logo;
+    window.__broxSiteTranslations = Object.assign(window.__broxSiteTranslations || {}, window.__broxSiteConfig.translations);
     </script>
 
     {{-- Module scripts --}}

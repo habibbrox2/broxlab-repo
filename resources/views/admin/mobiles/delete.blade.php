@@ -13,13 +13,13 @@
                 <i class="lucide lucide-trash-2 w-5 h-5 text-white"></i>
             </div>
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">Danger Zone</p>
-                <h1 class="text-xl font-bold text-white">Delete Mobile</h1>
-                <p class="text-sm text-white/60 mt-0.5 max-w-md">This action cannot be undone. All specifications, images, and comments will be permanently deleted.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Danger Zone') }}</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Delete Mobile') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5 max-w-md">{{ t('This action cannot be undone. All specifications, images, and comments will be permanently deleted.') }}</p>
             </div>
         </div>
         <a href="/admin/mobiles" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 self-start sm:self-auto">
-            <i class="lucide lucide-x w-4 h-4"></i> Cancel
+            <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
         </a>
     </div>
 </div>
@@ -32,8 +32,8 @@
                 <i class="lucide lucide-alert-triangle w-4 h-4 text-red-600 dark:text-red-400"></i>
             </div>
             <div>
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Confirm Deletion</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-600">Please review the details below before proceeding</p>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Confirm Deletion') }}</h3>
+                <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Please review the details below before proceeding') }}</p>
             </div>
         </div>
         <div class="p-5 space-y-4">
@@ -45,11 +45,11 @@
                     <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $mobile['id'] }}</p>
                 </div>
                 <div>
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-1">Brand</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-1">{{ t('Brand') }}</p>
                     <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $mobile['brand_name'] }}</p>
                 </div>
                 <div>
-                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-1">Model</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-600 mb-1">{{ t('Model') }}</p>
                     <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $mobile['model_name'] }}</p>
                 </div>
                 <div>
@@ -65,12 +65,12 @@
                 <i class="lucide lucide-warning w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"></i>
                 <div class="text-sm text-amber-800 dark:text-amber-300">
                     <p class="font-semibold mb-1">Warning</p>
-                    <p>This will permanently delete the following associated data:</p>
+                    <p>{{ t('This will permanently delete the following associated data:') }}</p>
                     <ul class="mt-2 space-y-1 list-disc list-inside text-amber-700 dark:text-amber-400">
                         <li>All specifications ({{ count($specifications) }} items)</li>
                         <li>All images ({{ count($images) }} items)</li>
-                        <li>All tag associations</li>
-                        <li>All comments</li>
+                        <li>{{ t('All tag associations') }}</li>
+                        <li>{{ t('All comments') }}</li>
                     </ul>
                 </div>
             </div>
@@ -82,7 +82,7 @@
                     <button type="submit"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-red-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150 w-full">
                         <i class="lucide lucide-trash-2 w-4 h-4"></i>
-                        Yes, Delete This Mobile
+                        {{ t('Yes, Delete This Mobile') }}
                     </button>
                 </div>
             </form>

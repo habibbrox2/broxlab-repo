@@ -109,7 +109,7 @@
                                 </button>
                                 @endforeach
                             </div>
-                            <input type="number" id="amount-input" name="donation_amount" min="1" step="1" value="{{ $old['donation_amount'] ?? '' }}" placeholder="Or enter a custom amount" class="mt-3">
+                            <input type="number" id="amount-input" name="donation_amount" min="1" step="1" value="{{ $old['donation_amount'] ?? '' }}" placeholder="{{ t('Or enter a custom amount') }}" class="mt-3">
                         </div>
 
                         <div>
@@ -127,7 +127,7 @@
                                 </button>
                                 <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="stripe">
                                     <div class="text-sm font-semibold text-slate-900" data-i18n="Card">{{ t('Card') }}</div>
-                                    <div class="text-xs text-slate-500">Visa / Mastercard</div>
+                                    <div class="text-xs text-slate-500">{{ t('Visa / Mastercard') }}</div>
                                     <input type="radio" name="donation_method" value="stripe" hidden>
                                 </button>
                                 <button type="button" class="donation-method rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200" data-method="handcash">
@@ -141,11 +141,11 @@
                         <div id="bkash-panel" class="hidden rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4">
                             <h3 class="text-base font-bold text-slate-900" data-i18n="bKash donation">{{ t('bKash donation') }}</h3>
                             <p class="mt-2 text-sm text-slate-600">Send <strong id="bkash-amt-label">৳500</strong> to:</p>
-                            <div id="bkash-num" class="mt-3 cursor-pointer rounded-2xl border border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-[0.2em] text-rose-700" data-bkash="{{ $bkashNumber }}" title="Tap to copy">
+                            <div id="bkash-num" class="mt-3 cursor-pointer rounded-2xl border border-rose-200 bg-white px-4 py-3 text-center text-lg font-bold tracking-[0.2em] text-rose-700" data-bkash="{{ $bkashNumber }}" title="{{ t('Tap to copy') }}">
                                 {{ $bkashNumber !== '' ? $bkashNumber : '— Not configured —' }}
                             </div>
                             @if($bkashNumber === '')
-                            <p class="mt-2 text-sm text-red-600">bKash number is not configured. Please contact the site admin.</p>
+                            <p class="mt-2 text-sm text-red-600">{{ t('bKash number is not configured. Please contact the site admin.') }}</p>
                             @endif
                             <div class="mt-4 space-y-2 text-sm text-slate-600">
                                 <p class="flex gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span> {{ t('Send money to the number above.') }}</p>
@@ -154,13 +154,13 @@
                             </div>
                             <div class="mt-4">
                                 <label class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="bKash Transaction ID (TrxID)">{{ t('bKash Transaction ID (TrxID)') }}</label>
-                                <input type="text" id="bkash-trxid-input" name="bkash_trxid" placeholder="e.g. CID7K8LMNOP9QRS2" value="{{ $old['bkash_trxid'] ?? '' }}">
+                                <input type="text" id="bkash-trxid-input" name="bkash_trxid" placeholder="{{ t('e.g. CID7K8LMNOP9QRS2') }}" value="{{ $old['bkash_trxid'] ?? '' }}">
                             </div>
                         </div>
 
                         <div>
                             <label class="mb-2 block text-sm font-semibold text-slate-700" data-i18n="Add a Note (optional)">{{ t('Add a Note (optional)') }}</label>
-                            <textarea name="donor_note" rows="3" placeholder="Leave a message...">{{ $old['donor_note'] ?? '' }}</textarea>
+                            <textarea name="donor_note" rows="3" placeholder="{{ t('Leave a message...') }}">{{ $old['donor_note'] ?? '' }}</textarea>
                         </div>
 
                         <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
@@ -215,7 +215,7 @@
 
                 <div class="support-card">
                     <h3 class="text-lg font-bold text-slate-900" data-i18n="Corporate sponsorship">{{ t('Corporate sponsorship') }}</h3>
-                    <p class="mt-2 text-sm leading-7 text-slate-600">Reach thousands of tech and mobile lovers with a featured sponsorship.</p>
+                    <p class="mt-2 text-sm leading-7 text-slate-600">{{ t('Reach thousands of tech and mobile lovers with a featured sponsorship.') }}</p>
                     <a href="/advertise" class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
                         <i class="lucide lucide-megaphone h-4 w-4" aria-hidden="true"></i>
                         {{ t('Advertise with us') }}

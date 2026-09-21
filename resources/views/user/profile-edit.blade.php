@@ -6,7 +6,7 @@
 <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
     <div class="mb-6">
         <h1 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{{ $header_title }}</h1>
-        <p class="mt-0.5 text-sm text-slate-500">Keep your account information up to date</p>
+        <p class="mt-0.5 text-sm text-slate-500">{{ t('Keep your account information up to date') }}</p>
     </div>
 
     @if (session('status'))
@@ -30,7 +30,7 @@
         <div class="flex items-center gap-4">
             <template x-if="!preview">
                 @if (!empty($user->profile_pic))
-                    <img src="{{ asset($user->profile_pic) }}" alt="Current picture" class="h-16 w-16 rounded-full border border-slate-200 object-cover">
+                    <img src="{{ asset($user->profile_pic) }}" alt="{{ t('Current picture') }}" class="h-16 w-16 rounded-full border border-slate-200 object-cover">
                 @else
                     <span class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-black text-white">
                         {{ mb_strtoupper(mb_substr($user->username ?? 'U', 0, 1)) }}
@@ -40,11 +40,11 @@
             <img x-show="preview" :src="preview" alt="Preview" class="h-16 w-16 rounded-full border border-slate-200 object-cover" x-cloak>
             <div>
                 <label for="profile_pic" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700">
-                    <i class="lucide lucide-image h-4 w-4"></i> Change photo
+                    <i class="lucide lucide-image h-4 w-4"></i> {{ t('Change photo') }}
                 </label>
                 <input type="file" id="profile_pic" name="profile_pic" accept="image/png,image/jpeg,image/webp" class="hidden"
                        x-on:change="preview = URL.createObjectURL($event.target.files[0])">
-                <p class="mt-1 text-xs text-slate-400">JPG, PNG or WebP, max 2 MB</p>
+                <p class="mt-1 text-xs text-slate-400">{{ t('JPG, PNG or WebP, max 2 MB') }}</p>
             </div>
         </div>
 
@@ -53,12 +53,12 @@
             <legend class="text-sm font-bold text-slate-900">Account</legend>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label for="username" class="mb-1 block text-sm font-semibold text-slate-700">Username <span class="text-red-500">*</span></label>
+                    <label for="username" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Username') }} <span class="text-red-500">*</span></label>
                     <input type="text" id="username" name="username" value="{{ old('username', $user->username) }}" required
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
                 <div>
-                    <label for="email" class="mb-1 block text-sm font-semibold text-slate-700">Email <span class="text-red-500">*</span></label>
+                    <label for="email" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Email') }} <span class="text-red-500">*</span></label>
                     <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
@@ -70,12 +70,12 @@
             <legend class="text-sm font-bold text-slate-900">Personal</legend>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label for="first_name" class="mb-1 block text-sm font-semibold text-slate-700">First name</label>
+                    <label for="first_name" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('First name') }}</label>
                     <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $user->first_name) }}"
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
                 <div>
-                    <label for="last_name" class="mb-1 block text-sm font-semibold text-slate-700">Last name</label>
+                    <label for="last_name" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Last name') }}</label>
                     <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $user->last_name) }}"
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
@@ -90,7 +90,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="dob" class="mb-1 block text-sm font-semibold text-slate-700">Date of birth</label>
+                    <label for="dob" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Date of birth') }}</label>
                     <input type="date" id="dob" name="dob" value="{{ old('dob', $user->dob ? \Carbon\Carbon::parse($user->dob)->format('Y-m-d') : '') }}" max="{{ now()->toDateString() }}"
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
@@ -99,15 +99,15 @@
 
         {{-- Contact --}}
         <fieldset class="space-y-4">
-            <legend class="text-sm font-bold text-slate-900">Contact</legend>
+            <legend class="text-sm font-bold text-slate-900">{{ t('Contact') }}</legend>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label for="phone" class="mb-1 block text-sm font-semibold text-slate-700">Phone</label>
+                    <label for="phone" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Phone') }}</label>
                     <input type="tel" id="phone" name="phone" value="{{ old('phone', $user->phone) }}"
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
                 <div>
-                    <label for="alternate_phone" class="mb-1 block text-sm font-semibold text-slate-700">Alternate phone</label>
+                    <label for="alternate_phone" class="mb-1 block text-sm font-semibold text-slate-700">{{ t('Alternate phone') }}</label>
                     <input type="tel" id="alternate_phone" name="alternate_phone" value="{{ old('alternate_phone', $user->alternate_phone) }}"
                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10">
                 </div>
@@ -143,7 +143,7 @@
 
         {{-- Social --}}
         <fieldset class="space-y-4">
-            <legend class="text-sm font-bold text-slate-900">Social profiles</legend>
+            <legend class="text-sm font-bold text-slate-900">{{ t('Social profiles') }}</legend>
             <div class="grid gap-4 sm:grid-cols-2">
                 @foreach ([
                     'facebook_url' => ['Facebook', 'facebook'],
@@ -163,9 +163,9 @@
         </fieldset>
 
         <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
-            <a href="/profile" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</a>
+            <a href="/profile" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">{{ t('Cancel') }}</a>
             <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99]">
-                <i class="lucide lucide-save h-4 w-4"></i> Save changes
+                <i class="lucide lucide-save h-4 w-4"></i> {{ t('Save changes') }}
             </button>
         </div>
     </form>

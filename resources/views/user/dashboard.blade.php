@@ -15,7 +15,7 @@
             <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                     @if (!empty($user->profile_pic))
-                        <img src="{{ asset($user->profile_pic) }}" alt="Profile"
+                        <img src="{{ asset($user->profile_pic) }}" alt="{{ t('Profile') }}"
                              class="h-16 w-16 rounded-full border-2 border-white/20 object-cover shadow-lg ring-2 ring-white/10 sm:h-20 sm:w-20" width="80" height="80">
                     @else
                         <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 bg-indigo-600 text-2xl font-black shadow-lg sm:h-20 sm:w-20">
@@ -28,7 +28,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-tight sm:text-2xl">Hello, {{ $display_name }}</h1>
-                    <p class="mt-1 text-sm text-indigo-200/80">Track your applications and updates</p>
+                    <p class="mt-1 text-sm text-indigo-200/80">{{ t('Track your applications and updates') }}</p>
                     @if ($user->email)
                         <p class="mt-0.5 text-xs text-indigo-300/60">{{ $user->email }}</p>
                     @endif
@@ -36,15 +36,15 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="/cv-builder" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 active:scale-[0.97]">
-                    <i class="lucide lucide-file-text h-4 w-4"></i> My CVs
+                    <i class="lucide lucide-file-text h-4 w-4"></i> {{ t('My CVs') }}
                 </a>
                 <a href="/user/settings" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 active:scale-[0.97]">
-                    <i class="lucide lucide-settings h-4 w-4"></i> Settings
+                    <i class="lucide lucide-settings h-4 w-4"></i> {{ t('Settings') }}
                 </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-400/30 active:scale-[0.97]">
-                        <i class="lucide lucide-log-out h-4 w-4"></i> Logout
+                        <i class="lucide lucide-log-out h-4 w-4"></i> {{ t('Logout') }}
                     </button>
                 </form>
             </div>
@@ -55,7 +55,7 @@
     <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-2 flex items-center justify-between">
             <h2 class="flex items-center gap-2 text-sm font-bold text-slate-900">
-                <i class="lucide lucide-user-check h-4 w-4 text-indigo-600"></i> Profile Completeness
+                <i class="lucide lucide-user-check h-4 w-4 text-indigo-600"></i> {{ t('Profile Completeness') }}
             </h2>
             <span class="text-sm font-black {{ $profile['completeness'] >= 80 ? 'text-emerald-600' : 'text-indigo-600' }}">{{ $profile['completeness'] }}%</span>
         </div>
@@ -65,12 +65,12 @@
         <div class="mt-3 flex flex-wrap gap-2">
             @if ($profile['needs_photo'])
                 <a href="/profile/edit" class="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">
-                    <i class="lucide lucide-image h-3.5 w-3.5"></i> Add a photo
+                    <i class="lucide lucide-image h-3.5 w-3.5"></i> {{ t('Add a photo') }}
                 </a>
             @endif
             @if ($profile['needs_phone'])
                 <a href="/profile/edit" class="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">
-                    <i class="lucide lucide-phone h-3.5 w-3.5"></i> Add a phone number
+                    <i class="lucide lucide-phone h-3.5 w-3.5"></i> {{ t('Add a phone number') }}
                 </a>
             @endif
             @if ($profile['completeness'] >= 100)
@@ -108,10 +108,10 @@
         <div class="lg:col-span-2">
             <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                    <i class="lucide lucide-megaphone h-4 w-4 text-sky-600"></i> Notices & Announcements
+                    <i class="lucide lucide-megaphone h-4 w-4 text-sky-600"></i> {{ t('Notices & Announcements') }}
                 </h2>
                 @if (empty($notices))
-                    <p class="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">No announcements right now.</p>
+                    <p class="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">{{ t('No announcements right now.') }}</p>
                 @else
                     <div class="space-y-3">
                         @foreach ($notices as $notice)
@@ -123,7 +123,7 @@
                             <p class="mt-1 text-sm text-slate-600">{{ $notice['message'] }}</p>
                             @if (!empty($notice['action_url']))
                                 <a href="{{ $notice['action_url'] }}" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
-                                    Details <i class="lucide lucide-arrow-right h-3 w-3"></i>
+                                    {{ t('Details') }} <i class="lucide lucide-arrow-right h-3 w-3"></i>
                                 </a>
                             @endif
                         </div>
@@ -135,10 +135,10 @@
             {{-- Recent activity --}}
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                    <i class="lucide lucide-activity h-4 w-4 text-indigo-600"></i> Recent Activity
+                    <i class="lucide lucide-activity h-4 w-4 text-indigo-600"></i> {{ t('Recent Activity') }}
                 </h2>
                 @if (empty($recent_activity))
-                    <p class="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">Nothing here yet.</p>
+                    <p class="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">{{ t('Nothing here yet.') }}</p>
                 @else
                     <ol class="relative space-y-3 border-l border-slate-200 pl-4">
                         @foreach ($recent_activity as $item)
@@ -173,27 +173,27 @@
                     @forelse ($user_roles as $role)
                         <span class="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-slate-700">{{ $role['name'] }}</span>
                     @empty
-                        <span class="text-sm text-slate-500">No roles assigned</span>
+                        <span class="text-sm text-slate-500">{{ t('No roles assigned') }}</span>
                     @endforelse
                 </div>
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-                    <i class="lucide lucide-link h-4 w-4 text-indigo-600"></i> Quick Links
+                    <i class="lucide lucide-link h-4 w-4 text-indigo-600"></i> {{ t('Quick Links') }}
                 </h2>
                 <div class="space-y-1.5">
                     <a href="/profile" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <i class="lucide lucide-user h-4 w-4 text-slate-400"></i> View profile
+                        <i class="lucide lucide-user h-4 w-4 text-slate-400"></i> {{ t('View profile') }}
                     </a>
                     <a href="/profile/edit" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <i class="lucide lucide-pencil h-4 w-4 text-slate-400"></i> Edit profile
+                        <i class="lucide lucide-pencil h-4 w-4 text-slate-400"></i> {{ t('Edit profile') }}
                     </a>
                     <a href="/user/notifications" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <i class="lucide lucide-bell h-4 w-4 text-slate-400"></i> Notifications
+                        <i class="lucide lucide-bell h-4 w-4 text-slate-400"></i> {{ t('Notifications') }}
                     </a>
                     <a href="/user/settings" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        <i class="lucide lucide-settings h-4 w-4 text-slate-400"></i> Account settings
+                        <i class="lucide lucide-settings h-4 w-4 text-slate-400"></i> {{ t('Account settings') }}
                     </a>
                 </div>
             </div>

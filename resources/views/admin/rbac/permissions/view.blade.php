@@ -20,10 +20,10 @@
         </div>
         <div class="flex gap-2">
             <a href="/admin/permissions/edit/{{ $permission['id'] }}" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-edit w-4 h-4"></i> Edit
+                <i class="lucide lucide-edit w-4 h-4"></i> {{ t('Edit') }}
             </a>
             <a href="/admin/permissions" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Permissions
+                <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Permissions') }}
             </a>
         </div>
     </div>
@@ -41,14 +41,14 @@
                             <i class="lucide lucide-lock-open w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Permission Details</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-600">Permission information and metadata</p>
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Permission Details') }}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Permission information and metadata') }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Permission Name</label>
+                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Permission Name') }}</label>
                         <p class="text-sm font-medium text-slate-900 dark:text-white">{{ $permission['name'] }}</p>
                     </div>
                     <div>
@@ -70,7 +70,7 @@
                         <p class="text-sm text-slate-900 dark:text-white">{{ $permission['updated_at'] ? \Carbon\Carbon::parse($permission['updated_at'])->format('M j, Y g:i A') : '—' }}</p>
                     </div>
                     <div>
-                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">Permission ID</label>
+                        <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 mb-1 block">{{ t('Permission ID') }}</label>
                         <p class="text-sm text-slate-900 dark:text-white">#{{ $permission['id'] }}</p>
                     </div>
                 </div>
@@ -84,11 +84,11 @@
                             <i class="lucide lucide-shield w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Assigned Roles</h3>
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Assigned Roles') }}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-600">{{ count($permission['roles']) }} role(s) have this permission</p>
                         </div>
                     </div>
-                    <span class="text-xs text-slate-400 dark:text-slate-600">Click a role to remove this permission</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-600">{{ t('Click a role to remove this permission') }}</span>
                 </div>
                 <div class="p-5">
                     @if(count($permission['roles']) > 0)
@@ -115,7 +115,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">No roles have this permission</p>
+                        <p class="text-sm text-slate-400 dark:text-slate-600 py-3 text-center bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">{{ t('No roles have this permission') }}</p>
                     @endif
                 </div>
             </div>
@@ -128,8 +128,8 @@
                             <i class="lucide lucide-plus w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Assign to Role</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-600">Add this permission to a role</p>
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Assign to Role') }}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Add this permission to a role') }}</p>
                         </div>
                     </div>
                 </div>
@@ -159,11 +159,11 @@
             {{-- Stats --}}
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Permission Statistics</h3>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Permission Statistics') }}</h3>
                 </div>
                 <div class="p-5 space-y-4">
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Permission ID</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Permission ID') }}</span>
                         <span class="text-sm font-medium text-slate-900 dark:text-white">#{{ $permission['id'] }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -171,7 +171,7 @@
                         <span class="text-sm font-medium text-slate-900 dark:text-white">{{ ucfirst($permission['module']) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Roles Assigned</span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Roles Assigned') }}</span>
                         <span class="text-sm font-medium text-cyan-600 dark:text-cyan-400">{{ count($permission['roles']) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2">
@@ -185,10 +185,10 @@
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="p-5 space-y-3">
                     <a href="/admin/permissions/edit/{{ $permission['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-edit w-4 h-4 text-cyan-600 dark:text-cyan-400"></i> Edit Permission
+                        <i class="lucide lucide-edit w-4 h-4 text-cyan-600 dark:text-cyan-400"></i> {{ t('Edit Permission') }}
                     </a>
                     <a href="/admin/permissions/delete/{{ $permission['id'] }}" class="inline-flex w-full items-center gap-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-trash-2 w-4 h-4"></i> Delete Permission
+                        <i class="lucide lucide-trash-2 w-4 h-4"></i> {{ t('Delete Permission') }}
                     </a>
                 </div>
             </div>

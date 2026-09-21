@@ -56,9 +56,9 @@ const path = window.location.pathname.replace(/\/+$/, '');
 // Prefix-aware: supports the migrated /medicines URLs and the legacy /medex URLs.
 const PAGE_PREFIX = path.startsWith('/medicines') ? '/medicines' : '/medex';
 const API_PREFIX = PAGE_PREFIX === '/medicines' ? '/api/medicines' : '/api/medex';
-const isCompaniesPage = path === PAGE_PREFIX || path === PAGE_PREFIX + '/companies';
-const companyMatch = path.match(new RegExp('^' + PAGE_PREFIX + '/company/(\\d+)$'));
-const brandMatch = path.match(new RegExp('^' + PAGE_PREFIX + '/brand/(\\d+)$'));
+const isCompaniesPage = path === PAGE_PREFIX || path === `${PAGE_PREFIX }/companies`;
+const companyMatch = path.match(new RegExp(`^${ PAGE_PREFIX }/company/(\\d+)$`));
+const brandMatch = path.match(new RegExp(`^${ PAGE_PREFIX }/brand/(\\d+)$`));
 const companyId = companyMatch ? companyMatch[1] : null;
 const brandId = brandMatch ? brandMatch[1] : null;
 const LANG_CHANGE_EVENT = 'brox:langchange';

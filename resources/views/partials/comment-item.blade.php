@@ -55,11 +55,11 @@
                 <div class="flex items-center gap-2">
                     <button type="button" @click="saveEdit()" :disabled="saving"
                             class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">
-                        <i class="lucide lucide-check-circle"></i> Save
+                        <i class="lucide lucide-check-circle"></i> {{ t('Save') }}
                     </button>
                     <button type="button" @click="editing = false; editContent = original"
                             class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-100">
-                        <i class="lucide lucide-x"></i> Cancel
+                        <i class="lucide lucide-x"></i> {{ t('Cancel') }}
                     </button>
                 </div>
             </div>
@@ -79,10 +79,10 @@
                 </button>
                 @if ($canModerate)
                 <button type="button" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-amber-50 hover:text-amber-600" @click="startEdit()">
-                    <i class="lucide lucide-pencil"></i> Edit
+                    <i class="lucide lucide-pencil"></i> {{ t('Edit') }}
                 </button>
                 <button type="button" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-600" @click="remove()" :disabled="removing">
-                    <i class="lucide lucide-trash-2"></i> Delete
+                    <i class="lucide lucide-trash-2"></i> {{ t('Delete') }}
                 </button>
                 @endif
                 {{-- React (emoji panel) --}}

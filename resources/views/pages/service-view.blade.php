@@ -38,7 +38,7 @@
     </div>
     <div class="relative z-10 mx-auto max-w-7xl">
         <nav class="mb-4 flex items-center gap-1.5 text-xs text-white/60" aria-label="Breadcrumb">
-            <a href="/services" class="inline-flex items-center gap-1 hover:text-white"><i class="lucide lucide-briefcase h-3.5 w-3.5"></i> Services</a>
+            <a href="/services" class="inline-flex items-center gap-1 hover:text-white"><i class="lucide lucide-briefcase h-3.5 w-3.5"></i> {{ t('Services') }}</a>
             <i class="lucide lucide-chevron-right h-3 w-3"></i>
             <span class="truncate font-medium text-white">{{ $service['name'] }}</span>
         </nav>
@@ -47,15 +47,15 @@
             <div class="max-w-3xl">
                 <div class="mb-4 flex flex-wrap items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-sm">
-                        <i class="lucide lucide-briefcase h-3.5 w-3.5"></i> Service Details
+                        <i class="lucide lucide-briefcase h-3.5 w-3.5"></i> {{ t('Service Details') }}
                     </span>
                     @if (!empty($service['is_premium']))
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-400/90 px-3 py-1.5 text-xs font-bold text-amber-950">
-                        <i class="lucide lucide-crown h-3.5 w-3.5"></i> Premium Service
+                        <i class="lucide lucide-crown h-3.5 w-3.5"></i> {{ t('Premium Service') }}
                     </span>
                     @else
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/90 px-3 py-1.5 text-xs font-bold text-emerald-950">
-                        <i class="lucide lucide-check h-3.5 w-3.5"></i> Free Service
+                        <i class="lucide lucide-check h-3.5 w-3.5"></i> {{ t('Free Service') }}
                     </span>
                     @endif
                 </div>
@@ -73,7 +73,7 @@
                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:scale-[1.02] hover:bg-indigo-700">
                     <i class="lucide lucide-file-text h-4 w-4"></i> {{ t('Apply Now') }}
                 </a>
-                <p class="mt-2 max-w-[220px] text-xs text-white/60">You can apply without login. Logged-in users can track applications in profile.</p>
+                <p class="mt-2 max-w-[220px] text-xs text-white/60">{{ t('You can apply without login. Logged-in users can track applications in profile.') }}</p>
             </div>
             @endif
         </div>
@@ -105,7 +105,7 @@
                     {!! $service['description'] !!}
                 </div>
                 @else
-                <p class="text-sm text-slate-500">No additional information available.</p>
+                <p class="text-sm text-slate-500">{{ t('No additional information available.') }}</p>
                 @endif
 
                 @if (!empty($service['tags']))

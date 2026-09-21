@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\LanguageService;
+use App\Support\I18n\LanguageService;
 use App\Support\MedicinesDataService;
 use Exception;
 use Illuminate\Http\JsonResponse;

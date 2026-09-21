@@ -14,12 +14,12 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">RBAC — Role-Based Access Control</p>
-                <h1 class="text-xl font-bold text-white">Edit Permission</h1>
-                <p class="text-sm text-white/60 mt-0.5">Update permission details</p>
+                <h1 class="text-xl font-bold text-white">{{ t('Edit Permission') }}</h1>
+                <p class="text-sm text-white/60 mt-0.5">{{ t('Update permission details') }}</p>
             </div>
         </div>
         <a href="/admin/permissions" class="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-            <i class="lucide lucide-arrow-left w-4 h-4"></i> Back to Permissions
+            <i class="lucide lucide-arrow-left w-4 h-4"></i> {{ t('Back to Permissions') }}
         </a>
     </div>
 </div>
@@ -48,8 +48,8 @@
                     <i class="lucide lucide-edit w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                 </div>
                 <div>
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Edit Permission</h3>
-                    <p class="text-xs text-slate-400 dark:text-slate-600">Update the permission details</p>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Edit Permission') }}</h3>
+                    <p class="text-xs text-slate-400 dark:text-slate-600">{{ t('Update the permission details') }}</p>
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-1.5">
-                        Permission Name <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                        {{ t('Permission Name') }} <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
                     <input type="text" name="name" value="{{ $permission['name'] }}" required maxlength="100"
                         class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/10">
@@ -71,7 +71,7 @@
                         Module <span class="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                     </label>
                     <select name="module" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/10">
-                        <option value="">Select module...</option>
+                        <option value="">{{ t('Select module...') }}</option>
                         @foreach(['users', 'roles', 'permissions', 'posts', 'pages', 'categories', 'tags', 'mobiles', 'services', 'comments', 'media', 'notifications', 'analytics', 'settings', 'security', 'api'] as $module)
                             <option value="{{ $module }}" {{ $permission['module'] === $module ? 'selected' : '' }}>{{ ucfirst($module) }}</option>
                         @endforeach
@@ -86,10 +86,10 @@
 
                 <div class="flex flex-wrap gap-3 pt-2">
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-cyan-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-check-circle w-4 h-4"></i> Update Permission
+                        <i class="lucide lucide-check-circle w-4 h-4"></i> {{ t('Update Permission') }}
                     </button>
                     <a href="/admin/permissions" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        <i class="lucide lucide-x w-4 h-4"></i> Cancel
+                        <i class="lucide lucide-x w-4 h-4"></i> {{ t('Cancel') }}
                     </a>
                 </div>
             </form>
