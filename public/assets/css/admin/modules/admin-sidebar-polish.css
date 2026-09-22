@@ -371,25 +371,8 @@ body.sidebar-collapsed .sidebar-submenu {
     }
 }
 
-/* ============================
-   9. SIDEBAR RESIZER
-   ============================ */
-
-#adminColumnResizer {
-    cursor: col-resize;
-    user-select: none;
-    -webkit-user-select: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#adminColumnResizer:hover {
-    background-color: rgb(139, 92, 246);
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
-}
-
-.dark #adminColumnResizer:hover {
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-}
+/* Sidebar resizing now lives in the Laravel admin layout
+   (#adminSidebarResizer) — see resources/views/admin/layout.blade.php. */
 
 /* ============================
    10. DARK MODE POLISH

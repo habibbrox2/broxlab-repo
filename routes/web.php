@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminRevenueController;
 use App\Http\Controllers\Admin\AdminWalletController;
 use App\Http\Controllers\Admin\AdminLogsController;
 use App\Http\Controllers\Admin\AdminNavigationController;
+use App\Http\Controllers\Admin\AdminSidebarPreferenceController;
 use App\Http\Controllers\Admin\AdminSecurityController;
 use App\Http\Controllers\Admin\AdminSetupController;
 use App\Http\Controllers\Admin\AdminScraperController;
@@ -236,6 +237,10 @@ Route::get('/admin', fn () => redirect('/admin/dashboard'));
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/api/admin/sidebar-counts', [AdminDashboardController::class, 'sidebarCounts'])->name('admin.sidebar-counts');
+
+    // Sidebar width preference (per-user, admin UI chrome)
+    Route::get('/admin/api/sidebar-width', [AdminSidebarPreferenceController::class, 'show'])->name('admin.sidebar-width.show');
+    Route::put('/admin/api/sidebar-width', [AdminSidebarPreferenceController::class, 'update'])->middleware('throttle:60,1')->name('admin.sidebar-width.update');
 
     // Categories + tags — port of TagsCategoriesController admin routes
     Route::get('/admin/categories', [TagCategoryController::class, 'categoryIndex'])->name('admin.categories.index');

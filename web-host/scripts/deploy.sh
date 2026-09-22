@@ -357,8 +357,10 @@ if [[ -n "$ASSET_ARCHIVE" ]]; then
         exit 1
     fi
     require_command tar
-    tar -xzf "$ASSET_ARCHIVE" -C "$BASE/public_html"
-    log_info "Built frontend assets extracted to public_html from CI archive"
+    # Extract LATER, right after the release switch (see SWITCHING RELEASE).
+    # The archive paths are public/assets/... and must land inside the live
+    # release's public/ (--strip-components=1 drops the leading public/).
+    EXTRACT_ASSETS_NOW=true
 fi
 
 if [[ -d "$NEW_RELEASE/web-host/scripts" ]]; then
@@ -528,6 +530,19 @@ EOF
 log_section "SWITCHING RELEASE"
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 
+# The CI-built frontend bundle (built in the workflow, shipped as
+# broxlab-assets.tar.gz with paths like public/assets/js/dist/...) lands
+# directly in the live release's public/ — the same directory the docroot
+# symlink serves. --strip-components=1 removes the leading public/ from the
+# archive paths. This must run AFTER $CURRENT points at the new release.
+# (If a stale broken public/assets symlink exists from an older layout, it is
+# removed just below and this extraction order remains correct either way.)
+if [[ "${EXTRACT_ASSETS_NOW:-false}" == "true" ]]; then
+    require_command tar
+    tar -xzf "$ASSET_ARCHIVE" --strip-components=1 -C "$CURRENT/public"
+    log_info "Built frontend assets extracted into $CURRENT/public from CI archive"
+fi
+
 # Shared uploads must remain publicly reachable after the docroot is switched
 # to public/. The Laravel uploads disk still points at public_html/uploads
 # (lowest-risk option, unchanged), so the shared storage is reachable from both
@@ -542,16 +557,15 @@ rm -rf public/uploads 2>/dev/null || true
 create_symlink "$STORAGE/uploads" public/uploads
 log_info "Public uploads symlinked: public/uploads -> $STORAGE/uploads"
 
-# Site assets/uploads live in public_html/ (shared static store, also used by
-# the legacy app pre-Phase-8). The docroot public/ serves them through
-# relative symlinks so the same files are reachable at their historical URLs
-# (/assets/*, /cdn/*, /rtceditor/*, /uploads/*, ...).
-for shared_dir in assets cdn rtceditor smart_design_assets ai uploads; do
-    create_symlink "../public_html/$shared_dir" "public/$shared_dir"
+# If an OLD layout left stale public/<dir> -> ../public_html/<dir> symlinks
+# that no longer resolve (the Phase-8 shared-store experiment), drop them so
+# the git-checked-out directories are served directly.
+for shared_dir in assets cdn rtceditor smart_design_assets; do
+    if [[ -L "public/$shared_dir" && ! -e "public/$shared_dir" ]]; then
+        rm -f "public/$shared_dir"
+        log_warn "Removed stale broken symlink public/$shared_dir"
+    fi
 done
-create_symlink "../public_html/robots.txt" "public/robots.txt"
-create_symlink "../public_html/firebase-messaging-sw.js" "public/firebase-messaging-sw.js"
-log_info "Shared asset symlinks created in public/ (assets, cdn, rtceditor, smart_design_assets, ai, uploads, robots.txt, firebase-messaging-sw.js)"
 
 # Optimize the legacy release size by removing local copy of node_modules if
 # they exist in the repo root; the deploy keeps them only when explicitly needed.
@@ -572,7 +586,20 @@ log_info "Docroot symlink: $PUBLIC_HTML_BASE -> $PUBLIC_HTML_TARGET"
 if [[ -L "$PUBLIC_HTML_BASE" ]]; then
     rm -f "$PUBLIC_HTML_BASE"
 elif [[ -d "$PUBLIC_HTML_BASE" ]]; then
-    mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
+    # The shared asset store must never be silently moved aside — it holds
+    # uploads and assets that are NOT in git. Fail loudly instead: restore it
+    # manually or set ALLOW_DOCROOT_BACKUP=true for a one-off (backup keeps
+    # uploads but resets asset content to the new release).
+    if [[ "${ALLOW_DOCROOT_BACKUP:-false}" == "true" ]]; then
+        log_warn "ALLOW_DOCROOT_BACKUP=true — moving real public_html aside (uploads preserved in the backup)"
+        mv "$PUBLIC_HTML_BASE" "${PUBLIC_HTML_BASE}.backup_$DATE"
+    else
+        log_error "$BASE/public_html is a real directory, not the docroot symlink."
+        log_error "Refusing to continue — this would strand shared assets/uploads."
+        log_error "Restore with: ln -sfn '$CURRENT/public' '$PUBLIC_HTML_BASE'"
+        log_error "Or run once with ALLOW_DOCROOT_BACKUP=true to archive it deliberately."
+        exit 1
+    fi
 fi
 create_symlink "$PUBLIC_HTML_TARGET" "$PUBLIC_HTML_BASE"
 if [[ ! -L "$PUBLIC_HTML_BASE" || "$(readlink "$PUBLIC_HTML_BASE")" != "$PUBLIC_HTML_TARGET" ]]; then

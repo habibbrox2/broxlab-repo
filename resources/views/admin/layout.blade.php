@@ -28,6 +28,23 @@
           href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+Bengali:wght@100..900&display=swap"
           onload="this.onload=null;this.rel='stylesheet'">
 
+    {{-- Restore saved sidebar width before first paint (avoids layout jump).
+         Server-side per-user preference wins; localStorage is the offline fallback. --}}
+    <script>
+        (function () {
+            try {
+                var serverW = @js($sidebarWidth ?? null);
+                var w = (serverW >= 200 && serverW <= 480) ? serverW
+                    : parseInt(localStorage.getItem('admin.sidebar.width'), 10);
+                if (!isNaN(w) && w >= 200 && w <= 480) {
+                    var s = document.documentElement.style;
+                    s.setProperty('--admin-sidebar-w', w + 'px');
+                    s.setProperty('--admin-sidebar-ml', w + 'px');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     {{-- Legacy admin Tailwind bundle (same as legacy admin layout) --}}
     <link rel="stylesheet" href="@assetVersion('/assets/css/dist/tailwind-admin.css')">
     <link rel="stylesheet" href="{{ asset('/assets/css/admin/modules/admin-sidebar-polish.css') }}" onerror="this.remove()">
@@ -363,14 +380,20 @@
 
     <div class="flex flex-1 overflow-hidden">
 
-        {{-- Mobile overlay --}}
+        {{-- Mobile/tablet overlay: dims the page behind the sidebar drawer
+             (<1024px) and closes the drawer on tap. Visibility follows the
+             body.admin-sidebar-open class toggled by the aside's x-effect. --}}
     <div id="sidebarOverlay"
+         x-data
+         x-on:click="$dispatch('toggle-sidebar')"
+         role="presentation"
          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
          style="opacity:0; pointer-events:none;">
     </div>
 
     {{-- Sidebar --}}
     <aside id="adminSidebar" x-data="{ open: false, mini: false }" x-on:toggle-sidebar.window="open = !open"
+           x-effect="document.body.classList.toggle('admin-sidebar-open', open)"
            class="w-[220px] flex-shrink-0 bg-white dark:bg-slate-950
                   border-r border-slate-200/70 dark:border-slate-800/70
                   overflow-y-auto overflow-x-hidden transition-all duration-300 ease-out
@@ -454,8 +477,22 @@
             </nav>
         </aside>
 
+        {{-- Desktop drag-to-resize handle (hidden on mobile; styled in plain CSS below) --}}
+        <div id="adminSidebarResizer"
+             role="separator" aria-orientation="vertical" tabindex="0"
+             aria-valuemin="200" aria-valuemax="480"
+             aria-label="{{ t('Resize sidebar') }}"
+             title="{{ t('Drag to resize sidebar') }}">
+            <span id="adminSidebarResizerChip" aria-hidden="true"></span>
+        </div>
+
+        {{-- Snap guides at default (220) and comfortable (320) widths —
+             visible only while dragging, highlighted when snapped --}}
+        <div class="admin-snap-guide" id="adminSnapGuideDefault" style="left:220px" aria-hidden="true"></div>
+        <div class="admin-snap-guide" id="adminSnapGuideComfort" style="left:320px" aria-hidden="true"></div>
+
         {{-- Content --}}
-    <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 lg:ml-[220px]">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
         @if (session('status'))
             <div class="mb-4 rounded-2xl border border-emerald-200/70 dark:border-emerald-800/40 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/20 shadow-sm">
                 <div class="relative px-5 py-4 flex items-start gap-3.5">
@@ -497,6 +534,142 @@
 {{-- Sidebar submenu toggles (plain JS so they work before Alpine loads) --}}
     <script>
         (function () {
+            // ---- Sidebar resize handle: drag / keyboard / persist ----
+            var MIN_W = 200, MAX_W = 480, DEFAULT_W = 220, STORE_KEY = 'admin.sidebar.width';
+            var sidebar = document.getElementById('adminSidebar');
+            var handle = document.getElementById('adminSidebarResizer');
+            if (sidebar && handle) {
+            var root = document.documentElement;
+
+            // Snap points: default + comfortable widths (drag only).
+            // Declared before setWidth() which reads SNAP_LABELS on init.
+            var SNAP_PTS = [220, 320];
+            var SNAP_LABELS = { 220: 'Default', 320: 'Comfortable' };
+            var SNAP_TOLERANCE = 8;
+            function applySnap(px) {
+                for (var i = 0; i < SNAP_PTS.length; i++) {
+                    if (Math.abs(px - SNAP_PTS[i]) <= SNAP_TOLERANCE) return SNAP_PTS[i];
+                }
+                return px;
+            }
+            var chip = document.getElementById('adminSidebarResizerChip');
+            var guideDefault = document.getElementById('adminSnapGuideDefault');
+            var guideComfort = document.getElementById('adminSnapGuideComfort');
+            function updateSnapVisuals(px) {
+                var snapped = SNAP_LABELS[px] || '';
+                if (chip) {
+                    chip.textContent = snapped ? px + ' \u00b7 ' + snapped : px + ' px';
+                    chip.classList.toggle('snap', !!snapped);
+                }
+                if (guideDefault) guideDefault.classList.toggle('snap', px === 220);
+                if (guideComfort) guideComfort.classList.toggle('snap', px === 320);
+            }
+
+            function clampWidth(px) {
+                    return Math.round(Math.min(MAX_W, Math.max(MIN_W, px)));
+                }
+                // Authoritative width is tracked here — reading it back from
+                // getComputedStyle() mid-transition returns animated snapshots.
+                var cur = function () {
+                    var saved = parseInt(localStorage.getItem(STORE_KEY), 10);
+                    return isNaN(saved) ? DEFAULT_W : saved;
+                }();
+                function setWidth(px) {
+                    cur = clampWidth(px);
+                    root.style.setProperty('--admin-sidebar-w', cur + 'px');
+                    root.style.setProperty('--admin-sidebar-ml', cur + 'px');
+                    handle.setAttribute('aria-valuenow', String(cur));
+                    handle.setAttribute('aria-valuetext', cur + ' pixels' + (SNAP_LABELS[cur] ? ', ' + SNAP_LABELS[cur].toLowerCase() : ''));
+                    return cur;
+                }
+                setWidth(cur);
+                function currentWidth() {
+                    return cur;
+                }
+                function persist() {
+                    try { localStorage.setItem(STORE_KEY, String(cur)); } catch (e) { /* private mode */ }
+                    saveToServer(cur);
+                }
+
+                // Per-user persistence: PUT /admin/api/sidebar-width (debounced).
+                // Failures are silent — localStorage keeps working as fallback.
+                var saveTimer = null;
+                var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+                function saveToServer(px) {
+                    if (saveTimer) clearTimeout(saveTimer);
+                    saveTimer = setTimeout(function () {
+                        fetch('/admin/api/sidebar-width', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrf,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ width: px }),
+                            keepalive: true
+                        }).catch(function () { /* offline / session gone — local persists */ });
+                    }, 600);
+                }
+                function resetWidth() {
+                    setWidth(DEFAULT_W);
+                    persist();
+                }
+
+                var dragging = false, startX = 0, startWidth = 0;
+
+                function isDrawerMode() {
+                    return !window.matchMedia('(min-width: 1024px)').matches;
+                }
+
+                handle.addEventListener('pointerdown', function (e) {
+                    if (e.button !== 0 || document.body.classList.contains('sidebar-collapsed')) return;
+                    if (isDrawerMode() && !document.body.classList.contains('admin-sidebar-open')) return;
+                    dragging = true;
+                    startX = e.clientX;
+                    startWidth = currentWidth();
+                    try { handle.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+                    document.body.classList.add('sidebar-resizing');
+                    updateSnapVisuals(startWidth);
+                    e.preventDefault();
+                });
+
+                handle.addEventListener('pointermove', function (e) {
+                    if (!dragging) return;
+                    var px = setWidth(applySnap(startWidth + (e.clientX - startX)));
+                    updateSnapVisuals(px);
+                });
+
+                function endDrag(e) {
+                    if (!dragging) return;
+                    dragging = false;
+                    document.body.classList.remove('sidebar-resizing');
+                    if (e && e.pointerId !== undefined) {
+                        try { handle.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
+                    }
+                    persist();
+                    // On tablets the sidebar is an overlay drawer — after saving
+                    // the new width, close the drawer so the page is usable.
+                    if (isDrawerMode() && window.Alpine) {
+                        var data = Alpine.$data(sidebar);
+                        if (data && 'open' in data) { data.open = false; }
+                    }
+                }
+                handle.addEventListener('pointerup', endDrag);
+                handle.addEventListener('pointercancel', endDrag);
+
+                // Double-click snaps back to the default width
+                handle.addEventListener('dblclick', resetWidth);
+
+                // Keyboard: arrows nudge (Shift = coarse step), Home/Enter resets
+                handle.addEventListener('keydown', function (e) {
+                    var step = e.shiftKey ? 48 : 16;
+                    if (e.key === 'ArrowLeft') { setWidth(currentWidth() - step); persist(); e.preventDefault(); }
+                    else if (e.key === 'ArrowRight') { setWidth(currentWidth() + step); persist(); e.preventDefault(); }
+                    else if (e.key === 'Home' || e.key === 'Enter') { resetWidth(); e.preventDefault(); }
+                });
+            }
+
             function wire() {
                 document.querySelectorAll('[data-sidebar-group]').forEach(function (btn) {
                     btn.addEventListener('click', function () {
@@ -552,6 +725,126 @@
         #adminSidebar.compact .sidebar-link-modern { @apply justify-center px-0; }
         #adminSidebar.compact .sidebar-icon { @apply w-5 h-5; }
         #adminSidebar.compact nav { @apply px-1; }
+
+        /* ---- Sidebar resize handle (drag to adjust width) ---- */
+        /* Sidebar width and main offset follow the same variables so they stay
+           in sync; Tailwind w-[220px] remains the phone drawer width. Plain
+           CSS only — the compiled Tailwind bundle may not contain new classes.
+           Desktop (>=1024px): inline sidebar, handle always available.
+           Tablet (768–1023px): the sidebar is an overlay drawer, so the handle
+           appears only while the drawer is open (body.admin-sidebar-open is
+           toggled by Alpine x-effect on the aside). */
+        #adminSidebarResizer {
+            display: none;
+            --admin-resizer-hit: 10px;
+            cursor: col-resize;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* Larger grab target for fingers (touch/tablet) */
+        @media (pointer: coarse) {
+            #adminSidebarResizer { --admin-resizer-hit: 18px; }
+        }
+        @media (min-width: 1024px) {
+            #adminSidebar { width: var(--admin-sidebar-w, 220px); }
+            body:not(.sidebar-collapsed) main { margin-left: var(--admin-sidebar-ml, 220px); }
+            #adminSidebarResizer {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: calc(var(--admin-sidebar-w, 220px) - var(--admin-resizer-hit) / 2);
+                width: var(--admin-resizer-hit);
+                height: 100vh;
+                z-index: 50;
+            }
+            body.sidebar-collapsed #adminSidebarResizer { display: none; }
+        }
+        /* Drawer backdrop: visible below 1024px while the drawer is open.
+           Inline style on #sidebarOverlay needs !important to be overridden. */
+        @media (max-width: 1023.98px) {
+            body.admin-sidebar-open #sidebarOverlay {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1023.98px) {
+            #adminSidebar { width: var(--admin-sidebar-w, 220px); }
+            body.admin-sidebar-open #adminSidebarResizer {
+                display: block;
+                position: fixed;
+                top: 4rem;
+                left: calc(var(--admin-sidebar-w, 220px) - var(--admin-resizer-hit) / 2);
+                width: var(--admin-resizer-hit);
+                height: calc(100vh - 4rem);
+                z-index: 50;
+            }
+        }
+        #adminSidebarResizer::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 44px;
+            transform: translate(-50%, -50%);
+            border-radius: 9999px;
+            background-color: rgb(203, 213, 225);
+            transition: background-color 0.15s ease;
+        }
+        /* Dark mode is attribute-based here: html[data-theme=dark] */
+        [data-theme="dark"] #adminSidebarResizer::after { background-color: rgb(51, 65, 85); }
+        [data-theme="dark"] #adminSidebarResizer:hover::after,
+        [data-theme="dark"] #adminSidebarResizer:focus-visible::after { background-color: rgb(129, 140, 248); }
+        #adminSidebarResizer:focus-visible { outline: 2px solid rgb(99, 102, 241); outline-offset: -2px; }
+        body.sidebar-resizing #adminSidebar,
+        body.sidebar-resizing main { transition: none !important; }
+        body.sidebar-resizing { cursor: col-resize; user-select: none; -webkit-user-select: none; }
+
+        /* ---- Snap guides + live width chip ---- */
+        .admin-snap-guide {
+            display: none;
+            position: fixed;
+            top: 0;
+            height: 100vh;
+            width: 0;
+            border-left: 1px dashed rgba(99, 102, 241, 0.35);
+            z-index: 45;
+            pointer-events: none;
+        }
+        body.sidebar-resizing .admin-snap-guide { display: block; }
+        .admin-snap-guide.snap { border-left: 2px solid rgb(99, 102, 241); }
+        #adminSidebarResizerChip {
+            display: none;
+            position: absolute;
+            top: calc(50% + 34px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 51;
+            pointer-events: none;
+            white-space: nowrap;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: rgb(30 41 59);
+            background: rgb(226 232 240);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+        }
+        body.sidebar-resizing #adminSidebarResizerChip { display: block; }
+        #adminSidebarResizerChip.snap {
+            color: #fff;
+            background: rgb(99, 102, 241);
+        }
+        [data-theme="dark"] #adminSidebarResizerChip {
+            color: rgb(226 232 240);
+            background: rgb(30 41 59);
+        }
+        [data-theme="dark"] #adminSidebarResizerChip.snap {
+            color: #fff;
+            background: rgb(99, 102, 241);
+        }
     </style>
     <script>
     (function(){

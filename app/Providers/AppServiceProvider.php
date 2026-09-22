@@ -89,6 +89,9 @@ class AppServiceProvider extends ServiceProvider
             $view->with('isAdmin', $rbac['is_admin']);
             $view->with('authRoles', $rbac['roles']);
             $view->with('canonicalUrl', request()->url());
+            // Admin chrome preference: per-user sidebar width (null-safe —
+            // guests get null and the layout falls back to localStorage/default).
+            $view->with('sidebarWidth', $authUser?->admin_sidebar_width);
 
             if ($sharedTranslations === null) {
                 $translator = $this->app->make(Translator::class);

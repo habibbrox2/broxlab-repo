@@ -46,7 +46,6 @@ export function initSidebarPolish() {
 
     setupEventListeners();
     setupKeyboardShortcuts();
-    setupResizeObserver();
     setupSubmenuInteractions();
   }
 
@@ -320,57 +319,6 @@ export function initSidebarPolish() {
         origReplaceState.apply(this, arguments);
         updateActiveLink();
       };
-    }
-  }
-
-  // ========== RESIZE OBSERVER FOR SMOOTH RESIZING ==========
-  function setupResizeObserver() {
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const resizer = document.getElementById('adminColumnResizer');
-    if (!resizer) return;
-
-    let isResizing = false;
-    let startX = 0;
-    let startWidth = 0;
-
-    resizer.addEventListener('mousedown', (e) => {
-      if (state.isMini) return; // Don't resize in mini mode
-
-      isResizing = true;
-      startX = e.clientX;
-      startWidth = sidebar.offsetWidth;
-
-      document.addEventListener('mousemove', handleResizeMove);
-      document.addEventListener('mouseup', handleResizeEnd);
-
-      // Prevent text selection during drag
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
-    });
-
-    function handleResizeMove(e) {
-      if (!isResizing) return;
-
-      const diff = e.clientX - startX;
-      const newWidth = Math.max(220, Math.min(520, startWidth + diff));
-
-      sidebar.style.width = `${newWidth}px`;
-    }
-
-    function handleResizeEnd() {
-      isResizing = false;
-      document.removeEventListener('mousemove', handleResizeMove);
-      document.removeEventListener('mouseup', handleResizeEnd);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-
-      // Persist width
-      try {
-        localStorage.setItem('admin.sidebar.width', sidebar.offsetWidth);
-      } catch (e) {
-        console.warn('Failed to save sidebar width:', e);
-      }
     }
   }
 

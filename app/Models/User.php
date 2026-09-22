@@ -72,6 +72,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'admin_sidebar_width' => 'integer',
         ];
+    }
+
+    /**
+     * Admin sidebar width preference, clamped to the same bounds the
+     * client-side resize handle enforces (200–480px). Null = default (220px).
+     */
+    public function sidebarWidth(): int
+    {
+        $w = $this->admin_sidebar_width;
+
+        return ($w === null || $w < 200 || $w > 480) ? 220 : (int) $w;
     }
 }
