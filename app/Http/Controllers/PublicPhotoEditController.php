@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Support\Ai\AiClient;
+use App\Support\BackgroundRemover;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +24,7 @@ class PublicPhotoEditController extends Controller
 {
     public function __construct(
         protected AiClient $ai,
+        protected BackgroundRemover $remover,
     ) {}
 
     public function index(): View
@@ -39,6 +41,7 @@ class PublicPhotoEditController extends Controller
     {
         $validated = $request->validate([
             'image'  => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+            'mask'   => ['sometimes', 'nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
             'prompt' => ['required', 'string', 'max:500'],
             'mode'   => ['sometimes', Rule::in(['edit', 'gen'])],
             'size'   => ['sometimes', 'string', 'max:20'],
@@ -53,13 +56,26 @@ class PublicPhotoEditController extends Controller
         $mode = ($validated['mode'] ?? 'edit') === 'edit' ? 'edit' : 'gen';
         $size = $validated['size'] ?? '1024x1024';
 
-        $result = $this->ai->imageEdit([
+        // Store the mask (for object removal / inpainting) if one was uploaded.
+        $maskPath = null;
+        if ($request->hasFile('mask')) {
+            $maskPath = $request->file('mask')->store('photo-edit-temp', 'public');
+            $maskPath = storage_path('app/public/' . $maskPath);
+        }
+
+        $params = [
             'mode'           => $mode,
             'prompt'          => $validated['prompt'],
             'image'           => $localPath,
             'size'            => $size,
             'response_format' => 'b64_json',
-        ]);
+        ];
+
+        if ($maskPath !== null) {
+            $params['mask'] = $maskPath;
+        }
+
+        $result = $this->ai->imageEdit($params);
 
         if (! $result['ok']) {
             return response()->json([
@@ -72,6 +88,41 @@ class PublicPhotoEditController extends Controller
             'ok'        => true,
             'image'     => $result['content'], // b64_json when response_format=b64_json
             'image_url' => $imageUrl,
+        ]);
+    }
+
+    /**
+     * Remove the background from an uploaded image using remove.bg API
+     * (or the AI image edit endpoint as fallback).
+     */
+    public function removeBg(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'image' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+            'size'  => ['sometimes', 'string', 'max:20'],
+        ]);
+
+        $path = $request->file('image')->store('photo-edit-temp', 'public');
+        $localPath = storage_path('app/public/' . $path);
+
+        $result = $this->remover->remove($localPath, [
+            'size' => $validated['size'] ?? 'auto',
+            'format' => 'png',
+        ]);
+
+        if (! $result['ok']) {
+            return response()->json([
+                'ok'    => false,
+                'error' => $result['error'] ?? 'Background removal failed.',
+            ], 422);
+        }
+
+        $url = $this->remover->storeResult($result['content'], 'bg-removed');
+
+        return response()->json([
+            'ok'      => true,
+            'image'   => $result['content'], // base64-encoded PNG
+            'image_url' => $url,
         ]);
     }
 }

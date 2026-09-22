@@ -183,6 +183,7 @@ Route::post('/comment/like', [CommentController::class, 'like'])->name('comments
 // AI Photo Editing — public page
 Route::get('/photo-edit', [PublicPhotoEditController::class, 'index'])->name('photo-edit.index');
 Route::post('/photo-edit/edit', [PublicPhotoEditController::class, 'edit'])->name('photo-edit.edit');
+Route::post('/photo-edit/remove-bg', [PublicPhotoEditController::class, 'removeBg'])->name('photo-edit.remove-bg');
 
 // Mobiles catalog — public read side
 Route::get('/mobiles', [MobileController::class, 'index'])->name('mobiles.index');

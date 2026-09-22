@@ -185,23 +185,25 @@ class AiClient
             $headers  = (array) ($provider['headers'] ?? []);
         }
 
-        $headers['Authorization'] = 'Bearer ' . $apiKey;
         if ($driver === AiProviderRepository::DRIVER_OPENROUTER) {
             $headers['HTTP-Referer'] ??= (string) config('app.url', 'https://broxlab.online');
             $headers['X-Title'] ??= (string) config('app.name', 'BroxLab');
         }
+
+        // Build the full multipart payload: file parts first, then text fields.
+        $multipart = array_merge($multipart, [
+            ['name' => 'prompt', 'contents' => $payload['prompt']],
+            ['name' => 'model', 'contents' => $payload['model']],
+            ['name' => 'size', 'contents' => $payload['size']],
+            ['name' => 'response_format', 'contents' => $payload['response_format']],
+        ]);
 
         try {
             $response = Http::withToken($apiKey)
                 ->withHeaders($headers)
                 ->timeout((int) ($options['timeout'] ?? 60))
                 ->asMultipart()
-                ->multipart(array_merge($multipart, array_map(function ($key) use ($payload) {
-                    return [
-                        'name'     => $key,
-                        'contents' => $payload[$key],
-                    ];
-                }, ['prompt', 'model', 'size', 'response_format'])))
+                ->multipart($multipart)
                 ->post($endpoint);
         } catch (\Throwable $e) {
             return $this->failure($e->getMessage());
