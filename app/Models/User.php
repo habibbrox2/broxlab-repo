@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'balance',
     ];
 
     /**
@@ -33,6 +34,33 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    /**
+     * Wallet balance mutator — keep balance normalized to 2dp on write.
+     */
+    protected function balance(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn ($value) => $value !== null ? (float) $value : 0.0,
+            set: fn ($value) => $value !== null ? (float) round((float) $value, 2) : 0.0,
+        );
+    }
+
+    /**
+     * Wallet ledger transactions for this user.
+     */
+    public function walletTransactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserWalletTransaction::class)->latest('id');
+    }
+
+    /**
+     * Recharge requests for this user.
+     */
+    public function recharges(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserRecharge::class)->latest('id');
+    }
 
     /**
      * Get the attributes that should be cast.

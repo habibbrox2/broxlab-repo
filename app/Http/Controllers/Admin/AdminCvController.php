@@ -30,7 +30,7 @@ class AdminCvController extends Controller
             status: $status
         );
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.cv.index', [
             'title' => 'CV Builder',
@@ -59,7 +59,7 @@ class AdminCvController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.cv.view', [
             'title' => 'View CV',

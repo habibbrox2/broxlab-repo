@@ -41,36 +41,142 @@
 @php
     // Grouped nav mirroring legacy admin/layout.twig — migrated pages get
     // their Laravel route names; everything else still points at legacy.
+    // Every entry below is a real registered route — an item may carry a
+    // 'children' list, which renders as a collapsible submenu (the submenu/
+    // chevron CSS is already in the compiled tailwind-admin bundle). Items with
+    // children are toggles; the first submenu entry always links to the section
+    // index so the parent page is still one click away.
+    //
+    // Deliberately NOT listed: the /create, /edit, /delete and /view CRUD
+    // variants — those are reached from the buttons on their list page, and
+    // putting them in the nav would bury the real pages in noise.
     $adminNav = [
         ['label' => null, 'items' => [
             ['name' => 'Dashboard', 'icon' => 'lucide-gauge', 'url' => '/admin/dashboard', 'key' => 'dashboard'],
         ]],
         ['label' => 'Content', 'items' => [
-            ['name' => 'Posts', 'icon' => 'lucide-file-text', 'url' => '/admin/posts', 'key' => 'posts'],
+            ['name' => 'Posts', 'icon' => 'lucide-file-text', 'url' => '/admin/posts', 'key' => 'posts', 'badge' => 'posts'],
             ['name' => 'Categories', 'icon' => 'lucide-folder', 'url' => '/admin/categories', 'key' => 'categories'],
             ['name' => 'Tags', 'icon' => 'lucide-hash', 'url' => '/admin/tags', 'key' => 'tags'],
-            ['name' => 'Comments', 'icon' => 'lucide-message-circle', 'url' => '/admin/comments', 'key' => 'comments', 'badge' => 'comments'],
+            ['name' => 'Pages', 'icon' => 'lucide-file', 'url' => '/admin/pages', 'key' => 'pages'],
         ]],
         ['label' => 'Catalog', 'items' => [
             ['name' => 'Mobiles', 'icon' => 'lucide-smartphone', 'url' => '/admin/mobiles', 'key' => 'mobiles'],
+            ['name' => 'Services', 'icon' => 'lucide-briefcase', 'url' => '/admin/services', 'key' => 'services'],
+            ['name' => 'CV Builder', 'icon' => 'lucide-file-user', 'url' => '/admin/cv', 'key' => 'cv'],
         ]],
-        ['label' => 'Services', 'items' => [
-            ['name' => 'Applications', 'icon' => 'lucide-briefcase', 'url' => '/admin/applications', 'key' => 'applications', 'badge' => 'applications'],
-            ['name' => 'Receipts', 'icon' => 'lucide-receipt', 'url' => '/admin/applications/receipts', 'key' => 'receipts'],
+        ['label' => 'Wallet', 'items' => [
+            ['name' => 'Recharges', 'icon' => 'lucide-wallet', 'url' => '/admin/wallet/recharges', 'key' => 'wallet-recharges'],
+            ['name' => 'Ledger', 'icon' => 'lucide-history', 'url' => '/admin/wallet/transactions', 'key' => 'wallet-ledger'],
+            ['name' => 'User Balances', 'icon' => 'lucide-users', 'url' => '/admin/wallet/users', 'key' => 'wallet-users'],
         ]],
         ['label' => 'People', 'items' => [
             ['name' => 'Users', 'icon' => 'lucide-users', 'url' => '/admin/users', 'key' => 'users'],
-            ['name' => 'Contact', 'icon' => 'lucide-mail', 'url' => '/admin/contact', 'key' => 'contact', 'badge' => 'contact'],
+            ['name' => 'Roles', 'icon' => 'lucide-shield', 'url' => '/admin/roles', 'key' => 'roles'],
+            ['name' => 'Permissions', 'icon' => 'lucide-key-round', 'url' => '/admin/permissions', 'key' => 'permissions'],
+        ]],
+        ['label' => 'Revenue', 'items' => [
+            ['name' => 'Revenue', 'icon' => 'lucide-trending-up', 'url' => '/admin/revenue', 'key' => 'revenue', 'children' => [
+                ['name' => 'Sponsored', 'url' => '/admin/revenue/sponsored'],
+            ]],
+            ['name' => 'Ads', 'icon' => 'lucide-megaphone', 'url' => '/admin/revenue/ads', 'key' => 'revenue-ads', 'children' => [
+                ['name' => 'Analytics', 'url' => '/admin/revenue/ads/analytics'],
+                ['name' => 'Campaigns', 'url' => '/admin/revenue/ads/campaigns'],
+                ['name' => 'Placements', 'url' => '/admin/revenue/ads/placements'],
+                ['name' => 'Settings', 'url' => '/admin/revenue/ads/settings'],
+            ]],
+            ['name' => 'Donations', 'icon' => 'lucide-hand-heart', 'url' => '/admin/revenue/donations', 'key' => 'revenue-donations', 'children' => [
+                ['name' => 'bKash', 'url' => '/admin/revenue/donations/bkash'],
+                ['name' => 'Nagad', 'url' => '/admin/revenue/donations/nagad'],
+                ['name' => 'Rocket', 'url' => '/admin/revenue/donations/rocket'],
+            ]],
+        ]],
+        ['label' => 'Engagement', 'items' => [
+            ['name' => 'Notifications', 'icon' => 'lucide-bell', 'url' => '/admin/notifications', 'key' => 'notifications', 'children' => [
+                ['name' => 'Schedule', 'url' => '/admin/notifications/schedule'],
+            ]],
+            ['name' => 'Live TV', 'icon' => 'lucide-tv', 'url' => '/admin/livetv', 'key' => 'livetv', 'children' => [
+                ['name' => 'Channels', 'url' => '/admin/livetv/channels'],
+                ['name' => 'Proxy', 'url' => '/admin/livetv/proxy'],
+            ]],
+            ['name' => 'Kharij', 'icon' => 'lucide-graduation-cap', 'url' => '/admin/kharij', 'key' => 'kharij'],
+            ['name' => 'Weather', 'icon' => 'lucide-cloud-sun', 'url' => '/admin/weather', 'key' => 'weather', 'children' => [
+                ['name' => 'API', 'url' => '/admin/weather/api'],
+                ['name' => 'Locations', 'url' => '/admin/weather/locations'],
+            ]],
+        ]],
+        ['label' => 'Tools', 'items' => [
+            ['name' => 'AI System', 'icon' => 'lucide-brain', 'url' => '/admin/aisystem', 'key' => 'aisystem', 'children' => [
+                ['name' => 'Chat', 'url' => '/admin/aisystem/chat'],
+                ['name' => 'Writer', 'url' => '/admin/aisystem/writer'],
+                ['name' => 'Knowledge', 'url' => '/admin/aisystem/knowledge'],
+                ['name' => 'Providers', 'url' => '/admin/aisystem/providers'],
+                ['name' => 'Analytics', 'url' => '/admin/aisystem/analytics'],
+            ]],
+            ['name' => 'OCR', 'icon' => 'lucide-scan-text', 'url' => '/admin/ocr', 'key' => 'ocr', 'children' => [
+                ['name' => 'History', 'url' => '/admin/ocr/history'],
+                ['name' => 'Settings', 'url' => '/admin/ocr/settings'],
+                ['name' => 'Test', 'url' => '/admin/ocr/test'],
+            ]],
+            ['name' => 'Photo Studio', 'icon' => 'lucide-image', 'url' => '/admin/photo-studio', 'key' => 'photo-studio', 'children' => [
+                ['name' => 'Editor', 'url' => '/admin/photo-studio/editor'],
+                ['name' => 'Cutout', 'url' => '/admin/photo-studio/cutout'],
+                ['name' => 'History', 'url' => '/admin/photo-studio/history'],
+            ]],
+            ['name' => 'Calculator', 'icon' => 'lucide-calculator', 'url' => '/admin/calculator', 'key' => 'calculator', 'children' => [
+                ['name' => 'GPA', 'url' => '/admin/calculator/gpa'],
+                ['name' => 'Loan', 'url' => '/admin/calculator/loan'],
+                ['name' => 'Widgets', 'url' => '/admin/calculator/widgets'],
+            ]],
+            ['name' => 'API Proxy', 'icon' => 'lucide-plug', 'url' => '/admin/api-proxy', 'key' => 'api-proxy', 'children' => [
+                ['name' => 'Firebase', 'url' => '/admin/api-proxy/firebase'],
+                ['name' => 'Pexels', 'url' => '/admin/api-proxy/pexels'],
+                ['name' => 'Pixabay', 'url' => '/admin/api-proxy/pixabay'],
+                ['name' => 'Puter', 'url' => '/admin/api-proxy/puter'],
+            ]],
+            ['name' => 'Scraper', 'icon' => 'lucide-download', 'url' => '/admin/scraper', 'key' => 'scraper', 'children' => [
+                ['name' => 'Sources', 'url' => '/admin/scraper/sources'],
+                ['name' => 'Jobs', 'url' => '/admin/scraper/jobs'],
+                ['name' => 'Logs', 'url' => '/admin/scraper/logs'],
+                ['name' => 'Settings', 'url' => '/admin/scraper/settings'],
+                ['name' => 'Automation', 'url' => '/admin/scraper/settings/automation'],
+                ['name' => 'Limits', 'url' => '/admin/scraper/settings/limits'],
+                ['name' => 'Storage', 'url' => '/admin/scraper/settings/storage'],
+            ]],
         ]],
         ['label' => 'Insights', 'items' => [
-            ['name' => 'Analytics', 'icon' => 'lucide-bar-chart-3', 'url' => '/admin/analytics', 'key' => 'analytics'],
             ['name' => 'Logs', 'icon' => 'lucide-scroll-text', 'url' => '/admin/logs', 'key' => 'logs'],
+            ['name' => 'Sitemap', 'icon' => 'lucide-map', 'url' => '/admin/sitemap', 'key' => 'sitemap', 'children' => [
+                ['name' => 'History', 'url' => '/admin/sitemap/history'],
+            ]],
         ]],
         ['label' => 'Settings', 'items' => [
-            ['name' => 'Account Settings', 'icon' => 'lucide-settings', 'url' => '/admin/account-settings', 'key' => 'account-settings'],
+            ['name' => 'Security', 'icon' => 'lucide-lock', 'url' => '/admin/security', 'key' => 'security', 'children' => [
+                ['name' => 'Authentication', 'url' => '/admin/security/auth'],
+                ['name' => 'reCAPTCHA', 'url' => '/admin/security/recaptcha'],
+                ['name' => 'SMTP', 'url' => '/admin/security/smtp'],
+            ]],
+            ['name' => 'Navigation', 'icon' => 'lucide-menu', 'url' => '/admin/navigation', 'key' => 'navigation'],
+            ['name' => 'Setup', 'icon' => 'lucide-wrench', 'url' => '/admin/setup', 'key' => 'setup'],
+            // The admin's own account (owner-scoped, admin chrome).
+            ['name' => 'My Profile', 'icon' => 'lucide-user-round', 'url' => '/admin/profile', 'key' => 'profile'],
+            ['name' => 'My Account', 'icon' => 'lucide-settings', 'url' => '/admin/account-settings', 'key' => 'account-settings'],
+            ['name' => 'My Notifications', 'icon' => 'lucide-bell', 'url' => '/admin/my/notifications', 'key' => 'my-notifications'],
         ]],
     ];
     $currentPath = request()->path() === '/' ? '/' : '/'.request()->path();
+
+    // Groups stay collapsed unless the current path is inside them, so the
+    // active page is always visible on load.
+    $navChildrenActive = function (array $children) use ($currentPath): bool {
+        foreach ($children as $child) {
+            if ($currentPath === $child['url'] || str_starts_with($currentPath, rtrim($child['url'], '/').'/')) {
+                return true;
+            }
+        }
+
+        return false;
+    };
 @endphp
 
 <div class="min-h-screen flex flex-col">
@@ -217,13 +323,21 @@
                                 </div>
                                 <span class="font-medium">{{ t('Account Settings') }}</span>
                             </a>
-                            <a href="/profile" class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
+                            <a href="/admin/profile" class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
                                                                   rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
                                                                   hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
                                 <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                                     <i class="lucide lucide-user-circle w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
                                 </div>
-                                <span class="font-medium">{{ t('View Profile') }}</span>
+                                <span class="font-medium">{{ t('My Profile') }}</span>
+                            </a>
+                            <a href="/admin/my/notifications" class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300
+                                                                  rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800
+                                                                  hover:text-indigo-700 dark:hover:text-indigo-400 transition-all duration-150">
+                                <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                                    <i class="lucide lucide-bell w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
+                                </div>
+                                <span class="font-medium">{{ t('My Notifications') }}</span>
                             </a>
                         </div>
                         <div class="p-1.5">
@@ -286,17 +400,47 @@
                         <div class="sidebar-group-label px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600">{{ $group['label'] }}</div>
                     @endif
                     @foreach ($group['items'] as $item)
-                        <a href="{{ $item['url'] }}"
-                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150
-                                  {{ $currentPath === $item['url'] || str_starts_with($currentPath, rtrim($item['url'], '/').'/') || ($item['key'] ?? '') === request()->get('tab')
-                                      ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
-                                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-indigo-400' }}">
-                            <i class="lucide {{ $item['icon'] }} w-4 h-4 flex-shrink-0"></i>
-                            <span class="truncate">{{ $item['name'] }}</span>
-                            @if (!empty($item['badge']))
-                                <span class="sidebar-badge ml-auto hidden items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 text-[9px] font-bold text-white bg-rose-500 rounded-full" data-badge-key="{{ $item['badge'] }}"></span>
-                            @endif
-                        </a>
+                        @php
+                            $children = $item['children'] ?? [];
+                            $hasChildren = $children !== [];
+                            $childActive = $hasChildren && $navChildrenActive($children);
+                            $itemActive = $currentPath === $item['url']
+                                || str_starts_with($currentPath, rtrim($item['url'], '/').'/')
+                                || ($item['key'] ?? '') === request()->get('tab');
+                        @endphp
+
+                        @if (! $hasChildren)
+                            <a href="{{ $item['url'] }}"
+                               class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150
+                                      {{ $itemActive
+                                          ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
+                                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-indigo-400' }}">
+                                <i class="lucide {{ $item['icon'] }} w-4 h-4 flex-shrink-0"></i>
+                                <span class="truncate">{{ $item['name'] }}</span>
+                                @if (!empty($item['badge']))
+                                    <span class="sidebar-badge ml-auto hidden items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 text-[9px] font-bold text-white bg-rose-500 rounded-full" data-badge-key="{{ $item['badge'] }}"></span>
+                                @endif
+                            </a>
+                        @else
+                            <button type="button" data-sidebar-group
+                                    aria-expanded="{{ $childActive ? 'true' : 'false' }}"
+                                    class="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-left
+                                           {{ $itemActive || $childActive
+                                               ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
+                                               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-indigo-600 dark:hover:text-indigo-400' }}">
+                                <i class="lucide {{ $item['icon'] }} w-4 h-4 flex-shrink-0"></i>
+                                <span class="truncate">{{ $item['name'] }}</span>
+                                <i class="lucide lucide-chevron-down sidebar-chevron"></i>
+                            </button>
+                            <div class="sidebar-submenu {{ $childActive ? 'open' : '' }}">
+                                <a href="{{ $item['url'] }}"
+                                   class="sidebar-sublink {{ $currentPath === $item['url'] ? 'active' : '' }}">{{ t('Overview') }}</a>
+                                @foreach ($children as $child)
+                                    <a href="{{ $child['url'] }}"
+                                       class="sidebar-sublink {{ $currentPath === $child['url'] || str_starts_with($currentPath, rtrim($child['url'], '/').'/') ? 'active' : '' }}">{{ $child['name'] }}</a>
+                                @endforeach
+                            </div>
+                        @endif
                     @endforeach
                 @endforeach
 
@@ -350,7 +494,28 @@
     </div>
 </div>
 
-{{-- Alpine bundle for interactivity --}}    <script defer src="@assetVersion('/assets/laravel/dist/app.js')"></script>
+{{-- Sidebar submenu toggles (plain JS so they work before Alpine loads) --}}
+    <script>
+        (function () {
+            function wire() {
+                document.querySelectorAll('[data-sidebar-group]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var sub = btn.nextElementSibling;
+                        if (!sub) { return; }
+                        var open = sub.classList.toggle('open');
+                        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    });
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', wire);
+            } else {
+                wire();
+            }
+        })();
+    </script>
+
+    {{-- Alpine bundle for interactivity --}}    <script defer src="@assetVersion('/assets/laravel/dist/app.js')"></script>
     <style>
         [x-cloak]{display:none!important}
         .sidebar-group-label { @apply px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 select-none; }

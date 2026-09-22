@@ -13,9 +13,51 @@ use Throwable;
  */
 class WeatherService
 {
-    public function getCurrentWeather(string $location, string $units = 'metric', int $forecastDays = 0): array
+    /**
+     * Effective weather config: config/weather.php defaults overridden by the
+     * admin-managed values on the app_settings row (weather_* columns), when set.
+     */
+    public function config(): array
     {
         $config = config('weather', []);
+
+        try {
+            $row = (array) (\Illuminate\Support\Facades\DB::table('app_settings')->first() ?? []);
+        } catch (Throwable) {
+            return $config; // e.g. during early bootstrap / migrations
+        }
+
+        $dbProvider = trim((string) ($row['weather_provider'] ?? ''));
+        $dbApiKey = trim((string) ($row['weather_api_key'] ?? ''));
+        $dbUnits = trim((string) ($row['weather_units'] ?? ''));
+        $dbCity = trim((string) ($row['weather_default_city'] ?? ''));
+        $dbLat = $row['weather_default_lat'] ?? null;
+        $dbLon = $row['weather_default_lon'] ?? null;
+
+        if ($dbProvider !== '') {
+            $config['provider'] = $dbProvider;
+        }
+        if ($dbApiKey !== '') {
+            $config['openweathermap']['api_key'] = $dbApiKey;
+        }
+        if (in_array($dbUnits, ['metric', 'imperial'], true)) {
+            $config['openweathermap']['units'] = $dbUnits;
+        }
+        if ($dbCity !== '') {
+            $config['default_location']['city'] = $dbCity;
+        }
+        if ($dbLat !== null && $dbLat !== '') {
+            $config['default_location']['lat'] = (float) $dbLat;
+        }
+        if ($dbLon !== null && $dbLon !== '') {
+            $config['default_location']['lon'] = (float) $dbLon;
+        }
+
+        return $config;
+    }
+    public function getCurrentWeather(string $location, string $units = 'metric', int $forecastDays = 0): array
+    {
+        $config = $this->config();
 
         // Mock provider: deterministic data for local tests/dev (legacy parity).
         if (($config['provider'] ?? 'mock') === 'mock') {

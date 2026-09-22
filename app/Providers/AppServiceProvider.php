@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Auth\LegacySessionGuard;
 use App\Support\AppSettings;
+use App\Support\HeaderNavService;
 use App\Support\I18n\LanguageService;
 use App\Support\I18n\Translator;
+use App\Support\UserProfileService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
@@ -63,15 +65,29 @@ class AppServiceProvider extends ServiceProvider
         // be wasteful.
         $sharedTranslations = null;
 
-        View::composer('*', function (IlluminateView $view) use (&$sharedTranslations) {
+        // RBAC globals (isAdmin / isSuperAdmin / authRoles), cached per USER ID
+        // rather than per request. A plain `$rbac = null` memo would be correct on
+        // a classic one-process-per-request setup but would leak one user's admin
+        // flags to the next request under a long-lived worker (Octane/Swoole) —
+        // an admin-only escalation. Keying by id keeps it to one query per user
+        // per process and is safe either way. The `users` table has no `role` or
+        // `is_super_admin` column, so admin-ness comes from the roles/user_roles
+        // tables only.
+        $rbacByUser = [];
+
+        View::composer('*', function (IlluminateView $view) use (&$sharedTranslations, &$rbacByUser) {
             $appSettings = $this->app->make(AppSettings::class)->all();
 
-            $view->with('authUser', auth()->user());
+            $authUser = auth()->user();
+            $userId = (int) ($authUser?->id ?? 0);
+
+            $rbac = $rbacByUser[$userId] ??= $this->app->make(UserProfileService::class)->rbacFor($userId ?: null);
+
+            $view->with('authUser', $authUser);
             $view->with('isAuthenticated', auth()->check());
-            $view->with('isSuperAdmin', auth()->check() && (auth()->user()?->is_super_admin ?? false));
-            $view->with('isAdmin', auth()->check()
-                && (($authUser = auth()->user()) && ($authUser->is_super_admin ?? false)
-                    || ($authUser->role === 'admin')));
+            $view->with('isSuperAdmin', $rbac['is_super_admin']);
+            $view->with('isAdmin', $rbac['is_admin']);
+            $view->with('authRoles', $rbac['roles']);
             $view->with('canonicalUrl', request()->url());
 
             if ($sharedTranslations === null) {
@@ -85,8 +101,15 @@ class AppServiceProvider extends ServiceProvider
             $view->with('siteTranslations', $sharedTranslations);
             $view->with('availableLanguages', $this->app->make(LanguageService::class)->available());
 
-            // Public nav items (mirrors legacy header-v2.twig default nav_items).
-            $view->with('publicNavItems', []);
+            // Public nav items: the HeaderNavService merges any admin-persisted
+            // overrides (stored on app_settings.header_nav_items) over the
+            // built-in defaults, then filters hidden items and sorts by order.
+            // Share the resolved list as $publicNavItems (which the header uses
+            // via `??`) and the raw defaults as a fallback so the header never
+            // renders an empty menu even if the service is unavailable.
+            $headerNav = $this->app->make(HeaderNavService::class);
+            $view->with('publicNavItems', $headerNav->configured());
+            $view->with('headerNavDefaults', $headerNav->defaults());
         });
     }
 

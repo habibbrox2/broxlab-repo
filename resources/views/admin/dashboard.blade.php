@@ -61,6 +61,7 @@
         ['label' => 'Comments Today', 'value' => $stats['today_comments'], 'sub' => 'Last sync '.$last_sync_at->format('H:i'), 'subClass' => 'text-slate-400', 'icon' => 'message-circle', 'color' => 'sky'],
         ['label' => 'Pending Reviews', 'value' => $stats['pending_reviews'], 'sub' => $stats['draft_count'] > 0 ? $stats['draft_count'].' drafts' : null, 'subClass' => 'text-slate-400', 'icon' => 'hourglass', 'color' => 'amber'],
         ['label' => 'Subscribers', 'value' => $stats['subscribers'], 'sub' => $stats['new_subscribers'] > 0 ? '+'.($stats['new_subscribers']).' new' : null, 'subClass' => 'text-emerald-600 dark:text-emerald-400', 'icon' => 'users', 'color' => 'emerald'],
+        ['label' => 'Scraped Posts', 'value' => number_format($stats['scraper_posts_total']), 'sub' => $stats['scraper_posts_today'] > 0 ? '+'.$stats['scraper_posts_today'].' today' : ($stats['scraper_autopublish'] ? 'Auto-publish on' : 'Auto-publish off'), 'subClass' => $stats['scraper_autopublish'] ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400', 'icon' => 'cloud-download', 'color' => 'violet'],
     ] as $card)
     <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all">
         <div class="flex items-start justify-between gap-3">

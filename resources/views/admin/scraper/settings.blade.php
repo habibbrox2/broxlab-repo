@@ -113,6 +113,57 @@
             </div>
         </div>
     </div>
+
+    @if (session('status'))
+        <div class="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-3.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-900/30 flex items-center justify-center flex-shrink-0">
+                <i class="lucide lucide-cloud-upload w-4 h-4 text-sky-600 dark:text-sky-400"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Auto-Publish Scraped Posts') }}</h3>
+        </div>
+
+        <div class="p-5 sm:p-6 space-y-4">
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {!! t('When enabled, every extraction run turns new scraped items into published posts (attributed to their source, tagged, with a canonical link back). Currently published:').' <strong class="text-slate-700 dark:text-slate-200">'.number_format($config['scraped_posts']).'</strong>' !!}
+            </p>
+
+            <form method="post" action="/admin/scraper/settings/autopublish" class="space-y-4">
+                @csrf
+
+                <label class="flex items-start justify-between gap-4 py-1 cursor-pointer">
+                    <span>
+                        <span class="block text-sm font-medium text-slate-900 dark:text-white">{{ t('Publish scraped items as posts') }}</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ t('Requires the extraction pipeline to be enabled.').($config['autopublish_override'] === null ? ' '.t('Currently following the config default.') : '') }}
+                        </span>
+                    </span>
+                    <input type="checkbox" name="autopublish_enabled" value="1" @checked($config['autopublish'])
+                           class="mt-0.5 h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500/30 flex-shrink-0">
+                </label>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{{ t('Per-run publish limit') }} (1–500)</label>
+                    <input type="number" min="1" max="500" name="autopublish_limit" value="{{ $config['autopublish_limit'] }}"
+                           class="w-full sm:w-40 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10">
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-sky-500/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
+                        <i class="lucide lucide-save w-4 h-4"></i> {{ t('Save changes') }}
+                    </button>
+                    <span class="text-xs {{ $config['autopublish'] ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">
+                        {{ $config['autopublish'] ? t('Auto-publish is active') : t('Auto-publish is off') }}
+                    </span>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @endsection

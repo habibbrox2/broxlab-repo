@@ -12,7 +12,7 @@ class AdminSetupController extends Controller
 {
     public function index(): View
     {
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.setup.index', [
             'title' => 'Setup Wizard',

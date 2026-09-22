@@ -182,7 +182,9 @@ class ScraperStore
     public function stats(): array
     {
         $stored = 0;
-        foreach ($this->summaries(array_keys($this->seenKeysByFile())) as $summary) {
+        // seenKeysByFile() already returns the source keys — array_keys() here
+        // yielded int list offsets and tripped the string type on sourcePath().
+        foreach ($this->summaries($this->seenKeysByFile()) as $summary) {
             $stored += $summary['count'];
         }
 

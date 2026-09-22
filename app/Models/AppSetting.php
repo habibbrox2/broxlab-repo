@@ -19,11 +19,13 @@ class AppSetting extends Model
         'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube',
         'allow_user_registration', 'require_email_verification', 'enable_2fa',
         'asset_version',
+        'header_nav_items',
     ];
 
     protected $casts = [
         'allow_user_registration' => 'boolean',
         'require_email_verification' => 'boolean',
         'enable_2fa' => 'boolean',
+        'header_nav_items' => 'array',
     ];
 }

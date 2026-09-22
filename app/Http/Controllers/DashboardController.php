@@ -28,7 +28,7 @@ class DashboardController extends Controller
 
         // Legacy `user_dashboard_only` middleware: admins go to the admin
         // dashboard (still served by legacy — the bridge does not shadow it).
-        if ($this->users->isSuperAdmin($userId) || $this->users->hasRole($userId, 'admin')) {
+        if ($this->users->isAdmin($userId)) {
             return redirect('/admin/dashboard');
         }
 

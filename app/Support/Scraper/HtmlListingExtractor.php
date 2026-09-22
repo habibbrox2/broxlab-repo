@@ -100,6 +100,7 @@ class HtmlListingExtractor
                 'summary' => null,
                 'published_at' => $this->nearbyDate($xpath, $anchor),
                 'guid' => $key,
+                'image' => $this->nearbyImage($xpath, $anchor, $baseUrl),
             ];
         }
 
@@ -187,6 +188,70 @@ class HtmlListingExtractor
         $meaningfulWords = count(array_filter($words, fn ($w) => mb_strlen($w) > 1));
 
         return mb_strlen($slug) >= 6 || $meaningfulWords >= 3;
+    }
+
+    /**
+     * Card image: the nearest <img> around the headline anchor (inside it or
+     * in the same listing card, i.e. up to 4 ancestor levels), skipping tiny
+     * icons/sprites and lazy placeholders without a data-src fallback.
+     */
+    protected function nearbyImage(\DOMXPath $xpath, \DOMNode $anchor, string $baseUrl): ?string
+    {
+        $node = $anchor;
+        $depth = 0;
+
+        while ($node instanceof \DOMNode && $depth <= 4) {
+            $images = $node instanceof \DOMElement
+                ? $xpath->query('.//img', $node)
+                : $xpath->query('.//img', $node->parentNode ?? $node);
+
+            if ($images !== false) {
+                foreach ($images as $img) {
+                    if (! $img instanceof \DOMElement) {
+                        continue;
+                    }
+
+                    $src = $img->getAttribute('src');
+                    if ($src === '' || $src === null) {
+                        $src = $img->getAttribute('data-src');
+                    }
+                    if ($src === '' || $src === null) {
+                        $src = $img->getAttribute('data-original');
+                    }
+
+                    $resolved = $this->client->resolveUrl((string) $src, $baseUrl);
+                    if ($resolved !== '' && $this->plausibleCardImage($img, $resolved)) {
+                        return $resolved;
+                    }
+                }
+            }
+
+            $node = $node->parentNode;
+            $depth++;
+        }
+
+        return null;
+    }
+
+    /** Skip icons, spacers and tracking pixels by dimension hints and src shape. */
+    protected function plausibleCardImage(\DOMElement $img, string $resolved): bool
+    {
+        foreach (['width', 'height'] as $attr) {
+            $value = (int) $img->getAttribute($attr);
+            if ($value > 0 && $value < 48) {
+                return false; // icon / sprite
+            }
+        }
+
+        if (preg_match('/\.(svg)(\?|#|$)/i', $resolved)) {
+            return false;
+        }
+
+        if (preg_match('/(logo|icon|sprite|avatar|pixel|spacer|1x1)/i', $resolved)) {
+            return false;
+        }
+
+        return true;
     }
 
     protected function nearbyDate(\DOMXPath $xpath, \DOMNode $anchor): ?string

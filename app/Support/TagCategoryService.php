@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Log;
  */
 class TagCategoryService
 {
+    public function __construct(protected UserProfileService $users) {}
+
     public const CATEGORY_SORTS = ['id', 'name', 'created_at', 'updated_at'];
     public const TAG_SORTS = ['id', 'name'];
 
@@ -212,7 +214,10 @@ class TagCategoryService
 
             DB::table('activity_logs')->insert([
                 'user_id' => $user?->id ?? 0,
-                'role' => $user?->role ?? 'admin',
+                // The users table has no `role` column — derive the actor's role
+                // from the RBAC tables (single shared definition), falling back
+                // to 'admin' for unauthenticated/system contexts.
+                'role' => $this->actorRole($user),
                 'action' => $action,
                 'resource_type' => $resourceType,
                 'resource_id' => $resourceId,
@@ -226,5 +231,16 @@ class TagCategoryService
         } catch (\Throwable $e) {
             Log::warning('tag/category activity log failed (non-fatal): '.$e->getMessage());
         }
+    }
+
+    /**
+     * First RBAC role name for the actor, or 'admin' when unauthenticated
+     * (legacy rows used that as the default for system-context entries).
+     */
+    protected function actorRole(?object $user): string
+    {
+        $roles = $this->users->rbacFor($user?->id)['roles'];
+
+        return $roles[0] ?? 'admin';
     }
 }

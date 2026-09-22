@@ -31,7 +31,7 @@ class AdminRbacController extends Controller
             search: $search
         );
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.roles.index', [
             'title' => 'Roles',
@@ -61,7 +61,7 @@ class AdminRbacController extends Controller
 
         $permissionsList = RbacAdminService::getPermissionsList(page: 1, perPage: 999, sort: 'id', order: 'ASC');
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.roles.view', [
             'title' => 'View Role',
@@ -74,7 +74,7 @@ class AdminRbacController extends Controller
 
     public function roleCreate(): View
     {
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.roles.create', [
             'title' => 'Create Role',
@@ -111,7 +111,7 @@ class AdminRbacController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.roles.edit', [
             'title' => 'Edit Role',
@@ -159,7 +159,7 @@ class AdminRbacController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.roles.delete', [
             'title' => 'Delete Role',
@@ -213,7 +213,7 @@ class AdminRbacController extends Controller
         $modules = ['users', 'roles', 'posts', 'pages', 'categories', 'tags', 'mobiles', 'services',
             'comments', 'media', 'notifications', 'analytics', 'settings', 'security', 'api'];
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.permissions.index', [
             'title' => 'Permissions',
@@ -245,7 +245,7 @@ class AdminRbacController extends Controller
 
         $rolesList = RbacAdminService::getRolesList(page: 1, perPage: 999, sort: 'ranking', order: 'ASC');
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.permissions.view', [
             'title' => 'View Permission',
@@ -258,7 +258,7 @@ class AdminRbacController extends Controller
 
     public function permissionCreate(): View
     {
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.permissions.create', [
             'title' => 'Create Permission',
@@ -295,7 +295,7 @@ class AdminRbacController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.permissions.edit', [
             'title' => 'Edit Permission',
@@ -343,7 +343,7 @@ class AdminRbacController extends Controller
             abort(404);
         }
 
-        $appSettings = DB::table('app_settings')->first()?->toArray() ?? [];
+        $appSettings = (array) (DB::table('app_settings')->first() ?? []);
 
         return view('admin.rbac.permissions.delete', [
             'title' => 'Delete Permission',

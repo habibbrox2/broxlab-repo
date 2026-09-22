@@ -3,6 +3,7 @@
 @section('title', 'Security Settings — '.($appSettings['site_name'] ?? 'BroxLab'))
 
 @section('content')
+@include('admin.security._flash')
 
 <div class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-900 to-sky-900 text-white shadow-xl shadow-slate-900/20">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(6,182,212,0.25),transparent_55%)]" aria-hidden="true"></div>
@@ -94,12 +95,14 @@
             </div>
             <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="flex items-center justify-between py-2">
-                    <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Site Key') }}</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{{ substr($appSettings['recaptcha_site_key'] ?? '', 0, 20) }}...</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Status') }}</span>
+                    <span class="text-sm font-medium {{ !empty($appSettings['recaptcha_enabled']) && !empty($appSettings['recaptcha_site_key']) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600' }}">
+                        {{ !empty($appSettings['recaptcha_enabled']) && !empty($appSettings['recaptcha_site_key']) ? t('Active') : t('Disabled') }}
+                    </span>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                    <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Secret Key') }}</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{{ substr($appSettings['recaptcha_secret_key'] ?? '', 0, 20) }}...</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-400">{{ t('Site Key') }}</span>
+                    <span class="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{{ ($appSettings['recaptcha_site_key'] ?? '') !== '' ? substr($appSettings['recaptcha_site_key'], 0, 12).'…' : '—' }}</span>
                 </div>
             </div>
         </div>

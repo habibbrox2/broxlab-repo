@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\AdminDashboardService;
 use App\Support\UserProfileService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -26,7 +27,7 @@ class AdminDashboardController extends Controller
         $userId = (int) Auth::id();
         $user = $this->users->getUserById($userId);
 
-        $stats = array_merge([
+        $stats = array_merge($this->scraperPostStats(), [
             'total_posts' => $this->dashboard->totalPosts(),
             'total_comments' => $this->dashboard->totalComments(),
             'total_users' => $this->dashboard->totalUsers(),
@@ -65,6 +66,28 @@ class AdminDashboardController extends Controller
             'success' => true,
             'counts' => $this->dashboard->sidebarCounts(),
         ]);
+    }
+
+    /**
+     * Scraped auto-publish stats: how many of the published posts came from
+     * the scraper (posts with a source_url), today's and the 7-day counts.
+     */
+    protected function scraperPostStats(): array
+    {
+        $total = (int) DB::table('posts')->whereNotNull('source_url')->where('published', 1)->count();
+        $today = (int) DB::table('posts')->whereNotNull('source_url')->where('published', 1)
+            ->whereDate('created_at', today())->count();
+        $week = (int) DB::table('posts')->whereNotNull('source_url')->where('published', 1)
+            ->where('created_at', '>=', now()->subDays(7))->count();
+
+        $enabled = app(\App\Support\AutoPublishService::class)->isEnabled();
+
+        return [
+            'scraper_posts_total' => $total,
+            'scraper_posts_today' => $today,
+            'scraper_posts_week' => $week,
+            'scraper_autopublish' => $enabled,
+        ];
     }
 
     protected function serviceAndPaymentStats(): array

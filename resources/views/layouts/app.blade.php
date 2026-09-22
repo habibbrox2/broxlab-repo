@@ -451,20 +451,13 @@
 
     {{-- AI Assistant --}}
     @php
-        $isAuthenticated = auth()->check();
-        $authUser = $isAuthenticated ? auth()->user() : null;
-        $isSuperAdmin = $authUser && ($authUser->is_super_admin ?? false);
-        $authPrimaryRole = ($authUser && $authUser->role) ? strtolower(trim($authUser->role)) : '';
-        $authRoleList = [];
-        if ($authUser && $authUser->roles) {
-            foreach ($authUser->roles as $roleEntry) {
-                $roleName = (isset($roleEntry['name']) ? $roleEntry['name'] : $roleEntry) ?? '';
-                $roleName = strtolower(trim($roleName));
-                if ($roleName) $authRoleList[] = $roleName;
-            }
-        }
-        $isAdminUser = $isSuperAdmin || $authPrimaryRole === 'admin' || in_array('admin', $authRoleList) || in_array('superadmin', $authRoleList);
-        $isRegularUser = $isAuthenticated && ($authPrimaryRole === 'user' || in_array('user', $authRoleList) || ($authPrimaryRole === '' && empty($authRoleList)));
+        // $authUser / $isAuthenticated / $isAdmin / $isSuperAdmin / $authRoles all
+        // come from the shared view composer (AppServiceProvider), resolved from
+        // the RBAC roles/user_roles tables. Reading $authUser->role or
+        // ->is_super_admin always returned null — those columns do not exist.
+        $authRoleList = $authRoles ?? [];
+        $isAdminUser = (bool) ($isAdmin ?? false);
+        $isRegularUser = (bool) ($isAuthenticated ?? false) && ! $isAdminUser;
     @endphp
     @include('partials.public.ai-assistant')
 

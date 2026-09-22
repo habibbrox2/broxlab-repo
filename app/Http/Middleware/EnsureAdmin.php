@@ -33,7 +33,7 @@ class EnsureAdmin
             return redirect('/login');
         }
 
-        if (! $this->users->isSuperAdmin((int) $userId) && ! $this->users->hasRole((int) $userId, 'admin')) {
+        if (! $this->users->isAdmin((int) $userId)) {
             if ($this->isApiRequest($request)) {
                 return response()->json(['success' => false, 'error' => 'Admin access required'], 403);
             }

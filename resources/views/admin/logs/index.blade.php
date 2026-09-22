@@ -35,13 +35,13 @@
             @forelse($logs as $log)
                 <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <div class="w-2 h-2 rounded-full flex-shrink-0
-                        @if($log['domain'] === 'users') bg-emerald-500
-                        @elseif($log['domain'] === 'notifications') bg-amber-500
-                        @elseif($log['domain'] === 'posts') bg-blue-500
-                        @elseif($log['domain'] === 'services') bg-violet-500
-                        @elseif($log['domain'] === 'roles') bg-indigo-500
-                        @elseif($log['domain'] === 'permissions') bg-cyan-500
-                        @elseif($log['domain'] === 'mobiles') bg-pink-500
+                        @if($log['domain'] === 'user') bg-emerald-500
+                        @elseif($log['domain'] === 'auth') bg-amber-500
+                        @elseif($log['domain'] === 'post') bg-blue-500
+                        @elseif($log['domain'] === 'category' || $log['domain'] === 'tag') bg-violet-500
+                        @elseif($log['domain'] === 'mobile') bg-pink-500
+                        @elseif($log['domain'] === 'comment') bg-cyan-500
+                        @elseif($log['domain'] === 'contact' || $log['domain'] === 'advertise') bg-indigo-500
                         @else bg-slate-400 dark:bg-slate-600 @endif"></div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm text-slate-900 dark:text-white">
@@ -49,7 +49,7 @@
                             <span class="text-slate-500 dark:text-slate-400"> {{ $log['activity'] }}</span>
                         </p>
                         <p class="text-xs text-slate-400 dark:text-slate-600 mt-0.5">
-                            {{ $log['domain'] ?? 'system' }} · {{ $log['action'] ?? '' }}
+                            {{ $log['domain'] ?: 'system' }} · {{ $log['status'] ?: 'logged' }}
                             @if($log['item_id'])
                                 <span class="text-slate-300 dark:text-slate-700">#{{ $log['item_id'] }}</span>
                             @endif

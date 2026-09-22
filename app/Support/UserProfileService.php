@@ -92,6 +92,52 @@ class UserProfileService
             ->exists();
     }
 
+    /**
+     * RBAC summary for a user in a single query: lower-cased role names plus the
+     * super-admin / admin flags derived from those same rows.
+     *
+     * This is the one definition of "is this user an admin" in the app — used by
+     * EnsureAdmin, DashboardController and the isAdmin view global so the three
+     * cannot drift. The `users` table has NO `role` or `is_super_admin` column:
+     * admin-ness lives only in the roles/user_roles RBAC tables.
+     *
+     * @return array{roles: list<string>, is_super_admin: bool, is_admin: bool}
+     */
+    public function rbacFor(?int $userId): array
+    {
+        if (! $userId) {
+            return ['roles' => [], 'is_super_admin' => false, 'is_admin' => false];
+        }
+
+        $names = [];
+        $isSuperAdmin = false;
+
+        foreach ($this->getRoles($userId) as $role) {
+            $name = strtolower(trim((string) ($role['name'] ?? '')));
+            if ($name !== '') {
+                $names[] = $name;
+            }
+            if ((int) ($role['is_super_admin'] ?? 0) === 1) {
+                $isSuperAdmin = true;
+            }
+        }
+
+        return [
+            'roles' => $names,
+            'is_super_admin' => $isSuperAdmin,
+            'is_admin' => $isSuperAdmin || in_array('admin', $names, true),
+        ];
+    }
+
+    /**
+     * True for super admins and for users holding a role named `admin` — the
+     * exact rule EnsureAdmin enforces, expressed once.
+     */
+    public function isAdmin(?int $userId): bool
+    {
+        return $this->rbacFor($userId)['is_admin'];
+    }
+
     /** Port of UserModel::userHasPassword. */
     public function userHasPassword(int $userId): bool
     {

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AdminRbacController;
 use App\Http\Controllers\Admin\AdminRevenueController;
 use App\Http\Controllers\Admin\AdminWalletController;
 use App\Http\Controllers\Admin\AdminLogsController;
+use App\Http\Controllers\Admin\AdminNavigationController;
 use App\Http\Controllers\Admin\AdminSecurityController;
 use App\Http\Controllers\Admin\AdminSetupController;
 use App\Http\Controllers\Admin\AdminScraperController;
@@ -415,6 +416,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/security/recaptcha', [AdminSecurityController::class, 'update'])->name('admin.security.recaptcha.update');
     Route::post('/admin/security/smtp', [AdminSecurityController::class, 'update'])->name('admin.security.smtp.update');
     Route::post('/admin/security/smtp/test', [AdminSecurityController::class, 'testMail'])->name('admin.security.smtp.test');
+
+    // Header navigation — reorder, hide, and relabel public menu items
+    Route::get('/admin/navigation', [AdminNavigationController::class, 'index'])->name('admin.navigation.index');
+    Route::post('/admin/navigation', [AdminNavigationController::class, 'update'])->name('admin.navigation.update');
 
     // Setup wizard
     Route::get('/admin/setup', [AdminSetupController::class, 'index'])->name('admin.setup.index');

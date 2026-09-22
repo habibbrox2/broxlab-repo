@@ -13,61 +13,13 @@
 @php
     $navCurrentPath = request()->path() ?: '/';
 
-    $navItems = $publicNavItems ?? [
-        ['label' => 'Home',       'url' => '/',           'icon' => 'home',        'match' => '/'],
-        ['label' => 'Mobiles',    'url' => '/mobiles',    'icon' => 'smartphone',  'match' => '/mobiles',
-         'submenu' => [
-            ['label' => 'Browse All',    'url' => '/mobiles',                 'icon' => 'list'],
-            ['label' => 'Mobile Prices',  'url' => '/mobiles/prices',          'icon' => 'wallet'],
-            ['label' => 'New Arrivals',   'url' => '/mobiles/new',             'icon' => 'clock'],
-            ['label' => 'Top Phones',     'url' => '/mobiles?sort=created_at&order=DESC', 'icon' => 'star'],
-            ['label' => 'Brands',         'url' => '/mobiles/brands',          'icon' => 'tag'],
-            ['label' => 'Compare Phones', 'url' => '/mobiles/compare',         'icon' => 'git-compare'],
-         ]],
-        ['label' => 'Articles',   'url' => '/posts',      'icon' => 'file-text',   'match' => '/posts',
-         'submenu' => [
-            ['label' => 'All Posts',   'url' => '/posts',              'icon' => 'list'],
-            ['label' => 'Categories',  'url' => '/categories',         'icon' => 'folder'],
-            ['label' => 'Latest',      'url' => '/posts?sort=latest',  'icon' => 'clock']
-         ]],
-        ['label' => 'Categories', 'url' => '/categories', 'icon' => 'grid',        'match' => '/categories'],
-        ['label' => 'Jobs',       'url' => '/jobs',      'icon' => 'briefcase',   'match' => '/jobs', 'submenu' => [
-            ['label' => 'All Jobs',     'url' => '/jobs',             'icon' => 'list'],
-            ['label' => 'Govt Jobs',    'url' => '/jobs?tag=govt',     'icon' => 'landmark'],
-            ['label' => 'Private Jobs', 'url' => '/jobs?tag=private',  'icon' => 'building'],
-            ['label' => 'Internships',  'url' => '/jobs?tag=intern',   'icon' => 'graduation-cap'],
-        ]],
-        ['label' => 'Services',   'url' => '/services',   'icon' => 'briefcase',   'match' => '/services',
-         'submenu' => [
-            ['label' => 'All Services', 'url' => '/services',    'icon' => 'list'],
-            ['label' => 'Tools',        'url' => '/tools',       'icon' => 'wrench'],
-            ['label' => 'Calculators',  'url' => '/calculators', 'icon' => 'calculator']
-         ]],
-        ['label' => 'Portfolio',  'url' => '/portfolio',  'icon' => 'image',   'match' => '/portfolio'],
-        ['label' => 'Contact',    'url' => '/contact',    'icon' => 'mail',        'match' => '/contact'],
-        ['label' => 'CV Builder',  'url' => '/cv-builder/templates', 'icon' => 'file-text', 'match' => '/cv-builder',
-         'submenu' => [
-            ['label' => 'Templates',    'url' => '/cv-builder/templates',    'icon' => 'layout'],
-            ['label' => 'My CVs',       'url' => $isAuthenticated ? '/cv-builder' : '/cv-builder/guest', 'icon' => 'file']
-         ]],
-        ['label' => 'Weather',    'url' => '/weather',   'icon' => 'cloud-sun',   'match' => '/weather'],
-        ['label' => 'Medicines',  'url' => '/medicines', 'icon' => 'pill',        'match' => '/medicines'],
-        ['label' => 'News',       'url' => '/news',      'icon' => 'newspaper',   'match' => '/news'],
-        ['label' => 'AI Tools',     'url' => '/photo-edit', 'icon' => 'wand', 'match' => '/photo-edit', 'submenu' => [
-            ['label' => 'AI Photo Edit',     'url' => '/photo-edit',          'icon' => 'image-edit'],
-            ['label' => 'AI চ্যাট সহকারী',  'url' => '/ai-chat',            'icon' => 'message-circle'],
-            ['label' => 'AI ভয়েস ওডিও',    'url' => '#',                    'icon' => 'volume-2'],
-        ]],
-        ['label' => 'ডিজিটাল সেবা', 'url' => '/digital-sheba', 'icon' => 'globe', 'match' => '/digital-sheba',
-         'submenu' => [
-            ['label' => 'ডিজিটাল রাষ্ট্রসেবা',  'url' => 'https://sheba.gov.bd',        'icon' => 'shield'],
-            ['label' => 'বাংলাদেশ সার্ভি',      'url' => 'https://www.bangladesh.gov.bd', 'icon' => 'landmark'],
-            ['label' => 'ই-গভর্ন্যান্স',        'url' => 'https://egov.gov.bd',        'icon' => 'file-check'],
-            ['label' => 'মোবাইল ব্যাংকিং',       'url' => 'https://www.bangladeshbank.org.bd', 'icon' => 'banknote'],
-            ['label' => 'ডিজিটাল শিক্ষা',        'url' => 'https://www.mohe.gov.bd',    'icon' => 'graduation-cap'],
-            ['label' => 'ই-হেলথ',              'url' => 'https://www.docdidi.com',   'icon' => 'heart-pulse'],
-         ]],
-    ];
+    $navItems = $publicNavItems ?? $headerNavDefaults;
+
+    // The canonical default menu (Home, Mobiles, Articles, ...) now lives in
+    // HeaderNavService::defaults(), shared as $headerNavDefaults by the
+    // AppServiceProvider view composer. Admins can reorder/hide/relabel items
+    // from /admin/navigation, which persist to app_settings.header_nav_items
+    // and are merged over these defaults at request time.
 
     // $isAdmin comes from the shared view composer and is resolved from the RBAC
     // roles/user_roles tables — the users table has no `role` column.

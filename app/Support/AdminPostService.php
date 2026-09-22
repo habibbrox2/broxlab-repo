@@ -21,7 +21,7 @@ class AdminPostService
 {
     public const SORTS = ['id', 'title', 'created_at', 'updated_at'];
 
-    public function __construct(protected PostTaxonomy $taxonomy) {}
+    public function __construct(protected PostTaxonomy $taxonomy, protected UserProfileService $users) {}
 
     // ── Reads ─────────────────────────────────────────────────────────
 
@@ -257,7 +257,10 @@ class AdminPostService
     /** Port of ContentModel::slugify fallback branch. */
     public function slugify(string $text): string
     {
-        $slug = strtolower(trim((string) preg_replace('/[^a-z0-9]+/i', '-', $text), '-'));
+        // ASCII-only word chars become hyphens; but Bengali/other unicode
+        // letters are preserved (\p{L}/\p{N} with the /u modifier) so Bengali
+        // tags get distinct slugs instead of every one collapsing to 'n-a'.
+        $slug = mb_strtolower(trim((string) preg_replace('/[^\p{L}\p{N}]+/u', '-', $text), '-'));
 
         return $slug !== '' ? $slug : 'n-a';
     }
@@ -299,7 +302,10 @@ class AdminPostService
 
             DB::table('activity_logs')->insert([
                 'user_id' => $user?->id ?? 0,
-                'role' => $user?->role ?? 'admin',
+                // The users table has no `role` column — derive the actor's role
+                // from the RBAC tables (single shared definition), falling back
+                // to 'admin' for unauthenticated/system contexts.
+                'role' => $this->actorRole($user),
                 'action' => $action,
                 'resource_type' => $resourceType,
                 'resource_id' => $resourceId,
@@ -313,5 +319,16 @@ class AdminPostService
         } catch (\Throwable $e) {
             Log::warning('post activity log failed (non-fatal): '.$e->getMessage());
         }
+    }
+
+    /**
+     * First RBAC role name for the actor, or 'admin' when unauthenticated
+     * (legacy rows used that as the default for system-context entries).
+     */
+    protected function actorRole(?object $user): string
+    {
+        $roles = $this->users->rbacFor($user?->id)['roles'];
+
+        return $roles[0] ?? 'admin';
     }
 }
