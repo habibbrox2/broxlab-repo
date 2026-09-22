@@ -405,15 +405,34 @@ if [[ ! -w bootstrap/cache ]]; then
 fi
 
 
+# The sodium extension (ext-sodium) is required by lcobucci/jwt which is
+# pulled in transitively by kreait/firebase-tokens (Firebase). On shared
+# hosting / CPanel the extension is often not enabled, which makes
+# `composer install` fail. Try to enable it transparently; the
+# --ignore-platform-req=ext-sodium flag on the install commands below
+# ensures the deploy still succeeds even if sodium can't be loaded.
+if ! php -r 'exit(extension_loaded("sodium") ? 0 : 1);' 2>/dev/null; then
+    SODIUM_SO_DIR="$(php -r 'echo ini_get("extension_dir");' 2>/dev/null || true)"
+    if [[ -n "$SODIUM_SO_DIR" && -f "$SODIUM_SO_DIR/sodium.so" ]]; then
+        SODIUM_INI_DIR="$(php-config --ini-dir 2>/dev/null || dirname "$(php-config --configure-options 2>/dev/null | grep -- '-with-config-file-scan-dir' | sed 's/.*=//')" 2>/dev/null || true)"
+        if [[ -n "$SODIUM_INI_DIR" ]]; then
+            echo "extension=sodium" > "${SODIUM_INI_DIR}/20-sodium.ini"
+            log_info "Enabled ext-sodium via ${SODIUM_INI_DIR}/20-sodium.ini"
+        fi
+    else
+        log_warn "ext-sodium not found in extension directory — using --ignore-platform-req"
+    fi
+fi
+
 log_section "INSTALLING DEPENDENCIES"
 # Phase 8: the root composer.json IS the Laravel app's composer.json — one
 # install covers everything. The legacy composer.json moved to /old/.
 if command -v composer >/dev/null 2>&1; then
-    composer install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+    composer install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-req=ext-sodium 2>&1 | tee -a "$LOG_FILE"
 elif [[ -f "$SHARED/composer" ]]; then
-    "$SHARED/composer" install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+    "$SHARED/composer" install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-req=ext-sodium 2>&1 | tee -a "$LOG_FILE"
 elif [[ -f "$SHARED/composer.phar" ]]; then
-    php "$SHARED/composer.phar" install --no-dev --optimize-autoloader --no-interaction --no-progress 2>&1 | tee -a "$LOG_FILE"
+    php "$SHARED/composer.phar" install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-req=ext-sodium 2>&1 | tee -a "$LOG_FILE"
 else
     log_warn "Composer unavailable; skipping PHP dependency install"
 fi
