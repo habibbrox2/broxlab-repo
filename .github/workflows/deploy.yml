@@ -74,8 +74,12 @@ jobs:
             # so a broken copy would otherwise block every future deploy.
             cp -f /tmp/broxlab-deploy/web-host/scripts/deploy.sh scripts/deploy.sh
             chmod +x scripts/deploy.sh
+            # --migrate is opt-in and targeted: this run applies only the
+            # admin sidebar width preference column. Remove the flag once it
+            # has succeeded once (the migration itself is also idempotent).
             ASSET_ARCHIVE=/tmp/broxlab-deploy/broxlab-assets.tar.gz \
-              bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main
+              bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main \
+              --migrate "database/migrations/2026_09_23_000001_add_admin_sidebar_width_to_users.php"
 
       - name: Post-Deployment Status
         if: always()

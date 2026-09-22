@@ -19,7 +19,6 @@ return new class extends Migration
             Schema::table('users', function (Blueprint $table) {
                 $table->unsignedSmallInteger('admin_sidebar_width')
                     ->nullable()
-                    ->after('balance')
                     ->comment('Admin panel sidebar width in px (UI preference, null = default)');
             });
         }

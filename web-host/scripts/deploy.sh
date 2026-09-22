@@ -32,6 +32,7 @@ SKIP_DB_BACKUP=false
 SKIP_CLEANUP=false
 SKIP_BUILD=false
 KEEP_RELEASES=3
+MIGRATE_PATHS=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -47,9 +48,19 @@ while [[ $# -gt 0 ]]; do
         --skip-cleanup) SKIP_CLEANUP=true; shift ;;
         --skip-build) SKIP_BUILD=true; shift ;;
         --keep) KEEP_RELEASES="$2"; shift 2 ;;
+        --migrate)
+            # Opt-in, targeted schema changes. Runs ONLY the listed migration
+            # files (relative to the release root) with php artisan migrate
+            # --path. Never a blanket migrate: the shared production DB is not
+            # migration-managed, so unlisted migrations must not run.
+            shift
+            MIGRATE_PATHS="$1"
+            shift
+            ;;
         --base) BASE="$2"; shift 2 ;;
         --help|-h)
-            echo "Usage: $0 [--repo URL] [--ref BRANCH_OR_TAG] [--use-https] [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH]"
+            echo "Usage: $0 [--repo URL] [--ref BRANCH_OR_TAG] [--use-https] [--skip-backup] [--skip-db-backup] [--skip-cleanup] [--skip-build] [--keep N] [--base PATH] [--migrate PATHS]"
+            echo "  --migrate PATHS   Space-separated migration paths for php artisan migrate --path (opt-in, targeted only)"
             exit 0
             ;;
         *)
@@ -629,6 +640,21 @@ fi
 # shared DB — the tables already exist. Adding migrations requires an
 # explicit review, not a deploy step.
 if [[ -f "artisan" ]]; then
+    # Opt-in targeted migrations (--migrate), run BEFORE the caches are rebuilt
+    # so schema changes are picked up. Under set -e a migration failure aborts
+    # the deploy; the DB backup above was taken BEFORE this phase.
+    if [[ -n "$MIGRATE_PATHS" ]]; then
+        log_section "RUNNING TARGETED MIGRATIONS"
+        for _mp in $MIGRATE_PATHS; do
+            if [[ ! -f "$_mp" ]]; then
+                log_error "Migration path does not exist in the release: $_mp"
+                exit 1
+            fi
+            log_info "php artisan migrate --force --path=$_mp"
+            php artisan migrate --force --path="$_mp" 2>&1 | tee -a "$LOG_FILE"
+        done
+    fi
+
     log_section "UPDATING LARAVEL CACHE"
     if [[ "${SKIP_LARAVEL_CACHE:-false}" != "true" ]]; then
         php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
