@@ -374,8 +374,8 @@
            class="w-[220px] flex-shrink-0 bg-white dark:bg-slate-950
                   border-r border-slate-200/70 dark:border-slate-800/70
                   overflow-y-auto overflow-x-hidden transition-all duration-300 ease-out
-                  fixed lg:sticky left-0 top-0 h-full z-40
-                  -translate-x-full lg:translate-x-0"
+              fixed left-0 top-0 h-screen z-40
+              -translate-x-full lg:translate-x-0"
            :class="open && '!translate-x-0'"
            aria-label="{{ t('Primary navigation') }}">
 
@@ -455,7 +455,7 @@
         </aside>
 
         {{-- Content --}}
-    <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 lg:ml-[220px]">
         @if (session('status'))
             <div class="mb-4 rounded-2xl border border-emerald-200/70 dark:border-emerald-800/40 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/20 shadow-sm">
                 <div class="relative px-5 py-4 flex items-start gap-3.5">

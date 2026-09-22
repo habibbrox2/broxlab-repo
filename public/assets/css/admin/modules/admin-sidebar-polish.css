@@ -314,8 +314,21 @@ body.sidebar-collapsed .sidebar-submenu {
    8. SCROLLBAR POLISH
    ============================ */
 
+/* Firefox scrollbar support */
+#adminSidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203, 213, 225) transparent;
+    scrollbar-gutter: stable;
+}
+
+.dark #adminSidebar {
+    scrollbar-color: rgb(71, 85, 105) transparent;
+}
+
+/* Webkit scrollbar */
 #adminSidebar::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
 }
 
 #adminSidebar::-webkit-scrollbar-track {
@@ -338,6 +351,24 @@ body.sidebar-collapsed .sidebar-submenu {
 
 .dark #adminSidebar::-webkit-scrollbar-thumb:hover {
     background: rgb(100, 116, 139);
+}
+
+/* ============================
+   8b. FIXED SIDEBAR — MAIN CONTENT OFFSET
+   ============================ */
+
+/* When the sidebar is fixed it no longer participates in the flex
+   layout, so the main content would render underneath it.
+   Offset main by the sidebar width on desktop, and shrink the
+   offset when the sidebar is collapsed (mini mode). */
+@media (min-width: 1024px) {
+    body:not(.sidebar-collapsed) main {
+        margin-left: 220px;
+    }
+
+    body.sidebar-collapsed main {
+        margin-left: 4rem;
+    }
 }
 
 /* ============================
