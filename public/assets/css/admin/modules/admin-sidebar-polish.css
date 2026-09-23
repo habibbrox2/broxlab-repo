@@ -253,15 +253,22 @@ body.sidebar-collapsed .sidebar-submenu {
         left: 0;
         top: 4rem;
         height: calc(100vh - 4rem);
-        transform: translateX(-100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        min-height: 0;                 /* neutralise Tailwind h-screen min-height:100vh */
+        /* Use the `translate` property (same as Tailwind's translate-x-* utilities)
+           instead of `transform: translateX()`.  They are different CSS properties
+           that compound — using transform here meant Alpine's !translate-x-0
+           (translate:0 !important) could never clear it, so the drawer stayed
+           off-screen and was unscrollable. */
+        translate: -100% 0;
+        transition: translate 0.3s cubic-bezier(0.4, 0, 0.2, 1),
             box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: none;
         z-index: 40;
     }
 
-    #adminSidebar.translate-x-0 {
-        transform: translateX(0);
+    /* Alpine adds body.admin-sidebar-open (via x-effect) when the drawer opens. */
+    body.admin-sidebar-open #adminSidebar {
+        translate: 0;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
     }
 }
@@ -319,6 +326,9 @@ body.sidebar-collapsed .sidebar-submenu {
     scrollbar-width: thin;
     scrollbar-color: rgb(203, 213, 225) transparent;
     scrollbar-gutter: stable;
+    /* Prevent scroll chaining: scrolling the sidebar to its limit should
+       not propagate to the underlying page. */
+    overscroll-behavior: contain;
 }
 
 .dark #adminSidebar {
@@ -351,6 +361,35 @@ body.sidebar-collapsed .sidebar-submenu {
 
 .dark #adminSidebar::-webkit-scrollbar-thumb:hover {
     background: rgb(100, 116, 139);
+}
+
+/* ============================
+   8a. SCROLL VIEWPORT
+   ============================ */
+
+/* The sidebar is position:fixed, so its height must be bounded by the
+   viewport for overflow-y to ever engage.  The h-screen utility IS present
+   in the compiled bundle (min-height:100vh), so we set min-height:0 here to
+   let our explicit height win. */
+@media (min-width: 1024px) {
+    #adminSidebar {
+        top: 0;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;                 /* neutralise Tailwind h-screen min-height:100vh */
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+}
+
+/* Keep the small "Navigation" header pinned while the menu scrolls.
+   Background inherits the aside (white / dark slate-950) so it stays
+   opaque under scrolled links in both light and data-theme="dark". */
+#adminSidebar > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: inherit;
 }
 
 /* ============================

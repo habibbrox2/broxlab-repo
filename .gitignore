@@ -64,6 +64,11 @@ id_dsa*
 *.sqlite
 *.sqlite3
 /Database/
+!/database/
+# (case-insensitive filesystems match /Database/ above against the
+# lowercase database/ source dir — re-include Laravel's database/ tree
+# so migrations and seeders are versioned)
+!/database/**
 /database_backups/
 /backups/database/
 /app/shared/backups/database/
