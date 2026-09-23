@@ -122,10 +122,20 @@ class UserProfileService
             }
         }
 
+        $hasHaPermission = DB::table('permissions as p')
+            ->join('role_permissions as rp', 'p.id', '=', 'rp.permission_id')
+            ->join('roles as r', 'r.id', '=', 'rp.role_id')
+            ->join('user_roles as ur', 'r.id', '=', 'ur.role_id')
+            ->where('ur.user_id', $userId)
+            ->where('p.name', 'like', 'ha.%')
+            ->whereNull('p.deleted_at')
+            ->whereNull('r.deleted_at')
+            ->exists();
+
         return [
             'roles' => $names,
             'is_super_admin' => $isSuperAdmin,
-            'is_admin' => $isSuperAdmin || in_array('admin', $names, true),
+            'is_admin' => $isSuperAdmin || in_array('admin', $names, true) || $hasHaPermission,
         ];
     }
 

@@ -145,5 +145,20 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('resend-verification', function ($request) {
             return Limit::perMinute(3)->by($request->input('email', $request->ip()));
         });
+
+        // Phase 8: throttle public-facing Hero Alif form submissions.
+        // /shop/order and /services-plus/apply are write-heavy (DB writes +
+        // optional file upload) and targetable for spam/abuse — cap at 5/min/IP.
+        RateLimiter::for('ha.guest-submit', function ($request) {
+            return Limit::perMinute(5)->by($request->ip())->response(function () {
+                return response('Too many submissions. Please wait a moment and try again.', 429);
+            });
+        });
+
+        // /shop/track and /services-plus/track are read-only but do a heavy
+        // multi-table lookup — cache-friendly cap at 30/min/IP.
+        RateLimiter::for('ha.guest-track', function ($request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
     }
 }

@@ -20,7 +20,7 @@ return new class extends Migration
     {
         Schema::table('app_settings', function (Blueprint $table) {
             if (! Schema::hasColumn('app_settings', 'header_nav_items')) {
-                $table->json('header_nav_items')->nullable()->default(null)->after('asset_version');
+                $table->json('header_nav_items')->nullable()->default(null);
             }
         });
     }

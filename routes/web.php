@@ -216,16 +216,16 @@ Route::get('/category/{slug}', [ArchiveController::class, 'category'])->name('ca
 Route::get('/shop', [HaShopController::class, 'index'])->name('ha.shop.index');
 Route::get('/shop/{module}', [HaShopController::class, 'module'])->whereIn('module', ['smart-bazar', 'mustard-oil', 'fuel', 'machinery', 'printing'])->name('ha.shop.module');
 Route::get('/shop/{module}/{slug}', [HaShopController::class, 'show'])->whereIn('module', ['smart-bazar', 'mustard-oil', 'fuel', 'machinery', 'printing'])->name('ha.shop.show');
-Route::post('/shop/order', [HaOrderPublicController::class, 'place'])->name('ha.order.place');
+Route::post('/shop/order', [HaOrderPublicController::class, 'place'])->middleware('throttle:ha.guest-submit')->name('ha.order.place');
 Route::get('/shop/order-success', [HaOrderPublicController::class, 'success'])->name('ha.order.success');
-Route::get('/track', [HaOrderPublicController::class, 'track'])->name('ha.track');
+Route::get('/track', [HaOrderPublicController::class, 'track'])->middleware('throttle:ha.guest-track')->name('ha.track');
 
 // Hero Alif digital services — public request + tracking (Phase 5)
 Route::get('/services-plus', [HaServicePublicController::class, 'index'])->name('ha.service.index');
 Route::get('/services-plus/apply/{category}', [HaServicePublicController::class, 'apply'])->name('ha.service.apply');
-Route::post('/services-plus/apply', [HaServicePublicController::class, 'store'])->name('ha.service.store');
+Route::post('/services-plus/apply', [HaServicePublicController::class, 'store'])->middleware('throttle:ha.guest-submit')->name('ha.service.store');
 Route::get('/services-plus/success', [HaServicePublicController::class, 'success'])->name('ha.service.success');
-Route::get('/services-plus/track', [HaServicePublicController::class, 'track'])->name('ha.service.track');
+Route::get('/services-plus/track', [HaServicePublicController::class, 'track'])->middleware('throttle:ha.guest-track')->name('ha.service.track');
 Route::get('/tags', [ArchiveController::class, 'tags'])->name('tags.index');
 Route::get('/tag/{slug}', [ArchiveController::class, 'tag'])->name('tag.archive');
 
@@ -549,84 +549,84 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/notifications/delete', [AdminNotificationController::class, 'destroy'])->name('admin.notifications.destroy.query');
 
     // Hero Alif — commerce foundation (Phase 1): catalog, products, procurement, inventory ledger
-    Route::get('/admin/ha/products', [HaProductController::class, 'index'])->name('admin.ha.products.index');
-    Route::get('/admin/ha/products/create', [HaProductController::class, 'create'])->name('admin.ha.products.create');
-    Route::post('/admin/ha/products/create', [HaProductController::class, 'store'])->name('admin.ha.products.store');
-    Route::get('/admin/ha/products/edit/{id}', [HaProductController::class, 'edit'])->whereNumber('id')->name('admin.ha.products.edit');
-    Route::post('/admin/ha/products/edit/{id}', [HaProductController::class, 'update'])->whereNumber('id')->name('admin.ha.products.update');
-    Route::post('/admin/ha/products/{id}/stock', [HaProductController::class, 'stockAdjust'])->whereNumber('id')->name('admin.ha.products.stock');
-    Route::post('/admin/ha/products/delete/{id}', [HaProductController::class, 'destroy'])->whereNumber('id')->name('admin.ha.products.destroy');
+    Route::get('/admin/ha/products', [HaProductController::class, 'index'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.index');
+    Route::get('/admin/ha/products/create', [HaProductController::class, 'create'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.create');
+    Route::post('/admin/ha/products/create', [HaProductController::class, 'store'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.store');
+    Route::get('/admin/ha/products/edit/{id}', [HaProductController::class, 'edit'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.edit');
+    Route::post('/admin/ha/products/edit/{id}', [HaProductController::class, 'update'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.update');
+    Route::post('/admin/ha/products/{id}/stock', [HaProductController::class, 'stockAdjust'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.stock');
+    Route::post('/admin/ha/products/delete/{id}', [HaProductController::class, 'destroy'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.destroy');
 
-    Route::get('/admin/ha/categories', [HaCatalogController::class, 'categories'])->name('admin.ha.categories');
-    Route::post('/admin/ha/categories', [HaCatalogController::class, 'categoryStore'])->name('admin.ha.categories.store');
-    Route::post('/admin/ha/categories/{id}', [HaCatalogController::class, 'categoryUpdate'])->whereNumber('id')->name('admin.ha.categories.update');
-    Route::post('/admin/ha/categories/delete/{id}', [HaCatalogController::class, 'categoryDestroy'])->whereNumber('id')->name('admin.ha.categories.destroy');
+    Route::get('/admin/ha/categories', [HaCatalogController::class, 'categories'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.categories');
+    Route::post('/admin/ha/categories', [HaCatalogController::class, 'categoryStore'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.categories.store');
+    Route::post('/admin/ha/categories/{id}', [HaCatalogController::class, 'categoryUpdate'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.categories.update');
+    Route::post('/admin/ha/categories/delete/{id}', [HaCatalogController::class, 'categoryDestroy'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.categories.destroy');
 
-    Route::get('/admin/ha/brands', [HaCatalogController::class, 'brands'])->name('admin.ha.brands');
-    Route::post('/admin/ha/brands', [HaCatalogController::class, 'brandStore'])->name('admin.ha.brands.store');
-    Route::post('/admin/ha/brands/{id}', [HaCatalogController::class, 'brandUpdate'])->whereNumber('id')->name('admin.ha.brands.update');
-    Route::post('/admin/ha/brands/delete/{id}', [HaCatalogController::class, 'brandDestroy'])->whereNumber('id')->name('admin.ha.brands.destroy');
+    Route::get('/admin/ha/brands', [HaCatalogController::class, 'brands'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.brands');
+    Route::post('/admin/ha/brands', [HaCatalogController::class, 'brandStore'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.brands.store');
+    Route::post('/admin/ha/brands/{id}', [HaCatalogController::class, 'brandUpdate'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.brands.update');
+    Route::post('/admin/ha/brands/delete/{id}', [HaCatalogController::class, 'brandDestroy'])->whereNumber('id')->middleware('ha.perm:ha.products.manage')->name('admin.ha.brands.destroy');
 
-    Route::get('/admin/ha/suppliers', [HaProcurementController::class, 'suppliers'])->name('admin.ha.suppliers');
-    Route::post('/admin/ha/suppliers', [HaProcurementController::class, 'supplierStore'])->name('admin.ha.suppliers.store');
-    Route::post('/admin/ha/suppliers/{id}', [HaProcurementController::class, 'supplierUpdate'])->whereNumber('id')->name('admin.ha.suppliers.update');
-    Route::post('/admin/ha/suppliers/delete/{id}', [HaProcurementController::class, 'supplierDestroy'])->whereNumber('id')->name('admin.ha.suppliers.destroy');
+    Route::get('/admin/ha/suppliers', [HaProcurementController::class, 'suppliers'])->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.suppliers');
+    Route::post('/admin/ha/suppliers', [HaProcurementController::class, 'supplierStore'])->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.suppliers.store');
+    Route::post('/admin/ha/suppliers/{id}', [HaProcurementController::class, 'supplierUpdate'])->whereNumber('id')->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.suppliers.update');
+    Route::post('/admin/ha/suppliers/delete/{id}', [HaProcurementController::class, 'supplierDestroy'])->whereNumber('id')->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.suppliers.destroy');
 
-    Route::get('/admin/ha/purchases', [HaProcurementController::class, 'purchases'])->name('admin.ha.purchases');
-    Route::get('/admin/ha/purchases/create', [HaProcurementController::class, 'purchaseCreate'])->name('admin.ha.purchases.create');
-    Route::post('/admin/ha/purchases/create', [HaProcurementController::class, 'purchaseStore'])->name('admin.ha.purchases.store');
+    Route::get('/admin/ha/purchases', [HaProcurementController::class, 'purchases'])->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.purchases');
+    Route::get('/admin/ha/purchases/create', [HaProcurementController::class, 'purchaseCreate'])->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.purchases.create');
+    Route::post('/admin/ha/purchases/create', [HaProcurementController::class, 'purchaseStore'])->middleware('ha.perm:ha.purchases.manage')->name('admin.ha.purchases.store');
 
-    Route::get('/admin/ha/inventory/movements', [HaProcurementController::class, 'movements'])->name('admin.ha.movements');
+    Route::get('/admin/ha/inventory/movements', [HaProcurementController::class, 'movements'])->middleware('ha.perm:ha.purchases.view')->name('admin.ha.movements');
 
     // Hero Alif — POS + sales + cash register (Phase 2)
-    Route::get('/admin/ha/pos', [HaPosController::class, 'terminal'])->name('admin.ha.pos');
-    Route::post('/admin/ha/pos/checkout', [HaPosController::class, 'checkout'])->name('admin.ha.pos.checkout');
-    Route::post('/admin/ha/pos/hold', [HaPosController::class, 'hold'])->name('admin.ha.pos.hold');
-    Route::get('/admin/ha/pos/resume/{id}', [HaPosController::class, 'resume'])->whereNumber('id')->name('admin.ha.pos.resume');
-    Route::get('/admin/ha/pos/receipt/{id}', [HaPosController::class, 'receipt'])->whereNumber('id')->name('admin.ha.pos.receipt');
+    Route::get('/admin/ha/pos', [HaPosController::class, 'terminal'])->middleware('ha.perm:ha.pos.operate')->name('admin.ha.pos');
+    Route::post('/admin/ha/pos/checkout', [HaPosController::class, 'checkout'])->middleware('ha.perm:ha.pos.operate')->name('admin.ha.pos.checkout');
+    Route::post('/admin/ha/pos/hold', [HaPosController::class, 'hold'])->middleware('ha.perm:ha.pos.operate')->name('admin.ha.pos.hold');
+    Route::get('/admin/ha/pos/resume/{id}', [HaPosController::class, 'resume'])->whereNumber('id')->middleware('ha.perm:ha.pos.operate')->name('admin.ha.pos.resume');
+    Route::get('/admin/ha/pos/receipt/{id}', [HaPosController::class, 'receipt'])->whereNumber('id')->middleware('ha.perm:ha.pos.operate')->name('admin.ha.pos.receipt');
 
-    Route::get('/admin/ha/sales', [HaPosController::class, 'salesList'])->name('admin.ha.sales');
-    Route::post('/admin/ha/sales/{id}/refund', [HaPosController::class, 'refund'])->whereNumber('id')->name('admin.ha.sales.refund');
+    Route::get('/admin/ha/sales', [HaPosController::class, 'salesList'])->middleware('ha.perm:ha.sales.view')->name('admin.ha.sales');
+    Route::post('/admin/ha/sales/{id}/refund', [HaPosController::class, 'refund'])->whereNumber('id')->middleware('ha.perm:ha.sales.refund')->name('admin.ha.sales.refund');
 
-    Route::get('/admin/ha/register', [HaRegisterController::class, 'index'])->name('admin.ha.register');
-    Route::post('/admin/ha/register/open', [HaRegisterController::class, 'open'])->name('admin.ha.register.open');
-    Route::post('/admin/ha/register/close', [HaRegisterController::class, 'close'])->name('admin.ha.register.close');
-    Route::post('/admin/ha/register/cash-movement', [HaRegisterController::class, 'cashMovement'])->name('admin.ha.register.cash');
+    Route::get('/admin/ha/register', [HaRegisterController::class, 'index'])->middleware('ha.perm:ha.registers.manage')->name('admin.ha.register');
+    Route::post('/admin/ha/register/open', [HaRegisterController::class, 'open'])->middleware('ha.perm:ha.registers.manage')->name('admin.ha.register.open');
+    Route::post('/admin/ha/register/close', [HaRegisterController::class, 'close'])->middleware('ha.perm:ha.registers.manage')->name('admin.ha.register.close');
+    Route::post('/admin/ha/register/cash-movement', [HaRegisterController::class, 'cashMovement'])->middleware('ha.perm:ha.registers.manage')->name('admin.ha.register.cash');
 
-    Route::get('/admin/ha/invoices/{id}/pdf', [HaInvoiceController::class, 'pdf'])->whereNumber('id')->name('admin.ha.invoices.pdf');
+    Route::get('/admin/ha/invoices/{id}/pdf', [HaInvoiceController::class, 'pdf'])->whereNumber('id')->middleware('ha.perm:ha.sales.view')->name('admin.ha.invoices.pdf');
 
     // Hero Alif — customers & due ledger (Phase 3)
-    Route::get('/admin/ha/customers', [HaCustomerController::class, 'index'])->name('admin.ha.customers');
-    Route::post('/admin/ha/customers', [HaCustomerController::class, 'store'])->name('admin.ha.customers.store');
-    Route::get('/admin/ha/customers/{id}', [HaCustomerController::class, 'show'])->whereNumber('id')->name('admin.ha.customers.show');
-    Route::post('/admin/ha/customers/{id}', [HaCustomerController::class, 'update'])->whereNumber('id')->name('admin.ha.customers.update');
-    Route::post('/admin/ha/customers/{id}/collect', [HaCustomerController::class, 'collect'])->whereNumber('id')->name('admin.ha.customers.collect');
+    Route::get('/admin/ha/customers', [HaCustomerController::class, 'index'])->middleware('ha.perm:ha.customers.view')->name('admin.ha.customers');
+    Route::post('/admin/ha/customers', [HaCustomerController::class, 'store'])->middleware('ha.perm:ha.customers.manage')->name('admin.ha.customers.store');
+    Route::get('/admin/ha/customers/{id}', [HaCustomerController::class, 'show'])->whereNumber('id')->middleware('ha.perm:ha.customers.view')->name('admin.ha.customers.show');
+    Route::post('/admin/ha/customers/{id}', [HaCustomerController::class, 'update'])->whereNumber('id')->middleware('ha.perm:ha.customers.manage')->name('admin.ha.customers.update');
+    Route::post('/admin/ha/customers/{id}/collect', [HaCustomerController::class, 'collect'])->whereNumber('id')->middleware('ha.perm:ha.ledger.collect')->name('admin.ha.customers.collect');
 
     // Hero Alif — online orders (Phase 4)
-    Route::get('/admin/ha/orders', [HaOrderAdminController::class, 'index'])->name('admin.ha.orders');
-    Route::get('/admin/ha/orders/{id}', [HaOrderAdminController::class, 'show'])->whereNumber('id')->name('admin.ha.orders.show');
-    Route::post('/admin/ha/orders/{id}/transition', [HaOrderAdminController::class, 'transition'])->whereNumber('id')->name('admin.ha.orders.transition');
+    Route::get('/admin/ha/orders', [HaOrderAdminController::class, 'index'])->middleware('ha.perm:ha.orders.view')->name('admin.ha.orders');
+    Route::get('/admin/ha/orders/{id}', [HaOrderAdminController::class, 'show'])->whereNumber('id')->middleware('ha.perm:ha.orders.view')->name('admin.ha.orders.show');
+    Route::post('/admin/ha/orders/{id}/transition', [HaOrderAdminController::class, 'transition'])->whereNumber('id')->middleware('ha.perm:ha.orders.manage')->name('admin.ha.orders.transition');
 
-    // Hero Alif — digital service requests (Phase 5)
-    Route::get('/admin/ha/services/categories', [HaServiceAdminController::class, 'categories'])->name('admin.ha.services.categories');
-    Route::post('/admin/ha/services/categories', [HaServiceAdminController::class, 'categoryStore'])->name('admin.ha.services.categories.store');
-    Route::post('/admin/ha/services/categories/{id}', [HaServiceAdminController::class, 'categoryUpdate'])->whereNumber('id')->name('admin.ha.services.categories.update');
-    Route::post('/admin/ha/services/categories/delete/{id}', [HaServiceAdminController::class, 'categoryDestroy'])->whereNumber('id')->name('admin.ha.services.categories.destroy');
-    Route::get('/admin/ha/services', [HaServiceAdminController::class, 'index'])->name('admin.ha.services');
-    Route::get('/admin/ha/services/{id}', [HaServiceAdminController::class, 'show'])->whereNumber('id')->name('admin.ha.services.show');
-    Route::post('/admin/ha/services/{id}/status', [HaServiceAdminController::class, 'updateStatus'])->whereNumber('id')->name('admin.ha.services.status');
-    Route::post('/admin/ha/services/{id}/assign', [HaServiceAdminController::class, 'assign'])->whereNumber('id')->name('admin.ha.services.assign');
-    Route::post('/admin/ha/services/{id}/notes', [HaServiceAdminController::class, 'notes'])->whereNumber('id')->name('admin.ha.services.notes');
-    Route::get('/admin/ha/service-documents/{id}/download', [HaServiceAdminController::class, 'download'])->whereNumber('id')->name('ha.documents.download');
+    // Hero Alif — digital service requests + documents (Phase 5/7)
+    Route::get('/admin/ha/services/categories', [HaServiceAdminController::class, 'categories'])->middleware('ha.perm:ha.services.categories')->name('admin.ha.services.categories');
+    Route::post('/admin/ha/services/categories', [HaServiceAdminController::class, 'categoryStore'])->middleware('ha.perm:ha.services.categories')->name('admin.ha.services.categories.store');
+    Route::post('/admin/ha/services/categories/{id}', [HaServiceAdminController::class, 'categoryUpdate'])->whereNumber('id')->middleware('ha.perm:ha.services.categories')->name('admin.ha.services.categories.update');
+    Route::post('/admin/ha/services/categories/delete/{id}', [HaServiceAdminController::class, 'categoryDestroy'])->whereNumber('id')->middleware('ha.perm:ha.services.categories')->name('admin.ha.services.categories.destroy');
+    Route::get('/admin/ha/services', [HaServiceAdminController::class, 'index'])->middleware('ha.perm:ha.services.view')->name('admin.ha.services');
+    Route::get('/admin/ha/services/{id}', [HaServiceAdminController::class, 'show'])->whereNumber('id')->middleware('ha.perm:ha.services.view')->name('admin.ha.services.show');
+    Route::post('/admin/ha/services/{id}/status', [HaServiceAdminController::class, 'updateStatus'])->whereNumber('id')->middleware('ha.perm:ha.services.manage')->name('admin.ha.services.status');
+    Route::post('/admin/ha/services/{id}/assign', [HaServiceAdminController::class, 'assign'])->whereNumber('id')->middleware('ha.perm:ha.services.manage')->name('admin.ha.services.assign');
+    Route::post('/admin/ha/services/{id}/notes', [HaServiceAdminController::class, 'notes'])->whereNumber('id')->middleware('ha.perm:ha.services.manage')->name('admin.ha.services.notes');
+    Route::get('/admin/ha/service-documents/{id}/download', [HaServiceAdminController::class, 'download'])->whereNumber('id')->middleware('ha.perm:ha.documents.download')->name('ha.documents.download');
     Route::get('/admin/ha/service-documents/signed/{document}', [HaServiceAdminController::class, 'signedDownload'])
         ->whereNumber('document')->name('ha.documents.signed')->middleware('signed');
 
     // Hero Alif — reports & P&L (Phase 7)
-    Route::get('/admin/ha/reports', [HaReportController::class, 'index'])->name('admin.ha.reports');
-    Route::get('/admin/ha/reports/export/csv', [HaReportController::class, 'exportCsv'])->name('admin.ha.reports.csv');
-    Route::get('/admin/ha/reports/export/pdf', [HaReportController::class, 'exportPdf'])->name('admin.ha.reports.pdf');
-    Route::post('/admin/ha/expenses', [HaReportController::class, 'expenseStore'])->name('admin.ha.expenses.store');
-    Route::post('/admin/ha/expenses/delete/{id}', [HaReportController::class, 'expenseDestroy'])->whereNumber('id')->name('admin.ha.expenses.destroy');
+    Route::get('/admin/ha/reports', [HaReportController::class, 'index'])->middleware('ha.perm:ha.reports.view')->name('admin.ha.reports');
+    Route::get('/admin/ha/reports/export/csv', [HaReportController::class, 'exportCsv'])->middleware('ha.perm:ha.reports.export')->name('admin.ha.reports.csv');
+    Route::get('/admin/ha/reports/export/pdf', [HaReportController::class, 'exportPdf'])->middleware('ha.perm:ha.reports.export')->name('admin.ha.reports.pdf');
+    Route::post('/admin/ha/expenses', [HaReportController::class, 'expenseStore'])->middleware('ha.perm:ha.expenses.manage')->name('admin.ha.expenses.store');
+    Route::post('/admin/ha/expenses/delete/{id}', [HaReportController::class, 'expenseDestroy'])->whereNumber('id')->middleware('ha.perm:ha.expenses.manage')->name('admin.ha.expenses.destroy');
 
     // The logged-in admin's own account — the admin-chrome equivalents of the
     // user-area /profile, /user/settings and /user/notifications pages that the

@@ -83,20 +83,20 @@
             ['name' => 'CV Builder', 'icon' => 'lucide-file-user', 'url' => '/admin/cv', 'key' => 'cv'],
         ]],
         ['label' => 'Hero Alif', 'items' => [
-            ['name' => 'POS', 'icon' => 'lucide-scan-barcode', 'url' => '/admin/ha/pos', 'key' => 'ha-pos'],
-            ['name' => 'Customers', 'icon' => 'lucide-contact', 'url' => '/admin/ha/customers', 'key' => 'ha-customers'],
-            ['name' => 'Sales', 'icon' => 'lucide-receipt', 'url' => '/admin/ha/sales', 'key' => 'ha-sales'],
-            ['name' => 'Online Orders', 'icon' => 'lucide-truck', 'url' => '/admin/ha/orders', 'key' => 'ha-orders'],
-            ['name' => 'Cash Register', 'icon' => 'lucide-calculator', 'url' => '/admin/ha/register', 'key' => 'ha-register'],
-            ['name' => 'Service Requests', 'icon' => 'lucide-file-clock', 'url' => '/admin/ha/services', 'key' => 'ha-services'],
-            ['name' => 'Service Categories', 'icon' => 'lucide-list-tree', 'url' => '/admin/ha/services/categories', 'key' => 'ha-services-categories'],
-            ['name' => 'Products', 'icon' => 'lucide-package', 'url' => '/admin/ha/products', 'key' => 'ha-products'],
-            ['name' => 'Categories', 'icon' => 'lucide-folder-tree', 'url' => '/admin/ha/categories', 'key' => 'ha-categories'],
-            ['name' => 'Brands', 'icon' => 'lucide-badge', 'url' => '/admin/ha/brands', 'key' => 'ha-brands'],
-            ['name' => 'Suppliers', 'icon' => 'lucide-truck', 'url' => '/admin/ha/suppliers', 'key' => 'ha-suppliers'],
-            ['name' => 'Purchases', 'icon' => 'lucide-shopping-cart', 'url' => '/admin/ha/purchases', 'key' => 'ha-purchases'],
-            ['name' => 'Stock Ledger', 'icon' => 'lucide-arrow-down-up', 'url' => '/admin/ha/inventory/movements', 'key' => 'ha-movements'],
-            ['name' => 'Reports & P&L', 'icon' => 'lucide-chart-line', 'url' => '/admin/ha/reports', 'key' => 'ha-reports'],
+            ['name' => 'POS', 'icon' => 'lucide-scan-barcode', 'url' => '/admin/ha/pos', 'key' => 'ha-pos', 'perm' => 'ha.pos.operate'],
+            ['name' => 'Customers', 'icon' => 'lucide-contact', 'url' => '/admin/ha/customers', 'key' => 'ha-customers', 'perm' => 'ha.customers.view'],
+            ['name' => 'Sales', 'icon' => 'lucide-receipt', 'url' => '/admin/ha/sales', 'key' => 'ha-sales', 'perm' => 'ha.sales.view'],
+            ['name' => 'Online Orders', 'icon' => 'lucide-truck', 'url' => '/admin/ha/orders', 'key' => 'ha-orders', 'perm' => 'ha.orders.view'],
+            ['name' => 'Cash Register', 'icon' => 'lucide-calculator', 'url' => '/admin/ha/register', 'key' => 'ha-register', 'perm' => 'ha.registers.manage'],
+            ['name' => 'Service Requests', 'icon' => 'lucide-file-clock', 'url' => '/admin/ha/services', 'key' => 'ha-services', 'perm' => 'ha.services.view'],
+            ['name' => 'Service Categories', 'icon' => 'lucide-list-tree', 'url' => '/admin/ha/services/categories', 'key' => 'ha-services-categories', 'perm' => 'ha.services.categories'],
+            ['name' => 'Products', 'icon' => 'lucide-package', 'url' => '/admin/ha/products', 'key' => 'ha-products', 'perm' => 'ha.products.manage'],
+            ['name' => 'Categories', 'icon' => 'lucide-folder-tree', 'url' => '/admin/ha/categories', 'key' => 'ha-categories', 'perm' => 'ha.products.manage'],
+            ['name' => 'Brands', 'icon' => 'lucide-badge', 'url' => '/admin/ha/brands', 'key' => 'ha-brands', 'perm' => 'ha.products.manage'],
+            ['name' => 'Suppliers', 'icon' => 'lucide-truck', 'url' => '/admin/ha/suppliers', 'key' => 'ha-suppliers', 'perm' => 'ha.purchases.manage'],
+            ['name' => 'Purchases', 'icon' => 'lucide-shopping-cart', 'url' => '/admin/ha/purchases', 'key' => 'ha-purchases', 'perm' => 'ha.purchases.manage'],
+            ['name' => 'Stock Ledger', 'icon' => 'lucide-arrow-down-up', 'url' => '/admin/ha/inventory/movements', 'key' => 'ha-movements', 'perm' => 'ha.purchases.view'],
+            ['name' => 'Reports & P&L', 'icon' => 'lucide-chart-line', 'url' => '/admin/ha/reports', 'key' => 'ha-reports', 'perm' => 'ha.reports.view'],
         ]],
         ['label' => 'Wallet', 'items' => [
             ['name' => 'Recharges', 'icon' => 'lucide-wallet', 'url' => '/admin/wallet/recharges', 'key' => 'wallet-recharges'],
@@ -442,6 +442,12 @@
                         @php
                             $children = $item['children'] ?? [];
                             $hasChildren = $children !== [];
+                            // Phase 8: hide sidebar items for which the current user lacks the permission.
+                            // Super admins see everything. Non-super users only see items whose `perm`
+                            // (if defined) they hold — keeps the sidebar clean for scoped roles.
+                            if (isset($item['perm']) && ! \App\Support\HaPermissions::for(auth()->user())->has($item['perm'] ?? null)) {
+                                continue;
+                            }
                             $childActive = $hasChildren && $navChildrenActive($children);
                             $itemActive = $currentPath === $item['url']
                                 || str_starts_with($currentPath, rtrim($item['url'], '/').'/')

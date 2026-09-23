@@ -22,7 +22,6 @@ return new class extends Migration
             Schema::table('users', function (Blueprint $table) {
                 $table->decimal('balance', 12, 2)
                     ->default(0.00)
-                    ->after('status')
                     ->comment('Wallet balance used to pay for paid services');
             });
         }

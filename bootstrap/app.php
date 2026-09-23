@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureHaPermission;
 use App\Http\Middleware\StartLegacySession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,7 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['broxbhai_remember']);
 
         // Admin gate (legacy admin_only / admin_or_super_only parity)
-        $middleware->alias(['admin' => EnsureAdmin::class]);
+        $middleware->alias([
+            'admin' => EnsureAdmin::class,
+            'ha.perm' => EnsureHaPermission::class,
+        ]);
 
         // Medicines scraper API uses dual-auth (MEDEX_REFRESH_TOKEN OR CSRF) handled
         // inside MedicinesController::requireApiAuth — the token path must not be
