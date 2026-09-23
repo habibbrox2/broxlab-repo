@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\AdminDashboardService;
+use App\Support\HaReportService;
 use App\Support\UserProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class AdminDashboardController extends Controller
     public function __construct(
         protected AdminDashboardService $dashboard,
         protected UserProfileService $users,
+        protected HaReportService $haReports,
     ) {}
 
     public function index(): View
@@ -55,6 +57,7 @@ class AdminDashboardController extends Controller
             'trend' => $this->dashboard->trendData(),
             'service_stats' => $serviceStats,
             'payment_stats' => $paymentStats,
+            'ha' => $this->haReports->dashboardWidgets(),
             'last_sync_at' => now(),
         ]);
     }

@@ -74,12 +74,12 @@ jobs:
             # so a broken copy would otherwise block every future deploy.
             cp -f /tmp/broxlab-deploy/web-host/scripts/deploy.sh scripts/deploy.sh
             chmod +x scripts/deploy.sh
-            # --migrate is opt-in and targeted: this run applies only the
-            # admin sidebar width preference column. Remove the flag once it
-            # has succeeded once (the migration itself is also idempotent).
+            # --migrate is opt-in and targeted: only listed files run.
+            # The sidebar-width migration has already succeeded; it stays
+            # listed because it is idempotent (hasColumn guard).
             ASSET_ARCHIVE=/tmp/broxlab-deploy/broxlab-assets.tar.gz \
               bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main \
-              --migrate "database/migrations/2026_09_23_000001_add_admin_sidebar_width_to_users.php"
+              --migrate "database/migrations/2026_09_23_000001_add_admin_sidebar_width_to_users.php database/migrations/2026_09_23_000100_create_hero_alif_commerce_tables.php database/migrations/2026_09_23_000200_create_hero_alif_sales_tables.php database/migrations/2026_09_23_000300_create_hero_alif_customers_tables.php database/migrations/2026_09_23_000400_create_hero_alif_orders_tables.php database/migrations/2026_09_23_000500_create_hero_alif_services_tables.php database/migrations/2026_09_23_000600_create_hero_alif_expenses_table.php"
 
       - name: Post-Deployment Status
         if: always()

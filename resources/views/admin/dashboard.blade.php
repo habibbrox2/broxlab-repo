@@ -248,7 +248,97 @@
     </div>
 </div>
 
-{{-- 7-day trend chart (Alpine + inline SVG sparkline) --}}
+{{-- Hero Alif business widgets (Phase 7) --}}
+<section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach ([
+        ['label' => 'Sales Today', 'value' => '৳'.number_format(($ha['today']['revenue'] ?? 0) + ($ha['today']['service_fees'] ?? 0), 0), 'sub' => number_format($ha['today']['units_sold'] ?? 0).' units', 'icon' => 'shopping-cart', 'color' => 'indigo'],
+        ['label' => 'Profit Today', 'value' => '৳'.number_format($ha['today']['net_profit'] ?? 0, 0), 'sub' => 'margin '.($ha['today']['margin'] ?? 0).'%', 'subClass' => ($ha['today']['net_profit'] ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400', 'icon' => 'badge-percent', 'color' => 'emerald'],
+        ['label' => 'Revenue This Month', 'value' => '৳'.number_format(($ha['month']['revenue'] ?? 0) + ($ha['month']['service_fees'] ?? 0), 0), 'sub' => 'net ৳'.number_format($ha['month']['net_profit'] ?? 0, 0), 'icon' => 'trending-up', 'color' => 'sky'],
+        ['label' => 'Service Queue', 'value' => number_format($ha['pending_services'] ?? 0), 'sub' => 'pending / processing', 'icon' => 'file-clock', 'color' => 'amber'],
+    ] as $card)
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600 mb-1">{{ $card['label'] }}</p>
+                <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ $card['value'] }}</p>
+                @if (!empty($card['sub']))
+                    <p class="text-xs {{ $card['subClass'] ?? 'text-slate-400' }} mt-1">{{ $card['sub'] }}</p>
+                @endif
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-{{ $card['color'] }}-50 dark:bg-{{ $card['color'] }}-900/30 flex items-center justify-center flex-shrink-0">
+                <i class="lucide lucide-{{ $card['icon'] }} w-5 h-5 text-{{ $card['color'] }}-600 dark:text-{{ $card['color'] }}-400"></i>
+            </div>
+        </div>
+    </div>
+    @endforeach
+</section>
+
+<div class="mt-6 grid gap-4 lg:grid-cols-3">
+    {{-- Low stock alerts --}}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <i class="lucide lucide-package-search w-4 h-4 text-rose-600 dark:text-rose-400"></i>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Low Stock</h3>
+            <a href="/admin/ha/products" class="ml-auto text-xs font-medium text-indigo-600 hover:underline">Manage</a>
+        </div>
+        @if (($ha['low_stock'] ?? collect())->isEmpty())
+            <p class="px-5 py-4 text-sm text-slate-400">All products above reorder level.</p>
+        @else
+            <ul class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                @foreach ($ha['low_stock'] as $p)
+                    <li class="px-5 py-2.5 flex items-center justify-between gap-3 text-sm">
+                        <span class="truncate text-slate-700 dark:text-slate-300">{{ \Illuminate\Support\Str::limit($p->name, 28) }}</span>
+                        <span class="text-xs font-semibold {{ (int) $p->stock_qty <= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400' }}">
+                            {{ $p->stock_qty }} left
+                        </span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+
+    {{-- Recent sales --}}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+            <i class="lucide lucide-receipt w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Recent Sales</h3>
+            <a href="/admin/ha/sales" class="ml-auto text-xs font-medium text-indigo-600 hover:underline">All sales</a>
+        </div>
+        @if (($ha['recent_sales'] ?? collect())->isEmpty())
+            <p class="px-5 py-4 text-sm text-slate-400">No sales yet.</p>
+        @else
+            <ul class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                @foreach ($ha['recent_sales'] as $sale)
+                    <li class="px-5 py-2.5 flex items-center justify-between gap-3 text-sm">
+                        <span class="truncate">
+                            <span class="font-medium text-slate-700 dark:text-slate-300">{{ $sale->invoice_no }}</span>
+                            <span class="text-xs text-slate-400">{{ $sale->created_at->format('d M, H:i') }}</span>
+                        </span>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">৳{{ number_format((float) $sale->total, 0) }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+
+    {{-- Quick P&L (this month) --}}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-5">
+        <div class="flex items-center gap-3">
+            <i class="lucide lucide-scale w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">P&L This Month</h3>
+            <a href="/admin/ha/reports" class="ml-auto text-xs font-medium text-indigo-600 hover:underline">Full report</a>
+        </div>
+        <dl class="mt-3 space-y-2 text-sm">
+            <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">Revenue</dt><dd class="font-medium">৳{{ number_format(($ha['month']['revenue'] ?? 0) + ($ha['month']['service_fees'] ?? 0), 2) }}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">COGS</dt><dd class="text-rose-600 dark:text-rose-400">−৳{{ number_format($ha['month']['cogs'] ?? 0, 2) }}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">Gross profit</dt><dd class="font-medium">৳{{ number_format($ha['month']['gross_profit'] ?? 0, 2) }}</dd></div>
+            <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">Expenses</dt><dd class="text-rose-600 dark:text-rose-400">−৳{{ number_format($ha['month']['expenses'] ?? 0, 2) }}</dd></div>
+            <div class="flex justify-between border-t border-slate-100 dark:border-slate-800/60 pt-2"><dt class="font-semibold text-slate-700 dark:text-slate-200">Net profit</dt><dd class="font-bold {{ ($ha['month']['net_profit'] ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">৳{{ number_format($ha['month']['net_profit'] ?? 0, 2) }}</dd></div>
+        </dl>
+    </div>
+</div>
+
+{{-- 7-day trend chart (Alpine + inline SVG sparkline) --}}}
 <section class="scroll-fade-in overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
         <div class="w-7 h-7 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
