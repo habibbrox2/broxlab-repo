@@ -17,14 +17,15 @@ return new class extends Migration
                 ->comment('Human-readable label for the key');
             $table->enum('scope', ['read', 'write'])->default('read')
                 ->comment('Read-only or read+write access');
-            $table->unsignedBigInteger('created_by')->nullable();
+            // Legacy users.id is signed int(11) — an InnoDB FK would fail with
+            // errno 150, so reference it by indexed column only (same convention
+            // as the Hero Alif migrations).
+            $table->unsignedBigInteger('created_by')->nullable()->index();
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 
             $table->index(['scope', 'revoked_at']);
-            $table->foreign('created_by')->references('id')->on('users')
-                ->onDelete('set null');
         });
     }
 

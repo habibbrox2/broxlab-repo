@@ -24,14 +24,15 @@ class CvAdminService
         $offset = max(0, ($page - 1) * $perPage);
 
         $query = DB::table('cv_infos')
-            ->select('id', 'user_id', 'full_name', 'job_title', 'email', 'phone', 'is_active', 'view_count', 'download_count', 'last_viewed_at', 'created_at', 'updated_at')
-            ->where('deleted_at', null);
+            ->leftJoin('users', 'cv_infos.user_id', '=', 'users.id')
+            ->select('cv_infos.id', 'cv_infos.user_id', 'cv_infos.full_name', 'cv_infos.job_title', 'cv_infos.email', 'cv_infos.phone', 'cv_infos.is_active', 'cv_infos.view_count', 'cv_infos.download_count', 'cv_infos.last_viewed_at', 'cv_infos.created_at', 'cv_infos.updated_at', 'users.username as username')
+            ->where('cv_infos.deleted_at', null);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->where('full_name', 'LIKE', "%{$search}%")
-                    ->orWhere('job_title', 'LIKE', "%{$search}%")
-                    ->orWhere('email', 'LIKE', "%{$search}%");
+                $q->where('cv_infos.full_name', 'LIKE', "%{$search}%")
+                    ->orWhere('cv_infos.job_title', 'LIKE', "%{$search}%")
+                    ->orWhere('cv_infos.email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -42,7 +43,9 @@ class CvAdminService
         $total = $query->count();
 
         $cvs = $query
-            ->orderBy($sort, $order)
+            // Qualify with the table: the users join makes bare id/created_at
+            // ambiguous in the ORDER BY clause.
+            ->orderBy('cv_infos.' . $sort, $order)
             ->skip($offset)
             ->take($perPage)
             ->get()
@@ -53,6 +56,7 @@ class CvAdminService
                 'job_title' => $c->job_title ?? '',
                 'email' => $c->email ?? '',
                 'phone' => $c->phone ?? '',
+                'username' => $c->username ?? 'Unknown',
                 'is_active' => (bool) ($c->is_active ?? false),
                 'view_count' => $c->view_count ?? 0,
                 'download_count' => $c->download_count ?? 0,

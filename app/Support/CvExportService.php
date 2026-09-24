@@ -148,12 +148,12 @@ class CvExportService
         $sections = DB::table('cv_sections')
             ->where('cv_id', $cv->id)
             ->where('is_visible', 1)
-            ->orderBy('order')
+            ->orderBy('sort_order')
             ->get();
 
         $itemsBySection = DB::table('cv_items')
             ->whereIn('section_id', $sections->pluck('id'))
-            ->orderBy('order')
+            ->orderBy('sort_order')
             ->get()
             ->groupBy('section_id');
 

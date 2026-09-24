@@ -27,13 +27,15 @@ class AdminMcpController extends Controller
     /** Show dashboard: enabled state, rate-limit, and existing keys. */
     public function index(): View
     {
+        // Defensive: the row (or the mcp_* columns) may not exist yet when the
+        // migrations have not run — fall back to env config instead of erroring.
         $settings = DB::table('app_settings')->where('id', 1)->first();
 
-        $enabled = $settings->mcp_enabled === null
-            ? (bool) config('mcp.enabled', false)
-            : (bool) $settings->mcp_enabled;
+        $enabled = ($settings && isset($settings->mcp_enabled))
+            ? (bool) $settings->mcp_enabled
+            : (bool) config('mcp.enabled', false);
 
-        $rateLimit = $settings->mcp_rate_limit !== null
+        $rateLimit = ($settings && isset($settings->mcp_rate_limit))
             ? (int) $settings->mcp_rate_limit
             : (int) config('mcp.rate_limit', 60);
 
