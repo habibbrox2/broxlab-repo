@@ -546,20 +546,66 @@ cat > "$VERSION_FILE" <<EOF
 }
 EOF
 
+# Zero-downtime ordering: ALL fallible phases (migrations, cache rebuilds,
+# asset extraction) run BEFORE the docroot symlink is flipped. A failure here
+# aborts with the OLD release still live; the cleanup trap removes only the
+# not-yet-serving NEW_RELEASE. Flipping first (the old order) meant any
+# post-switch failure left the docroot pointing at a deleted directory —
+# a whole-site 404 outage.
+
+# Opt-in targeted migrations (--migrate), run against the fully-built new
+# release (vendor installed, .env linked) BEFORE it goes live. Under set -e a
+# migration failure aborts the deploy safely; the DB backup above was taken
+# BEFORE this phase.
+#
+# NOTE: `php artisan migrate --force` (full) is INTENTIONALLY NOT run. The
+# database schema is frozen (shared with the legacy data model); the Laravel
+# scaffold migrations (users/cache/jobs) are never executed against the
+# shared DB — the tables already exist. Adding migrations requires an
+# explicit review, not a deploy step.
+if [[ -f "artisan" ]]; then
+    if [[ -n "$MIGRATE_PATHS" ]]; then
+        log_section "RUNNING TARGETED MIGRATIONS"
+        for _mp in $MIGRATE_PATHS; do
+            if [[ ! -f "$_mp" ]]; then
+                log_error "Migration path does not exist in the release: $_mp"
+                exit 1
+            fi
+            log_info "php artisan migrate --force --path=$_mp"
+            php artisan migrate --force --path="$_mp" 2>&1 | tee -a "$LOG_FILE"
+        done
+    fi
+
+    log_section "UPDATING LARAVEL CACHE"
+    if [[ "${SKIP_LARAVEL_CACHE:-false}" != "true" ]]; then
+        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
+        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
+        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
+        php artisan config:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:cache failed"
+        php artisan route:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:cache failed"
+        php artisan view:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:cache failed"
+    else
+        log_info "SKIP_LARAVEL_CACHE=true — clearing Laravel cache only"
+        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
+        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
+        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
+    fi
+fi
+
 log_section "SWITCHING RELEASE"
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 
 # The CI-built frontend bundle (built in the workflow, shipped as
 # broxlab-assets.tar.gz with paths like public/assets/js/dist/...) lands
-# directly in the live release's public/ — the same directory the docroot
-# symlink serves. --strip-components=1 removes the leading public/ from the
-# archive paths. This must run AFTER $CURRENT points at the new release.
-# (If a stale broken public/assets symlink exists from an older layout, it is
-# removed just below and this extraction order remains correct either way.)
+# in the new release's public/ — the same directory the docroot symlink
+# serves once switched. --strip-components=1 removes the leading public/
+# from the archive paths. Extracting into $NEW_RELEASE/public BEFORE the
+# flip is equivalent to the old after-flip extraction ($CURRENT/public is
+# the same directory) but keeps the fallible step pre-switch.
 if [[ "${EXTRACT_ASSETS_NOW:-false}" == "true" ]]; then
     require_command tar
-    tar -xzf "$ASSET_ARCHIVE" --strip-components=1 -C "$CURRENT/public"
-    log_info "Built frontend assets extracted into $CURRENT/public from CI archive"
+    tar -xzf "$ASSET_ARCHIVE" --strip-components=1 -C "$NEW_RELEASE/public"
+    log_info "Built frontend assets extracted into $NEW_RELEASE/public from CI archive"
 fi
 
 # Shared uploads must remain publicly reachable after the docroot is switched
@@ -631,51 +677,12 @@ if [[ ! -f "$PUBLIC_HTML_TARGET/index.php" ]]; then
 fi
 log_info "Document-root symlink verified"
 
+# Release cleanup runs only AFTER the flip succeeded — never while the new
+# release is still being validated (kept releases must include the live one).
 if [[ "$SKIP_CLEANUP" == "false" ]]; then
     CLEANUP_SCRIPT="$BASE/scripts/cleanup.sh"
     if [[ -x "$CLEANUP_SCRIPT" ]]; then
         BASE_PATH="$BASE" "$CLEANUP_SCRIPT" --releases "$KEEP_RELEASES" 2>&1 | tee -a "$LOG_FILE" || log_warn "Cleanup reported warnings"
-    fi
-fi
-
-# Laravel cache: clear before deploy, then bootstrap/cache from the new release.
-# This is the production default; skip only when SKIP_LARAVEL_CACHE is set or
-# ./artisan is absent.
-#
-# NOTE: `php artisan migrate --force` is INTENTIONALLY NOT run here. The
-# database schema is frozen (shared with the legacy data model); the Laravel
-# scaffold migrations (users/cache/jobs) are never executed against the
-# shared DB — the tables already exist. Adding migrations requires an
-# explicit review, not a deploy step.
-if [[ -f "artisan" ]]; then
-    # Opt-in targeted migrations (--migrate), run BEFORE the caches are rebuilt
-    # so schema changes are picked up. Under set -e a migration failure aborts
-    # the deploy; the DB backup above was taken BEFORE this phase.
-    if [[ -n "$MIGRATE_PATHS" ]]; then
-        log_section "RUNNING TARGETED MIGRATIONS"
-        for _mp in $MIGRATE_PATHS; do
-            if [[ ! -f "$_mp" ]]; then
-                log_error "Migration path does not exist in the release: $_mp"
-                exit 1
-            fi
-            log_info "php artisan migrate --force --path=$_mp"
-            php artisan migrate --force --path="$_mp" 2>&1 | tee -a "$LOG_FILE"
-        done
-    fi
-
-    log_section "UPDATING LARAVEL CACHE"
-    if [[ "${SKIP_LARAVEL_CACHE:-false}" != "true" ]]; then
-        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
-        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
-        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
-        php artisan config:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:cache failed"
-        php artisan route:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:cache failed"
-        php artisan view:cache 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:cache failed"
-    else
-        log_info "SKIP_LARAVEL_CACHE=true — clearing Laravel cache only"
-        php artisan config:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan config:clear failed"
-        php artisan route:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan route:clear failed"
-        php artisan view:clear 2>&1 | tee -a "$LOG_FILE" || log_warn "artisan view:clear failed"
     fi
 fi
 
