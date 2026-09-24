@@ -77,9 +77,11 @@ jobs:
             # --migrate is opt-in and targeted: only listed files run.
             # The sidebar-width migration has already succeeded; it stays
             # listed because it is idempotent (hasColumn guard).
+            # MCP tables (2026_09_24_*) are idempotent/rerunnable and required
+            # by /admin/mcp and the /mcp server (fail-closed without them).
             ASSET_ARCHIVE=/tmp/broxlab-deploy/broxlab-assets.tar.gz \
               bash scripts/deploy.sh --base /home/tdhuedhn/broxlab --repo git@github.com:habibbrox2/broxlab-repo.git --ref main \
-              --migrate "database/migrations/2026_09_23_000001_add_admin_sidebar_width_to_users.php database/migrations/2026_09_23_000100_create_hero_alif_commerce_tables.php database/migrations/2026_09_23_000200_create_hero_alif_sales_tables.php database/migrations/2026_09_23_000300_create_hero_alif_customers_tables.php database/migrations/2026_09_23_000400_create_hero_alif_orders_tables.php database/migrations/2026_09_23_000500_create_hero_alif_services_tables.php database/migrations/2026_09_23_000600_create_hero_alif_expenses_table.php"
+              --migrate "database/migrations/2026_09_23_000001_add_admin_sidebar_width_to_users.php database/migrations/2026_09_23_000100_create_hero_alif_commerce_tables.php database/migrations/2026_09_23_000200_create_hero_alif_sales_tables.php database/migrations/2026_09_23_000300_create_hero_alif_customers_tables.php database/migrations/2026_09_23_000400_create_hero_alif_orders_tables.php database/migrations/2026_09_23_000500_create_hero_alif_services_tables.php database/migrations/2026_09_23_000600_create_hero_alif_expenses_table.php database/migrations/2026_09_24_000001_create_mcp_api_keys_table.php database/migrations/2026_09_24_000002_add_mcp_settings_columns.php database/migrations/2026_09_24_000003_create_mcp_logs_table.php"
 
       - name: Post-Deployment Status
         if: always()

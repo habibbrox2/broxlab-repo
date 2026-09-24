@@ -10,10 +10,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * Admin MCP Server management.
@@ -29,7 +32,11 @@ class AdminMcpController extends Controller
     {
         // Defensive: the row (or the mcp_* columns) may not exist yet when the
         // migrations have not run — fall back to env config instead of erroring.
-        $settings = DB::table('app_settings')->where('id', 1)->first();
+        try {
+            $settings = DB::table('app_settings')->where('id', 1)->first();
+        } catch (Throwable) {
+            $settings = null;
+        }
 
         $enabled = ($settings && isset($settings->mcp_enabled))
             ? (bool) $settings->mcp_enabled
@@ -39,21 +46,25 @@ class AdminMcpController extends Controller
             ? (int) $settings->mcp_rate_limit
             : (int) config('mcp.rate_limit', 60);
 
-        $keys = DB::table('mcp_api_keys')
-            ->select('id', 'name', 'scope', 'created_by', 'last_used_at', 'revoked_at', 'created_at', 'updated_at')
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function (object $row): object {
-                $row->is_active  = $row->revoked_at === null;
-                $row->is_write   = $row->scope === 'write';
-                $row->preview    = Str::limit($row->name ?? 'unnamed', 25);
-                // Raw key value is never stored (bcrypt hash only);
-                // copy-to-clipboard is intentionally omitted.
-                $row->created_at    = $row->created_at ? Carbon::parse($row->created_at) : null;
-                $row->last_used_at  = $row->last_used_at ? Carbon::parse($row->last_used_at) : null;
+        // Degrade gracefully when the MCP tables are not installed yet
+        // (migrations are opt-in per deploy — never 500 the admin page).
+        $keys = $this->schemaReady('mcp_api_keys')
+            ? DB::table('mcp_api_keys')
+                ->select('id', 'name', 'scope', 'created_by', 'last_used_at', 'revoked_at', 'created_at', 'updated_at')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function (object $row): object {
+                    $row->is_active  = $row->revoked_at === null;
+                    $row->is_write   = $row->scope === 'write';
+                    $row->preview    = Str::limit($row->name ?? 'unnamed', 25);
+                    // Raw key value is never stored (bcrypt hash only);
+                    // copy-to-clipboard is intentionally omitted.
+                    $row->created_at    = $row->created_at ? Carbon::parse($row->created_at) : null;
+                    $row->last_used_at  = $row->last_used_at ? Carbon::parse($row->last_used_at) : null;
 
-                return $row;
-            });
+                    return $row;
+                })
+            : collect();
 
         return view('admin.mcp.index', [
             'title'         => 'MCP Server',
@@ -65,9 +76,39 @@ class AdminMcpController extends Controller
         ]);
     }
 
+    /**
+     * True when the given table (and optional column) exists.
+     * Degrades to false if the schema introspection itself fails.
+     */
+    protected function schemaReady(string $table, ?string $column = null): bool
+    {
+        try {
+            if (! Schema::hasTable($table)) {
+                return false;
+            }
+
+            return $column === null || Schema::hasColumn($table, $column);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /** Guard shared by every mutating action: refuse when tables are missing. */
+    protected function tablesMissingRedirect(): RedirectResponse
+    {
+        return redirect('/admin/mcp')->with(
+            'error',
+            'MCP tables are not installed yet — run the MCP migrations first.'
+        );
+    }
+
     /** Generate a new API key (read or write scope). */
     public function generateKey(Request $request): RedirectResponse
     {
+        if (! $this->schemaReady('mcp_api_keys')) {
+            return $this->tablesMissingRedirect();
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'scope' => ['required', 'in:read,write'],
@@ -96,6 +137,10 @@ class AdminMcpController extends Controller
     /** Revoke (soft-delete) an API key. */
     public function revokeKey(Request $request, int $id): RedirectResponse
     {
+        if (! $this->schemaReady('mcp_api_keys')) {
+            return $this->tablesMissingRedirect();
+        }
+
         $affected = DB::table('mcp_api_keys')
             ->where('id', $id)
             ->whereNull('revoked_at')
@@ -117,6 +162,10 @@ class AdminMcpController extends Controller
     /** Bulk-revoke selected keys. */
     public function revokeBulk(Request $request): RedirectResponse
     {
+        if (! $this->schemaReady('mcp_api_keys')) {
+            return $this->tablesMissingRedirect();
+        }
+
         $ids = array_map('intval', (array) $request->input('keys', []));
         if ($ids === []) {
             return redirect('/admin/mcp')->with('error', 'No keys selected.');
@@ -137,6 +186,10 @@ class AdminMcpController extends Controller
     /** Update enable flag + rate limit from the settings form. */
     public function updateSettings(Request $request): RedirectResponse
     {
+        if (! $this->schemaReady('app_settings', 'mcp_enabled')) {
+            return $this->tablesMissingRedirect();
+        }
+
         $validated = $request->validate([
             'mcp_enabled' => ['nullable', 'in:1,0'],
             'mcp_rate_limit' => ['nullable', 'integer', 'min:1', 'max:10000'],
@@ -158,7 +211,12 @@ class AdminMcpController extends Controller
     /** Show structured request logs. */
     public function logs(Request $request): View
     {
-        $query = DB::table('mcp_logs')->orderByDesc('created_at');
+        // Degrade gracefully when mcp_logs is not installed yet.
+        $logsReady = $this->schemaReady('mcp_logs');
+
+        $query = $logsReady
+            ? DB::table('mcp_logs')->orderByDesc('created_at')
+            : DB::table('mcp_logs');
 
         if (($status = $request->query('status')) && $status !== 'all') {
             $query->where('status', $status);
@@ -176,17 +234,21 @@ class AdminMcpController extends Controller
             });
         }
 
-        $logs = $query->paginate(50)->withQueryString()->through(function ($row) {
-            $row->created_at = $row->created_at ? Carbon::parse($row->created_at) : null;
-            return $row;
-        });
+        $logs = $logsReady
+            ? $query->paginate(50)->withQueryString()->through(function ($row) {
+                $row->created_at = $row->created_at ? Carbon::parse($row->created_at) : null;
+                return $row;
+            })
+            : new LengthAwarePaginator([], 0, 50);
 
-        $methods = DB::table('mcp_logs')
-            ->select('method')
-            ->distinct()
-            ->orderBy('method')
-            ->pluck('method')
-            ->toArray();
+        $methods = $logsReady
+            ? DB::table('mcp_logs')
+                ->select('method')
+                ->distinct()
+                ->orderBy('method')
+                ->pluck('method')
+                ->toArray()
+            : [];
 
         return view('admin.mcp.logs', [
             'title' => 'MCP Logs',
@@ -201,6 +263,10 @@ class AdminMcpController extends Controller
     /** Clear all MCP logs. */
     public function clearLogs(): RedirectResponse
     {
+        if (! $this->schemaReady('mcp_logs')) {
+            return $this->tablesMissingRedirect();
+        }
+
         DB::table('mcp_logs')->truncate();
 
         ActivityLogger::log('mcp_logs', 0, 'mcp_logs_cleared');
