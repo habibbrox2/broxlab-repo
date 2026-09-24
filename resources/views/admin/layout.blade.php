@@ -190,6 +190,10 @@
                 ['name' => 'SMTP', 'url' => '/admin/security/smtp'],
             ]],
             ['name' => 'Navigation', 'icon' => 'lucide-menu', 'url' => '/admin/navigation', 'key' => 'navigation'],
+            ['name' => 'MCP Server', 'icon' => 'lucide-server', 'url' => '/admin/mcp', 'key' => 'mcp', 'children' => [
+                ['name' => 'API Keys', 'url' => '/admin/mcp'],
+                ['name' => 'Logs', 'url' => '/admin/mcp/logs'],
+            ]],
             ['name' => 'Setup', 'icon' => 'lucide-wrench', 'url' => '/admin/setup', 'key' => 'setup'],
             // The admin's own account (owner-scoped, admin chrome).
             ['name' => 'My Profile', 'icon' => 'lucide-user-round', 'url' => '/admin/profile', 'key' => 'profile'],

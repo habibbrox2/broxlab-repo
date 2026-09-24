@@ -10,6 +10,9 @@ use App\Support\Mcp\McpTools;
 use App\Support\Mcp\McpWriteTools;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Throwable;
@@ -52,7 +55,15 @@ class McpController extends Controller
     public function handle(Request $request): JsonResponse
     {
         // 1. Gate: enabled + authenticated.
-        if (! config('mcp.enabled')) {
+        //    mcp_enabled column in app_settings (1=enabled, 0=disabled, null=use env fallback).
+        //    DB lookup is defensive — fall back to env config when the table/column is missing.
+        try {
+            $dbEnabled = DB::table('app_settings')->where('id', 1)->value('mcp_enabled');
+        } catch (Throwable) {
+            $dbEnabled = null;
+        }
+        $envEnabled = (bool) config('mcp.enabled', false);
+        if ($dbEnabled !== null ? (bool) $dbEnabled !== true : !$envEnabled) {
             return $this->rpcError(null, self::E_UNAUTHORIZED, 'MCP service is not available', 503);
         }
 
@@ -62,10 +73,18 @@ class McpController extends Controller
         }
         $key = $auth['key'];
         $scope = $auth['scope'];
+        $keyName = $auth['name'];
 
         // 2. Rate limit per key.
         $limiterKey = 'mcp:' . hash('sha256', $key);
-        $limit = (int) config('mcp.rate_limit', 60);
+        //    mcp_rate_limit column (NULL = use config mcp.rate_limit).
+        //    Defensive: fall back to config when column/table is unavailable.
+        try {
+            $dbLimit = DB::table('app_settings')->where('id', 1)->value('mcp_rate_limit');
+        } catch (Throwable) {
+            $dbLimit = null;
+        }
+        $limit = $dbLimit !== null ? (int) $dbLimit : (int) config('mcp.rate_limit', 60);
         if ($limit > 0 && RateLimiter::tooManyAttempts($limiterKey, $limit)) {
             return response()->json([
                 'jsonrpc' => '2.0',
@@ -87,7 +106,7 @@ class McpController extends Controller
             return $this->rpcError(null, self::E_PARSE, 'Invalid JSON-RPC 2.0 request', 400);
         }
 
-        return $this->dispatch($body, $key, $scope);
+        return $this->dispatch($body, $key, $scope, $keyName);
     }
 
     public function health(): JsonResponse
@@ -97,7 +116,7 @@ class McpController extends Controller
 
     // ── JSON-RPC dispatch ────────────────────────────────────────────────
 
-    protected function dispatch(array $body, string $key, string $scope = 'read'): JsonResponse
+    protected function dispatch(array $body, string $key, string $scope = 'read', string $keyName = 'env-key'): JsonResponse
     {
         $method = (string) ($body['method'] ?? '');
         $id = $body['id'] ?? null;
@@ -112,7 +131,7 @@ class McpController extends Controller
                 'initialize' => $this->initialize($params),
                 'ping' => (object) [],
                 'tools/list' => $this->toolsList($scope),
-                'tools/call' => $this->toolsCall($params, $requestId, $key, $scope),
+                'tools/call' => $this->toolsCall($params, $requestId, $key, $scope, $keyName),
                 'notifications/initialized', 'initialized' => null,
                 default => throw new McpException('Method not found: ' . $method, self::E_METHOD_NOT_FOUND),
             };
@@ -120,7 +139,7 @@ class McpController extends Controller
             return $this->rpcError($id, $e->getCode(), $e->getMessage());
         } catch (Throwable) {
             // Sanitized: never expose internals to the client.
-            $this->log($requestId, $method, $key, 0, 'error', 0);
+            $this->log($requestId, $method, $key, $keyName, 0, 'error', 0);
 
             return $this->rpcError($id, self::E_INTERNAL, 'Internal error');
         }
@@ -129,7 +148,7 @@ class McpController extends Controller
             return response()->json([], 202);
         }
 
-        $this->log($requestId, $method, $key, 0, 'success', 0);
+        $this->log($requestId, $method, $key, $keyName, 0, 'success', 0);
 
         return response()->json([
             'jsonrpc' => '2.0',
@@ -165,7 +184,7 @@ class McpController extends Controller
         return ['tools' => $definitions];
     }
 
-    protected function toolsCall(array $params, string $requestId, string $key, string $scope = 'read'): array
+    protected function toolsCall(array $params, string $requestId, string $key, string $scope = 'read', string $keyName = 'env-key'): array
     {
         $name = (string) ($params['name'] ?? '');
         $args = is_array($params['arguments'] ?? null) ? $params['arguments'] : [];
@@ -218,7 +237,7 @@ class McpController extends Controller
             ];
         } finally {
             $duration = (int) ((microtime(true) - $start) * 1000);
-            $this->log($requestId, 'tools/call:' . $name, $key, $duration, $outcome, $count);
+            $this->log($requestId, 'tools/call:' . $name, $key, $keyName, $duration, $outcome, $count);
         }
 
         if ($data === null) {
@@ -322,12 +341,6 @@ class McpController extends Controller
      */
     protected function authenticate(Request $request): ?array
     {
-        $keys = (array) config('mcp.api_keys', []);
-        $writeKeys = (array) config('mcp.write_api_keys', []);
-        if ($keys === [] && $writeKeys === []) {
-            return null;
-        }
-
         $header = (string) $request->bearerToken();
         if ($header === '') {
             $header = trim((string) $request->header('X-API-Key', ''));
@@ -337,15 +350,43 @@ class McpController extends Controller
             return null;
         }
 
+        // 1. Check DB-managed keys first (bcrypt-hashed, can be revoked).
+        //    Defensive: table may be absent in test env — skip to env keys gracefully.
+        try {
+            $dbKeys = DB::table('mcp_api_keys')
+                ->whereNull('revoked_at')
+                ->whereIn('scope', ['read', 'write'])
+                ->get();
+        } catch (Throwable) {
+            $dbKeys = collect();
+        }
+
+        foreach ($dbKeys as $row) {
+            if (Hash::check($header, $row->key_hash)) {
+                // Update last_used_at (best-effort).
+                try {
+                    DB::table('mcp_api_keys')->where('id', $row->id)->update(['last_used_at' => now()]);
+                } catch (Throwable) {
+                    // ignore update failures
+                }
+
+                return ['key' => $row->key_hash, 'scope' => $row->scope, 'name' => $row->name];
+            }
+        }
+
+        // 2. Fall back to env-configured keys (backward compatibility).
+        $keys = (array) config('mcp.api_keys', []);
+        $writeKeys = (array) config('mcp.write_api_keys', []);
+
         foreach ($writeKeys as $valid) {
             if (hash_equals((string) $valid, $header)) {
-                return ['key' => $valid, 'scope' => 'write'];
+                return ['key' => $valid, 'scope' => 'write', 'name' => 'env-key'];
             }
         }
 
         foreach ($keys as $valid) {
             if (hash_equals((string) $valid, $header)) {
-                return ['key' => $valid, 'scope' => 'read'];
+                return ['key' => $valid, 'scope' => 'read', 'name' => 'env-key'];
             }
         }
 
@@ -365,17 +406,36 @@ class McpController extends Controller
      * Structured MCP log. Never logs tokens or payloads — only the hashed
      * client identity, tool name, timing and outcome.
      */
-    protected function log(string $requestId, string $tool, string $key, int $duration, string $status, int $results): void
+    protected function log(string $requestId, string $tool, string $key, string $keyName, int $duration, string $status, int $results): void
     {
         if (! config('mcp.logging')) {
             return;
         }
 
-        info('[MCP] request_id=' . $requestId
-            . ' tool=' . $tool
-            . ' client=' . substr(hash('sha256', $key), 0, 8)
-            . ' duration=' . $duration . 'ms'
-            . ' status=' . $status
-            . ' results=' . $results);
+        $clientHash = substr(hash('sha256', $key), 0, 16);
+
+        // DB-structured logs (admin-facing via /admin/mcp/logs).
+        try {
+            DB::table('mcp_logs')->insert([
+                'key_name'   => $keyName,
+                'client_hash' => $clientHash,
+                'method'      => $tool,
+                'status'      => $status,
+                'duration_ms' => $duration,
+                'result_count' => $results,
+                'ip_address'  => request()->ip(),
+                'user_agent'  => request()->userAgent() ?? '',
+                'created_at'  => now(),
+            ]);
+        } catch (Throwable) {
+            // If logging itself fails, fall back to Laravel log —
+            // never break the request pipeline.
+            info('[MCP] request_id=' . $requestId
+                . ' tool=' . $tool
+                . ' client=' . $clientHash
+                . ' duration=' . $duration . 'ms'
+                . ' status=' . $status
+                . ' results=' . $results);
+        }
     }
 }

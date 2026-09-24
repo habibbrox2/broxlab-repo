@@ -20,6 +20,7 @@ class AppSetting extends Model
         'allow_user_registration', 'require_email_verification', 'enable_2fa',
         'asset_version',
         'header_nav_items',
+        'mcp_enabled', 'mcp_rate_limit',
     ];
 
     protected $casts = [
@@ -27,5 +28,7 @@ class AppSetting extends Model
         'require_email_verification' => 'boolean',
         'enable_2fa' => 'boolean',
         'header_nav_items' => 'array',
+        'mcp_enabled' => 'boolean',
+        'mcp_rate_limit' => 'integer',
     ];
 }

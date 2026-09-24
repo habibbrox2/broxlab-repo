@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminRbacController;
 use App\Http\Controllers\Admin\AdminRevenueController;
 use App\Http\Controllers\Admin\AdminWalletController;
 use App\Http\Controllers\Admin\AdminLogsController;
+use App\Http\Controllers\Admin\AdminMcpController;
 use App\Http\Controllers\Admin\AdminNavigationController;
 use App\Http\Controllers\Admin\AdminSidebarPreferenceController;
 use App\Http\Controllers\Admin\AdminSecurityController;
@@ -641,6 +642,15 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/profile', [AdminAccountController::class, 'profile'])->name('admin.profile');
     Route::get('/admin/account-settings', [AdminAccountController::class, 'settings'])->name('admin.account-settings');
     Route::get('/admin/my/notifications', [AdminAccountController::class, 'notifications'])->name('admin.my-notifications');
+
+    // MCP Server management
+    Route::get('/admin/mcp', [AdminMcpController::class, 'index'])->name('admin.mcp.index');
+    Route::post('/admin/mcp/keys/generate', [AdminMcpController::class, 'generateKey'])->name('admin.mcp.keys.generate');
+    Route::post('/admin/mcp/keys/revoke/{id}', [AdminMcpController::class, 'revokeKey'])->whereNumber('id')->name('admin.mcp.keys.revoke');
+    Route::post('/admin/mcp/keys/revoke-bulk', [AdminMcpController::class, 'revokeBulk'])->name('admin.mcp.keys.revoke.bulk');
+    Route::post('/admin/mcp/settings', [AdminMcpController::class, 'updateSettings'])->name('admin.mcp.settings.update');
+    Route::get('/admin/mcp/logs', [AdminMcpController::class, 'logs'])->name('admin.mcp.logs');
+    Route::post('/admin/mcp/logs/clear', [AdminMcpController::class, 'clearLogs'])->name('admin.mcp.logs.clear');
 });
 
 
