@@ -48,12 +48,15 @@
     <meta property="og:site_name" content="{{ $appSettings['site_name'] ?? 'BroxLab' }}">
     <meta property="og:title" content="@yield('title', $appSettings['site_name'] ?? 'BroxLab')">
     <meta property="og:description" content="{{ $appSettings['meta_description'] ?? 'Welcome to '.($appSettings['site_name'] ?? 'BroxLab') }}">
-    <meta property="og:image" content="{{ $appSettings['site_logo'] ?? asset('/assets/images/default-image.png') }}">
+    @php
+        $ogImage = !empty($appSettings['site_logo']) ? $appSettings['site_logo'] : asset('/assets/images/default-image.png');
+    @endphp
+    <meta property="og:image" content="{{ $ogImage }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:type" content="image/png">
     <meta property="og:locale" content="{{ app(LanguageService::class)->current() == 'bn' ? 'bn_BD' : 'en_US' }}">
-    <meta property="og:locale:alternate" content="bn_BD">
+    <meta property="og:locale:alternate" content="{{ app(LanguageService::class)->current() == 'bn' ? 'en_US' : 'bn_BD' }}">
     @if(!empty($appSettings['facebook_app_id']))
         <meta property="fb:app_id" content="{{ $appSettings['facebook_app_id'] }}">
     @endif
@@ -62,7 +65,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title', $appSettings['site_name'] ?? 'BroxLab')">
     <meta name="twitter:description" content="{{ $appSettings['meta_description'] ?? 'Welcome to '.($appSettings['site_name'] ?? 'BroxLab') }}">
-    <meta name="twitter:image" content="{{ $appSettings['site_logo'] ?? asset('/assets/images/default-image.png') }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     @if(!empty($appSettings['twitter_handle']))
         <meta name="twitter:creator" content="@{{ $appSettings['twitter_handle'] }}">
     @endif
@@ -71,10 +74,13 @@
     @endif
 
     {{-- Language & Localisation --}}
+    @php
+        $hreflangBase = $canonicalUrl ?? url()->current();
+    @endphp
     <meta name="language" content="{{ app(LanguageService::class)->current() == 'bn' ? 'Bengali' : 'English' }}">
-    <link rel="alternate" hreflang="en" href="{{ $canonicalUrl ?? url()->current() }}">
-    <link rel="alternate" hreflang="bn" href="{{ url()->current() }}" lang="bn">
-    <link rel="alternate" hreflang="x-default" href="{{ $canonicalUrl ?? url()->current() }}">
+    <link rel="alternate" hreflang="en" href="{{ $hreflangBase }}?lang=en">
+    <link rel="alternate" hreflang="bn" href="{{ $hreflangBase }}?lang=bn" lang="bn">
+    <link rel="alternate" hreflang="x-default" href="{{ $hreflangBase }}">
 
     {{-- CSRF + auth --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -115,6 +121,28 @@
 </head>
 
 <body role="application" class="min-h-screen flex flex-col">
+
+    {{-- JSON-LD: WebSite + SearchAction (global, every page) --}}
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type'    => 'WebSite',
+        '@id'      => url('/').'#website',
+        'url'      => url('/'),
+        'name'     => $appSettings['site_name'] ?? 'BroxLab',
+        'description' => $appSettings['meta_description'] ?? '',
+        'inLanguage' => app(\App\Support\I18n\LanguageService::class)->current() === 'bn' ? 'bn' : 'en',
+        'potentialAction' => [
+            '@type' => 'SearchAction',
+            'target' => [
+                '@type' => 'EntryPoint',
+                'urlTemplate' => url('/posts').'?search={search_term_string}',
+                'encodingType' => 'application/x-www-form-urlencoded',
+            ],
+            'query-input' => 'required name=search_term_string',
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 
     {{-- JSON-LD BreadcrumbList --}}
     @if(isset($breadcrumbs) && count($breadcrumbs) > 0)

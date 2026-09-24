@@ -19,14 +19,35 @@
             '@id' => url('/'),
             'name' => $appSettings['site_name'] ?? 'BroxLab',
         ],
-        'datePublished' => now()->toIso8601String(),
         'dateModified' => now()->toIso8601String(),
+    ];
+
+    // Homepage FAQs — visible content below drives the FAQPage schema.
+    $homeFaqItems = [
+        ['q' => 'What is BroxLab?', 'a' => 'BroxLab is a comprehensive platform for mobile device reviews, tech news, specifications, comparisons, tutorials, online tools, and digital services.'],
+        ['q' => 'Is BroxLab free to use?', 'a' => 'Yes. Most content on BroxLab is available free of charge, though some premium services may require registration.'],
+        ['q' => 'How do I find mobile specifications?', 'a' => 'Browse the Mobiles section or use the search bar to find detailed specifications for any smartphone.'],
+        ['q' => 'Can I compare two devices?', 'a' => 'Yes, use our device comparison tool to compare smartphones side by side.'],
+        ['q' => 'Do you offer online calculators and tools?', 'a' => 'Yes, BroxLab provides free online calculators and converters for finance, math, health, and unit conversions.'],
+    ];
+
+    $homeFaqSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(fn ($i) => [
+            '@type' => 'Question',
+            'name' => $i['q'],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $i['a']],
+        ], $homeFaqItems),
     ];
 @endphp
 
 @section('schema')
 <script type="application/ld+json">
 {!! json_encode($pageSchema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+</script>
+<script type="application/ld+json">
+{!! json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 @endsection
 
@@ -1270,6 +1291,37 @@
                 </a>
                 @endforeach
             @endif
+        </div>
+    </div>
+</section>
+
+{{-- ==================== FAQ SECTION ==================== --}}
+<section class="scroll-fade-up py-16" data-scroll-animate aria-labelledby="faq-title">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-12 text-center">
+            <h2 id="faq-title" class="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
+                {{ t('Frequently Asked Questions') }}
+            </h2>
+            <p class="text-balance text-sm text-slate-500">
+                {{ t('Quick answers to common questions about the BroxLab platform.') }}
+            </p>
+        </div>
+
+        <div class="mx-auto max-w-3xl space-y-3">
+            @foreach ($homeFaqItems as $i => $item)
+            @php
+                $isOpen = ($i === 0);
+            @endphp
+            <details{{ $isOpen ? ' open' : '' }} class="group rounded-2xl border border-slate-200 bg-white shadow-sm open:bg-slate-50/60">
+                <summary class="flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-slate-900 outline-none ring-indigo-500 transition-colors hover:bg-slate-50">
+                    <span>{{ t($item['q']) }}</span>
+                    <i class="lucide lucide-chevron-down h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                </summary>
+                <div class="px-6 pb-4 text-sm leading-7 text-slate-600">
+                    {{ t($item['a']) }}
+                </div>
+            </details>
+            @endforeach
         </div>
     </div>
 </section>

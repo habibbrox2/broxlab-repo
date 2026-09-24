@@ -22,19 +22,31 @@
 @php
     $schema = [
         '@context' => 'https://schema.org',
-        '@type' => 'Product',
-        'name' => $mobile['brand_name'].' '.$mobile['model_name'],
+        '@type'    => 'Product',
+        'name'     => $mobile['brand_name'].' '.$mobile['model_name'],
+        'model'    => $mobile['model_name'],
         'description' => 'Complete specifications and information about '.$mobile['brand_name'].' '.$mobile['model_name'].' phone',
-        'brand' => ['@type' => 'Brand', 'name' => $mobile['brand_name']],
-        'image' => $pageImage,
-        'offers' => [
-            '@type' => 'Offer',
-            'availability' => 'https://schema.org/InStock',
-            'priceCurrency' => 'BDT',
+        'brand'    => ['@type' => 'Brand', 'name' => $mobile['brand_name']],
+        'category' => 'Smartphone',
+        'image'    => $pageImage,
+        'offers'   => [
+            '@type'          => 'Offer',
+            'availability'     => 'https://schema.org/'.($mobile['is_official'] ? 'InStock' : 'PreOrder'),
+            'priceCurrency'    => 'BDT',
         ],
     ];
     if ($price !== null) {
         $schema['offers']['price'] = $price;
+    }
+    if (!empty($mobile['release_date'])) {
+        $schema['releaseDate'] = \Illuminate\Support\Carbon::parse($mobile['release_date'])->toDateString();
+    }
+    // Extract color from specs if available (spec_key like 'color' / 'Color')
+    foreach (($mobile['specifications'] ?? []) as $spec) {
+        if (preg_match('/color/i', $spec['spec_key'] ?? '')) {
+            $schema['color'] = $spec['spec_value'] ?? '';
+            break;
+        }
     }
 @endphp
 <script type="application/ld+json">

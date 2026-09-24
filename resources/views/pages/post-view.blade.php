@@ -10,6 +10,7 @@
         '@context' => 'https://schema.org',
         '@type' => 'Article',
         'headline' => $post['title'],
+        'description' => Str::limit(strip_tags((string) ($post['excerpt'] ?: $post['content'])), 160),
         'datePublished' => $post['published_at'] ?? $post['created_at'],
         'dateModified' => $post['updated_at'] ?? $post['created_at'],
         'author' => ['@type' => 'Person', 'name' => $post['author'] ?: ($appSettings['site_name'] ?? 'BroxLab')],
@@ -18,6 +19,12 @@
     ];
     if (! empty($post['image'])) {
         $articleSchema['image'] = $post['image'];
+    }
+    if (! empty($post['categories'])) {
+        $articleSchema['articleSection'] = array_column($post['categories'], 'name');
+    }
+    if (! empty($post['tags'])) {
+        $articleSchema['keywords'] = implode(', ', array_column($post['tags'], 'name'));
     }
 @endphp
 <script type="application/ld+json">

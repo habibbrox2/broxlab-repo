@@ -311,9 +311,17 @@ fi
 ensure_env_secret "JWT_SECRET"
 ensure_env_secret "CSRF_SECRET"
 ensure_env_secret "NODE_SERVICE_API_KEY"
+ensure_env_secret "MCP_API_KEY"
+ensure_env_secret "MCP_WRITE_API_KEY"
 ensure_env_setting "APP_KEY" "base64:$(php -r 'echo base64_encode(random_bytes(32));')"
 ensure_env_setting "APP_ENV" "production"
 ensure_env_setting "APP_DEBUG" "false"
+
+if grep -q '^MCP_ENABLED=true' "$SHARED/.env"; then
+    log_info "MCP server is ENABLED"
+else
+    log_info "MCP server is DISABLED (set MCP_ENABLED=true in .env to activate)"
+fi
 
 # The shared legacy database does not include Laravel's optional cache or sessions tables.
 # Keep existing Redis or other explicit cache backends unchanged.
