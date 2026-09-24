@@ -321,10 +321,11 @@ body.sidebar-collapsed .sidebar-submenu {
    8. SCROLLBAR POLISH
    ============================ */
 
-/* Firefox scrollbar support */
+/* Firefox scrollbar support — thicker and tinted with the indigo accent so
+   the scrollbar is easy to grab and visually matches the admin theme. */
 #adminSidebar {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(203, 213, 225) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: rgb(129 140 248) transparent;   /* indigo-400 */
     scrollbar-gutter: stable;
     /* Prevent scroll chaining: scrolling the sidebar to its limit should
        not propagate to the underlying page. */
@@ -332,35 +333,58 @@ body.sidebar-collapsed .sidebar-submenu {
 }
 
 .dark #adminSidebar {
-    scrollbar-color: rgb(71, 85, 105) transparent;
+    scrollbar-color: rgb(99 102 241) transparent;    /* indigo-500 */
 }
 
-/* Webkit scrollbar */
+/* Webkit scrollbar — 10px wide with a soft pill thumb, subtle track, and
+   clear hover/active feedback for comfortable mouse dragging. */
 #adminSidebar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
 }
 
 #adminSidebar::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgb(241 245 249 / 0.6);              /* slate-100 tint */
+    border-radius: 8px;
+    margin: 4px 2px;
 }
 
 #adminSidebar::-webkit-scrollbar-thumb {
-    background: rgb(203, 213, 225);
-    border-radius: 3px;
+    background: linear-gradient(180deg, rgb(129 140 248), rgb(99 102 241)); /* indigo-400 → 500 */
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;                    /* inset look via transparent border */
     transition: background-color 0.2s ease;
 }
 
 #adminSidebar::-webkit-scrollbar-thumb:hover {
-    background: rgb(148, 163, 184);
+    background: linear-gradient(180deg, rgb(99 102 241), rgb(79 70 229));   /* indigo-500 → 600 */
+    border-width: 1px;                               /* widen slightly on hover */
+}
+
+#adminSidebar::-webkit-scrollbar-thumb:active {
+    background: rgb(79 70 229);                      /* indigo-600 while dragging */
+    border-width: 0;
+}
+
+.dark #adminSidebar::-webkit-scrollbar-track {
+    background: rgb(15 23 42 / 0.6);                 /* slate-950 tint */
 }
 
 .dark #adminSidebar::-webkit-scrollbar-thumb {
-    background: rgb(71, 85, 105);
+    background: linear-gradient(180deg, rgb(99 102 241), rgb(79 70 229));
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
 .dark #adminSidebar::-webkit-scrollbar-thumb:hover {
-    background: rgb(100, 116, 139);
+    background: linear-gradient(180deg, rgb(129 140 248), rgb(99 102 241));
+    border-width: 1px;
+}
+
+.dark #adminSidebar::-webkit-scrollbar-thumb:active {
+    background: rgb(129 140 248);
+    border-width: 0;
 }
 
 /* ============================

@@ -60,6 +60,8 @@ class JobDetailParser
         }
 
         $company = $this->extractField($xpath, [
+            // bdjobstoday: "Organization Information" row holds the org name.
+            '//h1[1]',
             '//*[contains(concat(" ", normalize-space(@class), " "), " company ")]',
             '//*[contains(concat(" ", normalize-space(@class), " "), " employer ")]',
             '//*[@itemprop="hiringOrganization"]',
@@ -80,6 +82,9 @@ class JobDetailParser
         ]);
 
         $deadline = $this->extractDate($xpath, [
+            // bdjobstoday: "Application Deadline: 01 Oct, 2026" inside a span.
+            "//span[contains(text(), 'Application Deadline')]",
+            '//td[contains(text(), "Application Deadline")]',
             '//*[contains(text(), "আবেদনের শেষ তারিখ") or contains(text(), "Application Deadline")]/following::*[1]',
             '//*[contains(text(), "ডেডলাইন") or contains(text(), "Deadline")]/following::*[1]',
             '//*[@itemprop="validThrough"]',
@@ -90,6 +95,9 @@ class JobDetailParser
         ]);
 
         $posted = $this->extractDate($xpath, [
+            // bdjobstoday: "Published On: 18 Sep, 2026" inside a span.
+            "//span[contains(text(), 'Published On')]",
+            '//td[contains(text(), "Published On")]',
             '//*[contains(text(), "প্রকাশিত") or contains(text(), "Posted") or contains(text(), "পোস্টেড")]/following::*[1]',
             '//*[@itemprop="datePosted"]',
             '//*[contains(concat(" ", normalize-space(@class), " "), " posted ")]',
@@ -205,6 +213,16 @@ class JobDetailParser
         $ts = strtotime($value);
         if ($ts > 0) {
             return gmdate('Y-m-d', $ts);
+        }
+
+        // Strip a label prefix ("Published On: 18 Sep, 2026" → "18 Sep, 2026")
+        // and retry — strtotime chokes on the "Label:" prefix.
+        $stripped = preg_replace('/^[^:\d]*:\s*/u', '', $value);
+        if ($stripped !== null && $stripped !== $value) {
+            $ts = strtotime(trim($stripped));
+            if ($ts > 0) {
+                return gmdate('Y-m-d', $ts);
+            }
         }
 
         // Bengali month names.

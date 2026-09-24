@@ -160,6 +160,15 @@ class ScraperRunner
             // extract structured fields (company, location, salary, deadline, etc.).
             $normalized = $this->parseJobItems($raw, $source, $limit);
         } else {
+            // Sitemap discovery only yields URL slugs as titles; when the
+            // slugs look opaque (hash IDs / percent-encoded), fetch each
+            // detail page's real <title> so headlines are meaningful.
+            $needsTitleFetch = ($discovery['strategy'] ?? '') === 'sitemap'
+                && !empty($source['fetch_detail_titles'])
+                && $this->slugsLookOpaque($raw);
+            if ($needsTitleFetch) {
+                $raw = $this->hydrateTitles($raw, $limit);
+            }
             $normalized = $this->normalize($raw, $source);
         }
 
@@ -277,6 +286,84 @@ class ScraperRunner
     }
 
     /**
+     * Detect whether sitemap-derived titles are opaque (hash IDs like
+     * "hhtxm5h4yj" or percent-encoded slugs) rather than readable headlines.
+     *
+     * @param  array<int, array<string, mixed>>  $raw
+     */
+    protected function slugsLookOpaque(array $raw): bool
+    {
+        $checked = 0;
+        $opaque = 0;
+        foreach (array_slice($raw, 0, 5) as $item) {
+            $title = (string) ($item['title'] ?? '');
+            if ($title === '') {
+                continue;
+            }
+            $checked++;
+            // Opaque: single hash-like token or mostly percent-encoding.
+            if (preg_match('/^[a-z0-9]{6,15}$/i', $title)
+                || substr_count($title, '%') >= 6) {
+                $opaque++;
+            }
+        }
+
+        return $checked > 0 && $opaque >= max(1, (int) ceil($checked / 2));
+    }
+
+    /**
+     * Fetch each detail page and replace the slug-derived title with the
+     * page's real headline (<title> or og:title).
+     *
+     * @param  array<int, array<string, mixed>>  $raw
+     * @return array<int, array<string, mixed>>
+     */
+    protected function hydrateTitles(array $raw, int $limit): array
+    {
+        $hydrated = 0;
+        foreach ($raw as $index => $item) {
+            if ($hydrated >= $limit) {
+                break;
+            }
+            $link = (string) ($item['link'] ?? '');
+            if ($link === '') {
+                continue;
+            }
+
+            $response = $this->client->get($link);
+            if (! $response['ok'] || $response['body'] === null) {
+                continue;
+            }
+
+            $title = $this->extractPageTitle($response['body']);
+            if ($title !== '') {
+                $raw[$index]['title'] = $title;
+                $hydrated++;
+            }
+        }
+
+        return $raw;
+    }
+
+    /** Extract a readable headline from a detail page's HTML. */
+    protected function extractPageTitle(string $html): string
+    {
+        if (preg_match('#<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']#i', $html, $m)
+            || preg_match('#<meta[^>]+name=["\']twitter:title["\'][^>]+content=["\']([^"\']+)["\']#i', $html, $m)
+            || preg_match('#<h1[^>]*>(.*?)</h1>#is', $html, $m)
+            || preg_match('#<title[^>]*>(.*?)</title>#is', $html, $m)) {
+            $title = html_entity_decode(trim($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $title = (string) preg_replace('/\s+/u', ' ', $title);
+            // Strip site suffixes from <title> ("... | bdnews24.com").
+            $title = (string) preg_replace('/\s*[\|\-–]\s*[^\|\-–]{2,30}$/', '', $title);
+
+            return trim($title);
+        }
+
+        return '';
+    }
+
+    /**
      * @param  array<string, mixed>  $source
      * @return array{items: array<int, array<string, mixed>>, strategy: string, error: ?string}
      */
@@ -303,21 +390,30 @@ class ScraperRunner
         }
 
         if (in_array($strategy, ['auto', 'sitemap'], true) && $homepage !== '') {
-            $items = $this->sitemaps->latest($homepage, $limit);
+            $items = $this->sitemaps->latest($homepage, $limit, 3, $source);
             if ($items !== []) {
                 return ['items' => $items, 'strategy' => 'sitemap', 'error' => null];
             }
         }
 
         if (in_array($strategy, ['auto', 'html'], true) && $homepage !== '') {
-            $response = $this->client->get($homepage);
-            if ($response['ok'] && $response['body'] !== null) {
-                $items = $this->html->extract($response['body'], $homepage, $source);
-                if ($items !== []) {
-                    return ['items' => array_slice($items, 0, $limit), 'strategy' => 'html', 'error' => null];
+            // Some sources keep their listings on dedicated pages rather than
+            // the homepage (e.g. bdjobstoday's category pages).
+            $listingUrls = [$homepage];
+            foreach ((array) ($source['listing_paths'] ?? []) as $lp) {
+                $listingUrls[] = $homepage . '/' . ltrim((string) $lp, '/');
+            }
+
+            foreach ($listingUrls as $listingUrl) {
+                $response = $this->client->get($listingUrl);
+                if ($response['ok'] && $response['body'] !== null) {
+                    $items = $this->html->extract($response['body'], $listingUrl, $source);
+                    if ($items !== []) {
+                        return ['items' => array_slice($items, 0, $limit), 'strategy' => 'html', 'error' => null];
+                    }
+                } else {
+                    $error ??= $response['error'];
                 }
-            } else {
-                $error ??= $response['error'];
             }
         }
 

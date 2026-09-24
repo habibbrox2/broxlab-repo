@@ -39,6 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/medicines/fetch-page',
             'api/medicines/save-data',
             'api/translate',
+            // Remote MCP: stateless bearer-token auth (no session/cookie),
+            // CSRF tokens cannot exist for these clients. See docs/mcp/.
+            'mcp',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

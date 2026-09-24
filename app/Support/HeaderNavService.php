@@ -115,11 +115,11 @@ class HeaderNavService
                     && array_key_exists('enabled', $override)
                     && $override['enabled'] === false
                 ) {
-                    continue; // hidden
+                    continue; // hidden / removed
                 }
 
                 $merged = $this->mergeItem($item, $override);
-                $out[] = $merged;
+                $out[] = $this->filterRenderable($merged);
             }
 
             // Append any stored items that don't match a known default key
@@ -180,6 +180,19 @@ class HeaderNavService
         Cache::forget(self::CACHE_KEY);
     }
 
+    /**
+     * Drop every persisted override so the built-in defaults render again.
+     */
+    public function reset(): void
+    {
+        DB::table('app_settings')->where('id', 1)->update([
+            'header_nav_items' => null,
+            'updated_at' => now(),
+        ]);
+
+        Cache::forget(self::CACHE_KEY);
+    }
+
     public function forget(): void
     {
         Cache::forget(self::CACHE_KEY);
@@ -193,7 +206,7 @@ class HeaderNavService
             return $item;
         }
 
-        $item = array_merge($item, array_filter($override, static fn ($v, $k) => ! in_array($k, ['submenu', 'enabled'], true), ARRAY_FILTER_USE_BOTH));
+        $item = array_merge($item, array_filter($override, static fn ($v, $k) => ! in_array($k, ['submenu', 'enabled', 'removed'], true), ARRAY_FILTER_USE_BOTH));
 
         $order = $override['order'] ?? $this->defaultOrder($item);
         $item['order'] = (int) $order;
@@ -201,17 +214,40 @@ class HeaderNavService
 
         if (array_key_exists('submenu', $override) && is_array($override['submenu'])) {
             $defaults = $item['submenu'] ?? [];
-            $newSub = [];
-            foreach ($defaults as $sub) {
-                $subOverride = $override['submenu'][$sub['key']] ?? null;
-                if (is_array($subOverride) && ($subOverride['enabled'] ?? true) === false) {
+
+            // Stored submenus are a list of entries carrying a `key` field.
+            // Reindex by that key so an explicit override list is the source
+            // of truth: unlisted default entries are treated as removed and
+            // custom entries are matched/merged correctly.
+            $subOverrides = [];
+            foreach ($override['submenu'] as $subOverride) {
+                if (! is_array($subOverride)) {
                     continue;
                 }
-                $sub = array_merge($sub, array_filter($subOverride ?? [], static fn ($v, $k) => $k !== 'enabled', ARRAY_FILTER_USE_BOTH));
+                $subOverrides[(string) ($subOverride['key'] ?? '')] = $subOverride;
+            }
+
+            $newSub = [];
+            foreach ($defaults as $sub) {
+                $subOverride = $subOverrides[(string) $sub['key']] ?? null;
+                if ($subOverride === null) {
+                    continue; // not in the posted list → removed by admin
+                }
+                $sub = array_merge($sub, array_filter($subOverride, static fn ($v, $k) => $k !== 'enabled', ARRAY_FILTER_USE_BOTH));
                 $sub['order'] = (int) ($subOverride['order'] ?? ($sub['order'] ?? 0));
                 $sub['enabled'] = $subOverride['enabled'] ?? true;
                 $newSub[] = $sub;
             }
+
+            // Append custom submenu entries (keys with no default twin).
+            $defaultSubKeys = array_map(static fn ($s) => (string) $s['key'], $defaults);
+            foreach ($subOverrides as $subKey => $subOverride) {
+                if ($subKey === '' || in_array((string) $subKey, $defaultSubKeys, true)) {
+                    continue;
+                }
+                $newSub[] = $this->normalizeSubItem($subOverride, $subKey);
+            }
+
             usort($newSub, fn ($a, $b) => ($a['order'] <=> $b['order']));
             $item['submenu'] = $newSub;
         }
@@ -231,13 +267,46 @@ class HeaderNavService
         $item['order'] = (int) ($item['order'] ?? 0);
 
         if (isset($item['submenu']) && is_array($item['submenu'])) {
-            $sub = array_values(array_map(function ($s) {
-                $s['order'] = (int) ($s['order'] ?? 0);
-                $s['enabled'] = (bool) ($s['enabled'] ?? true);
-                return $s;
-            }, $item['submenu']));
+            $sub = [];
+            foreach (array_values($item['submenu']) as $i => $s) {
+                if (! is_array($s)) {
+                    continue;
+                }
+                // Persist disabled entries too: their absence must mean
+                // "removed" on merge, so they cannot be dropped here.
+                $sub[] = $this->normalizeSubItem($s, $s['key'] ?? $i);
+            }
             usort($sub, fn ($a, $b) => ($a['order'] <=> $b['order']));
-            $item['submenu'] = array_values(array_filter($sub, fn ($s) => $s['enabled']));
+            $item['submenu'] = $sub;
+        }
+
+        return $item;
+    }
+
+    /** Normalize a single submenu entry (default-merged or custom). */
+    protected function normalizeSubItem(array $sub, string|int $key): array
+    {
+        $sub['key'] = $key;
+        $sub['label'] = (string) ($sub['label'] ?? '');
+        $sub['url'] = (string) ($sub['url'] ?? '/');
+        $sub['icon'] = (string) ($sub['icon'] ?? '');
+        $sub['order'] = (int) ($sub['order'] ?? 0);
+        $sub['enabled'] = (bool) ($sub['enabled'] ?? true);
+
+        return $sub;
+    }
+
+    /**
+     * Render-time filter: drop disabled submenu entries. Kept separate from
+     * normalize/save so hidden entries persist (their absence means removed).
+     */
+    protected function filterRenderable(array $item): array
+    {
+        if (isset($item['submenu']) && is_array($item['submenu'])) {
+            $item['submenu'] = array_values(array_filter(
+                $item['submenu'],
+                static fn ($s) => ! is_array($s) || ($s['enabled'] ?? true) !== false
+            ));
         }
 
         return $item;

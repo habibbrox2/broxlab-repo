@@ -125,11 +125,17 @@ class MobileDetailParser
     // ── Site-specific parsers ─────────────────────────────────────────
 
     /**
-     * MobileDokan (mobiledokan.co) — WordPress-based.
+     * MobileDokan (mobiledokan.co) — WordPress + APS (Advanced Product Specs)
+     * plugin.
      *
-     * Price is typically in a span with class "price" or "amount".
-     * Specs are in a table with class "shop_attributes" or "specifications".
-     * Images are in a .woocommerce-main-image or .slick-list gallery.
+     * Verified live markup (2026-09):
+     *   - Title: <h1 class="...">Xiaomi Redmi Note 13 Pro</h1>
+     *   - Featured prices: div.aps-feature-price-item > span.aps-feature-price-bubble
+     *     ("Official"/"Unofficial") + span.aps-feature-price ("৳21,000")
+     *   - Full price cards: ul.aps-product-price-card > li.aps-price-card with
+     *     .aps-price-title (variant), .aps-price-amount (৳), .aps-price-right (status)
+     *   - Specs: table.aps-specs-table with <tr><td>Key</td><td>Value</td></tr>
+     *   - Images: .aps-product-image / .aps-gallery / wp-post-image
      */
     protected function parseMobileDokan(DOMXPath $xpath): ?array
     {
@@ -138,14 +144,66 @@ class MobileDetailParser
             $title = $this->text($xpath, '//h1');
         }
 
-        [$official, $unofficial, $rawPriceText] = $this->extractPrices($xpath);
+        // ── Prices from verified APS markup ──
+        $official = 0.0;
+        $unofficial = 0.0;
+
+        // Featured price list (top of page). Bubble labels observed live:
+        // "Official", "Unofficial", "Expected", "Rumored", "Coming soon".
+        $featured = $xpath->query('//div[contains(@class,"aps-feature-price-item")]');
+        if ($featured !== false) {
+            foreach ($featured as $node) {
+                // Element-level queries (not //text()). Note: the amount span
+                // class "aps-feature-price" is a substring of
+                // "aps-feature-price-bubble", so exclude the bubble explicitly.
+                $bubble = $this->text($xpath, './/span[contains(@class,"aps-feature-price-bubble")]', $node);
+                $amount = $this->text($xpath, './/span[contains(@class,"aps-feature-price") and not(contains(@class,"bubble"))]', $node);
+                $price = $this->parsePrice($amount);
+                if ($price <= 0.0) {
+                    continue;
+                }
+                if (stripos($bubble, 'unofficial') !== false) {
+                    $unofficial = $unofficial > 0 ? min($unofficial, $price) : $price;
+                } elseif (stripos($bubble, 'official') !== false) {
+                    $official = $official > 0 ? min($official, $price) : $price;
+                } else {
+                    // Expected/Rumored/etc. are non-official market prices.
+                    $unofficial = $unofficial > 0 ? min($unofficial, $price) : $price;
+                }
+            }
+        }
+
+        // Full price-card list ("View Prices" panel) — authoritative when present.
+        $cards = $xpath->query('//ul[contains(@class,"aps-product-price-card")]//li[contains(@class,"aps-price-card")]');
+        if ($cards !== false) {
+            foreach ($cards as $node) {
+                $statusText = $this->text($xpath, './/div[contains(@class,"aps-price-right")]', $node);
+                $amount = $this->text($xpath, './/div[contains(@class,"aps-price-amount")]', $node);
+                $price = $this->parsePrice($amount);
+                if ($price <= 0.0) {
+                    continue;
+                }
+                if (stripos($statusText, 'unofficial') !== false) {
+                    $unofficial = $unofficial > 0 ? min($unofficial, $price) : $price;
+                } elseif (stripos($statusText, 'official') !== false) {
+                    $official = $official > 0 ? min($official, $price) : $price;
+                }
+            }
+        }
+
+        // Fallback to generic extraction when APS markup is absent.
+        if ($official === 0.0 && $unofficial === 0.0) {
+            [$official, $unofficial] = $this->extractPrices($xpath);
+        }
+
         $isOfficial = $this->extractIsOfficial($xpath);
         $status = $this->normalizeStatus($isOfficial);
         $releaseDate = $this->extractReleaseDate($xpath);
         $specs = $this->extractSpecTable($xpath);
 
-        // Images — MobileDokan uses WooCommerce gallery or a main product image.
-        $images = $this->extractImages($xpath, '//div[contains(@class,"woocommerce-main-image")]//img | //div[contains(@class,"images")]//img | //div[contains(@class,"gallery")]//img/@src | //img[contains(@class,"wp-post-image")][@src]');
+        // Images — APS gallery zoom images carry the real product photo;
+        // wp-post-image imgs here are lazy SVG placeholders.
+        $images = $this->extractImages($xpath, '//img[contains(@class,"aps-image-zoom")][@src] | //div[contains(@class,"aps-product-image")]//img[@src] | //div[contains(@class,"aps-gallery")]//img[@src] | //div[contains(@class,"images")]//img[@src] | //div[contains(@class,"gallery")]//img[@src] | //img[contains(@class,"wp-post-image")][@src][not(contains(@src,"data:"))]');
 
         return $this->buildItem($title, $official, $unofficial, $isOfficial, $status, $releaseDate, $specs, $images);
     }
@@ -172,42 +230,104 @@ class MobileDetailParser
     }
 
     /**
-     * MobileBD (mobilebd.co) — WordPress-based.
-     * Similar to MobileDokan but with slightly different class names.
+     * MobileBD (mobilebd.co) — custom WordPress theme.
+     *
+     * Verified live markup (2026-09):
+     *   - Title: <h1>HTC Desire 20 Pro</h1>
+     *   - Price: span.mobile-rd-price.mobile-price-value ("৳39,990"),
+     *     and summary tables with "Price TK. 26,000 (Expected)"
+     *   - Specs: table.mobile-specs-table with <tr><td>Key</td><td>Value</td></tr>
      */
     protected function parseMobileBd(DOMXPath $xpath): ?array
     {
         $title = $this->text($xpath, '//h1[contains(@class,"product_title") or contains(@class,"entry-title")]//text() | //h1[@class="entry-title"]');
-        [$official, $unofficial] = $this->extractPrices($xpath);
-        $isOfficial = $this->extractIsOfficial($xpath);
+        if ($title === '') {
+            $title = $this->text($xpath, '//h1');
+        }
+
+        $official = 0.0;
+        $unofficial = 0.0;
+
+        // Primary price lives in the summary table (class has-fixed-layout):
+        //   "Price TK. 26,000 (Expected)" — Expected/Upcoming/Rumored are
+        //   unofficial market prices. The mobile-rd-price spans belong to the
+        //   related-products widget and must be ignored.
+        $priceRow = $this->text($xpath, "//table[contains(@class,'has-fixed-layout')]//tr[contains(translate(.,'PRICE','price'),'price')][1]");
+        $primary = $this->parsePrice($priceRow);
+        $isExpected = stripos($priceRow, 'expected') !== false
+            || stripos($priceRow, 'upcoming') !== false
+            || stripos($priceRow, 'rumored') !== false
+            || stripos($priceRow, 'coming soon') !== false;
+
+        if ($primary > 0.0) {
+            if ($isExpected) {
+                $unofficial = $primary;
+            } else {
+                $official = $primary;
+            }
+        }
+
+        // Fallback / secondary: generic price extraction.
+        if ($official === 0.0 && $unofficial === 0.0) {
+            [$official, $unofficial] = $this->extractPrices($xpath);
+        }
+
+        $isOfficial = $official > 0 ? 1 : ($unofficial > 0 ? 0 : null);
         $status = $this->normalizeStatus($isOfficial);
         $releaseDate = $this->extractReleaseDate($xpath);
         $specs = $this->extractSpecTable($xpath);
 
-        $images = $this->extractImages($xpath, '//div[contains(@class,"product-image")]//img | //div[contains(@class,"images")]//img | //img[contains(@class,"wp-post-image")][@src] | //div[contains(@class,"gallery")]//img');
+        $images = $this->extractImages($xpath, '//div[contains(@class,"product-image")]//img | //div[contains(@class,"mobile-image")]//img | //img[contains(@class,"wp-post-image")][@src] | //div[contains(@class,"gallery")]//img');
 
         return $this->buildItem($title, $official, $unofficial, $isOfficial, $status, $releaseDate, $specs, $images);
     }
 
     /**
-     * GSMArena BD (gsmarena.com.bd) — GSMArena-style layout.
+     * GSMArena BD (gsmarena.com.bd) — custom layout.
      *
-     * Price in a span with class "price" or "amount".
-     * Specs in tables with class "prices" and "spec-table" or article-body
-     * with spec divs.
-     * Images in a #spec__pics or .phone-gallery container.
+     * Verified live markup (2026-09):
+     *   - Title: <h1>Xiaomi Redmi 17 5G</h1>
+     *   - Featured price: span.product_spec_price ("৳23,000")
+     *   - Variant prices: div.mobile_price with "BDT 21,999.00 (Official)" /
+     *     "(Expected)" / "(Rumored)" labels
+     *   - Specs/images: GSMArena-style tables (td.ttl / td.nfo) not present;
+     *     uses spec tables similar to MobileBD.
      */
     protected function parseGsmarenaBd(DOMXPath $xpath): ?array
     {
         $title = $this->text($xpath, '//h1[contains(@class,"specs-phone-name")]//text() | //div[contains(@class,"model")]//a | //h1');
 
-        [$official, $unofficial] = $this->extractPrices($xpath);
-        $isOfficial = $this->extractIsOfficial($xpath);
+        $official = 0.0;
+        $unofficial = 0.0;
+
+        // Variant price blocks with explicit status labels.
+        $blocks = $xpath->query('//div[contains(@class,"mobile_price")]');
+        if ($blocks !== false) {
+            foreach ($blocks as $node) {
+                $t = trim((string) $node->textContent);
+                $price = $this->parsePrice($t);
+                if ($price <= 0.0) {
+                    continue;
+                }
+                if (stripos($t, 'official') !== false) {
+                    $official = $official > 0 ? min($official, $price) : $price;
+                } else {
+                    $unofficial = $unofficial > 0 ? min($unofficial, $price) : $price;
+                }
+            }
+        }
+
+        // Fallback: featured price span.
+        if ($official === 0.0 && $unofficial === 0.0) {
+            [$official, $unofficial] = $this->extractPrices($xpath);
+        }
+
+        $isOfficial = $official > 0 ? 1 : ($unofficial > 0 ? 0 : $this->extractIsOfficial($xpath));
         $status = $this->normalizeStatus($isOfficial);
         $releaseDate = $this->extractReleaseDate($xpath);
         $specs = $this->extractSpecTable($xpath) ?: $this->extractGsmarenaSpecs($xpath);
 
-        $images = $this->extractImages($xpath, '//div[contains(@id,"spec__pics")]//img | //div[contains(@class,"gallery")]//img | //div[contains(@class,"phone-gallery")]//img | //div[contains(@class,"phone-pics")]//img');
+        $images = $this->extractImages($xpath, '//div[contains(@id,"spec__pics")]//img | //div[contains(@class,"gallery")]//img | //div[contains(@class,"phone-gallery")]//img | //div[contains(@class,"phone-pics")]//img | //div[contains(@class,"product-image")]//img');
 
         return $this->buildItem($title, $official, $unofficial, $isOfficial, $status, $releaseDate, $specs, $images);
     }
@@ -380,7 +500,7 @@ class MobileDetailParser
     protected function extractSpecTable(DOMXPath $xpath): array
     {
         $specs = [];
-        $rows = $xpath->query('//table[contains(@class,"spec")]//tr | //table[contains(@class,"shop_attributes")]//tr | //table[contains(@class,"specs")]//tr | //table[contains(@class,"product")]//tr');
+        $rows = $xpath->query('//table[contains(@class,"spec")]//tr | //table[contains(@class,"shop_attributes")]//tr | //table[contains(@class,"specs")]//tr | //table[contains(@class,"aps-specs-table")]//tr | //table[contains(@class,"mobile-specs-table")]//tr | //table[contains(@class,"product")]//tr');
 
         if ($rows === false) {
             return [];
@@ -583,12 +703,19 @@ class MobileDetailParser
             return null;
         }
 
-        // If we only got one price, it's the official one.
-        if ($unofficialPrice > 0 && $officialPrice === 0.0) {
+        // If we only got one price, classify it by status rather than
+        // assuming it's official (Expected/Rumored prices are unofficial).
+        if ($unofficialPrice > 0 && $officialPrice === 0.0 && $status === 'official') {
             $officialPrice = $unofficialPrice;
+            $unofficialPrice = 0.0;
         }
 
-        // Determine is_official: if unspecified, default based on status.
+        // Determine is_official from where the price was actually found.
+        if ($officialPrice > 0) {
+            $isOfficial = 1;
+        } elseif ($unofficialPrice > 0) {
+            $isOfficial = 0;
+        }
         $isOfficial = $isOfficial ?? ($status === 'official' ? 1 : 0);
 
         // Split brand / model from the title if not already set.
@@ -686,11 +813,14 @@ class MobileDetailParser
     }
 
     /**
-     * Get the first text node matching an XPath expression.
+     * Get the first text matching an XPath expression, optionally relative
+     * to a context node.
      */
-    protected function text(DOMXPath $xpath, string $expression): string
+    protected function text(DOMXPath $xpath, string $expression, ?\DOMNode $contextNode = null): string
     {
-        $nodes = $xpath->query($expression);
+        $nodes = $contextNode !== null
+            ? $xpath->query($expression, $contextNode)
+            : $xpath->query($expression);
         if ($nodes === false || $nodes->length === 0) {
             return '';
         }

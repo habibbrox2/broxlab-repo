@@ -93,43 +93,60 @@ return [
             'name' => 'bdnews24 Bangla (বাংলা)',
             'type' => 'news',
             'homepage' => 'https://bangla.bdnews24.com',
-            'feed' => 'https://bangla.bdnews24.com/rss',
+            'feed' => null,
             'lang' => 'bn',
-            'strategy' => 'auto',
+            'strategy' => 'sitemap',
+            // Article slugs are opaque hash IDs — fetch each detail page for
+            // the real headline.
+            'fetch_detail_titles' => true,
             'enabled' => true,
+            // No RSS feed; the sitemap index descends into sitemap-daily-*.xml
+            // which lists the latest articles with lastmod timestamps.
         ],
         [
             'key' => 'dhakapost',
             'name' => 'Dhaka Post (ঢাকা পোস্ট)',
             'type' => 'news',
             'homepage' => 'https://www.dhakapost.com',
-            'feed' => 'https://www.dhakapost.com/rss',
+            'feed' => null,
             'lang' => 'bn',
-            'strategy' => 'auto',
+            'strategy' => 'html',
+            // Article URLs only — excludes /topic/ hubs and category pages.
+            'link_pattern' => '#/(national|health|international|sports|entertainment|economics|tech|lifestyle|politics|education)/\d+($|\?)#i',
             'enabled' => true,
+            // RSS + sitemap are Cloudflare-gated; homepage HTML works and
+            // article URLs follow /<section>/<id>.
         ],
         [
             'key' => 'jagonews24',
             'name' => 'Jago News 24 (জাগো নিউজ ২৪)',
             'type' => 'news',
             'homepage' => 'https://www.jagonews24.com',
-            'feed' => 'https://www.jagonews24.com/rss',
+            'feed' => null,
             'lang' => 'bn',
             'strategy' => 'auto',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Cloudflare bot-challenge blocks all automated access (sitemap, feed and HTML).',
         ],
         [
             'key' => 'banglatribune',
             'name' => 'Bangla Tribune (বাংলা ট্রিবিউন)',
             'type' => 'news',
             'homepage' => 'https://www.banglatribune.com',
-            'feed' => 'https://www.banglatribune.com/rss',
+            'feed' => null,
             'lang' => 'bn',
-            'strategy' => 'auto',
+            'strategy' => 'sitemap',
+            'sitemap_path' => 'news-sitemap.xml',
+            // Slugs are percent-encoded Bengali — decode them for titles.
+            'fetch_detail_titles' => true,
             'enabled' => true,
+            // news-sitemap.xml lists the newest ~400 articles with timestamps.
         ],
 
         // ---------- 2. Jobs ----------
+        // Note: bdjobs.com and bdjobstoday.com render job listings through
+        // Angular/JS (no job links in static HTML), so they are not usable
+        // without a headless browser. Verified-working sources below.
         [
             'key' => 'bdjobs',
             'name' => 'BDJobs.com',
@@ -139,7 +156,8 @@ return [
             'lang' => 'en',
             'strategy' => 'html',
             'link_pattern' => '/(job|jobs|career)/i',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Angular SPA — job links are rendered client-side; static HTML has none.',
         ],
         [
             'key' => 'chakri',
@@ -150,7 +168,8 @@ return [
             'lang' => 'en',
             'strategy' => 'html',
             'link_pattern' => '/(job|jobs|career)/i',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Domain no longer serves a jobs site (16-byte stub response).',
         ],
         [
             'key' => 'bpsc',
@@ -173,7 +192,8 @@ return [
             'lang' => 'en',
             'strategy' => 'sitemap',
             'parser' => 'jobdetail',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Domain unreachable (connection failure).',
         ],
         [
             'key' => 'bongobdjobs',
@@ -185,7 +205,8 @@ return [
             'strategy' => 'html',
             'parser' => 'jobdetail',
             'link_pattern' => '/(job|jobs|career|vacancy)/i',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Domain unreachable (connection failure).',
         ],
         [
             'key' => 'workfulldb',
@@ -197,7 +218,8 @@ return [
             'strategy' => 'html',
             'parser' => 'jobdetail',
             'link_pattern' => '/(job|jobs|career|vacancy)/i',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Domain unreachable (connection failure).',
         ],
         [
             'key' => 'jobstationbd',
@@ -209,7 +231,30 @@ return [
             'strategy' => 'html',
             'parser' => 'jobdetail',
             'link_pattern' => '/(job|jobs|career|vacancy)/i',
+            'enabled' => false,
+            'note' => 'Domain unreachable (connection failure).',
+        ],
+        [
+            'key' => 'ejobsresults',
+            'name' => 'EJobsResults (ইজবস রেজাল্টস)',
+            'type' => 'jobs',
+            'homepage' => 'https://www.ejobsresults.com',
+            'feed' => 'https://www.ejobsresults.com/feed',
+            'lang' => 'en',
+            'strategy' => 'feed',
             'enabled' => true,
+            // RSS feed verified: 10 items, fresh (same-day pubDates).
+        ],
+        [
+            'key' => 'jobstestbd',
+            'name' => 'Jobs Test BD (জবস টেস্ট বিডি)',
+            'type' => 'jobs',
+            'homepage' => 'https://jobstestbd.com',
+            'feed' => 'https://jobstestbd.com/feed/',
+            'lang' => 'bn',
+            'strategy' => 'feed',
+            'enabled' => true,
+            // RSS feed verified: 12 items, fresh (same-day pubDates).
         ],
         [
             'key' => 'prothomalo_jobs',
@@ -220,16 +265,33 @@ return [
             'lang' => 'bn',
             'strategy' => 'auto',
             'parser' => 'feed',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => '/career/feed returns HTTP 404 — no working jobs feed.',
+        ],
+        [
+            'key' => 'chakrikhobor',
+            'name' => 'Chakri Khobor (চাকরি খবর)',
+            'type' => 'jobs',
+            'homepage' => 'https://www.chakrikhobor.com',
+            'feed' => null,
+            'lang' => 'bn',
+            'strategy' => 'html',
+            'link_pattern' => '#/\d{4}/\d{2}/#i',
+            'enabled' => false,
+            'note' => 'Homepage returns HTTP 415 for bots.',
         ],
         [
             'key' => 'bdjobstoday',
             'name' => 'BD Jobs Today',
             'type' => 'jobs',
             'homepage' => 'https://bdjobstoday.com',
-            'feed' => 'https://bdjobstoday.com/feed',
+            'feed' => null,
             'lang' => 'bn',
-            'strategy' => 'auto',
+            'strategy' => 'html',
+            'parser' => 'jobdetail',
+            // Category pages list job_details.php?id=NNN links in static HTML.
+            'listing_paths' => ['jobsbycategory.php?cat=2', 'jobsbycategory.php?cat=3', 'govtjobs.php'],
+            'link_pattern' => '#job_details\.php\?id=\d+#i',
             'enabled' => true,
         ],
         [
@@ -263,37 +325,42 @@ return [
             'feed' => 'https://www.techworldbd.com/feed',
             'lang' => 'en',
             'strategy' => 'auto',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Host serves an anti-bot JavaScript challenge page on every path.',
         ],
         [
             'key' => 'prothomalo_tech',
             'name' => 'Prothom Alo Tech',
             'type' => 'tech',
             'homepage' => 'https://www.prothomalo.com/collection/technology',
-            'feed' => 'https://www.prothomalo.com/collection/technology/feed',
+            'feed' => null,
             'lang' => 'bn',
-            'strategy' => 'auto',
+            'strategy' => 'html',
+            'link_pattern' => '#prothomalo\.com/(technology|tech)/[a-z0-9]+#i',
             'enabled' => true,
+            // /collection/technology/feed returns empty; scrape the HTML listing.
         ],
         [
             'key' => 'dhakatribune_tech',
             'name' => 'Dhaka Tribune — Tech',
             'type' => 'tech',
             'homepage' => 'https://www.dhakatribune.com/technology',
-            'feed' => 'https://www.dhakatribune.com/feed',
+            'feed' => null,
             'lang' => 'en',
             'strategy' => 'auto',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Feed endpoint returns empty/error responses.',
         ],
         [
             'key' => 'bdnews24_tech',
             'name' => 'bdnews24 — Technology',
             'type' => 'tech',
             'homepage' => 'https://bdnews24.com/technology',
-            'feed' => 'https://bdnews24.com/technology/rss',
+            'feed' => null,
             'lang' => 'en',
-            'strategy' => 'auto',
-            'enabled' => true,
+            'strategy' => 'sitemap',
+            'enabled' => false,
+            'note' => 'Section RSS returns empty; English sitemap only covers static pages. Revisit with HTML listing.',
         ],
 
         // ---------- 4. Mobile ----------
@@ -305,6 +372,9 @@ return [
             'feed' => null,
             'lang' => 'bn',
             'strategy' => 'sitemap',
+            // Product pages live in the aps-products sitemaps; post sitemaps
+            // are old blog articles.
+            'sitemap_path' => 'aps-products-sitemap.xml',
             'detail_pattern' => '/product/{slug}/i',
             'parser' => 'mobiledokan',
             'enabled' => true,
@@ -319,7 +389,8 @@ return [
             'strategy' => 'sitemap',
             'detail_pattern' => '/phone/{slug}/i',
             'parser' => 'muthophone',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Sitemap returns empty/404 and product listing is JS-rendered; no static discovery path.',
         ],
         [
             'key' => 'mobilebd',
@@ -329,7 +400,10 @@ return [
             'feed' => null,
             'lang' => 'bn',
             'strategy' => 'sitemap',
-            'detail_pattern' => '/{slug}/i',
+            // Product pages live under /phone/{slug}/ in the
+            // mobile-products sitemap; filter to those only.
+            'sitemap_url_filter' => '#/phone/.+#i',
+            'detail_pattern' => '/phone/{slug}/i',
             'parser' => 'mobilebd',
             'enabled' => true,
         ],
@@ -340,10 +414,14 @@ return [
             'homepage' => 'https://www.gsmarena.com.bd',
             'feed' => null,
             'lang' => 'en',
-            'strategy' => 'sitemap',
-            'detail_pattern' => '/{brand}/{slug}-bd{.*}/i',
+            // Phone detail URLs are /{brand}-{model}/ (single segment, no
+            // brand/news/compare prefix) — the sitemap only lists section
+            // pages, so discover them from brand listing pages instead.
+            'strategy' => 'html',
+            'link_pattern' => '#^/[a-z0-9-]+/$#i',
             'parser' => 'gsmarena_bd',
-            'enabled' => true,
+            'enabled' => false,
+            'note' => 'Detail URLs are single-segment slugs; needs brand-page crawl support (homepage links point to sections). Re-enable after adding listing_paths per brand.',
         ],
     ],
 ];

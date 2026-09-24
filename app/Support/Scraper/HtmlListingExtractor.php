@@ -84,7 +84,20 @@ class HtmlListingExtractor
                 continue;
             }
 
-            if (! $this->looksLikeArticlePath($path, $pattern)) {
+            // Match patterns against path + query so query-string detail
+            // links (job_details.php?id=…) work too.
+            $query = (string) (parse_url($href, PHP_URL_QUERY) ?? '');
+            $matchTarget = $query !== '' ? $path . '?' . $query : $path;
+
+            // When an explicit link_pattern is configured it is the
+            // authoritative filter — generic slug heuristics must not
+            // re-admit links the pattern already rejected (e.g. category
+            // pages next to job_details.php?id=… links).
+            if ($pattern !== null && $pattern !== '') {
+                if (@preg_match($pattern, $matchTarget) !== 1) {
+                    continue;
+                }
+            } elseif (! $this->looksLikeArticlePath($matchTarget, null)) {
                 continue;
             }
 

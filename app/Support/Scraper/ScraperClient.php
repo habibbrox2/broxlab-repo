@@ -126,6 +126,53 @@ class ScraperClient
         $path = $parts['path'] ?? '/';
         $dir = rtrim(substr($path, 0, (int) strrpos($path, '/')), '/');
 
-        return "{$scheme}://{$host}{$port}{$dir}/" . ltrim($href, '/');
+        $resolved = "{$scheme}://{$host}{$port}{$dir}/" . ltrim($href, '/');
+
+        // Collapse relative segments (/../ and /./) that pages like
+        // bdjobstoday emit in hrefs ("../job_details.php?id=…").
+        $p = parse_url($resolved);
+        if ($p !== false && isset($p['path']) && str_contains($p['path'], '/../') || str_starts_with($p['path'] ?? '', '/../')) {
+            $out = [];
+            foreach (explode('/', $p['path']) as $seg) {
+                if ($seg === '..') {
+                    array_pop($out);
+                } elseif ($seg !== '.') {
+                    $out[] = $seg;
+                }
+            }
+            $p['path'] = implode('/', $out);
+            if (! str_starts_with((string) $p['path'], '/')) {
+                $p['path'] = '/' . $p['path'];
+            }
+            $resolved = (string) $this->buildUrl($p);
+        }
+
+        return $resolved;
+    }
+
+    /** Rebuild a URL string from its parse_url parts. */
+    protected function buildUrl(array $parts): string
+    {
+        $url = ($parts['scheme'] ?? 'https') . '://';
+        if (isset($parts['user'])) {
+            $url .= $parts['user'];
+            if (isset($parts['pass'])) {
+                $url .= ':' . $parts['pass'];
+            }
+            $url .= '@';
+        }
+        $url .= $parts['host'] ?? '';
+        if (isset($parts['port'])) {
+            $url .= ':' . $parts['port'];
+        }
+        $url .= $parts['path'] ?? '/';
+        if (isset($parts['query'])) {
+            $url .= '?' . $parts['query'];
+        }
+        if (isset($parts['fragment'])) {
+            $url .= '#' . $parts['fragment'];
+        }
+
+        return $url;
     }
 }

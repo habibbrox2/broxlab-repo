@@ -26,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(AppSettings::class);
 
+        // HeaderNavService resolves the public header menu — register as a
+        // singleton so the default list is only materialised once per request
+        // (the admin nav controller and the view composer both use it).
+        $this->app->singleton(HeaderNavService::class);
+
         // i18n: singletons so the active language is detected once per request
         // (t() is called 800+ times per page) and dictionaries are read once.
         $this->app->singleton(LanguageService::class);
@@ -113,6 +118,10 @@ class AppServiceProvider extends ServiceProvider
             $headerNav = $this->app->make(HeaderNavService::class);
             $view->with('publicNavItems', $headerNav->configured());
             $view->with('headerNavDefaults', $headerNav->defaults());
+
+            // The logo link target — defaults to the app root, overridable via
+            // the app_settings row (e.g. when the site is served from a sub-path).
+            $view->with('studioHeaderUrl', $appSettings['site_url'] ?? config('app.url', '/'));
         });
     }
 

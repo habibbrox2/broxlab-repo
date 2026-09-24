@@ -76,28 +76,21 @@
       <button type="button"
               id="mobileMenuToggle"
               aria-controls="broxMainNav"
-              x-bind:aria-expanded="open"
+              aria-expanded="false"
               aria-label="{{ t('Toggle navigation menu') }}"
-              x-data="mobileMenu()"
-              @click="toggle()"
               class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-indigo-500/30 bg-[rgb(var(--surface-soft))] text-indigo-600 hover:bg-[rgb(var(--surface))] hover:text-indigo-500 dark:hover:bg-slate-700/60 dark:hover:text-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-indigo-500/20">
-        <svg data-icon-hamburger x-show="!open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon-hamburger class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <svg data-icon-close x-show="open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon-close class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
 
       {{-- MAIN NAV MENU --}}
       <div id="broxMainNav"
-           x-data="mobileMenu()"
-           x-show="open"
-           @click.outside="close()"
-           @keydown.escape.window="close()"
-           x-effect="document.body.style.overflow = open ? 'hidden' : ''"
            role="menubar"
-           class="flex absolute lg:static top-16 lg:top-auto left-0 lg:left-auto right-0 lg:right-auto w-full lg:w-auto lg:flex-1 flex-col lg:flex-row bg-[rgb(var(--surface))] dark:bg-slate-900/95 lg:bg-transparent dark:lg:bg-transparent border-b lg:border-0 border-[rgb(var(--border))] shadow-lg lg:shadow-none lg:gap-1 max-h-0 lg:max-h-none overflow-hidden lg:overflow-visible transition-[max-height] duration-300 ease-in-out data-[expanded=true]:max-h-screen data-[expanded=true]:overflow-y-auto data-[expanded=true]:py-2 z-40 lg:z-auto lg:justify-center">
+       class="flex absolute lg:static top-16 lg:top-auto left-0 lg:left-auto right-0 lg:right-auto w-full lg:w-auto lg:flex-1 flex-col lg:flex-row bg-[rgb(var(--surface))] dark:bg-slate-900/95 lg:bg-transparent dark:lg:bg-transparent border-b lg:border-0 border-[rgb(var(--border))] shadow-lg lg:shadow-none lg:gap-1 max-h-0 lg:max-h-none overflow-hidden lg:overflow-visible transition-[max-height] duration-300 ease-in-out data-[expanded=true]:max-h-screen data-[expanded=true]:overflow-y-auto data-[expanded=true]:py-2 z-40 lg:z-auto lg:justify-center">
 
         <ul class="flex flex-col lg:flex-row items-stretch lg:items-center gap-0 lg:gap-0.5 w-full lg:w-auto py-2 lg:py-0 lg:flex-wrap lg:justify-center">
           @foreach($navItems as $item)

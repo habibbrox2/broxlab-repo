@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\McpController;
 use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminPostController;
@@ -84,6 +85,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'home'])->name('home');
 Route::get('/api/feed/load-more', [HomeController::class, 'loadMore'])->name('home.feed.load-more');
 Route::get('/weather/details', [WeatherApiController::class, 'details'])->name('weather.details');
+
+// Remote MCP server (read-only, JSON-RPC 2.0 / Streamable HTTP).
+// POST /mcp requires a bearer key; the gate is fail-closed in config/mcp.php.
+Route::post('/mcp', [McpController::class, 'handle'])->name('mcp.handle');
+Route::get('/mcp/health', [McpController::class, 'health'])->name('mcp.health');
 
 // Auth — Phase 2 (custom guard over the shared legacy session)
 Route::middleware('guest')->group(function () {
@@ -450,9 +456,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/security/smtp', [AdminSecurityController::class, 'update'])->name('admin.security.smtp.update');
     Route::post('/admin/security/smtp/test', [AdminSecurityController::class, 'testMail'])->name('admin.security.smtp.test');
 
-    // Header navigation — reorder, hide, and relabel public menu items
+    // Header navigation — reorder, hide, add, remove, relabel public menu items
     Route::get('/admin/navigation', [AdminNavigationController::class, 'index'])->name('admin.navigation.index');
     Route::post('/admin/navigation', [AdminNavigationController::class, 'update'])->name('admin.navigation.update');
+    Route::post('/admin/navigation/reset', [AdminNavigationController::class, 'reset'])->name('admin.navigation.reset');
 
     // Setup wizard
     Route::get('/admin/setup', [AdminSetupController::class, 'index'])->name('admin.setup.index');
