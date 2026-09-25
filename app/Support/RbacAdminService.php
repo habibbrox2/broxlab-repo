@@ -100,6 +100,7 @@ class RbacAdminService
 
     public static function createRole(array $data, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $errors = [];
         $name = trim($data['name'] ?? '');
         if ($name === '') {
@@ -137,6 +138,7 @@ class RbacAdminService
 
     public static function updateRole(int $id, array $data, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $current = DB::table('roles')->where('id', $id)->where('deleted_at', null)->first();
         if (!$current) {
             return ['error' => 'Role not found'];
@@ -188,6 +190,7 @@ class RbacAdminService
 
     public static function deleteRole(int $id, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $role = DB::table('roles')->where('id', $id)->where('deleted_at', null)->first();
         if (!$role) {
             return ['error' => 'Role not found'];
@@ -248,6 +251,7 @@ class RbacAdminService
 
             self::logActivity($admin, $roleId, 'roles', 'assign_permission', "Permission '{$permission->name}' assigned");
             DB::commit();
+            AdminPermissions::flush();
 
             return ['status' => "Permission '{$permission->name}' assigned successfully"];
         } catch (\Throwable $e) {
@@ -258,6 +262,7 @@ class RbacAdminService
 
     public static function removePermission(int $roleId, int $permissionId, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $role = DB::table('roles')->where('id', $roleId)->where('deleted_at', null)->first();
         $permission = DB::table('permissions')->where('id', $permissionId)->where('deleted_at', null)->first();
 
@@ -371,6 +376,7 @@ class RbacAdminService
 
     public static function createPermission(array $data, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $errors = [];
         $name = trim($data['name'] ?? '');
         if ($name === '') {
@@ -412,6 +418,7 @@ class RbacAdminService
 
     public static function updatePermission(int $id, array $data, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $current = DB::table('permissions')->where('id', $id)->where('deleted_at', null)->first();
         if (!$current) {
             return ['error' => 'Permission not found'];
@@ -463,6 +470,7 @@ class RbacAdminService
 
     public static function deletePermission(int $id, ?User $admin = null): array
     {
+        AdminPermissions::flush();
         $permission = DB::table('permissions')->where('id', $id)->where('deleted_at', null)->first();
         if (!$permission) {
             return ['error' => 'Permission not found'];

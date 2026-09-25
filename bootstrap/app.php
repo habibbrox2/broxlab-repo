@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureHaPermission;
+use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\StartLegacySession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureAdmin::class,
             'ha.perm' => EnsureHaPermission::class,
+            'perm' => EnsurePermission::class,
         ]);
 
         // Medicines scraper API uses dual-auth (MEDEX_REFRESH_TOKEN OR CSRF) handled

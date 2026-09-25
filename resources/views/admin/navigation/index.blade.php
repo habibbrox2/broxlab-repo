@@ -73,7 +73,7 @@
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Menu Items') }}</h3>
                 <div class="flex items-center gap-3">
                     <div class="text-xs text-slate-500 dark:text-slate-500 hidden sm:block">
-                        <i class="lucide lucide-handle w-3.5 h-3.5 inline"></i> {{ t('Drag handle — reorder by drag') }}
+                        <i class="lucide lucide-grip-vertical w-3.5 h-3.5 inline"></i> {{ t('Drag handle — reorder by drag') }}
                     </div>
                     <button type="button" id="btnAddItem"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
@@ -88,7 +88,7 @@
                     <div class="nav-row" data-key="{{ e($item['key']) }}" data-is-default="{{ $item['is_default'] ? '1' : '0' }}">
                         <div class="flex items-center gap-1 px-3 py-2 border-b border-slate-100 dark:border-slate-800">
                             <span class="drag-handle cursor-grab text-slate-400 dark:text-slate-500 hover:text-slate-600" draggable="true" title="{{ t('Drag to reorder') }}">
-                                <i class="lucide lucide-handle w-4 h-4"></i>
+                                <i class="lucide lucide-grip-vertical w-4 h-4"></i>
                             </span>
 
                             <input type="hidden" name="items[{{ $i }}][key]" value="{{ e($item['key']) }}">
@@ -153,7 +153,7 @@
                                     @foreach ($item['submenu'] as $j => $sub)
                                     <div class="submenu-row flex items-center gap-1 px-4 py-1.5 ml-4 border-b border-slate-100 dark:border-slate-800 last:border-0">
                                         <span class="drag-handle cursor-grab text-slate-400 dark:text-slate-500" draggable="true">
-                                            <i class="lucide lucide-handle w-3.5 h-3.5"></i>
+                                            <i class="lucide lucide-grip-vertical w-3.5 h-3.5"></i>
                                         </span>
                                         <input type="hidden" name="items[{{ $i }}][submenu][{{ $j }}][key]" value="{{ e($sub['key']) }}">
                                         <input type="text" name="items[{{ $i }}][submenu][{{ $j }}][label]" value="{{ e($sub['label']) }}"
@@ -205,7 +205,7 @@
     <div class="nav-row" data-key="" data-is-default="0">
         <div class="flex items-center gap-1 px-3 py-2 border-b border-slate-100 dark:border-slate-800">
             <span class="drag-handle cursor-grab text-slate-400 dark:text-slate-500 hover:text-slate-600" draggable="true" title="Drag to reorder">
-                <i class="lucide lucide-handle w-4 h-4"></i>
+                <i class="lucide lucide-grip-vertical w-4 h-4"></i>
             </span>
             <input type="hidden" name="items[__I__][key]" value="">
             <div class="w-28">
@@ -244,7 +244,7 @@
 <template id="tplNewSubRow">
     <div class="submenu-row flex items-center gap-1 px-4 py-1.5 ml-4 border-b border-slate-100 dark:border-slate-800 last:border-0">
         <span class="drag-handle cursor-grab text-slate-400 dark:text-slate-500" draggable="true">
-            <i class="lucide lucide-handle w-3.5 h-3.5"></i>
+            <i class="lucide lucide-grip-vertical w-3.5 h-3.5"></i>
         </span>
         <input type="hidden" name="items[__I__][submenu][__J__][key]" value="">
         <input type="text" name="items[__I__][submenu][__J__][label]" value=""

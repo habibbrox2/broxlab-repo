@@ -117,7 +117,7 @@
             <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                 <div class="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
                     <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                        <i class="lucide lucide-list-details w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        <i class="lucide lucide-list w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                     </div>
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ t('Specifications') }}</h3>
                 </div>

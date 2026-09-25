@@ -132,10 +132,34 @@ class UserProfileService
             ->whereNull('r.deleted_at')
             ->exists();
 
+        // Core-admin WRITE permission implies admin-chrome access — a custom
+        // "content editor" role holding post.create/publish must land in the
+        // admin panel, not be bounced to the public site. Read-only slugs
+        // (list/view) deliberately do NOT count: the seeded `user` role holds
+        // several (post.view, role.view, …) and must stay out of the panel.
+        $hasCorePermission = DB::table('permissions as p')
+            ->join('role_permissions as rp', 'p.id', '=', 'rp.permission_id')
+            ->join('roles as r', 'r.id', '=', 'rp.role_id')
+            ->join('user_roles as ur', 'r.id', '=', 'ur.role_id')
+            ->where('ur.user_id', $userId)
+            ->where('p.name', 'not like', 'ha.%')
+            ->where(function ($q) {
+                $q->where('p.name', 'like', '%.create')
+                    ->orWhere('p.name', 'like', '%.edit')
+                    ->orWhere('p.name', 'like', '%.delete')
+                    ->orWhere('p.name', 'like', '%.manage')
+                    ->orWhere('p.name', 'like', '%.publish')
+                    ->orWhere('p.name', 'like', '%.approve')
+                    ->orWhere('p.name', 'like', '%.assign_role');
+            })
+            ->whereNull('p.deleted_at')
+            ->whereNull('r.deleted_at')
+            ->exists();
+
         return [
             'roles' => $names,
             'is_super_admin' => $isSuperAdmin,
-            'is_admin' => $isSuperAdmin || in_array('admin', $names, true) || $hasHaPermission,
+            'is_admin' => $isSuperAdmin || in_array('admin', $names, true) || $hasHaPermission || $hasCorePermission,
         ];
     }
 

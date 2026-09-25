@@ -9,7 +9,7 @@
     <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-4">
             <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
-                <i class="lucide lucide-image-wand w-5 h-5 text-white"></i>
+                <i class="lucide lucide-wand-sparkles w-5 h-5 text-white"></i>
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('Specialized Modules') }}</p>

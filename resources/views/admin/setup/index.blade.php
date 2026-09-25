@@ -41,7 +41,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 group">
             <div class="p-5 flex items-center gap-4 cursor-pointer" onclick="window.location='/admin/revenue'">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <i class="lucide lucide-trend-up w-6 h-6 text-white"></i>
+                    <i class="lucide lucide-trending-up w-6 h-6 text-white"></i>
                 </div>
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('Revenue & Monetization') }}</h3>

@@ -9,7 +9,7 @@
     <div class="relative px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-4">
             <div class="w-11 h-11 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
-                <i class="lucide lucide-cloud-arrow-up w-5 h-5 text-white"></i>
+                <i class="lucide lucide-cloud-upload w-5 h-5 text-white"></i>
             </div>
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">{{ t('API Integration') }}</p>
@@ -40,7 +40,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm group hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
             <div class="p-6">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-sky-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <i class="lucide lucide-photo w-6 h-6 text-white"></i>
+                    <i class="lucide lucide-image w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Pixabay</h3>
                 <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Pixabay image API proxy') }}</p>
@@ -52,7 +52,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm group hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
             <div class="p-6">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <i class="lucide lucide-desktop w-6 h-6 text-white"></i>
+                    <i class="lucide lucide-monitor w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Puter</h3>
                 <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Puter desktop proxy') }}</p>

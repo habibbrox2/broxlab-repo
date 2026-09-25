@@ -149,7 +149,7 @@
                             @elseif($mobile['status'] === 'unofficial')
                                 <i class="lucide lucide-help-circle w-3 h-3 mr-1"></i> Unofficial
                             @else
-                                <i class="lucide lucide-equals w-3 h-3 mr-1"></i> Both
+                                <i class="lucide lucide-equal w-3 h-3 mr-1"></i> Both
                             @endif
                         </span>
                     </td>

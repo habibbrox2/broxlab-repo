@@ -45,7 +45,7 @@ class AdminCvController extends Controller
         ]);
     }
 
-    public function view(Request $request, int $id): View
+    public function view(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));

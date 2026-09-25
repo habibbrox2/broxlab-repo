@@ -279,50 +279,56 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Categories + tags — port of TagsCategoriesController admin routes
     Route::get('/admin/categories', [TagCategoryController::class, 'categoryIndex'])->name('admin.categories.index');
-    Route::get('/admin/categories/create', [TagCategoryController::class, 'categoryCreate'])->name('admin.categories.create');
-    Route::post('/admin/categories/create', [TagCategoryController::class, 'categoryStore'])->name('admin.categories.store');
-    Route::get('/admin/categories/view/{id}', [TagCategoryController::class, 'categoryShow'])->name('admin.categories.show');
-    Route::get('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryEdit'])->name('admin.categories.edit');
-    Route::post('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryUpdate'])->name('admin.categories.update');
-    // Delete is confirm-on-GET, destroy-on-POST (CSRF-protected).
-    Route::get('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDeleteConfirm'])->whereNumber('id')->name('admin.categories.delete.confirm');
-    Route::post('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDestroy'])->whereNumber('id')->name('admin.categories.destroy');
+    Route::get('/admin/categories/view/{id}', [TagCategoryController::class, 'categoryShow'])->whereNumber('id')->name('admin.categories.show');
+    Route::middleware('perm:page.edit')->group(function () {
+        Route::get('/admin/categories/create', [TagCategoryController::class, 'categoryCreate'])->name('admin.categories.create');
+        Route::post('/admin/categories/create', [TagCategoryController::class, 'categoryStore'])->name('admin.categories.store');
+        Route::get('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryEdit'])->whereNumber('id')->name('admin.categories.edit');
+        Route::post('/admin/categories/edit/{id}', [TagCategoryController::class, 'categoryUpdate'])->whereNumber('id')->name('admin.categories.update');
+        // Delete is confirm-on-GET, destroy-on-POST (CSRF-protected).
+        Route::get('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDeleteConfirm'])->whereNumber('id')->name('admin.categories.delete.confirm');
+        Route::post('/admin/categories/delete/{id}', [TagCategoryController::class, 'categoryDestroy'])->whereNumber('id')->name('admin.categories.destroy');
+    });
 
     Route::get('/admin/tags', [TagCategoryController::class, 'tagIndex'])->name('admin.tags.index');
-    Route::get('/admin/tags/create', [TagCategoryController::class, 'tagCreate'])->name('admin.tags.create');
-    Route::post('/admin/tags/create', [TagCategoryController::class, 'tagStore'])->name('admin.tags.store');
-    Route::get('/admin/tags/view/{id}', [TagCategoryController::class, 'tagShow'])->name('admin.tags.show');
-    Route::get('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagEdit'])->name('admin.tags.edit');
-    Route::post('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagUpdate'])->name('admin.tags.update');
-    Route::get('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDeleteConfirm'])->whereNumber('id')->name('admin.tags.delete.confirm');
-    Route::post('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDestroy'])->whereNumber('id')->name('admin.tags.destroy');
+    Route::get('/admin/tags/view/{id}', [TagCategoryController::class, 'tagShow'])->whereNumber('id')->name('admin.tags.show');
+    Route::middleware('perm:page.edit')->group(function () {
+        Route::get('/admin/tags/create', [TagCategoryController::class, 'tagCreate'])->name('admin.tags.create');
+        Route::post('/admin/tags/create', [TagCategoryController::class, 'tagStore'])->name('admin.tags.store');
+        Route::get('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagEdit'])->whereNumber('id')->name('admin.tags.edit');
+        Route::post('/admin/tags/edit/{id}', [TagCategoryController::class, 'tagUpdate'])->whereNumber('id')->name('admin.tags.update');
+        Route::get('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDeleteConfirm'])->whereNumber('id')->name('admin.tags.delete.confirm');
+        Route::post('/admin/tags/delete/{id}', [TagCategoryController::class, 'tagDestroy'])->whereNumber('id')->name('admin.tags.destroy');
+    });
 
     // Pages CMS — port of PagesController admin routes
     Route::get('/admin/pages', [AdminPageController::class, 'index'])->name('admin.pages.index');
-    Route::get('/admin/pages/create', [AdminPageController::class, 'create'])->name('admin.pages.create');
-    Route::post('/admin/pages/create', [AdminPageController::class, 'store'])->name('admin.pages.store');
     Route::get('/admin/pages/view/{slug}', [AdminPageController::class, 'show'])->name('admin.pages.show');
-    Route::get('/admin/pages/edit/{id}', [AdminPageController::class, 'edit'])->whereNumber('id')->name('admin.pages.edit');
-    Route::post('/admin/pages/edit/{id}', [AdminPageController::class, 'update'])->whereNumber('id')->name('admin.pages.update');
-    Route::get('/admin/pages/delete/{id}', [AdminPageController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.pages.delete.confirm');
-    Route::post('/admin/pages/delete/{id}', [AdminPageController::class, 'destroy'])->whereNumber('id')->name('admin.pages.destroy');
-    Route::get('/api/pages/check_url', [AdminPageController::class, 'checkUrl'])->name('admin.pages.check-url');
+    Route::middleware('perm:page.edit')->group(function () {
+        Route::get('/admin/pages/create', [AdminPageController::class, 'create'])->name('admin.pages.create');
+        Route::post('/admin/pages/create', [AdminPageController::class, 'store'])->name('admin.pages.store');
+        Route::get('/admin/pages/edit/{id}', [AdminPageController::class, 'edit'])->whereNumber('id')->name('admin.pages.edit');
+        Route::post('/admin/pages/edit/{id}', [AdminPageController::class, 'update'])->whereNumber('id')->name('admin.pages.update');
+        Route::get('/admin/pages/delete/{id}', [AdminPageController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.pages.delete.confirm');
+        Route::post('/admin/pages/delete/{id}', [AdminPageController::class, 'destroy'])->whereNumber('id')->name('admin.pages.destroy');
+        Route::get('/api/pages/check_url', [AdminPageController::class, 'checkUrl'])->name('admin.pages.check-url');
+    });
     // Posts — port of PostsController admin routes (+ legacy ?id= query form)
     Route::get('/admin/posts', [AdminPostController::class, 'index'])->name('admin.posts.index');
-    Route::get('/admin/posts/create', [AdminPostController::class, 'create'])->name('admin.posts.create');
-    Route::post('/admin/posts/create', [AdminPostController::class, 'store'])->name('admin.posts.store');
     Route::get('/admin/posts/view/{id}', [AdminPostController::class, 'show'])->whereNumber('id')->name('admin.posts.show');
-    Route::get('/admin/posts/edit/{id}', [AdminPostController::class, 'edit'])->whereNumber('id')->name('admin.posts.edit');
-    Route::post('/admin/posts/edit/{id}', [AdminPostController::class, 'update'])->whereNumber('id')->name('admin.posts.update');
-    Route::get('/admin/posts/delete/{id}', [AdminPostController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.posts.delete.confirm');
-    Route::post('/admin/posts/delete/{id}', [AdminPostController::class, 'destroy'])->whereNumber('id')->name('admin.posts.destroy.path');
-
-    // Legacy query-string forms (?id=) — keep working alongside path forms
     Route::get('/admin/posts/view', [AdminPostController::class, 'show'])->name('admin.posts.show.query');
-    Route::get('/admin/posts/edit', [AdminPostController::class, 'edit'])->name('admin.posts.edit.query');
-    Route::post('/admin/posts/edit', [AdminPostController::class, 'update'])->name('admin.posts.update.query');
-    Route::get('/admin/posts/delete', [AdminPostController::class, 'deleteConfirm'])->name('admin.posts.delete.query.confirm');
-    Route::post('/admin/posts/delete', [AdminPostController::class, 'destroy'])->name('admin.posts.destroy.query');
+    Route::middleware('perm:post.edit')->group(function () {
+        Route::get('/admin/posts/create', [AdminPostController::class, 'create'])->name('admin.posts.create');
+        Route::post('/admin/posts/create', [AdminPostController::class, 'store'])->name('admin.posts.store');
+        Route::get('/admin/posts/edit/{id}', [AdminPostController::class, 'edit'])->whereNumber('id')->name('admin.posts.edit');
+        Route::post('/admin/posts/edit/{id}', [AdminPostController::class, 'update'])->whereNumber('id')->name('admin.posts.update');
+        Route::get('/admin/posts/edit', [AdminPostController::class, 'edit'])->name('admin.posts.edit.query');
+        Route::post('/admin/posts/edit', [AdminPostController::class, 'update'])->name('admin.posts.update.query');
+        Route::get('/admin/posts/delete/{id}', [AdminPostController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.posts.delete.confirm');
+        Route::post('/admin/posts/delete/{id}', [AdminPostController::class, 'destroy'])->whereNumber('id')->name('admin.posts.destroy.path');
+        Route::get('/admin/posts/delete', [AdminPostController::class, 'deleteConfirm'])->name('admin.posts.delete.query.confirm');
+        Route::post('/admin/posts/delete', [AdminPostController::class, 'destroy'])->name('admin.posts.destroy.query');
+    });
 
     // AJAX — port of check_permalink + autosave
     Route::get('/api/posts/check_permalink', [AdminPostController::class, 'checkPermalink'])->name('admin.posts.check-permalink');
@@ -330,137 +336,173 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Mobiles CRUD — port of MobilesController admin routes
     Route::get('/admin/mobiles', [AdminMobileController::class, 'index'])->name('admin.mobiles.index');
-    Route::get('/admin/mobiles/create', [AdminMobileController::class, 'create'])->name('admin.mobiles.create');
-    Route::post('/admin/mobiles/create', [AdminMobileController::class, 'store'])->name('admin.mobiles.store');
     Route::get('/admin/mobiles/view/{id}', [AdminMobileController::class, 'show'])->whereNumber('id')->name('admin.mobiles.show');
-    Route::get('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'edit'])->whereNumber('id')->name('admin.mobiles.edit');
-    Route::post('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'update'])->whereNumber('id')->name('admin.mobiles.update');
-    // Legacy query-string forms (?id=) — keep working alongside path forms
     Route::get('/admin/mobiles/view', [AdminMobileController::class, 'show'])->name('admin.mobiles.show.query');
-    Route::get('/admin/mobiles/edit', [AdminMobileController::class, 'edit'])->name('admin.mobiles.edit.query');
-    Route::post('/admin/mobiles/edit', [AdminMobileController::class, 'update'])->name('admin.mobiles.update.query');
-    Route::get('/admin/mobiles/delete', [AdminMobileController::class, 'deleteConfirm'])->name('admin.mobiles.delete.query');
-    Route::post('/admin/mobiles/delete', [AdminMobileController::class, 'destroy'])->name('admin.mobiles.destroy.query');
-
-    // DELETE via path (GET for confirmation, POST for actual delete).
-    // NOTE: only ONE GET registration — a second for the same URI would shadow
-    // this confirmation page and delete on GET (that was the old behaviour).
-    Route::get('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.mobiles.delete');
-    Route::post('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'destroy'])->whereNumber('id')->name('admin.mobiles.destroy.path');
+    Route::middleware('perm:mobile.edit')->group(function () {
+        Route::get('/admin/mobiles/create', [AdminMobileController::class, 'create'])->name('admin.mobiles.create');
+        Route::post('/admin/mobiles/create', [AdminMobileController::class, 'store'])->name('admin.mobiles.store');
+        Route::get('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'edit'])->whereNumber('id')->name('admin.mobiles.edit');
+        Route::post('/admin/mobiles/edit/{id}', [AdminMobileController::class, 'update'])->whereNumber('id')->name('admin.mobiles.update');
+        Route::get('/admin/mobiles/edit', [AdminMobileController::class, 'edit'])->name('admin.mobiles.edit.query');
+        Route::post('/admin/mobiles/edit', [AdminMobileController::class, 'update'])->name('admin.mobiles.update.query');
+    });
+    Route::middleware('perm:mobile.delete')->group(function () {
+        // DELETE via path (GET for confirmation, POST for actual delete).
+        // NOTE: only ONE GET registration — a second for the same URI would shadow
+        // this confirmation page and delete on GET (that was the old behaviour).
+        Route::get('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.mobiles.delete');
+        Route::post('/admin/mobiles/delete/{id}', [AdminMobileController::class, 'destroy'])->whereNumber('id')->name('admin.mobiles.destroy.path');
+        Route::get('/admin/mobiles/delete', [AdminMobileController::class, 'deleteConfirm'])->name('admin.mobiles.delete.query');
+        Route::post('/admin/mobiles/delete', [AdminMobileController::class, 'destroy'])->name('admin.mobiles.destroy.query');
+    });
 
     // Services CRUD
     Route::get('/admin/services', [AdminServiceController::class, 'index'])->name('admin.services.index');
-    Route::get('/admin/services/create', [AdminServiceController::class, 'create'])->name('admin.services.create');
-    Route::post('/admin/services/create', [AdminServiceController::class, 'store'])->name('admin.services.store');
     Route::get('/admin/services/view/{id}', [AdminServiceController::class, 'view'])->whereNumber('id')->name('admin.services.show');
-    Route::get('/admin/services/edit/{id}', [AdminServiceController::class, 'edit'])->whereNumber('id')->name('admin.services.edit');
-    Route::post('/admin/services/edit/{id}', [AdminServiceController::class, 'update'])->whereNumber('id')->name('admin.services.update');
-    // Services: GET delete path shows confirmation (Path-based)
-    Route::get('/admin/services/delete/{id}', [AdminServiceController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.services.delete.confirm');
-    // Services: POST delete path executes delete (Path-based)
-    Route::post('/admin/services/delete/{id}', [AdminServiceController::class, 'destroy'])->whereNumber('id')->name('admin.services.destroy.path');
-
-    // Legacy query-string forms (?id=) for services
     Route::get('/admin/services/view', [AdminServiceController::class, 'view'])->name('admin.services.show.query');
-    Route::get('/admin/services/edit', [AdminServiceController::class, 'edit'])->name('admin.services.edit.query');
-    Route::post('/admin/services/edit', [AdminServiceController::class, 'update'])->name('admin.services.update.query');
-    Route::get('/admin/services/delete', [AdminServiceController::class, 'deleteConfirm'])->name('admin.services.delete.query.confirm');
-    Route::post('/admin/services/delete', [AdminServiceController::class, 'destroy'])->name('admin.services.destroy.query');
+    Route::middleware('perm:page.edit')->group(function () {
+        Route::get('/admin/services/create', [AdminServiceController::class, 'create'])->name('admin.services.create');
+        Route::post('/admin/services/create', [AdminServiceController::class, 'store'])->name('admin.services.store');
+        Route::get('/admin/services/edit/{id}', [AdminServiceController::class, 'edit'])->whereNumber('id')->name('admin.services.edit');
+        Route::post('/admin/services/edit/{id}', [AdminServiceController::class, 'update'])->whereNumber('id')->name('admin.services.update');
+        Route::get('/admin/services/edit', [AdminServiceController::class, 'edit'])->name('admin.services.edit.query');
+        Route::post('/admin/services/edit', [AdminServiceController::class, 'update'])->name('admin.services.update.query');
+        // Services: GET delete path shows confirmation (Path-based)
+        Route::get('/admin/services/delete/{id}', [AdminServiceController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.services.delete.confirm');
+        Route::get('/admin/services/delete', [AdminServiceController::class, 'deleteConfirm'])->name('admin.services.delete.query.confirm');
+    });
+    Route::middleware('perm:page.delete')->group(function () {
+        // Services: POST delete path executes delete (Path-based)
+        Route::post('/admin/services/delete/{id}', [AdminServiceController::class, 'destroy'])->whereNumber('id')->name('admin.services.destroy.path');
+        Route::post('/admin/services/delete', [AdminServiceController::class, 'destroy'])->name('admin.services.destroy.query');
+    });
 
     // Users admin — port of AdminUserController routes
     Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/admin/users/view/{id}', [AdminUserController::class, 'view'])->whereNumber('id')->name('admin.users.show');
-    Route::get('/admin/users/edit/{id}', [AdminUserController::class, 'edit'])->whereNumber('id')->name('admin.users.edit');
-    Route::post('/admin/users/edit/{id}', [AdminUserController::class, 'update'])->whereNumber('id')->name('admin.users.update');
-    Route::get('/admin/users/delete/{id}', [AdminUserController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.users.delete.confirm');
-    Route::post('/admin/users/delete/{id}', [AdminUserController::class, 'destroy'])->whereNumber('id')->name('admin.users.destroy.path');
-
-    // Legacy query-string forms (?id=) for users
     Route::get('/admin/users/view', [AdminUserController::class, 'view'])->name('admin.users.show.query');
-    Route::get('/admin/users/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit.query');
-    Route::post('/admin/users/edit', [AdminUserController::class, 'update'])->name('admin.users.update.query');
-    Route::get('/admin/users/delete', [AdminUserController::class, 'deleteConfirm'])->name('admin.users.delete.query.confirm');
-    Route::post('/admin/users/delete', [AdminUserController::class, 'destroy'])->name('admin.users.destroy.query');
+    Route::middleware('perm:user.edit')->group(function () {
+        Route::get('/admin/users/edit/{id}', [AdminUserController::class, 'edit'])->whereNumber('id')->name('admin.users.edit');
+        Route::post('/admin/users/edit/{id}', [AdminUserController::class, 'update'])->whereNumber('id')->name('admin.users.update');
+        Route::get('/admin/users/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit.query');
+        Route::post('/admin/users/edit', [AdminUserController::class, 'update'])->name('admin.users.update.query');
+    });
+    Route::middleware('perm:user.delete')->group(function () {
+        Route::get('/admin/users/delete/{id}', [AdminUserController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.users.delete.confirm');
+        Route::post('/admin/users/delete/{id}', [AdminUserController::class, 'destroy'])->whereNumber('id')->name('admin.users.destroy.path');
+        Route::get('/admin/users/delete', [AdminUserController::class, 'deleteConfirm'])->name('admin.users.delete.query.confirm');
+        Route::post('/admin/users/delete', [AdminUserController::class, 'destroy'])->name('admin.users.destroy.query');
+    });
 
     // RBAC — Roles and Permissions admin
+    // Every route requires the matching module permission; super_admin bypasses.
     // Roles
-    Route::get('/admin/roles', [AdminRbacController::class, 'rolesIndex'])->name('admin.roles.index');
-    Route::get('/admin/roles/create', [AdminRbacController::class, 'roleCreate'])->name('admin.roles.create');
-    Route::post('/admin/roles/create', [AdminRbacController::class, 'roleStore'])->name('admin.roles.store');
-    Route::get('/admin/roles/view/{id}', [AdminRbacController::class, 'roleView'])->whereNumber('id')->name('admin.roles.show');
-    Route::get('/admin/roles/edit/{id}', [AdminRbacController::class, 'roleEdit'])->whereNumber('id')->name('admin.roles.edit');
-    Route::post('/admin/roles/edit/{id}', [AdminRbacController::class, 'roleUpdate'])->whereNumber('id')->name('admin.roles.update');
-    Route::get('/admin/roles/delete/{id}', [AdminRbacController::class, 'roleDeleteConfirm'])->whereNumber('id')->name('admin.roles.delete.confirm');
-    Route::post('/admin/roles/delete/{id}', [AdminRbacController::class, 'roleDestroy'])->whereNumber('id')->name('admin.roles.destroy.path');
-    Route::post('/admin/roles/assign-permission/{id}', [AdminRbacController::class, 'roleAssignPermission'])->whereNumber('id')->name('admin.roles.assign-permission');
-    Route::post('/admin/roles/remove-permission/{id}', [AdminRbacController::class, 'roleRemovePermission'])->whereNumber('id')->name('admin.roles.remove-permission');
-
-    // Legacy query-string forms for roles
-    Route::get('/admin/roles/view', [AdminRbacController::class, 'roleView'])->name('admin.roles.show.query');
-    Route::get('/admin/roles/edit', [AdminRbacController::class, 'roleEdit'])->name('admin.roles.edit.query');
-    Route::post('/admin/roles/edit', [AdminRbacController::class, 'roleUpdate'])->name('admin.roles.update.query');
-    Route::get('/admin/roles/delete', [AdminRbacController::class, 'roleDeleteConfirm'])->name('admin.roles.delete.query.confirm');
-    Route::post('/admin/roles/delete', [AdminRbacController::class, 'roleDestroy'])->name('admin.roles.destroy.query');
+    Route::middleware('perm:role.list')->group(function () {
+        Route::get('/admin/roles', [AdminRbacController::class, 'rolesIndex'])->name('admin.roles.index');
+        Route::get('/admin/roles/view/{id}', [AdminRbacController::class, 'roleView'])->whereNumber('id')->name('admin.roles.show');
+        Route::get('/admin/roles/view', [AdminRbacController::class, 'roleView'])->name('admin.roles.show.query');
+    });
+    Route::middleware('perm:role.create')->group(function () {
+        Route::get('/admin/roles/create', [AdminRbacController::class, 'roleCreate'])->name('admin.roles.create');
+        Route::post('/admin/roles/create', [AdminRbacController::class, 'roleStore'])->name('admin.roles.store');
+    });
+    Route::middleware('perm:role.edit')->group(function () {
+        Route::get('/admin/roles/edit/{id}', [AdminRbacController::class, 'roleEdit'])->whereNumber('id')->name('admin.roles.edit');
+        Route::post('/admin/roles/edit/{id}', [AdminRbacController::class, 'roleUpdate'])->whereNumber('id')->name('admin.roles.update');
+        Route::get('/admin/roles/edit', [AdminRbacController::class, 'roleEdit'])->name('admin.roles.edit.query');
+        Route::post('/admin/roles/edit', [AdminRbacController::class, 'roleUpdate'])->name('admin.roles.update.query');
+        Route::post('/admin/roles/assign-permission/{id}', [AdminRbacController::class, 'roleAssignPermission'])->whereNumber('id')->name('admin.roles.assign-permission');
+        Route::post('/admin/roles/remove-permission/{id}', [AdminRbacController::class, 'roleRemovePermission'])->whereNumber('id')->name('admin.roles.remove-permission');
+    });
+    Route::middleware('perm:role.delete')->group(function () {
+        Route::get('/admin/roles/delete/{id}', [AdminRbacController::class, 'roleDeleteConfirm'])->whereNumber('id')->name('admin.roles.delete.confirm');
+        Route::post('/admin/roles/delete/{id}', [AdminRbacController::class, 'roleDestroy'])->whereNumber('id')->name('admin.roles.destroy.path');
+        Route::get('/admin/roles/delete', [AdminRbacController::class, 'roleDeleteConfirm'])->name('admin.roles.delete.query.confirm');
+        Route::post('/admin/roles/delete', [AdminRbacController::class, 'roleDestroy'])->name('admin.roles.destroy.query');
+    });
 
     // Permissions
-    Route::get('/admin/permissions', [AdminRbacController::class, 'permissionsIndex'])->name('admin.permissions.index');
-    Route::get('/admin/permissions/create', [AdminRbacController::class, 'permissionCreate'])->name('admin.permissions.create');
-    Route::post('/admin/permissions/create', [AdminRbacController::class, 'permissionStore'])->name('admin.permissions.store');
-    Route::get('/admin/permissions/view/{id}', [AdminRbacController::class, 'permissionView'])->whereNumber('id')->name('admin.permissions.show');
-    Route::get('/admin/permissions/edit/{id}', [AdminRbacController::class, 'permissionEdit'])->whereNumber('id')->name('admin.permissions.edit');
-    Route::post('/admin/permissions/edit/{id}', [AdminRbacController::class, 'permissionUpdate'])->whereNumber('id')->name('admin.permissions.update');
-    Route::get('/admin/permissions/delete/{id}', [AdminRbacController::class, 'permissionDeleteConfirm'])->whereNumber('id')->name('admin.permissions.delete.confirm');
-    Route::post('/admin/permissions/delete/{id}', [AdminRbacController::class, 'permissionDestroy'])->whereNumber('id')->name('admin.permissions.destroy.path');
-    Route::post('/admin/permissions/assign-role/{id}', [AdminRbacController::class, 'permissionAssignRole'])->whereNumber('id')->name('admin.permissions.assign-role');
-    Route::post('/admin/permissions/remove-role/{id}', [AdminRbacController::class, 'permissionRemoveRole'])->whereNumber('id')->name('admin.permissions.remove-role');
-
-    // Legacy query-string forms for permissions
-    Route::get('/admin/permissions/view', [AdminRbacController::class, 'permissionView'])->name('admin.permissions.show.query');
-    Route::get('/admin/permissions/edit', [AdminRbacController::class, 'permissionEdit'])->name('admin.permissions.edit.query');
-    Route::post('/admin/permissions/edit', [AdminRbacController::class, 'permissionUpdate'])->name('admin.permissions.update.query');
-    Route::get('/admin/permissions/delete', [AdminRbacController::class, 'permissionDeleteConfirm'])->name('admin.permissions.delete.query.confirm');
-    Route::post('/admin/permissions/delete', [AdminRbacController::class, 'permissionDestroy'])->name('admin.permissions.destroy.query');
+    Route::middleware('perm:permission.list')->group(function () {
+        Route::get('/admin/permissions', [AdminRbacController::class, 'permissionsIndex'])->name('admin.permissions.index');
+        Route::get('/admin/permissions/view/{id}', [AdminRbacController::class, 'permissionView'])->whereNumber('id')->name('admin.permissions.show');
+        Route::get('/admin/permissions/view', [AdminRbacController::class, 'permissionView'])->name('admin.permissions.show.query');
+    });
+    Route::middleware('perm:permission.create')->group(function () {
+        Route::get('/admin/permissions/create', [AdminRbacController::class, 'permissionCreate'])->name('admin.permissions.create');
+        Route::post('/admin/permissions/create', [AdminRbacController::class, 'permissionStore'])->name('admin.permissions.store');
+    });
+    Route::middleware('perm:permission.edit')->group(function () {
+        Route::get('/admin/permissions/edit/{id}', [AdminRbacController::class, 'permissionEdit'])->whereNumber('id')->name('admin.permissions.edit');
+        Route::post('/admin/permissions/edit/{id}', [AdminRbacController::class, 'permissionUpdate'])->whereNumber('id')->name('admin.permissions.update');
+        Route::get('/admin/permissions/edit', [AdminRbacController::class, 'permissionEdit'])->name('admin.permissions.edit.query');
+        Route::post('/admin/permissions/edit', [AdminRbacController::class, 'permissionUpdate'])->name('admin.permissions.update.query');
+        Route::post('/admin/permissions/assign-role/{id}', [AdminRbacController::class, 'permissionAssignRole'])->whereNumber('id')->name('admin.permissions.assign-role');
+        Route::post('/admin/permissions/remove-role/{id}', [AdminRbacController::class, 'permissionRemoveRole'])->whereNumber('id')->name('admin.permissions.remove-role');
+    });
+    Route::middleware('perm:permission.delete')->group(function () {
+        Route::get('/admin/permissions/delete/{id}', [AdminRbacController::class, 'permissionDeleteConfirm'])->whereNumber('id')->name('admin.permissions.delete.confirm');
+        Route::post('/admin/permissions/delete/{id}', [AdminRbacController::class, 'permissionDestroy'])->whereNumber('id')->name('admin.permissions.destroy.path');
+        Route::get('/admin/permissions/delete', [AdminRbacController::class, 'permissionDeleteConfirm'])->name('admin.permissions.delete.query.confirm');
+        Route::post('/admin/permissions/delete', [AdminRbacController::class, 'permissionDestroy'])->name('admin.permissions.destroy.query');
+    });
 
     // Revenue — Ads, Sponsored, Donations
-    Route::get('/admin/revenue', [AdminRevenueController::class, 'index'])->name('admin.revenue.index');
+    Route::middleware('perm:revenue.view')->group(function () {
+        Route::get('/admin/revenue', [AdminRevenueController::class, 'index'])->name('admin.revenue.index');
     Route::get('/admin/revenue/ads', [AdminRevenueController::class, 'ads'])->name('admin.revenue.ads');
     Route::get('/admin/revenue/ads/analytics', [AdminRevenueController::class, 'adsAnalytics'])->name('admin.revenue.ads.analytics');
     Route::get('/admin/revenue/ads/campaigns', [AdminRevenueController::class, 'adsCampaigns'])->name('admin.revenue.ads.campaigns');
     Route::get('/admin/revenue/ads/placements', [AdminRevenueController::class, 'adsPlacements'])->name('admin.revenue.ads.placements');
     Route::get('/admin/revenue/ads/settings', [AdminRevenueController::class, 'adsSettings'])->name('admin.revenue.ads.settings');
     Route::get('/admin/revenue/sponsored', [AdminRevenueController::class, 'sponsored'])->name('admin.revenue.sponsored');
-    Route::get('/admin/revenue/sponsored/create', [AdminRevenueController::class, 'sponsoredCreate'])->name('admin.revenue.sponsored.create');
-    Route::get('/admin/revenue/sponsored/edit', [AdminRevenueController::class, 'sponsoredEdit'])->name('admin.revenue.sponsored.edit');
     Route::get('/admin/revenue/donations', [AdminRevenueController::class, 'donations'])->name('admin.revenue.donations');
     Route::get('/admin/revenue/donations/bkash', [AdminRevenueController::class, 'donationsBkash'])->name('admin.revenue.donations.bkash');
     Route::get('/admin/revenue/donations/nagad', [AdminRevenueController::class, 'donationsNagad'])->name('admin.revenue.donations.nagad');
     Route::get('/admin/revenue/donations/rocket', [AdminRevenueController::class, 'donationsRocket'])->name('admin.revenue.donations.rocket');
+    });
+
+    Route::middleware('perm:revenue.manage')->group(function () {
+        Route::get('/admin/revenue/sponsored/create', [AdminRevenueController::class, 'sponsoredCreate'])->name('admin.revenue.sponsored.create');
+        Route::post('/admin/revenue/sponsored/create', [AdminRevenueController::class, 'sponsoredStore'])->name('admin.revenue.sponsored.store');
+        Route::get('/admin/revenue/sponsored/edit', [AdminRevenueController::class, 'sponsoredEdit'])->name('admin.revenue.sponsored.edit');
+        Route::post('/admin/revenue/sponsored/edit', [AdminRevenueController::class, 'sponsoredUpdate'])->name('admin.revenue.sponsored.update');
+        Route::post('/admin/revenue/sponsored/delete', [AdminRevenueController::class, 'sponsoredDestroy'])->name('admin.revenue.sponsored.destroy');
+    Route::post('/admin/revenue/sponsored/restore', [AdminRevenueController::class, 'sponsoredRestore'])->name('admin.revenue.sponsored.restore');
+    });
 
     // Wallet — recharges, ledger, user balances
-    Route::get('/admin/wallet/recharges', [AdminWalletController::class, 'recharges'])->name('admin.wallet.recharges');
-    Route::post('/admin/wallet/recharges/{id}/approve', [AdminWalletController::class, 'approveRecharge'])->name('admin.wallet.recharge.approve');
-    Route::post('/admin/wallet/recharges/{id}/reject', [AdminWalletController::class, 'rejectRecharge'])->name('admin.wallet.recharge.reject');
-    Route::get('/admin/wallet/transactions', [AdminWalletController::class, 'transactions'])->name('admin.wallet.transactions');
-    Route::get('/admin/wallet/users', [AdminWalletController::class, 'users'])->name('admin.wallet.users');
-    Route::post('/admin/wallet/users/{id}/adjust', [AdminWalletController::class, 'adjustBalance'])->name('admin.wallet.users.adjust');
+    Route::middleware('perm:wallet.view')->group(function () {
+        Route::get('/admin/wallet/recharges', [AdminWalletController::class, 'recharges'])->name('admin.wallet.recharges');
+        Route::get('/admin/wallet/transactions', [AdminWalletController::class, 'transactions'])->name('admin.wallet.transactions');
+        Route::get('/admin/wallet/users', [AdminWalletController::class, 'users'])->name('admin.wallet.users');
+    });
+    Route::middleware('perm:wallet.manage')->group(function () {
+        Route::post('/admin/wallet/recharges/{id}/approve', [AdminWalletController::class, 'approveRecharge'])->name('admin.wallet.recharge.approve');
+        Route::post('/admin/wallet/recharges/{id}/reject', [AdminWalletController::class, 'rejectRecharge'])->name('admin.wallet.recharge.reject');
+        Route::post('/admin/wallet/users/{id}/adjust', [AdminWalletController::class, 'adjustBalance'])->name('admin.wallet.users.adjust');
+    });
 
     // Logs
     Route::get('/admin/logs', [AdminLogsController::class, 'index'])->name('admin.logs.index');
 
     // Security settings
-    Route::get('/admin/security', [AdminSecurityController::class, 'index'])->name('admin.security.index');
-    Route::get('/admin/security/auth', [AdminSecurityController::class, 'auth'])->name('admin.security.auth');
-    Route::get('/admin/security/recaptcha', [AdminSecurityController::class, 'recaptcha'])->name('admin.security.recaptcha');
-    Route::get('/admin/security/smtp', [AdminSecurityController::class, 'smtp'])->name('admin.security.smtp');
-    Route::post('/admin/security/auth', [AdminSecurityController::class, 'update'])->name('admin.security.auth.update');
-    Route::post('/admin/security/recaptcha', [AdminSecurityController::class, 'update'])->name('admin.security.recaptcha.update');
-    Route::post('/admin/security/smtp', [AdminSecurityController::class, 'update'])->name('admin.security.smtp.update');
-    Route::post('/admin/security/smtp/test', [AdminSecurityController::class, 'testMail'])->name('admin.security.smtp.test');
+    Route::middleware('perm:security.view')->group(function () {
+        Route::get('/admin/security', [AdminSecurityController::class, 'index'])->name('admin.security.index');
+        Route::get('/admin/security/auth', [AdminSecurityController::class, 'auth'])->name('admin.security.auth');
+        Route::get('/admin/security/recaptcha', [AdminSecurityController::class, 'recaptcha'])->name('admin.security.recaptcha');
+        Route::get('/admin/security/smtp', [AdminSecurityController::class, 'smtp'])->name('admin.security.smtp');
+    });
+    Route::middleware('perm:security.manage')->group(function () {
+        Route::post('/admin/security/auth', [AdminSecurityController::class, 'update'])->name('admin.security.auth.update');
+        Route::post('/admin/security/recaptcha', [AdminSecurityController::class, 'update'])->name('admin.security.recaptcha.update');
+        Route::post('/admin/security/smtp', [AdminSecurityController::class, 'update'])->name('admin.security.smtp.update');
+        Route::post('/admin/security/smtp/test', [AdminSecurityController::class, 'testMail'])->name('admin.security.smtp.test');
+    });
 
     // Header navigation — reorder, hide, add, remove, relabel public menu items
-    Route::get('/admin/navigation', [AdminNavigationController::class, 'index'])->name('admin.navigation.index');
-    Route::post('/admin/navigation', [AdminNavigationController::class, 'update'])->name('admin.navigation.update');
-    Route::post('/admin/navigation/reset', [AdminNavigationController::class, 'reset'])->name('admin.navigation.reset');
+    Route::get('/admin/navigation', [AdminNavigationController::class, 'index'])->middleware('perm:navigation.view')->name('admin.navigation.index');
+    Route::post('/admin/navigation', [AdminNavigationController::class, 'update'])->middleware('perm:navigation.manage')->name('admin.navigation.update');
+    Route::post('/admin/navigation/reset', [AdminNavigationController::class, 'reset'])->middleware('perm:navigation.manage')->name('admin.navigation.reset');
 
     // Setup wizard
     Route::get('/admin/setup', [AdminSetupController::class, 'index'])->name('admin.setup.index');
@@ -475,10 +517,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/scraper/settings/automation', [AdminScraperController::class, 'settingsAutomation'])->name('admin.scraper.settings.automation');
     Route::get('/admin/scraper/settings/limits', [AdminScraperController::class, 'settingsLimits'])->name('admin.scraper.settings.limits');
     Route::get('/admin/scraper/settings/storage', [AdminScraperController::class, 'settingsStorage'])->name('admin.scraper.settings.storage');
-    Route::post('/admin/scraper/settings/autopublish', [AdminScraperController::class, 'updateAutopublish'])->name('admin.scraper.settings.autopublish');
+    Route::post('/admin/scraper/settings/autopublish', [AdminScraperController::class, 'updateAutopublish'])->middleware('perm:scraper.manage')->name('admin.scraper.settings.autopublish');
     Route::get('/admin/scraper/source/{key}', [AdminScraperController::class, 'showSource'])->name('admin.scraper.source.show');
-    Route::post('/admin/scraper/run', [AdminScraperController::class, 'run'])->name('admin.scraper.run');
-    Route::post('/admin/scraper/source/{key}/clear', [AdminScraperController::class, 'clearSource'])->name('admin.scraper.source.clear');
+    Route::post('/admin/scraper/run', [AdminScraperController::class, 'run'])->middleware('perm:scraper.manage')->name('admin.scraper.run');
+    Route::post('/admin/scraper/source/{key}/clear', [AdminScraperController::class, 'clearSource'])->middleware('perm:scraper.manage')->name('admin.scraper.source.clear');
 
     // CV Builder — admin
     Route::get('/admin/cv', [AdminCvController::class, 'index'])->name('admin.cv.index');
@@ -496,9 +538,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/weather', [AdminWeatherController::class, 'index'])->name('admin.weather.index');
     Route::get('/admin/weather/api', [AdminWeatherController::class, 'api'])->name('admin.weather.api');
     Route::get('/admin/weather/locations', [AdminWeatherController::class, 'locations'])->name('admin.weather.locations');
-    Route::post('/admin/weather/api', [AdminWeatherController::class, 'update'])->name('admin.weather.api.update');
-    Route::post('/admin/weather/locations', [AdminWeatherController::class, 'update'])->name('admin.weather.locations.update');
-    Route::post('/admin/weather/api/test', [AdminWeatherController::class, 'test'])->name('admin.weather.api.test');
+    Route::post('/admin/weather/api', [AdminWeatherController::class, 'update'])->middleware('perm:weather.manage')->name('admin.weather.api.update');
+    Route::post('/admin/weather/locations', [AdminWeatherController::class, 'update'])->middleware('perm:weather.manage')->name('admin.weather.locations.update');
+    Route::post('/admin/weather/api/test', [AdminWeatherController::class, 'test'])->middleware('perm:weather.manage')->name('admin.weather.api.test');
 
     // Live TV
     Route::get('/admin/livetv', [AdminLiveTvController::class, 'index'])->name('admin.livetv.index');
@@ -529,11 +571,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/aisystem/chat', [AdminAiSystemController::class, 'chat'])->name('admin.aisystem.chat');
     Route::get('/admin/aisystem/knowledge', [AdminAiSystemController::class, 'knowledge'])->name('admin.aisystem.knowledge');
     Route::get('/admin/aisystem/providers', [AdminAiSystemController::class, 'providers'])->name('admin.aisystem.providers');
-    Route::post('/admin/aisystem/providers', [AdminAiSystemController::class, 'providerStore'])->name('admin.aisystem.providers.store');
-    Route::post('/admin/aisystem/providers/{id}', [AdminAiSystemController::class, 'providerUpdate'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.update');
-    Route::post('/admin/aisystem/providers/{id}/delete', [AdminAiSystemController::class, 'providerDelete'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.delete');
-    Route::post('/admin/aisystem/providers/{id}/default', [AdminAiSystemController::class, 'providerDefault'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.default');
-    Route::post('/admin/aisystem/providers/{id}/test', [AdminAiSystemController::class, 'providerTest'])->where('id', '[A-Za-z0-9]+')->name('admin.aisystem.providers.test');
+    Route::post('/admin/aisystem/providers', [AdminAiSystemController::class, 'providerStore'])->middleware('perm:aisystem.manage')->name('admin.aisystem.providers.store');
+    Route::post('/admin/aisystem/providers/{id}', [AdminAiSystemController::class, 'providerUpdate'])->where('id', '[A-Za-z0-9]+')->middleware('perm:aisystem.manage')->name('admin.aisystem.providers.update');
+    Route::post('/admin/aisystem/providers/{id}/delete', [AdminAiSystemController::class, 'providerDelete'])->where('id', '[A-Za-z0-9]+')->middleware('perm:aisystem.manage')->name('admin.aisystem.providers.delete');
+    Route::post('/admin/aisystem/providers/{id}/default', [AdminAiSystemController::class, 'providerDefault'])->where('id', '[A-Za-z0-9]+')->middleware('perm:aisystem.manage')->name('admin.aisystem.providers.default');
+    Route::post('/admin/aisystem/providers/{id}/test', [AdminAiSystemController::class, 'providerTest'])->where('id', '[A-Za-z0-9]+')->middleware('perm:aisystem.manage')->name('admin.aisystem.providers.test');
     Route::get('/admin/aisystem/writer', [AdminAiSystemController::class, 'writer'])->name('admin.aisystem.writer');
 
     // API Proxies
@@ -544,17 +586,19 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/api-proxy/puter', [AdminApiProxyController::class, 'puter'])->name('admin.api-proxy.puter');
 
     // Notifications — admin send/schedule/manage
-    Route::get('/admin/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
-    Route::get('/admin/notifications/create', [AdminNotificationController::class, 'create'])->name('admin.notifications.create');
-    Route::post('/admin/notifications/create', [AdminNotificationController::class, 'store'])->name('admin.notifications.store');
-    Route::get('/admin/notifications/schedule', [AdminNotificationController::class, 'scheduleForm'])->name('admin.notifications.schedule.form');
-    Route::post('/admin/notifications/schedule', [AdminNotificationController::class, 'scheduleStore'])->name('admin.notifications.schedule.store');
-    Route::get('/admin/notifications/view/{id}', [AdminNotificationController::class, 'view'])->whereNumber('id')->name('admin.notifications.show');
-    Route::get('/admin/notifications/delete/{id}', [AdminNotificationController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.notifications.delete.confirm');
-    Route::post('/admin/notifications/delete/{id}', [AdminNotificationController::class, 'destroy'])->whereNumber('id')->name('admin.notifications.destroy.path');
-    Route::get('/admin/notifications/view', [AdminNotificationController::class, 'view'])->name('admin.notifications.show.query');
-    Route::get('/admin/notifications/delete', [AdminNotificationController::class, 'deleteConfirm'])->name('admin.notifications.delete.query.confirm');
-    Route::post('/admin/notifications/delete', [AdminNotificationController::class, 'destroy'])->name('admin.notifications.destroy.query');
+    Route::get('/admin/notifications', [AdminNotificationController::class, 'index'])->middleware('perm:notification.view')->name('admin.notifications.index');
+    Route::middleware('perm:notification.manage')->group(function () {
+        Route::get('/admin/notifications/create', [AdminNotificationController::class, 'create'])->name('admin.notifications.create');
+        Route::post('/admin/notifications/create', [AdminNotificationController::class, 'store'])->name('admin.notifications.store');
+        Route::get('/admin/notifications/schedule', [AdminNotificationController::class, 'scheduleForm'])->name('admin.notifications.schedule.form');
+        Route::post('/admin/notifications/schedule', [AdminNotificationController::class, 'scheduleStore'])->name('admin.notifications.schedule.store');
+        Route::get('/admin/notifications/delete/{id}', [AdminNotificationController::class, 'deleteConfirm'])->whereNumber('id')->name('admin.notifications.delete.confirm');
+        Route::post('/admin/notifications/delete/{id}', [AdminNotificationController::class, 'destroy'])->whereNumber('id')->name('admin.notifications.destroy.path');
+        Route::get('/admin/notifications/delete', [AdminNotificationController::class, 'deleteConfirm'])->name('admin.notifications.delete.query.confirm');
+        Route::post('/admin/notifications/delete', [AdminNotificationController::class, 'destroy'])->name('admin.notifications.destroy.query');
+    });
+    Route::get('/admin/notifications/view/{id}', [AdminNotificationController::class, 'view'])->whereNumber('id')->middleware('perm:notification.view')->name('admin.notifications.show');
+    Route::get('/admin/notifications/view', [AdminNotificationController::class, 'view'])->middleware('perm:notification.view')->name('admin.notifications.show.query');
 
     // Hero Alif — commerce foundation (Phase 1): catalog, products, procurement, inventory ledger
     Route::get('/admin/ha/products', [HaProductController::class, 'index'])->middleware('ha.perm:ha.products.manage')->name('admin.ha.products.index');
@@ -645,12 +689,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // MCP Server management
     Route::get('/admin/mcp', [AdminMcpController::class, 'index'])->name('admin.mcp.index');
-    Route::post('/admin/mcp/keys/generate', [AdminMcpController::class, 'generateKey'])->name('admin.mcp.keys.generate');
-    Route::post('/admin/mcp/keys/revoke/{id}', [AdminMcpController::class, 'revokeKey'])->whereNumber('id')->name('admin.mcp.keys.revoke');
-    Route::post('/admin/mcp/keys/revoke-bulk', [AdminMcpController::class, 'revokeBulk'])->name('admin.mcp.keys.revoke.bulk');
-    Route::post('/admin/mcp/settings', [AdminMcpController::class, 'updateSettings'])->name('admin.mcp.settings.update');
-    Route::get('/admin/mcp/logs', [AdminMcpController::class, 'logs'])->name('admin.mcp.logs');
-    Route::post('/admin/mcp/logs/clear', [AdminMcpController::class, 'clearLogs'])->name('admin.mcp.logs.clear');
+    Route::post('/admin/mcp/keys/generate', [AdminMcpController::class, 'generateKey'])->middleware('perm:mcp.manage')->name('admin.mcp.keys.generate');
+    Route::post('/admin/mcp/keys/revoke/{id}', [AdminMcpController::class, 'revokeKey'])->whereNumber('id')->middleware('perm:mcp.manage')->name('admin.mcp.keys.revoke');
+    Route::post('/admin/mcp/keys/revoke-bulk', [AdminMcpController::class, 'revokeBulk'])->middleware('perm:mcp.manage')->name('admin.mcp.keys.revoke.bulk');
+    Route::post('/admin/mcp/settings', [AdminMcpController::class, 'updateSettings'])->middleware('perm:mcp.manage')->name('admin.mcp.settings.update');
+    Route::get('/admin/mcp/logs', [AdminMcpController::class, 'logs'])->middleware('perm:mcp.view')->name('admin.mcp.logs');
+    Route::post('/admin/mcp/logs/clear', [AdminMcpController::class, 'clearLogs'])->middleware('perm:mcp.manage')->name('admin.mcp.logs.clear');
 });
 
 

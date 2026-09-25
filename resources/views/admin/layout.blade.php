@@ -99,9 +99,9 @@
             ['name' => 'Reports & P&L', 'icon' => 'lucide-chart-line', 'url' => '/admin/ha/reports', 'key' => 'ha-reports', 'perm' => 'ha.reports.view'],
         ]],
         ['label' => 'Wallet', 'items' => [
-            ['name' => 'Recharges', 'icon' => 'lucide-wallet', 'url' => '/admin/wallet/recharges', 'key' => 'wallet-recharges'],
-            ['name' => 'Ledger', 'icon' => 'lucide-history', 'url' => '/admin/wallet/transactions', 'key' => 'wallet-ledger'],
-            ['name' => 'User Balances', 'icon' => 'lucide-users', 'url' => '/admin/wallet/users', 'key' => 'wallet-users'],
+            ['name' => 'Recharges', 'icon' => 'lucide-wallet', 'url' => '/admin/wallet/recharges', 'key' => 'wallet-recharges', 'perm' => 'wallet.view'],
+            ['name' => 'Ledger', 'icon' => 'lucide-history', 'url' => '/admin/wallet/transactions', 'key' => 'wallet-ledger', 'perm' => 'wallet.view'],
+            ['name' => 'User Balances', 'icon' => 'lucide-users', 'url' => '/admin/wallet/users', 'key' => 'wallet-users', 'perm' => 'wallet.view'],
         ]],
         ['label' => 'People', 'items' => [
             ['name' => 'Users', 'icon' => 'lucide-users', 'url' => '/admin/users', 'key' => 'users'],
@@ -109,23 +109,23 @@
             ['name' => 'Permissions', 'icon' => 'lucide-key-round', 'url' => '/admin/permissions', 'key' => 'permissions'],
         ]],
         ['label' => 'Revenue', 'items' => [
-            ['name' => 'Revenue', 'icon' => 'lucide-trending-up', 'url' => '/admin/revenue', 'key' => 'revenue', 'children' => [
+            ['name' => 'Revenue', 'icon' => 'lucide-trending-up', 'url' => '/admin/revenue', 'key' => 'revenue', 'perm' => 'revenue.view', 'children' => [
                 ['name' => 'Sponsored', 'url' => '/admin/revenue/sponsored'],
             ]],
-            ['name' => 'Ads', 'icon' => 'lucide-megaphone', 'url' => '/admin/revenue/ads', 'key' => 'revenue-ads', 'children' => [
+            ['name' => 'Ads', 'icon' => 'lucide-megaphone', 'url' => '/admin/revenue/ads', 'key' => 'revenue-ads', 'perm' => 'revenue.view', 'children' => [
                 ['name' => 'Analytics', 'url' => '/admin/revenue/ads/analytics'],
                 ['name' => 'Campaigns', 'url' => '/admin/revenue/ads/campaigns'],
                 ['name' => 'Placements', 'url' => '/admin/revenue/ads/placements'],
                 ['name' => 'Settings', 'url' => '/admin/revenue/ads/settings'],
             ]],
-            ['name' => 'Donations', 'icon' => 'lucide-hand-heart', 'url' => '/admin/revenue/donations', 'key' => 'revenue-donations', 'children' => [
+            ['name' => 'Donations', 'icon' => 'lucide-hand-heart', 'url' => '/admin/revenue/donations', 'key' => 'revenue-donations', 'perm' => 'revenue.view', 'children' => [
                 ['name' => 'bKash', 'url' => '/admin/revenue/donations/bkash'],
                 ['name' => 'Nagad', 'url' => '/admin/revenue/donations/nagad'],
                 ['name' => 'Rocket', 'url' => '/admin/revenue/donations/rocket'],
             ]],
         ]],
         ['label' => 'Engagement', 'items' => [
-            ['name' => 'Notifications', 'icon' => 'lucide-bell', 'url' => '/admin/notifications', 'key' => 'notifications', 'children' => [
+            ['name' => 'Notifications', 'icon' => 'lucide-bell', 'url' => '/admin/notifications', 'key' => 'notifications', 'perm' => 'notification.view', 'children' => [
                 ['name' => 'Schedule', 'url' => '/admin/notifications/schedule'],
             ]],
             ['name' => 'Live TV', 'icon' => 'lucide-tv', 'url' => '/admin/livetv', 'key' => 'livetv', 'children' => [
@@ -133,13 +133,13 @@
                 ['name' => 'Proxy', 'url' => '/admin/livetv/proxy'],
             ]],
             ['name' => 'Kharij', 'icon' => 'lucide-graduation-cap', 'url' => '/admin/kharij', 'key' => 'kharij'],
-            ['name' => 'Weather', 'icon' => 'lucide-cloud-sun', 'url' => '/admin/weather', 'key' => 'weather', 'children' => [
+            ['name' => 'Weather', 'icon' => 'lucide-cloud-sun', 'url' => '/admin/weather', 'key' => 'weather', 'perm' => 'weather.view', 'children' => [
                 ['name' => 'API', 'url' => '/admin/weather/api'],
                 ['name' => 'Locations', 'url' => '/admin/weather/locations'],
             ]],
         ]],
         ['label' => 'Tools', 'items' => [
-            ['name' => 'AI System', 'icon' => 'lucide-brain', 'url' => '/admin/aisystem', 'key' => 'aisystem', 'children' => [
+            ['name' => 'AI System', 'icon' => 'lucide-brain', 'url' => '/admin/aisystem', 'key' => 'aisystem', 'perm' => 'aisystem.view', 'children' => [
                 ['name' => 'Chat', 'url' => '/admin/aisystem/chat'],
                 ['name' => 'Writer', 'url' => '/admin/aisystem/writer'],
                 ['name' => 'Knowledge', 'url' => '/admin/aisystem/knowledge'],
@@ -167,7 +167,7 @@
                 ['name' => 'Pixabay', 'url' => '/admin/api-proxy/pixabay'],
                 ['name' => 'Puter', 'url' => '/admin/api-proxy/puter'],
             ]],
-            ['name' => 'Scraper', 'icon' => 'lucide-download', 'url' => '/admin/scraper', 'key' => 'scraper', 'children' => [
+            ['name' => 'Scraper', 'icon' => 'lucide-download', 'url' => '/admin/scraper', 'key' => 'scraper', 'perm' => 'scraper.view', 'children' => [
                 ['name' => 'Sources', 'url' => '/admin/scraper/sources'],
                 ['name' => 'Jobs', 'url' => '/admin/scraper/jobs'],
                 ['name' => 'Logs', 'url' => '/admin/scraper/logs'],
@@ -184,13 +184,13 @@
             ]],
         ]],
         ['label' => 'Settings', 'items' => [
-            ['name' => 'Security', 'icon' => 'lucide-lock', 'url' => '/admin/security', 'key' => 'security', 'children' => [
+            ['name' => 'Security', 'icon' => 'lucide-lock', 'url' => '/admin/security', 'key' => 'security', 'perm' => 'security.view', 'children' => [
                 ['name' => 'Authentication', 'url' => '/admin/security/auth'],
                 ['name' => 'reCAPTCHA', 'url' => '/admin/security/recaptcha'],
                 ['name' => 'SMTP', 'url' => '/admin/security/smtp'],
             ]],
-            ['name' => 'Navigation', 'icon' => 'lucide-menu', 'url' => '/admin/navigation', 'key' => 'navigation'],
-            ['name' => 'MCP Server', 'icon' => 'lucide-server', 'url' => '/admin/mcp', 'key' => 'mcp', 'children' => [
+            ['name' => 'Navigation', 'icon' => 'lucide-menu', 'url' => '/admin/navigation', 'key' => 'navigation', 'perm' => 'navigation.view'],
+            ['name' => 'MCP Server', 'icon' => 'lucide-server', 'url' => '/admin/mcp', 'key' => 'mcp', 'perm' => 'mcp.view', 'children' => [
                 ['name' => 'API Keys', 'url' => '/admin/mcp'],
                 ['name' => 'Logs', 'url' => '/admin/mcp/logs'],
             ]],
@@ -438,7 +438,29 @@
         </div>
 
             <nav class="px-2 py-2 space-y-1">
+                @php
+                    // Phase 9: resolve the current user's permission set once per render.
+                    // `ha.*` slugs live in the Hero Alif catalog; everything else in the
+                    // core RBAC tables. Super admins pass both (fail-open via the `*`
+                    // sentinel in each service's cache).
+                    $adminUser = auth()->user();
+                    $haPerm = \App\Support\HaPermissions::for($adminUser);
+                    $corePerm = \App\Support\AdminPermissions::for($adminUser);
+                    $hasPerm = fn (?string $slug): bool => $slug !== null && $slug !== ''
+                        && (str_starts_with($slug, 'ha.') ? $haPerm->has($slug) : $corePerm->has($slug));
+                @endphp
                 @foreach ($adminNav as $group)
+                    @php
+                        // Hide items the user lacks, then drop groups that became empty
+                        // (an empty label with no items reads as a rendering bug).
+                        $group['items'] = array_values(array_filter(
+                            $group['items'],
+                            fn (array $item): bool => ! isset($item['perm']) || $hasPerm($item['perm'])
+                        ));
+                    @endphp
+                    @if ($group['items'] === [])
+                        @continue
+                    @endif
                     @if ($group['label'])
                         <div class="sidebar-group-label px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-600">{{ $group['label'] }}</div>
                     @endif
@@ -446,12 +468,6 @@
                         @php
                             $children = $item['children'] ?? [];
                             $hasChildren = $children !== [];
-                            // Phase 8: hide sidebar items for which the current user lacks the permission.
-                            // Super admins see everything. Non-super users only see items whose `perm`
-                            // (if defined) they hold — keeps the sidebar clean for scoped roles.
-                            if (isset($item['perm']) && ! \App\Support\HaPermissions::for(auth()->user())->has($item['perm'] ?? null)) {
-                                continue;
-                            }
                             $childActive = $hasChildren && $navChildrenActive($children);
                             $itemActive = $currentPath === $item['url']
                                 || str_starts_with($currentPath, rtrim($item['url'], '/').'/')
@@ -898,5 +914,8 @@
     </script>
 
     @stack('scripts')
+
+    {{-- Lucide class -> icon font compat shim (maps .lucide-<name> to .icon-<name>, watches for dynamic content) --}}
+    <script type="module" src="@assetVersion('/assets/js/dist/lucide-compat.js')"></script>
 </body>
 </html>

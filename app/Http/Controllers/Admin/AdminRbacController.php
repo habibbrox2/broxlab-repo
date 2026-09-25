@@ -45,7 +45,7 @@ class AdminRbacController extends Controller
         ]);
     }
 
-    public function roleView(Request $request, int $id): View
+    public function roleView(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -97,7 +97,7 @@ class AdminRbacController extends Controller
             ->with('status', $result['status']);
     }
 
-    public function roleEdit(Request $request, int $id): View
+    public function roleEdit(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -121,7 +121,7 @@ class AdminRbacController extends Controller
         ]);
     }
 
-    public function roleUpdate(Request $request, int $id): RedirectResponse
+    public function roleUpdate(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {
@@ -145,7 +145,7 @@ class AdminRbacController extends Controller
             ->with('status', $result['status']);
     }
 
-    public function roleDeleteConfirm(Request $request, int $id): View
+    public function roleDeleteConfirm(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -169,7 +169,7 @@ class AdminRbacController extends Controller
         ]);
     }
 
-    public function roleDestroy(Request $request, int $id): RedirectResponse
+    public function roleDestroy(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {
@@ -229,7 +229,7 @@ class AdminRbacController extends Controller
         ]);
     }
 
-    public function permissionView(Request $request, int $id): View
+    public function permissionView(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -281,7 +281,7 @@ class AdminRbacController extends Controller
             ->with('status', $result['status']);
     }
 
-    public function permissionEdit(Request $request, int $id): View
+    public function permissionEdit(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -305,7 +305,7 @@ class AdminRbacController extends Controller
         ]);
     }
 
-    public function permissionUpdate(Request $request, int $id): RedirectResponse
+    public function permissionUpdate(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {
@@ -329,7 +329,7 @@ class AdminRbacController extends Controller
             ->with('status', $result['status']);
     }
 
-    public function permissionDeleteConfirm(Request $request, int $id): View
+    public function permissionDeleteConfirm(Request $request, ?int $id = null): View
     {
         if ($id <= 0) {
             $id = (int) ($request->query->get('id', 0));
@@ -457,7 +457,7 @@ class AdminRbacController extends Controller
         return redirect()->back()->with('status', $result['status']);
     }
 
-    public function permissionDestroy(Request $request, int $id): RedirectResponse
+    public function permissionDestroy(Request $request, ?int $id = null): RedirectResponse
     {
         $postedId = (int) ($request->input('id', 0));
         if ($postedId > 0) {

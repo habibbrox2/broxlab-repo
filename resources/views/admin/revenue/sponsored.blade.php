@@ -23,27 +23,70 @@
     </div>
 </div>
 
+@php
+    $tiers = [1 => 'Bronze', 2 => 'Silver', 3 => 'Gold'];
+    $tierColors = [1 => 'from-slate-400 to-slate-500', 2 => 'from-amber-400 to-amber-500', 3 => 'from-yellow-400 to-yellow-500'];
+@endphp
+
 <div class="max-w-6xl">
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-        @foreach([
-            ['icon' => 'package', 'title' => ' Bronze Package', 'desc' => 'Basic sponsored content listing', 'price' => '৳2,000/mo', 'color' => 'from-slate-400 to-slate-500'],
-            ['icon' => 'star', 'title' => ' Silver Package', 'desc' => 'Featured sponsored content with highlight', 'price' => '৳5,000/mo', 'color' => 'from-amber-400 to-amber-500'],
-            ['icon' => 'crown', 'title' => ' Gold Package', 'desc' => 'Premium featured + homepage banner', 'price' => '৳10,000/mo', 'color' => 'from-yellow-400 to-yellow-500'],
-        ] as $i => $pkg)
-            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 group">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">            @forelse($packages as $pkg)
+            <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 group {{ ($pkg->is_active ?? false) ? '' : 'opacity-60' }} {{ $pkg->trashed() ? 'bg-rose-50/30 dark:bg-rose-900/5' : '' }}">
                 <div class="p-6">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $pkg['color'] }} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <i class="lucide lucide-{{ $pkg['icon'] }} w-6 h-6 text-white"></i>
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $tierColors[$pkg->tier] ?? $tierColors[1] }} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="lucide lucide-{{ $pkg->icon }} w-6 h-6 text-white"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ $pkg['title'] }}</h3>
-                    <p class="text-sm text-slate-400 dark:text-slate-600 mb-3">{{ $pkg['desc'] }}</p>
-                    <p class="text-2xl font-bold text-slate-900 dark:text-white mb-4">{{ $pkg['price'] }}</p>
-                    <a href="/admin/revenue/sponsored/edit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150">
-                        {{ t('Manage Package') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
-                    </a>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $pkg->name }}</h3>
+                        @if (! $pkg->is_active)
+                            <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ t('Inactive') }}</span>
+                        @endif
+                    </div>
+                    <p class="text-sm text-slate-400 dark:text-slate-600 mb-3">{{ $pkg->description }}</p>
+                    <p class="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                        {{ $pkg->currency === 'BDT' ? '৳' : $pkg->currency.' ' }}{{ number_format((float) $pkg->price, 0) }}<span class="text-sm font-medium text-slate-400">/{{ $pkg->billing_period === 'yearly' ? 'yr' : 'mo' }}</span>
+                    </p>
+                    @if (! empty($pkg->features))
+                        <ul class="mb-4 space-y-1">
+                            @foreach (array_slice($pkg->features, 0, 4) as $feature)
+                                <li class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                    <i class="lucide lucide-check w-3.5 h-3.5 text-emerald-500 flex-shrink-0"></i> {{ $feature }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                    <div class="flex items-center gap-2">
+                        @if ($pkg->trashed())
+                            <form method="post" action="/admin/revenue/sponsored/restore">
+                                @csrf
+                                <input type="hidden" name="id" value="{{ $pkg->id }}">
+                                <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all duration-150">
+                                    {{ t('Restore') }} <i class="lucide lucide-refresh-ccw w-4 h-4"></i>
+                                </button>
+                            </form>
+                        @else
+                            <a href="/admin/revenue/sponsored/edit?id={{ $pkg->id }}" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 active: scale-[0.98] transition-all duration-150">
+                                {{ t('Manage Package') }} <i class="lucide lucide-arrow-right w-4 h-4"></i>
+                            </a>
+                            <form method="post" action="/admin/revenue/sponsored/delete" onsubmit="return confirm('{{ t('Delete this package?') }}')">
+                                @csrf
+                                <input type="hidden" name="id" value="{{ $pkg->id }}">
+                                <button type="submit" class="inline-flex items-center justify-center rounded-xl border border-rose-200 dark:border-rose-900/50 px-3 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all duration-150" aria-label="{{ t('Delete package') }}">
+                                    <i class="lucide lucide-trash-2 w-4 h-4"></i>
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             </div>
-        @endforeach
+        @empty
+            <div class="md:col-span-3 overflow-hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
+                <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <i class="lucide lucide-package-open w-6 h-6 text-slate-400"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ t('No packages yet') }}</h3>
+                <p class="text-sm text-slate-400 dark:text-slate-600 mb-5">{{ t('Create your first sponsored content package to get started.') }}</p>
+            </div>
+        @endforelse
     </div>
 
     <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
@@ -58,5 +101,4 @@
         </div>
     </div>
 </div>
-
 @endsection

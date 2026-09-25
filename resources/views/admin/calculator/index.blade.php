@@ -52,7 +52,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm group hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
             <div class="p-6">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <i class="lucide lucide-function w-6 h-6 text-white"></i>
+                    <i class="lucide lucide-function-square w-6 h-6 text-white"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ t('Custom Widgets') }}</h3>
                 <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">{{ t('Manage custom calculator widgets') }}</p>

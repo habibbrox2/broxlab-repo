@@ -1978,3 +1978,14 @@
 .icon-zoom-out::before { content: "\e1b7"; }
 
 
+
+/* ---- Fallback aliases (added by project) ----
+ * Glyphs missing from the generated font but referenced by views.
+ * Each alias reuses an existing codepoint so the icon renders instead
+ * of showing an empty box. Keep in sync with public/assets/cdn copy. */
+.icon-instagram::before { content: "\e064"; }        /* camera */
+.icon-channels::before { content: "\e195"; }         /* tv */
+.icon-function::before { content: "\e22d"; }         /* function-square */
+.icon-cloud-arrow-up::before { content: "\e091"; }   /* cloud-upload */
+.icon-photo::before { content: "\e0f6"; }            /* image */
+.icon-desktop::before { content: "\e11d"; }          /* monitor */
